@@ -1,0 +1,15 @@
+{
+  "name": "mcp-bastion",
+  "version": "1.0.0",
+  "description": "MCP-Bastion monorepo: security middleware for MCP servers",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "author": "Viquar Khan",
+  "license": "MIT"
+}

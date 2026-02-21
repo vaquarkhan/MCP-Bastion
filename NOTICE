@@ -1,0 +1,5 @@
+MCP-Bastion uses the following third-party components:
+
+Llama Prompt Guard 2 (meta-llama/Llama-Prompt-Guard-2-86M)
+  Llama 4 is licensed under the Llama 4 Community License, Copyright (c) Meta Platforms, Inc. All Rights Reserved.
+  See: https://www.llama.com/docs/overview
