@@ -78,8 +78,14 @@ Early security packages (mcp-guardian, mcp-shield) focus on logging or static sc
 
 ## Structure
 
-- **Python** (`mcp-bastion-python`): Full implementation with PromptGuard, Presidio, and rate limiting
-- **TypeScript** (`@mcp-bastion/core`): Proxy wrapper with rate limiting; ML features via Python sidecar
+| Path | Description |
+|------|-------------|
+| `src/mcp_bastion/` | Python package: PromptGuard, Presidio, rate limiting |
+| `packages/core/` | TypeScript package: rate limiting; ML via Python sidecar |
+| `examples/` | Python examples: basic middleware, full demo ([examples/README.md](examples/README.md)) |
+| `scripts/validate_checklist.py` | Enterprise validation runner |
+| `VALIDATION_CHECKLIST.md` | Validation guide and MCP Inspector steps |
+| `SETUP_GUIDE.md` | Setup, config, and validation |
 
 ## Installation
 
@@ -124,13 +130,25 @@ middleware = compose_middleware(bastion)
 # (integration depends on your server framework)
 ```
 
-**Run the full demo** (exercises all features from SETUP_GUIDE):
+**Examples:**
+
+| Example | Description |
+|---------|-------------|
+| `examples/python_server_example.py` | Basic middleware chain |
+| `examples/full_demo.py` | All features: add, PII, rate limit, prompt injection |
 
 ```bash
-cd MCP-Bastion
-$env:PYTHONPATH="src"; python examples/full_demo.py   # Windows
-PYTHONPATH=src python examples/full_demo.py           # Linux/Mac
+# Windows: $env:PYTHONPATH="src"; python examples/full_demo.py
+# Linux/Mac: PYTHONPATH=src python examples/full_demo.py
 ```
+
+**Enterprise validation:**
+
+```bash
+PYTHONPATH=src python scripts/validate_checklist.py
+```
+
+See `VALIDATION_CHECKLIST.md` and `SETUP_GUIDE.md`.
 
 ---
 
@@ -223,6 +241,26 @@ bastion = MCPBastionMiddleware(
 # Disable PII redaction if your data has no PII
 bastion_no_pii = MCPBastionMiddleware(enable_pii_redaction=False)
 ```
+
+---
+
+### Python: Custom Middleware
+
+Extend `Middleware` to add logging, metrics, or custom logic:
+
+```python
+from mcp_bastion.base import Middleware, MiddlewareContext, compose_middleware
+
+class LoggingMiddleware(Middleware):
+    async def on_message(self, context, call_next):
+        result = await call_next(context)
+        # log method, elapsed, etc.
+        return result
+
+middleware = compose_middleware(bastion, LoggingMiddleware())
+```
+
+See `examples/full_demo.py` for a complete example.
 
 ---
 
@@ -344,6 +382,7 @@ server.setRequestHandler(ReadResourceRequestSchema, safeResourceHandler);
 | `token_budget` | Via `TokenBucketRateLimiter` | - | 50,000 | FinOps token cap per request |
 | `sidecarUrl` | - | Yes | `""` | Python sidecar URL for ML features |
 | `threshold` | Via `PromptGuardEngine` | - | 0.85 | Malicious probability cutoff |
+| `setLogLevel` | - | Yes | `"info"` | TypeScript: `"debug"` \| `"info"` \| `"warn"` \| `"error"` |
 
 ---
 
@@ -351,9 +390,19 @@ server.setRequestHandler(ReadResourceRequestSchema, safeResourceHandler);
 
 When MCP-Bastion blocks a request, it returns standard MCP/JSON-RPC errors:
 
+| Code | Exception | When |
+|------|-----------|------|
+| -32001 | `PromptInjectionError` | Tool args contain jailbreak/injection |
+| -32002 | `RateLimitExceededError` | Session exceeds iteration or timeout limit |
+| -32003 | `TokenBudgetExceededError` | Session exceeds token budget |
+
 ```python
 # Python: exceptions
-from mcp_bastion.errors import PromptInjectionError, RateLimitExceededError
+from mcp_bastion.errors import (
+    PromptInjectionError,
+    RateLimitExceededError,
+    TokenBudgetExceededError,
+)
 import logging
 logger = logging.getLogger(__name__)
 
@@ -363,11 +412,14 @@ except PromptInjectionError as e:
     logger.warning("blocked: %s", e.to_mcp_error())
 except RateLimitExceededError as e:
     logger.warning("blocked: %s", e.to_mcp_error())
+except TokenBudgetExceededError as e:
+    logger.warning("blocked: %s", e.to_mcp_error())
 ```
 
 ```typescript
 // TypeScript: handlers return isError: true
-import { logger } from "@mcp-bastion/core";
+import { logger, setLogLevel } from "@mcp-bastion/core";
+setLogLevel("debug");  // optional: "debug" | "info" | "warn" | "error"
 const result = await guardedHandler(request);
 if (result.isError) {
   logger.error("blocked", result.content);
@@ -398,15 +450,22 @@ Connect via HTTP (`http://localhost:8000/mcp`) or stdio, then:
 ## Testing
 
 ```bash
-# Python
-uv run pytest tests/
+# Python (PYTHONPATH=src on Windows: $env:PYTHONPATH="src")
+pytest tests/ -v
 
 # TypeScript
 npm run test --workspace=@mcp-bastion/core
 
-# MCP Inspector (manual stdio validation)
+# Full validation checklist (build, pillars, latency)
+PYTHONPATH=src python scripts/validate_checklist.py
+
+# MCP Inspector (manual)
 npx -y @modelcontextprotocol/inspector
 ```
+
+## Third-Party Components
+
+See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 Community License) and Microsoft Presidio.
 
 ## License
 

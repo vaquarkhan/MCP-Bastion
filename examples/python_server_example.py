@@ -1,6 +1,12 @@
 """
 Example: MCP server with MCP-Bastion middleware.
-Run: uv run python examples/python_server_example.py
+
+Run:
+  cd MCP-Bastion
+  $env:PYTHONPATH="src"; python examples/python_server_example.py   # Windows
+  PYTHONPATH=src python examples/python_server_example.py          # Linux/Mac
+
+See examples/README.md.
 """
 
 import logging

@@ -10,11 +10,12 @@ Detailed guide to start any project, install MCP-Bastion, integrate with LLMs, a
 2. [New Project Setup](#new-project-setup)
 3. [Existing Project Setup](#existing-project-setup)
 4. [Installation](#installation)
-5. [LLM Integration](#llm-integration)
-6. [Configuration: What Is Allowed](#configuration-what-is-allowed)
-7. [Default Limits and Thresholds](#default-limits-and-thresholds)
-8. [Value Add and Results](#value-add-and-results)
-9. [Validation](#validation)
+5. [Examples](#examples)
+6. [LLM Integration](#llm-integration)
+7. [Configuration: What Is Allowed](#configuration-what-is-allowed)
+8. [Default Limits and Thresholds](#default-limits-and-thresholds)
+9. [Value Add and Results](#value-add-and-results)
+10. [Validation](#validation)
 
 ---
 
@@ -194,6 +195,33 @@ npm run build --workspace=@mcp-bastion/core
 
 ---
 
+## Examples
+
+| Example | Purpose |
+|---------|---------|
+| `examples/python_server_example.py` | Minimal middleware chain and middleware composition |
+| `examples/full_demo.py` | All features: allowed tool call, PII redaction, rate limit (5 calls), prompt injection |
+
+**Quick run:**
+
+```bash
+cd MCP-Bastion
+$env:PYTHONPATH="src"; python examples/python_server_example.py   # Windows
+$env:PYTHONPATH="src"; python examples/full_demo.py               # Windows
+# Linux/Mac: PYTHONPATH=src python examples/...
+```
+
+**Full demo scenarios:**
+
+1. **Demo 1 – Allowed:** `add(2, 3)` returns `5`
+2. **Demo 2 – PII redaction:** `get_profile` returns text with SSN/email; Presidio redacts when installed
+3. **Demo 3 – Rate limit:** 6th call blocked (custom 5-iteration limit)
+4. **Demo 4 – Prompt injection:** Malicious payload blocked when PromptGuard (torch) is available
+
+See `examples/README.md` for details.
+
+---
+
 ## LLM Integration
 
 MCP-Bastion wraps your MCP server. The LLM client (Claude, GPT, etc.) connects to your MCP server. MCP-Bastion sits in the middle.
@@ -286,14 +314,15 @@ Tools / Resources
 | `sidecarUrl` | `""` | Python sidecar URL for ML features |
 | `maxIterations` | `15` | Max tool calls per session |
 | `timeoutMs` | `60000` | Session timeout (ms) |
+| `setLogLevel` | - | TypeScript: `"debug"` \| `"info"` \| `"warn"` \| `"error"` |
 
 ### What Gets Blocked
 
-| Check | When | Result |
-|-------|------|--------|
-| Prompt injection | Tool args contain jailbreak/injection | `PromptInjectionError` (-32001) |
-| Rate limit | Session exceeds 15 calls or 60s | `RateLimitExceededError` (-32002) |
-| Token budget | Session exceeds 50k tokens | `TokenBudgetExceededError` (-32003) |
+| Check | When | Result | Code |
+|-------|------|--------|------|
+| Prompt injection | Tool args contain jailbreak/injection | `PromptInjectionError` | -32001 |
+| Rate limit | Session exceeds 15 calls or 60s | `RateLimitExceededError` | -32002 |
+| Token budget | Session exceeds 50k tokens | `TokenBudgetExceededError` | -32003 |
 
 ### What Gets Redacted
 
@@ -344,9 +373,13 @@ Tools / Resources
 | Feature | Result |
 |---------|--------|
 | Malicious tool call blocked | Request never reaches your tool; client gets error |
-| PII in response | Names, SSNs, emails replaced with placeholders |
+| PII in tool and resource responses | Names, SSNs, emails replaced with placeholders |
 | Runaway loop | Session cut after 15 calls or 60s |
 | Logging | `logger.warning` on blocks; `logger.debug` on timing |
+
+**Python logging:** Set level via `logging.basicConfig(level=logging.DEBUG)` or per-module `logger.setLevel()`.
+
+**TypeScript logging:** `import { setLogLevel } from "@mcp-bastion/core"; setLogLevel("debug");`
 
 ### Example: Allowed Request
 
@@ -422,6 +455,16 @@ python examples/full_demo.py
 
 Expected (with minimal deps): Demo 1–2 succeed; Demo 3 blocks the 6th call (rate limit); Demo 4 allows (PromptGuard needs torch). With full deps (`pip install mcp-bastion-python torch presidio-analyzer presidio-anonymizer`, `python -m spacy download en_core_web_sm`), PII is redacted and prompt injection is blocked.
 
+### Run Enterprise Validation Checklist
+
+```bash
+cd MCP-Bastion
+$env:PYTHONPATH="src"; python scripts/validate_checklist.py   # Windows
+PYTHONPATH=src python scripts/validate_checklist.py           # Linux/Mac
+```
+
+Covers: build, prompt injection, PII redaction, rate limiting (16 calls), latency. See `VALIDATION_CHECKLIST.md`.
+
 ### Run Python Tests
 
 ```bash
@@ -464,3 +507,10 @@ Connect via HTTP (`http://localhost:8000/mcp`) or stdio. Test:
 1. List tools – should succeed.
 2. Call tool with benign args – should succeed.
 3. Call tool with "Ignore previous instructions" – should be blocked (Python).
+4. Read resource with PII – response should have PII redacted (Python).
+
+---
+
+## Third-Party Components
+
+See `NOTICE`. MCP-Bastion uses Meta Llama Prompt Guard 2 and Microsoft Presidio.
