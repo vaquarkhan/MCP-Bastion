@@ -2,8 +2,11 @@ name: Build, Test, and Publish MCP-Bastion
 
 on:
   push:
+    branches:
+      - main
     tags:
-      - 'v*' # This workflow will only trigger when you push a version tag (e.g., v1.0.0)
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-and-publish:
@@ -33,30 +36,44 @@ jobs:
           npm test --if-present
 
       - name: Publish to npm
+        if: github.ref_type == 'tag'
+        continue-on-error: true
         run: npm publish --workspace=@mcp-bastion/core --access public
-        # Note: No token needed here because of npm Trusted Publishers (OIDC)
+        # Requires npm Trusted Publishers (OIDC). Set up at npmjs.com
 
       # ==========================================
       # 2. PYTHON (PyPI) BUILD & PUBLISH
       # ==========================================
       - name: Install uv (Python Package Manager)
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.11"
 
       - name: Build Python distributions
         run: uv build
 
       - name: Publish distribution to PyPI
+        if: github.ref_type == 'tag'
+        continue-on-error: true
         uses: pypa/gh-action-pypi-publish@release/v1
-        # Note: No username/password needed here because of PyPI Trusted Publishers (OIDC)
+        # Requires PyPI Trusted Publishers (OIDC). Set up at pypi.org
 
       # ==========================================
       # 3. MCP REGISTRY PUBLISH
       # ==========================================
       - name: Download MCP Publisher CLI
+        if: github.ref_type == 'tag'
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/latest/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          MCP_VER="v1.4.1"
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+          curl -sSL -o mcp-publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_VER}/mcp-publisher_${OS}_${ARCH}.tar.gz"
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+          chmod +x mcp-publisher
 
       - name: Publish to official MCP Registry
+        if: github.ref_type == 'tag'
+        continue-on-error: true
         run: |
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish
