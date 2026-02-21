@@ -455,6 +455,22 @@ python examples/full_demo.py
 
 Expected (with minimal deps): Demo 1–2 succeed; Demo 3 blocks the 6th call (rate limit); Demo 4 allows (PromptGuard needs torch). With full deps (`pip install mcp-bastion-python torch presidio-analyzer presidio-anonymizer`, `python -m spacy download en_core_web_sm`), PII is redacted and prompt injection is blocked.
 
+### Validate Locally Before Push (CI-equivalent)
+
+Run the same checks as GitHub Actions before pushing:
+
+```powershell
+# Windows
+.\scripts\validate-ci-local.ps1
+```
+
+```bash
+# Linux/Mac
+npm ci && npm run build && npm test
+uv build  # or: python -m build --no-isolation
+PYTHONPATH=src pytest tests/ -v
+```
+
 ### Run Enterprise Validation Checklist
 
 ```bash
