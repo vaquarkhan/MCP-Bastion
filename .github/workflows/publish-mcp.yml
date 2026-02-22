@@ -37,8 +37,9 @@ jobs:
 
       - name: Publish to npm
         if: github.ref_type == 'tag'
+        continue-on-error: true
         run: npm publish --workspace=@mcp-bastion/core --access public
-        # Uses OIDC Trusted Publishers. Configure at npmjs.com → Package → Settings → Trusted Publishers
+        # Requires npm Trusted Publishers (OIDC). Set up at npmjs.com
 
       # ==========================================
       # 2. PYTHON (PyPI) BUILD & PUBLISH
