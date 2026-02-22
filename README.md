@@ -471,4 +471,4 @@ See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 C
 
 ## License
 
-MIT
+#MIT
