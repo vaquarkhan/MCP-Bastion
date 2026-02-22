@@ -2,6 +2,12 @@
 
 Secure your release pipeline with OIDC—no long-lived tokens needed.
 
+## npm Trusted Publishers
+
+Required for publishing via `git push` tags. Configure once at [npmjs.com](https://www.npmjs.com/) → **Packages** → **@mcp-bastion/core** → **Settings** → **Trusted Publishers** → **GitHub Actions**:
+- **Workflow filename:** `publish-mcp.yml`
+- **Repository:** `vaquarkhan/MCP-Bastion`
+
 ## PyPI Trusted Publishers
 
 1. Go to [pypi.org](https://pypi.org/) → Your project → **Publishing** → **Add a new pending publisher**
