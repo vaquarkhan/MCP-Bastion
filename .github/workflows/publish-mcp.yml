@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
       # ==========================================
       # 1. TYPESCRIPT (npm) BUILD & PUBLISH
@@ -37,9 +39,10 @@ jobs:
 
       - name: Publish to npm
         if: github.ref_type == 'tag'
-        continue-on-error: true
-        run: npm publish --workspace=@mcp-bastion/core --access public
-        # Requires npm Trusted Publishers (OIDC). Set up at npmjs.com
+        run: |
+          npm install -g npm@latest
+          npm publish --workspace=@mcp-bastion/core --access public --provenance
+        # Uses OIDC Trusted Publishers. Configure at npmjs.com → Package → Settings → Trusted Publishers
 
       # ==========================================
       # 2. PYTHON (PyPI) BUILD & PUBLISH

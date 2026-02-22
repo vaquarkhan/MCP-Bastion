@@ -35,7 +35,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vaquarkhan/MCP-Bastion"
+    "url": "git+https://github.com/vaquarkhan/MCP-Bastion.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
