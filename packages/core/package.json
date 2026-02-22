@@ -1,6 +1,6 @@
 {
   "name": "@mcp-bastion/core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Security middleware for MCP servers protecting LLM agents from prompt injection, resource exhaustion, and PII leakage",
   "type": "module",
   "main": "dist/index.js",
@@ -35,7 +35,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mcp-bastion/mcp-bastion"
+    "url": "https://github.com/vaquarkhan/MCP-Bastion"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
