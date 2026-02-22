@@ -26,7 +26,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '24'  # npm Trusted Publishers requires Node 22.14+
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install, Lint, and Test (TypeScript)
@@ -37,9 +37,8 @@ jobs:
 
       - name: Publish to npm
         if: github.ref_type == 'tag'
-        continue-on-error: true
         run: npm publish --workspace=@mcp-bastion/core --access public
-        # Requires npm Trusted Publishers (OIDC). Set up at npmjs.com
+        # Uses OIDC Trusted Publishers. Configure at npmjs.com → Package → Settings → Trusted Publishers
 
       # ==========================================
       # 2. PYTHON (PyPI) BUILD & PUBLISH
