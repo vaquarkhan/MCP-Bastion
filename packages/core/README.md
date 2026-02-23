@@ -1,5 +1,7 @@
 # @mcp-bastion/core
 
+[npm](https://www.npmjs.com/package/@mcp-bastion/core)
+
 Security middleware for MCP (Model Context Protocol) servers. Rate limiting in-process; prompt injection and PII via Python sidecar.
 
 Author: Viquar Khan
