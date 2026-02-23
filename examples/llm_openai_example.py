@@ -1,6 +1,5 @@
 """
 OpenAI + MCP-Bastion Example
-Author: Viquar Khan
 
 Use with OpenAI ChatGPT, API, or Agents SDK.
 Config: docs/LLM_INTEGRATION.md

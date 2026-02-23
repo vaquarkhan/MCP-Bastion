@@ -41,8 +41,8 @@ Detailed guide to start any project, install MCP-Bastion, integrate with LLMs, a
 mkdir my-mcp-server
 cd my-mcp-server
 
-# 2. Initialize (optional: uv init)
-pip init  # or: uv init
+# 2. Initialize (optional)
+# uv init   # or create requirements.txt for pip
 
 # 3. Install MCP and MCP-Bastion
 pip install mcp mcp-bastion-python
@@ -51,7 +51,7 @@ pip install mcp mcp-bastion-python
 python -m spacy download en_core_web_sm
 ```
 
-Create `server.py`:
+Create `server.py` (or use policy-as-code: see [Policy-as-Code](#policy-as-code-bastionyaml) below):
 
 ```python
 from mcp.server.fastmcp import FastMCP
@@ -72,6 +72,27 @@ def add(a: int, b: int) -> int:
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")
 ```
+
+### Policy-as-Code (bastion.yaml)
+
+Use a single config file instead of code. Copy `bastion.yaml.example` to `bastion.yaml`, then:
+
+```python
+from mcp.server.fastmcp import FastMCP
+from mcp_bastion import build_middleware_from_config
+
+mcp = FastMCP("My Server")
+middleware = build_middleware_from_config()  # loads bastion.yaml
+
+@mcp.tool()
+def add(a: int, b: int) -> int:
+    return a + b
+
+if __name__ == "__main__":
+    mcp.run(transport="streamable-http")
+```
+
+See [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) and `examples/server_with_config.py`.
 
 ### TypeScript: New MCP Server
 
@@ -151,10 +172,10 @@ import { wrapWithMcpBastion } from "@mcp-bastion/core";
 const server = new Server({ ... });
 wrapWithMcpBastion(server, {
   enableRateLimit: true,
-  sidecarUrl: process.env.MCP_BASTION_SIDECAR || "",
-  enablePromptGuard: !!process.env.MCP_BASTION_SIDECAR,
-  enablePiiRedaction: !!process.env.MCP_BASTION_SIDECAR,
+  enablePromptGuard: true,
+  enablePiiRedaction: true,
 });
+// Set MCP_BASTION_URL to sidecar URL (e.g. http://localhost:8000) for prompt/PII. Omit for rate limit only.
 // ... rest of your server
 ```
 
@@ -211,6 +232,7 @@ All files in `examples/`:
 | `examples/llm_gemini_example.py` | Gemini (CLI, AI Studio) |
 | `examples/llm_mistral_example.py` | Mistral (Agents SDK) |
 | `examples/llm_grok_example.py` | Grok (xAI, HTTP only) |
+| `examples/server_with_config.py` | Policy-as-code (bastion.yaml) |
 
 **Quick run:**
 
@@ -339,9 +361,9 @@ See `examples/full_demo.py` for a complete demo of all features.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `enableRateLimit` | `True` | Enforce iteration and timeout caps |
-| `enablePromptGuard` | `False` | Requires `sidecarUrl` |
-| `enablePiiRedaction` | `False` | Requires `sidecarUrl` |
-| `sidecarUrl` | `""` | Python sidecar URL for ML features |
+| `sidecarUrl` | (none) | Sidecar URL; falls back to env MCP_BASTION_URL |
+| `enablePromptGuard` | `False` | Requires sidecar (sidecarUrl or MCP_BASTION_URL) |
+| `enablePiiRedaction` | `False` | Requires sidecar |
 | `maxIterations` | `15` | Max tool calls per session |
 | `timeoutMs` | `60000` | Session timeout (ms) |
 | `setLogLevel` | - | TypeScript: `"debug"` \| `"info"` \| `"warn"` \| `"error"` |
@@ -515,10 +537,10 @@ Covers: build, prompt injection, PII redaction, rate limiting (16 calls), latenc
 
 ```bash
 cd MCP-Bastion
-pytest tests/ -v --tb=short
+$env:PYTHONPATH="src"; pytest tests/ -v --tb=short
 ```
 
-Expected: 5 passed.
+All tests should pass.
 
 ### Run TypeScript Tests
 

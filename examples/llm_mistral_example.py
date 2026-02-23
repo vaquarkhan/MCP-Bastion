@@ -1,6 +1,5 @@
 """
 Mistral + MCP-Bastion Example
-Author: Viquar Khan
 
 Use with Mistral Agents SDK (MCPClientSTDIO).
 Config: docs/LLM_INTEGRATION.md

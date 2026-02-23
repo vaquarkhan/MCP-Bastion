@@ -1,6 +1,5 @@
 """
 Grok (xAI) + MCP-Bastion Example
-Author: Viquar Khan
 
 Grok only supports remote MCP (HTTP/SSE). This starts the HTTP server.
 Use with xAI SDK: mcp(server_url="http://localhost:8000/mcp")

@@ -1,6 +1,5 @@
 """
 MCP server with MCP-Bastion for OpenAI, Claude, Gemini, Mistral, Grok.
-Author: Viquar Khan
 
 Run:
   cd MCP-Bastion

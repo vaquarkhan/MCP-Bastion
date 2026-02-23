@@ -37,12 +37,20 @@ function createMcpError(code: number, message: string): CallToolResult {
   };
 }
 
+/** Resolve sidecar base URL from options or env MCP_BASTION_URL. */
+function getSidecarUrl(opts: Required<McpBastionOptions>): string {
+  if (opts.sidecarUrl) return opts.sidecarUrl;
+  if (typeof process !== "undefined" && process.env?.MCP_BASTION_URL)
+    return process.env.MCP_BASTION_URL;
+  return "";
+}
+
 async function callSidecar(
-  url: string,
+  baseUrl: string,
   endpoint: "prompt-guard" | "pii-redact",
   payload: unknown
 ): Promise<unknown> {
-  const res = await fetch(`${url}/${endpoint}`, {
+  const res = await fetch(`${baseUrl}/${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -64,6 +72,7 @@ export function wrapCallToolHandler(
   options: McpBastionOptions = {}
 ): CallToolHandler {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const sidecarUrl = getSidecarUrl(opts);
   const rateLimiter = new TokenBucketRateLimiter(
     opts.maxIterations,
     opts.timeoutMs
@@ -84,12 +93,12 @@ export function wrapCallToolHandler(
       }
     }
 
-    if (opts.enablePromptGuard && opts.sidecarUrl) {
+    if (opts.enablePromptGuard && sidecarUrl) {
       try {
         const args = request.params?.arguments ?? {};
         const text = JSON.stringify(args);
         const result = (await callSidecar(
-          opts.sidecarUrl,
+          sidecarUrl,
           "prompt-guard",
           { text }
         )) as { malicious?: boolean };
@@ -110,10 +119,10 @@ export function wrapCallToolHandler(
 
     let result = await handler(request);
 
-    if (opts.enablePiiRedaction && opts.sidecarUrl && result?.content) {
+    if (opts.enablePiiRedaction && sidecarUrl && result?.content) {
       try {
         const redacted = (await callSidecar(
-          opts.sidecarUrl,
+          sidecarUrl,
           "pii-redact",
           { content: result.content }
         )) as { content?: CallToolResult["content"] };
@@ -135,14 +144,15 @@ export function wrapReadResourceHandler(
   options: McpBastionOptions = {}
 ): ReadResourceHandler {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const sidecarUrl = getSidecarUrl(opts);
 
   return async (request: ReadResourceRequest): Promise<ReadResourceResult> => {
     const result = await handler(request);
 
-    if (opts.enablePiiRedaction && opts.sidecarUrl && result?.contents) {
+    if (opts.enablePiiRedaction && sidecarUrl && result?.contents) {
       try {
         const redacted = (await callSidecar(
-          opts.sidecarUrl,
+          sidecarUrl,
           "pii-redact",
           { content: result.contents }
         )) as { content?: ReadResourceResult["contents"] };

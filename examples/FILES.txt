@@ -1,5 +1,4 @@
 MCP-Bastion examples - all Python files
-Author: Viquar Khan
 
 examples/python_server_example.py
 examples/full_demo.py
