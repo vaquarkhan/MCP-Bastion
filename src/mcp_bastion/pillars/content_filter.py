@@ -1,0 +1,123 @@
+"""
+Content filtering beyond PII for MCP-Bastion.
+
+Block/flag code execution, file paths, URLs, and custom patterns.
+"""
+
+from __future__ import annotations
+
+import logging
+import re
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+# Default patterns
+DEFAULT_CODE_PATTERNS = [
+    r"```[\s\S]*?```",  # Markdown code blocks
+    r"`[^`]+`",  # Inline code
+    r"eval\s*\(",
+    r"exec\s*\(",
+    r"__import__\s*\(",
+    r"subprocess\.(run|call|Popen)",
+    r"os\.system\s*\(",
+    r"shell\s*=\s*True",
+]
+
+DEFAULT_PATH_PATTERNS = [
+    r"(?:^|[\s/\\])(?:/etc/|/var/|/usr/|C:\\|/root/|~/)",
+    r"(?:^|[\s/\\])\.\./",  # Path traversal
+    r"(?:^|[\s/\\])\.\.\\",
+    r"/etc/passwd",
+    r"/etc/shadow",
+    r"\.env",
+]
+
+DEFAULT_URL_PATTERN = r"https?://[^\s]+"
+
+
+from mcp_bastion.errors import ContentFilterError
+
+
+class ContentFilter:
+    """
+    Block/flag specific content types in tool arguments.
+
+    Use for preventing code injection, path traversal, URL exfiltration.
+    """
+
+    def __init__(
+        self,
+        *,
+        block_code_execution: bool = True,
+        block_file_paths: bool = True,
+        block_urls: bool = False,
+        custom_patterns: list[str] | None = None,
+    ) -> None:
+        self.block_code_execution = block_code_execution
+        self.block_file_paths = block_file_paths
+        self.block_urls = block_urls
+        self.custom_patterns = custom_patterns or []
+
+        self._code_regexes = [re.compile(p, re.IGNORECASE) for p in DEFAULT_CODE_PATTERNS]
+        self._path_regexes = [re.compile(p) for p in DEFAULT_PATH_PATTERNS]
+        self._url_regex = re.compile(DEFAULT_URL_PATTERN)
+        self._custom_regexes = [re.compile(p) for p in self.custom_patterns]
+
+    def _extract_text(self, value: Any) -> str:
+        """Flatten value to string for scanning."""
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value
+        if isinstance(value, (int, float, bool)):
+            return str(value)
+        if isinstance(value, dict):
+            return " ".join(self._extract_text(v) for v in value.values())
+        if isinstance(value, (list, tuple)):
+            return " ".join(self._extract_text(v) for v in value)
+        return str(value)
+
+    def check(self, text: str | dict | list | None) -> None:
+        """
+        Check content. Raises ContentFilterError if blocked.
+        Accepts string or nested structure (flattened for scanning).
+        """
+        flat = self._extract_text(text)
+        if not flat or not flat.strip():
+            return
+        text = flat
+
+        if self.block_code_execution:
+            for rx in self._code_regexes:
+                if rx.search(text):
+                    logger.warning("content_filter blocked code_execution pattern=%s", rx.pattern)
+                    raise ContentFilterError(
+                        "Content blocked: potential code execution",
+                        matched_pattern=rx.pattern,
+                    )
+
+        if self.block_file_paths:
+            for rx in self._path_regexes:
+                if rx.search(text):
+                    logger.warning("content_filter blocked file_path pattern=%s", rx.pattern)
+                    raise ContentFilterError(
+                        "Content blocked: suspicious file path",
+                        matched_pattern=rx.pattern,
+                    )
+
+        if self.block_urls:
+            if self._url_regex.search(text):
+                logger.warning("content_filter blocked url")
+                raise ContentFilterError(
+                    "Content blocked: URL not allowed",
+                    matched_pattern=DEFAULT_URL_PATTERN,
+                )
+
+        for rx in self._custom_regexes:
+            if rx.search(text):
+                logger.warning("content_filter blocked custom pattern=%s", rx.pattern)
+                raise ContentFilterError(
+                    "Content blocked: custom pattern matched",
+                    matched_pattern=rx.pattern,
+                )

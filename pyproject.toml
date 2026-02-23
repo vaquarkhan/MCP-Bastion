@@ -54,3 +54,14 @@ include = ["src/mcp_bastion"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.coverage.run]
+source = ["src/mcp_bastion"]
+omit = [
+    "*/pii_redaction.py",
+    "*/prompt_guard.py",
+]
+
+[tool.coverage.report]
+fail_under = 99
+exclude_lines = ["pragma: no cover"]

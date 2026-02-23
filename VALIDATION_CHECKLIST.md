@@ -1,6 +1,21 @@
 # MCP-Bastion Enterprise Validation Checklist
 
+Author: Viquar Khan
+
 Validates build, security pillars (prompt injection, PII redaction, rate limiting), and latency. See `SETUP_GUIDE.md` for setup and `examples/README.md` for demos.
+
+## Example Files
+
+All Python files in `examples/`:
+
+- `examples/python_server_example.py` - Minimal middleware
+- `examples/full_demo.py` - All 11 features
+- `examples/llm_server.py` - Shared LLM server
+- `examples/llm_openai_example.py` - OpenAI
+- `examples/llm_claude_example.py` - Claude
+- `examples/llm_gemini_example.py` - Gemini
+- `examples/llm_mistral_example.py` - Mistral
+- `examples/llm_grok_example.py` - Grok (xAI)
 
 Run the automated validation:
 

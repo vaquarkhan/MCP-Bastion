@@ -1,5 +1,6 @@
 """
 Example: MCP server with MCP-Bastion middleware.
+Author: Viquar Khan
 
 Run:
   cd MCP-Bastion
