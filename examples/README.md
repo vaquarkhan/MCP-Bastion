@@ -2,26 +2,41 @@
 
 Python examples demonstrating MCP-Bastion middleware integration.
 
+Author: Viquar Khan
+
+---
+
+## Files in examples/
+
+All Python files in this folder:
+
+| File | Purpose |
+|------|---------|
+| `examples/python_server_example.py` | Minimal middleware chain |
+| `examples/full_demo.py` | All features demo (11 scenarios) |
+| `examples/llm_server.py` | Shared MCP server for LLM clients |
+| `examples/llm_openai_example.py` | OpenAI (ChatGPT, API, Agents SDK) |
+| `examples/llm_claude_example.py` | Claude (Desktop, Code, API) |
+| `examples/llm_gemini_example.py` | Gemini (CLI, AI Studio) |
+| `examples/llm_mistral_example.py` | Mistral (Agents SDK) |
+| `examples/llm_grok_example.py` | Grok (xAI, HTTP only) |
+
+---
+
 ## Prerequisites
 
 ```bash
 cd MCP-Bastion
-pip install mcp-bastion-python
-# For full demo (PII, prompt injection): pip install torch presidio-analyzer presidio-anonymizer
+pip install mcp mcp-bastion-python
+# For PII redaction: pip install presidio-analyzer presidio-anonymizer
 # python -m spacy download en_core_web_sm
 ```
 
-## Examples
+---
 
-### 1. python_server_example.py
+## Example 1: python_server_example.py
 
-**Purpose:** Minimal middleware chain setup.
-
-Shows how to:
-- Create `MCPBastionMiddleware` with all three pillars enabled
-- Extend `Middleware` to add custom `LoggingMiddleware`
-- Compose with `compose_middleware(bastion, LoggingMiddleware())`
-- Wire the chain into your MCP server
+Minimal middleware chain setup. Shows how to create `MCPBastionMiddleware` and compose with custom middleware.
 
 **Run:**
 
@@ -30,22 +45,38 @@ $env:PYTHONPATH="src"; python examples/python_server_example.py   # Windows
 PYTHONPATH=src python examples/python_server_example.py          # Linux/Mac
 ```
 
-**Output:** Middleware chain created; ready to wire into your server.
+**Code snippet:**
+
+```python
+from mcp_bastion import MCPBastionMiddleware, compose_middleware
+
+bastion = MCPBastionMiddleware(
+    enable_prompt_guard=True,
+    enable_pii_redaction=True,
+    enable_rate_limit=True,
+)
+middleware = compose_middleware(bastion, LoggingMiddleware())
+```
 
 ---
 
-### 2. full_demo.py
+## Example 2: full_demo.py
 
-**Purpose:** End-to-end demo of all MCP-Bastion features.
+End-to-end demo of all MCP-Bastion features. Runs 11 scenarios:
 
-Runs four scenarios:
-
-| Demo | Description | Result |
-|------|-------------|--------|
-| 1 | Benign tool call `add(2, 3)` | Returns `5` |
-| 2 | PII tool `get_profile` returns SSN, email | Redacted when Presidio installed |
-| 3 | 6 rapid calls (limit 5) | 6th call blocked with `RateLimitExceededError` |
-| 4 | Adversarial payload in tool args | Blocked with `PromptInjectionError` when torch installed |
+| # | Feature | What it demonstrates |
+|---|---------|------------------------|
+| 1 | Allowed tool call | add(2, 3) succeeds |
+| 2 | PII redaction | get_profile returns masked SSN, email |
+| 3 | Rate limit | 6th call blocked at 5-iteration limit |
+| 4 | Prompt injection | Malicious prompt blocked (needs torch) |
+| 5 | Content filter | /etc/passwd path blocked |
+| 6 | Circuit breaker | 4th failure opens circuit |
+| 7 | RBAC | Viewer cannot call write tool |
+| 8 | Schema validation | Missing arg b blocked |
+| 9 | Replay guard | Duplicate nonce blocked |
+| 10 | Cost tracker | Over-budget session blocked |
+| 11 | Semantic cache | Similar query returns cached result |
 
 **Run:**
 
@@ -54,18 +85,77 @@ $env:PYTHONPATH="src"; python examples/full_demo.py   # Windows
 PYTHONPATH=src python examples/full_demo.py          # Linux/Mac
 ```
 
-**Config:** Custom `TokenBucketRateLimiter(max_iterations=5, timeout_seconds=30)` for quick demo.
-
 **Full deps for PII and prompt injection:**
 
 ```bash
-pip install mcp-bastion-python torch presidio-analyzer presidio-anonymizer spacy
+pip install mcp-bastion-python torch presidio-analyzer presidio-anonymizer
 python -m spacy download en_core_web_sm
 ```
 
 ---
 
+## Example 3: LLM Integration
+
+Shared server: `llm_server.py`. Entry points per LLM:
+
+| File | LLM | Transport | Run |
+|------|-----|-----------|-----|
+| `examples/llm_openai_example.py` | OpenAI | stdio, HTTP | `python examples/llm_openai_example.py` |
+| `examples/llm_claude_example.py` | Claude | stdio, HTTP | `python examples/llm_claude_example.py` |
+| `examples/llm_gemini_example.py` | Gemini | stdio, HTTP | `python examples/llm_gemini_example.py` |
+| `examples/llm_mistral_example.py` | Mistral | stdio, HTTP | `python examples/llm_mistral_example.py` |
+| `examples/llm_grok_example.py` | Grok (xAI) | HTTP only | `python examples/llm_grok_example.py` |
+
+**HTTP mode:** Add `--http 8000` to any example (except Grok, which defaults to HTTP on port 8000).
+
+**Config:** See [docs/LLM_INTEGRATION.md](../docs/LLM_INTEGRATION.md) for copy-paste config for each LLM.
+
+**Quick run (Windows):**
+
+```bash
+cd MCP-Bastion
+$env:PYTHONPATH="src"
+python examples/llm_openai_example.py
+python examples/llm_claude_example.py
+python examples/llm_gemini_example.py
+python examples/llm_mistral_example.py
+python examples/llm_grok_example.py
+```
+
+**Quick run (Linux/Mac):**
+
+```bash
+cd MCP-Bastion
+export PYTHONPATH=src
+python examples/llm_openai_example.py
+python examples/llm_claude_example.py
+python examples/llm_gemini_example.py
+python examples/llm_mistral_example.py
+python examples/llm_grok_example.py
+```
+
+---
+
+## All Features (from full_demo.py)
+
+| Feature | Module | Description |
+|---------|--------|-------------|
+| Prompt injection | prompt_guard | Block jailbreaks, adversarial prompts |
+| PII redaction | pii_redaction | Mask SSN, email, phone, etc. |
+| Rate limiting | rate_limit | Max iterations, timeout, token budget |
+| Audit logging | audit_log | Log who, what, when, blocked/allowed |
+| Content filter | content_filter | Block paths, code, custom patterns |
+| Circuit breaker | circuit_breaker | Disable failing tools after N failures |
+| RBAC | rbac | Tool-level permissions by role |
+| Schema validation | schema_validation | Validate tool input types |
+| Replay guard | replay_guard | Block duplicate nonces |
+| Cost tracker | cost_tracker | Per-session cost budget |
+| Semantic cache | semantic_cache | Cache similar queries |
+
+---
+
 ## Next Steps
 
+- [docs/LLM_INTEGRATION.md](../docs/LLM_INTEGRATION.md) – Config for OpenAI, Claude, Gemini, Mistral, Grok
 - [VALIDATION_CHECKLIST.md](../VALIDATION_CHECKLIST.md) – Run enterprise validation
-- [SETUP_GUIDE.md](../SETUP_GUIDE.md) – Full config and LLM integration
+- [SETUP_GUIDE.md](../SETUP_GUIDE.md) – Full config and customization

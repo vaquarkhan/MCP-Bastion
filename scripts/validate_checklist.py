@@ -1,5 +1,6 @@
 """
 MCP-Bastion Enterprise Validation Checklist.
+Author: Viquar Khan
 
 Runs automated tests for:
 1. Build and installation
