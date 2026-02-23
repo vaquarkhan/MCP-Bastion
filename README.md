@@ -1,6 +1,6 @@
 # MCP-Bastion
 
-<!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
+mcp-name: io.github.vaquarkhan/mcp-bastion
 
 **Enterprise-Grade Security Middleware for the Model Context Protocol**
 
