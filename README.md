@@ -4,9 +4,7 @@ mcp-name: io.github.vaquarkhan/mcp-bastion
 
 **Enterprise-Grade Security Middleware for the Model Context Protocol**
 
-**Author:** Viquar Khan
-
-> Releases are published automatically to npm and PyPI via GitHub Actions when tags are pushed.
+> Releases are published to npm and PyPI via GitHub Actions on tag push.
 
 The Model Context Protocol (MCP) has rapidly become the universally accepted standard for connecting AI agents to enterprise databases and APIs. However, this connectivity introduces a massive new attack surface: unpredictable, non-deterministic agentic behavior.
 
@@ -64,6 +62,50 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | Cost tracker | Per-session cost budget |
 | Semantic cache | Cache similar queries |
 
+### Real-Time Dashboard and Alerts
+
+- **Dashboard:** Run the optional dashboard (`dashboard/app.py`) for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
+- **Metrics API:** `GET /api/metrics` (JSON) and `GET /metrics` (Prometheus) for Grafana/Datadog.
+- **Alerts:** Slack webhook and cost-threshold alerts. See [dashboard/README.md](dashboard/README.md).
+
+### One-Line Docker
+
+```bash
+docker build -t mcp-bastion/proxy .
+docker run -p 8080:8080 mcp-bastion/proxy
+```
+
+MCP endpoint: `http://localhost:8080/mcp`. Use `docker-compose up -d` for proxy; add `--profile with-dashboard` for the dashboard. See [DOCKER.md](DOCKER.md).
+
+### Policy-as-Code (bastion.yaml)
+
+Single config file controls all pillars. Copy `bastion.yaml.example` to `bastion.yaml`, then:
+
+```python
+from mcp_bastion import build_middleware_from_config
+middleware = build_middleware_from_config()
+```
+
+See [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md).
+
+### CLI for developers
+
+```bash
+mcp-bastion validate              # validate bastion.yaml
+mcp-bastion serve --http 8080     # run MCP server with config
+mcp-bastion dashboard --port 7000 # run metrics dashboard
+```
+
+See [docs/CLI.md](docs/CLI.md).
+
+### OpenTelemetry
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` to export tool-call spans to OTLP. Install optional deps: `pip install mcp-bastion-python[otel]`. See [docs/OTEL.md](docs/OTEL.md).
+
+### Webhook alerts
+
+Use Slack webhook, a single generic webhook (`webhook_url` or `BASTION_WEBHOOK_URL`), or multiple URLs (`alerts.webhooks` in bastion.yaml). Each blocked event can POST to your endpoint (e.g. PagerDuty, custom API).
+
 ---
 
 ## Why MCP-Bastion (Competitive Comparison)
@@ -101,11 +143,14 @@ Early security packages (mcp-guardian, mcp-shield) focus on logging or static sc
 | Path | Description |
 |------|-------------|
 | `src/mcp_bastion/` | Python package: PromptGuard, Presidio, rate limiting, RBAC, etc. |
-| `packages/core/` | TypeScript package: rate limiting; ML via Python sidecar |
+| `packages/core/` | TypeScript package: rate limiting in-process; prompt/PII via sidecar (MCP_BASTION_URL) |
 | `examples/` | Python examples ([examples/README.md](examples/README.md)) |
+| `dashboard/` | Real-time dashboard UI and metrics API ([dashboard/README.md](dashboard/README.md)) |
+| `bastion.yaml.example` | Policy-as-code sample; copy to `bastion.yaml` ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)) |
 | `scripts/validate_checklist.py` | Enterprise validation runner |
 | `VALIDATION_CHECKLIST.md` | Validation guide and MCP Inspector steps |
 | `SETUP_GUIDE.md` | Setup, config, and validation |
+| `DOCKER.md` | Docker one-line run and compose |
 
 ### Example Files
 
@@ -119,6 +164,7 @@ Early security packages (mcp-guardian, mcp-shield) focus on logging or static sc
 | `examples/llm_gemini_example.py` | Gemini |
 | `examples/llm_mistral_example.py` | Mistral |
 | `examples/llm_grok_example.py` | Grok (xAI) |
+| `examples/server_with_config.py` | Policy-as-code (bastion.yaml) |
 
 ## Installation
 
@@ -137,6 +183,12 @@ npm install @mcp-bastion/core
 ```
 
 [npm](https://www.npmjs.com/package/@mcp-bastion/core)
+
+## Publish (PyPI / npm)
+
+- **PyPI:** `python -m build && twine upload dist/*` (or use GitHub Actions on tag).
+- **npm:** From repo root, `cd packages/core && npm publish --access public` (or use Trusted Publishers).
+- Version is set in `pyproject.toml` (Python), `packages/core/package.json` (npm), and `server.json` (MCP registry). Bump before releasing.
 
 ## Developer Guide
 
@@ -250,6 +302,17 @@ MCP-Bastion:
 - Scans tool args for prompt injection
 - Redacts PII from resource responses
 - Blocks sessions over 15 calls or 60s
+
+**Alternative: Policy-as-Code**
+
+Use `bastion.yaml` instead of code. Copy `bastion.yaml.example` to `bastion.yaml`, then:
+
+```python
+from mcp_bastion import build_middleware_from_config
+middleware = build_middleware_from_config()
+```
+
+See [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) and `examples/server_with_config.py`.
 
 ---
 

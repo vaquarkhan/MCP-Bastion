@@ -1,0 +1,54 @@
+# MCP-Bastion policy-as-code (single config file)
+# Copy to bastion.yaml and customize. Load via load_config() or env BASTION_CONFIG.
+
+prompt_guard:
+  enabled: true
+
+pii:
+  enabled: true
+
+rate_limit:
+  enabled: true
+  max_iterations: 15
+  timeout_seconds: 60
+  token_budget: 50000
+
+circuit_breaker:
+  enabled: false
+
+content_filter:
+  enabled: false
+
+rbac:
+  enabled: false
+  permissions:
+    default: ["*"]
+    analyst: ["read_data", "query"]
+    admin: ["*"]
+
+schema_validation:
+  enabled: false
+
+replay_guard:
+  enabled: false
+  require_nonce: false
+
+cost_tracker:
+  enabled: false
+  max_cost_per_session: 0.50
+  max_cost_per_day: 10.0
+
+semantic_cache:
+  enabled: false
+
+audit:
+  enabled: true
+
+alerts:
+  slack_webhook: ${SLACK_WEBHOOK_URL}
+  webhook_url: ${BASTION_WEBHOOK_URL}
+  webhooks: []
+  alert_on:
+    - injection
+    - rate_limit
+    - cost

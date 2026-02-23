@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-python"
-version = "1.0.7"
+version = "1.0.8"
 description = "Security middleware for MCP servers protecting LLM agents from prompt injection, resource exhaustion, and PII leakage"
 readme = "README.md"
 license = "MIT"
@@ -38,11 +38,26 @@ dev = [
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
 ]
+policy = [
+    "pyyaml>=6.0",
+]
+dashboard = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.22.0",
+]
+otel = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.20.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/mcp-bastion/mcp-bastion"
 Repository = "https://github.com/mcp-bastion/mcp-bastion"
 Documentation = "https://github.com/mcp-bastion/mcp-bastion#readme"
+
+[project.scripts]
+mcp-bastion = "mcp_bastion.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_bastion"]

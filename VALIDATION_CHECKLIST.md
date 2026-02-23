@@ -1,7 +1,5 @@
 # MCP-Bastion Enterprise Validation Checklist
 
-Author: Viquar Khan
-
 Validates build, security pillars (prompt injection, PII redaction, rate limiting), and latency. See `SETUP_GUIDE.md` for setup and `examples/README.md` for demos.
 
 ## Example Files
@@ -16,6 +14,7 @@ All Python files in `examples/`:
 - `examples/llm_gemini_example.py` - Gemini
 - `examples/llm_mistral_example.py` - Mistral
 - `examples/llm_grok_example.py` - Grok (xAI)
+- `examples/server_with_config.py` - Policy-as-code (bastion.yaml)
 
 Run the automated validation:
 
@@ -35,6 +34,21 @@ PYTHONPATH=src python scripts/validate_checklist.py          # Linux/Mac
 | 4 | **Security Pillar 2: PII Redaction** | Yes | SSN, email, card masked (needs presidio) |
 | 5 | **Security Pillar 3: Rate Limiting** | Yes | 16th call blocked at 15 limit |
 | 6 | **Latency Benchmarking** | Yes | Proxy overhead < 5ms (excl. ML) |
+
+## Test coverage
+
+Python: run with coverage (fail_under set in pyproject.toml):
+
+```bash
+cd MCP-Bastion
+$env:PYTHONPATH="src"; pytest tests/ -v --cov=src/mcp_bastion --cov-report=term-missing --cov-fail-under=99
+```
+
+Omitted from coverage: optional paths in pii_redaction and prompt_guard. TypeScript:
+
+```bash
+npm run test --workspace=@mcp-bastion/core
+```
 
 ## 2. Protocol Interception (Manual)
 

@@ -1,14 +1,24 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+*.egg
 dist/
 build/
 .eggs/
 node_modules/
 *.log
 .env
+.env.local
+.env.*.local
 .venv/
 venv/
 .DS_Store
 *.tsbuildinfo
 .coverage
+htmlcov/
+coverage.xml
+.pytest_cache/
+.mypy_cache/
+# Local config (optional: remove to track bastion.yaml)
+# bastion.yaml
+

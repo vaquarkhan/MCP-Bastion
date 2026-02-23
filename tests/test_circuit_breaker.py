@@ -57,8 +57,18 @@ def test_circuit_breaker_reset_all():
     with pytest.raises(CircuitBreakerOpenError):
         cb.check("a")
     cb.reset()
+    assert len(cb._circuits) == 0
     cb.check("a")
     cb.check("b")
+
+
+def test_circuit_breaker_reset_none_clears_all():
+    """Explicitly cover reset(None) branch (else: self._circuits.clear())."""
+    cb = CircuitBreaker(failure_threshold=2, recovery_timeout=10.0)
+    cb.record_failure("x")
+    cb.record_failure("y")
+    cb.reset(None)
+    assert len(cb._circuits) == 0
 
 
 def test_circuit_breaker_unknown_tool_default():

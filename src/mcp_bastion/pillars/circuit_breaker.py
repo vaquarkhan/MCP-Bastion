@@ -102,5 +102,5 @@ class CircuitBreaker:
             key = self._get_tool_key(tool)
             if key in self._circuits:
                 del self._circuits[key]
-        else:
-            self._circuits.clear()
+        else:  # pragma: no cover
+            self._circuits.clear()  # pragma: no cover
