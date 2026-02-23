@@ -180,6 +180,8 @@ uv add mcp-bastion-python
 npm install @mcp-bastion/core
 ```
 
+[npm](https://www.npmjs.com/package/@mcp-bastion/core)
+
 ### From Source (Development)
 
 ```bash

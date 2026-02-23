@@ -136,6 +136,8 @@ pip install mcp-bastion-python
 npm install @mcp-bastion/core
 ```
 
+[npm](https://www.npmjs.com/package/@mcp-bastion/core)
+
 ## Developer Guide
 
 Integration examples for Python and TypeScript.
