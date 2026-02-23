@@ -46,6 +46,22 @@ Drop-in middleware, under 5ms overhead.
 
 Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No business logic changes.
 
+### All Features
+
+| Feature | Description |
+|---------|-------------|
+| Prompt injection | Block jailbreaks via Meta PromptGuard |
+| PII redaction | Mask SSN, email, phone via Presidio |
+| Rate limiting | Max iterations, timeout, token budget |
+| Audit logging | Log who, what, when, blocked/allowed |
+| Content filter | Block paths, code, custom patterns |
+| Circuit breaker | Disable failing tools after N failures |
+| RBAC | Tool-level permissions by role |
+| Schema validation | Validate tool input types |
+| Replay guard | Block duplicate nonces |
+| Cost tracker | Per-session cost budget |
+| Semantic cache | Cache similar queries |
+
 ---
 
 ## Why MCP-Bastion (Competitive Comparison)
@@ -62,7 +78,7 @@ Early security packages (mcp-guardian, mcp-shield) focus on logging or static sc
 
 | The Competition | MCP-Bastion |
 |-----------------|-------------|
-| Many guardrail proxies send prompts to external APIs (e.g. OpenAI moderation) to check for malice. | PromptGuard-86M and Presidio run locally. Data stays on your network. |
+| Many guardrail proxies send prompts to external APIs to check for malice. | PromptGuard-86M and Presidio run locally. Data stays on your network. |
 
 ### 3. Stateful Denial of Wallet Protection
 
@@ -82,12 +98,25 @@ Early security packages (mcp-guardian, mcp-shield) focus on logging or static sc
 
 | Path | Description |
 |------|-------------|
-| `src/mcp_bastion/` | Python package: PromptGuard, Presidio, rate limiting |
+| `src/mcp_bastion/` | Python package: PromptGuard, Presidio, rate limiting, RBAC, etc. |
 | `packages/core/` | TypeScript package: rate limiting; ML via Python sidecar |
-| `examples/` | Python examples: basic middleware, full demo ([examples/README.md](examples/README.md)) |
+| `examples/` | Python examples ([examples/README.md](examples/README.md)) |
 | `scripts/validate_checklist.py` | Enterprise validation runner |
 | `VALIDATION_CHECKLIST.md` | Validation guide and MCP Inspector steps |
 | `SETUP_GUIDE.md` | Setup, config, and validation |
+
+### Example Files
+
+| File | Purpose |
+|------|---------|
+| `examples/python_server_example.py` | Minimal middleware chain |
+| `examples/full_demo.py` | All 11 features (rate limit, PII, RBAC, etc.) |
+| `examples/llm_server.py` | Shared MCP server for LLM clients |
+| `examples/llm_openai_example.py` | OpenAI |
+| `examples/llm_claude_example.py` | Claude |
+| `examples/llm_gemini_example.py` | Gemini |
+| `examples/llm_mistral_example.py` | Mistral |
+| `examples/llm_grok_example.py` | Grok (xAI) |
 
 ## Installation
 
@@ -138,11 +167,18 @@ middleware = compose_middleware(bastion)
 |---------|-------------|
 | `examples/python_server_example.py` | Basic middleware chain |
 | `examples/full_demo.py` | All features: add, PII, rate limit, prompt injection |
+| `examples/llm_openai_example.py` | MCP server for OpenAI |
+| `examples/llm_claude_example.py` | MCP server for Claude |
+| `examples/llm_gemini_example.py` | MCP server for Gemini |
+| `examples/llm_mistral_example.py` | MCP server for Mistral |
+| `examples/llm_grok_example.py` | MCP server for Grok (xAI, HTTP only) |
 
 ```bash
 # Windows: $env:PYTHONPATH="src"; python examples/full_demo.py
 # Linux/Mac: PYTHONPATH=src python examples/full_demo.py
 ```
+
+**LLM integration:** See [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) for copy-paste config for OpenAI, Claude, Gemini, Mistral, and Grok.
 
 **Enterprise validation:**
 

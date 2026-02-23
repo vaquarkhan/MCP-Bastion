@@ -197,10 +197,18 @@ npm run build --workspace=@mcp-bastion/core
 
 ## Examples
 
-| Example | Purpose |
-|---------|---------|
-| `examples/python_server_example.py` | Minimal middleware chain and middleware composition |
-| `examples/full_demo.py` | All features: allowed tool call, PII redaction, rate limit (5 calls), prompt injection |
+All files in `examples/`:
+
+| File | Purpose |
+|------|---------|
+| `examples/python_server_example.py` | Minimal middleware chain |
+| `examples/full_demo.py` | All 11 features (rate limit, PII, RBAC, circuit breaker, etc.) |
+| `examples/llm_server.py` | Shared MCP server for LLM clients |
+| `examples/llm_openai_example.py` | OpenAI (ChatGPT, API, Agents SDK) |
+| `examples/llm_claude_example.py` | Claude (Desktop, Code, API) |
+| `examples/llm_gemini_example.py` | Gemini (CLI, AI Studio) |
+| `examples/llm_mistral_example.py` | Mistral (Agents SDK) |
+| `examples/llm_grok_example.py` | Grok (xAI, HTTP only) |
 
 **Quick run:**
 
@@ -208,28 +216,28 @@ npm run build --workspace=@mcp-bastion/core
 cd MCP-Bastion
 $env:PYTHONPATH="src"; python examples/python_server_example.py   # Windows
 $env:PYTHONPATH="src"; python examples/full_demo.py               # Windows
+$env:PYTHONPATH="src"; python examples/llm_openai_example.py       # OpenAI
+$env:PYTHONPATH="src"; python examples/llm_claude_example.py      # Claude
+$env:PYTHONPATH="src"; python examples/llm_gemini_example.py      # Gemini
+$env:PYTHONPATH="src"; python examples/llm_mistral_example.py      # Mistral
+$env:PYTHONPATH="src"; python examples/llm_grok_example.py        # Grok (HTTP)
 # Linux/Mac: PYTHONPATH=src python examples/...
 ```
 
-**Full demo scenarios:**
-
-1. **Demo 1 – Allowed:** `add(2, 3)` returns `5`
-2. **Demo 2 – PII redaction:** `get_profile` returns text with SSN/email; Presidio redacts when installed
-3. **Demo 3 – Rate limit:** 6th call blocked (custom 5-iteration limit)
-4. **Demo 4 – Prompt injection:** Malicious payload blocked when PromptGuard (torch) is available
+**LLM config:** See [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) for copy-paste config for OpenAI, Claude, Gemini, Mistral, and Grok.
 
 See `examples/README.md` for details.
 
 ---
 
-## LLM Integration
+## MCP Client Integration
 
-MCP-Bastion wraps your MCP server. The LLM client (Claude, GPT, etc.) connects to your MCP server. MCP-Bastion sits in the middle.
+MCP-Bastion wraps your MCP server. The MCP client connects to your MCP server. MCP-Bastion sits in the middle.
 
 ### Architecture
 
 ```
-LLM Client (Claude Desktop, Cursor, etc.)
+MCP Client (IDE, desktop app)
     |
     v
 MCP Server (your code)
@@ -241,9 +249,9 @@ MCP-Bastion (middleware)
 Tools / Resources
 ```
 
-### Claude Desktop
+### Desktop MCP Client
 
-1. Add your server to Claude Desktop config:
+1. Add your server to the MCP client config:
 
 ```json
 {
@@ -269,13 +277,13 @@ Tools / Resources
 }
 ```
 
-### Cursor / VS Code
+### IDE Integration
 
 1. Add MCP server in settings.
 2. Point to your server command or URL.
 3. MCP-Bastion runs inside your server process.
 
-### Custom LLM Client
+### Custom MCP Client
 
 1. Start your MCP server (with MCP-Bastion).
 2. Connect via stdio (spawn process) or HTTP (SSE/Streamable).
@@ -288,6 +296,26 @@ Tools / Resources
 | stdio | Yes | Yes |
 | Streamable HTTP | Yes | Yes |
 | SSE | Yes | Yes |
+
+---
+
+## All Features
+
+| Feature | Module | Description |
+|---------|--------|-------------|
+| Prompt injection | prompt_guard | Block jailbreaks via Meta PromptGuard |
+| PII redaction | pii_redaction | Mask SSN, email, phone via Presidio |
+| Rate limiting | rate_limit | Max iterations, timeout, token budget |
+| Audit logging | audit_log | Log who, what, when, blocked/allowed |
+| Content filter | content_filter | Block paths, code, custom patterns |
+| Circuit breaker | circuit_breaker | Disable failing tools after N failures |
+| RBAC | rbac | Tool-level permissions by role |
+| Schema validation | schema_validation | Validate tool input types |
+| Replay guard | replay_guard | Block duplicate nonces |
+| Cost tracker | cost_tracker | Per-session cost budget |
+| Semantic cache | semantic_cache | Cache similar queries |
+
+See `examples/full_demo.py` for a complete demo of all features.
 
 ---
 
