@@ -11,15 +11,15 @@ git add -A
 git status
 
 # 4. Commit (include version bump)
-git commit -m "chore: bump version to 1.0.9 (PyPI, npm, server.json)
+git commit -m "chore: bump version to 1.0.11 (PyPI, npm, server.json)
 
 - pyproject.toml, src/mcp_bastion/__init__.py (Python/PyPI)
 - package.json, packages/core/package.json (npm)
 - server.json (MCP registry)"
 
 # 5. Tag for release
-git tag -a v1.0.9 -m "Release 1.0.9"
+git tag -a v1.0.11 -m "Release 1.0.11"
 
 # Push branch and tag
 # git push -u origin feature/dashboard-docs-and-error-handling
-# git push origin v1.0.9
+# git push origin v1.0.11
