@@ -85,7 +85,7 @@ describe("guard", () => {
     const result = await wrapped(mockToolRequest);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(handler).toHaveBeenCalled();
-    expect(result.content[0].text).toBe("3");
+    expect((result.content[0] as { type: string; text: string }).text).toBe("3");
   });
 
   it("returns error when prompt guard says malicious", async () => {
@@ -104,7 +104,7 @@ describe("guard", () => {
     const result = await wrapped(mockToolRequest);
     expect(handler).not.toHaveBeenCalled();
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain("prompt injection");
+    expect((result.content[0] as { type: string; text: string }).text).toContain("prompt injection");
   });
 
   it("wrapReadResourceHandler with sidecarUrl and PII redaction", async () => {
@@ -129,7 +129,7 @@ describe("guard", () => {
       "http://localhost:8000/pii-redact",
       expect.any(Object)
     );
-    expect(result.contents[0].text).toBe("redacted");
+    expect((result.contents[0] as { type?: string; text?: string }).text).toBe("redacted");
   });
 
   it("wrapWithMcpBastion patches setRequestHandler", () => {
