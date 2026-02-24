@@ -10,6 +10,11 @@
 | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) | bastion.yaml schema and load_config |
 | [CLI.md](CLI.md) | Developer CLI: validate, serve, dashboard |
 | [OTEL.md](OTEL.md) | OpenTelemetry span export |
+| [SECURITY.md](SECURITY.md) | OWASP-relevant mitigations, dependency audit, reporting |
+| [USE_CASES.md](USE_CASES.md) | Real use cases: enterprise gateway, LLM products, internal tools, SaaS, compliance |
+| [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) | How MCP-Bastion prevents real attacks (injection, PII, rate limit, path traversal, RBAC, replay) |
+| [METRICS.md](METRICS.md) | Performance overhead (&lt;5ms), effectiveness metrics, dashboard and Prometheus |
+| [TUTORIALS.md](TUTORIALS.md) | Integrating with popular MCP servers (FastMCP, TypeScript, GitHub MCP, open-source) |
 | [NOW_VS_FUTURE.md](NOW_VS_FUTURE.md) | Config and examples: MCP_BASTION_URL (implemented) |
 
 ## Root Docs
