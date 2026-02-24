@@ -64,8 +64,24 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 ### Real-Time Dashboard and Alerts
 
-- **Dashboard:** Run the optional dashboard (`dashboard/app.py`) for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
-- **Metrics API:** `GET /api/metrics` (JSON) and `GET /metrics` (Prometheus) for Grafana/Datadog.
+Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts:
+
+```bash
+mcp-bastion dashboard --port 7000
+# or: PYTHONPATH=src python dashboard/app.py
+```
+
+| URL | What it returns |
+|-----|-----------------|
+| [http://localhost:7000/](http://localhost:7000/) | Visual dashboard with charts (requests, blocked by reason, top tools, cost by user, recent alerts) |
+| [http://localhost:7000/api/metrics](http://localhost:7000/api/metrics) | JSON: `requests_total`, `blocked_total`, `blocked_pct`, `pii_redacted_total`, `cost_total`, `blocked_by_reason`, `top_tools`, `cost_by_user`, `alerts` |
+| [http://localhost:7000/api/health](http://localhost:7000/api/health) | `{"status": "ok"}` |
+| [http://localhost:7000/metrics](http://localhost:7000/metrics) | Prometheus text format for Grafana/Datadog |
+
+![MCP-Bastion Dashboard](docs/images/dashboard.png)
+
+*Dashboard: total requests, blocked count and %, PII redacted, cost; blocked-by-reason bars; top tools; cost by user; recent alerts.*
+
 - **Alerts:** Slack webhook and cost-threshold alerts. See [dashboard/README.md](dashboard/README.md).
 
 ### One-Line Docker
