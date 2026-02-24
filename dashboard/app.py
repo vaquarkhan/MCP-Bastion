@@ -31,18 +31,36 @@ app = FastAPI(title="MCP-Bastion Dashboard")
 
 @app.get("/api/metrics")
 def get_metrics():
-    return JSONResponse(MetricsStore.get().get_metrics())
+    try:
+        return JSONResponse(MetricsStore.get().get_metrics())
+    except Exception as e:
+        logger.exception("Failed to get metrics: %s", e)
+        return JSONResponse(
+            {"error": "metrics_unavailable", "message": str(e)},
+            status_code=500,
+        )
 
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    try:
+        return {"status": "ok"}
+    except Exception as e:
+        logger.exception("Health check failed: %s", e)
+        return JSONResponse(
+            {"status": "error", "message": str(e)},
+            status_code=503,
+        )
 
 
 @app.get("/metrics")
 def prometheus_metrics():
     """Prometheus-style metrics for Grafana/Datadog scraping."""
-    m = MetricsStore.get().get_metrics()
+    try:
+        m = MetricsStore.get().get_metrics()
+    except Exception as e:
+        logger.exception("Failed to get metrics for Prometheus: %s", e)
+        return PlainTextResponse("# metrics unavailable\n", status_code=503)
     lines = [
         "# HELP mcp_bastion_requests_total Total requests",
         "# TYPE mcp_bastion_requests_total counter",

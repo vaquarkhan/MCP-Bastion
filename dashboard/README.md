@@ -10,16 +10,16 @@ pip install fastapi uvicorn
 PYTHONPATH=src python dashboard/app.py
 ```
 
-Open http://localhost:7000/
+Open [http://localhost:7000/](http://localhost:7000/)
 
 ## Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| GET / | Dashboard UI |
-| GET /api/metrics | JSON metrics |
-| GET /metrics | Prometheus format (Grafana/Datadog) |
-| GET /api/health | Health check |
+| URL | What it returns |
+|-----|-----------------|
+| GET / | Visual dashboard with charts |
+| GET /api/metrics | JSON: `requests_total`, `blocked_total`, `blocked_pct`, `blocked_by_reason`, `top_tools`, `cost_by_user`, `alerts` |
+| GET /api/health | `{"status": "ok"}` |
+| GET /metrics | Prometheus text format (Grafana/Datadog) |
 
 ## Wire metrics from your server
 
