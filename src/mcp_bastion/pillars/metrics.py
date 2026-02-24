@@ -26,10 +26,13 @@ class DashboardMetrics:
     window_start: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
+        reason_sum = sum(self.blocked_by_reason.values())
+        # Ensure total is at least sum of reasons (avoids display mismatch if multiple paths record)
+        blocked = max(self.blocked_total, reason_sum)
         return {
             "requests_total": self.requests_total,
-            "blocked_total": self.blocked_total,
-            "blocked_pct": round(100 * self.blocked_total / max(1, self.requests_total), 2),
+            "blocked_total": blocked,
+            "blocked_pct": round(100 * blocked / max(1, self.requests_total), 2),
             "pii_redacted_total": self.pii_redacted_total,
             "cost_total": round(self.cost_total, 2),
             "blocked_by_reason": dict(self.blocked_by_reason),
