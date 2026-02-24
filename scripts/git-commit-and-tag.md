@@ -1,8 +1,8 @@
 # Branch, commit, and tag commands for MCP-Bastion
 # Run from repo root: c:\Users\Administrator\Downloads\MCP-Bastion
 
-# 1. Create and switch to a new branch
-git checkout -b feature/tutorial-and-validation
+# 1. Create and switch to a new branch (or skip to use current branch)
+git checkout -b feature/dashboard-docs-and-error-handling
 
 # 2. Stage all changes
 git add -A
@@ -10,12 +10,16 @@ git add -A
 # 3. Review what will be committed
 git status
 
-# 4. Commit (adjust message if needed)
-git commit -m "docs: update tutorials, validation checklist, .gitignore; fix CLI tests for logging"
+# 4. Commit (include version bump)
+git commit -m "chore: bump version to 1.0.9 (PyPI, npm, server.json)
 
-# 5. Tag the release (version 1.0.8 - match pyproject.toml / package.json)
-git tag -a v1.0.8 -m "Release 1.0.8: tutorials, policy-as-code docs, validation checklist, .gitignore"
+- pyproject.toml, src/mcp_bastion/__init__.py (Python/PyPI)
+- package.json, packages/core/package.json (npm)
+- server.json (MCP registry)"
 
-# Optional: push branch and tag
-# git push -u origin feature/tutorial-and-validation
-# git push origin v1.0.8
+# 5. Tag for release
+git tag -a v1.0.9 -m "Release 1.0.9"
+
+# Push branch and tag
+# git push -u origin feature/dashboard-docs-and-error-handling
+# git push origin v1.0.9
