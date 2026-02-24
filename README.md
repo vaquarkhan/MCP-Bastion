@@ -84,6 +84,15 @@ mcp-bastion dashboard --port 7000
 
 - **Alerts:** Slack webhook and cost-threshold alerts. See [dashboard/README.md](dashboard/README.md).
 
+### Documentation: Use Cases, Attacks, Metrics, Tutorials
+
+| Doc | Description |
+|-----|-------------|
+| [docs/USE_CASES.md](docs/USE_CASES.md) | Real use cases: enterprise gateway, LLM products, internal tools, SaaS, compliance |
+| [docs/ATTACK_PREVENTION.md](docs/ATTACK_PREVENTION.md) | Examples showing how MCP-Bastion prevents real attacks (injection, PII leak, rate exhaustion, path traversal, RBAC, replay) |
+| [docs/METRICS.md](docs/METRICS.md) | Performance overhead (&lt;5ms) and effectiveness metrics (dashboard, Prometheus, OTEL) |
+| [docs/TUTORIALS.md](docs/TUTORIALS.md) | Tutorials: integrating with FastMCP, TypeScript, GitHub MCP, and open-source MCP servers |
+
 ### One-Line Docker
 
 ```bash
@@ -586,7 +595,7 @@ npx -y @modelcontextprotocol/inspector
 
 ## Third-Party Components
 
-See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 Community License) and Microsoft Presidio.
+See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 Community License) and Microsoft Presidio. For OWASP-relevant mitigations, dependency audit, and reporting vulnerabilities, see [docs/SECURITY.md](docs/SECURITY.md).
 
 ## License
 
