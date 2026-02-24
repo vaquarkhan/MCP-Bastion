@@ -2,8 +2,6 @@
 
 Python examples demonstrating MCP-Bastion middleware integration.
 
-Author: Viquar Khan
-
 ---
 
 ## Files in examples/
@@ -20,6 +18,7 @@ All Python files in this folder:
 | `examples/llm_gemini_example.py` | Gemini (CLI, AI Studio) |
 | `examples/llm_mistral_example.py` | Mistral (Agents SDK) |
 | `examples/llm_grok_example.py` | Grok (xAI, HTTP only) |
+| `examples/server_with_config.py` | Policy-as-code (bastion.yaml) |
 
 ---
 
@@ -132,6 +131,28 @@ python examples/llm_claude_example.py
 python examples/llm_gemini_example.py
 python examples/llm_mistral_example.py
 python examples/llm_grok_example.py
+```
+
+## Example 4: server_with_config.py (policy-as-code)
+
+Load middleware from `bastion.yaml` (or `BASTION_CONFIG` env):
+
+```python
+from mcp_bastion import load_config, build_middleware_from_config
+
+# Option A: load config then build
+config = load_config()  # or load_config("path/to/bastion.yaml")
+middleware = build_middleware_from_config(config)
+
+# Option B: one-liner (loads bastion.yaml and builds)
+middleware = build_middleware_from_config()
+```
+
+**Run:**
+
+```bash
+$env:PYTHONPATH="src"; python examples/server_with_config.py   # Windows
+PYTHONPATH=src python examples/server_with_config.py           # Linux/Mac
 ```
 
 ---

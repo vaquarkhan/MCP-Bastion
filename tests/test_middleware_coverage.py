@@ -203,6 +203,14 @@ def test_get_content_from_result_non_dict_item():
     assert out == [{"type": "text", "text": "plain"}]
 
 
+def test_get_content_from_result_payload_has_contents_attr():
+    """Payload is object with .contents attribute (not dict)."""
+    class Payload:
+        contents = [{"type": "text", "text": "from_attr"}]
+    out = _get_content_from_result(Payload())
+    assert out == [{"type": "text", "text": "from_attr"}]
+
+
 def test_set_content_in_result_contents_attr():
     class Payload:
         contents = []
@@ -217,6 +225,19 @@ def test_set_content_in_result_dict_contents_content():
     _set_content_in_result(r, [{"x": 1}])
     assert r["result"]["contents"] == [{"x": 1}]
     assert r["result"]["content"] == [{"x": 1}]
+
+
+def test_redact_result_content_no_content_returns_unchanged():
+    """_redact_result_content returns result when no content to redact."""
+    mw = MCPBastionMiddleware(
+        enable_prompt_guard=False,
+        enable_pii_redaction=True,
+        enable_rate_limit=False,
+    )
+    result = {}
+    out = mw._redact_result_content(result)
+    assert out is result
+    assert out == {}
 
 
 @pytest.mark.asyncio

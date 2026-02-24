@@ -1,0 +1,17 @@
+# MCP-Bastion dashboard
+# Run: docker build -f Dockerfile.dashboard -t mcp-bastion/dashboard .
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir fastapi uvicorn
+
+COPY dashboard /app/dashboard
+COPY src /app/src
+
+ENV PYTHONPATH=/app/src
+
+EXPOSE 7000
+
+CMD ["python", "/app/dashboard/app.py"]
