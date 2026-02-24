@@ -1,6 +1,5 @@
 """
 Gemini + MCP-Bastion Example
-Author: Viquar Khan
 
 Use with Gemini CLI or Google AI Studio.
 Config: docs/LLM_INTEGRATION.md

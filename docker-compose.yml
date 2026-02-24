@@ -1,0 +1,38 @@
+# MCP-Bastion one-line setup
+# Run: docker-compose up -d
+# MCP server: http://localhost:8080/mcp
+# With dashboard: docker-compose --profile with-dashboard up -d  -> http://localhost:7000
+
+services:
+  proxy:
+    build: .
+    image: mcp-bastion/proxy
+    ports:
+      - "8080:8080"
+    environment:
+      - PYTHONPATH=/app/src
+
+  # Optional: run as sidecar next to your app. Your app uses MCP at http://bastion:8080/mcp
+  bastion:
+    build: .
+    image: mcp-bastion/proxy
+    ports:
+      - "8081:8080"
+    environment:
+      - PYTHONPATH=/app/src
+      - ENABLE_PII=true
+      - ENABLE_RATE_LIMIT=true
+    profiles:
+      - sidecar
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    image: mcp-bastion/dashboard
+    ports:
+      - "7000:7000"
+    environment:
+      - PYTHONPATH=/app/src
+    profiles:
+      - with-dashboard

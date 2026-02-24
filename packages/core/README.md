@@ -2,9 +2,7 @@
 
 [npm](https://www.npmjs.com/package/@mcp-bastion/core)
 
-Security middleware for MCP (Model Context Protocol) servers. Rate limiting in-process; prompt injection and PII via Python sidecar.
-
-Author: Viquar Khan
+Security middleware for MCP servers. Rate limiting in-process; prompt injection and PII via optional sidecar.
 
 ## Install
 
@@ -13,6 +11,8 @@ npm install @mcp-bastion/core @modelcontextprotocol/sdk
 ```
 
 ## Quick Start
+
+Set `MCP_BASTION_URL` to the sidecar URL (e.g. `http://localhost:8000`) to enable prompt guard and PII redaction. Omit it for rate limiting only.
 
 ```typescript
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -23,11 +23,8 @@ const server = new Server({ name: "my-mcp-server", version: "1.0.0" });
 
 wrapWithMcpBastion(server, {
   enableRateLimit: true,
-  maxIterations: 15,
-  timeoutMs: 60_000,
-  sidecarUrl: process.env.MCP_BASTION_SIDECAR || "",
-  enablePromptGuard: !!process.env.MCP_BASTION_SIDECAR,
-  enablePiiRedaction: !!process.env.MCP_BASTION_SIDECAR,
+  enablePromptGuard: true,
+  enablePiiRedaction: true,
 });
 
 server.setRequestHandler("tools/call" as any, async (request) => {
@@ -48,10 +45,10 @@ await server.connect(transport);
 | enableRateLimit | true | Cap tool calls per session |
 | maxIterations | 15 | Max tool calls before block |
 | timeoutMs | 60000 | Session timeout |
-| sidecarUrl | "" | Python sidecar URL for ML features |
-| enablePromptGuard | false | Requires sidecarUrl |
-| enablePiiRedaction | false | Requires sidecarUrl |
+| sidecarUrl | (none) | Sidecar URL; falls back to MCP_BASTION_URL |
+| enablePromptGuard | false | Needs sidecar (sidecarUrl or MCP_BASTION_URL) |
+| enablePiiRedaction | false | Needs sidecar |
 
-## Full Docs
+## Full docs
 
-See [MCP-Bastion](https://github.com/vaquarkhan/MCP-Bastion) for Python package, examples, and full documentation.
+See [MCP-Bastion](https://github.com/vaquarkhan/MCP-Bastion) for Python package, examples, and documentation.

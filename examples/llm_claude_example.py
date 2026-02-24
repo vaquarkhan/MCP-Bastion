@@ -1,6 +1,5 @@
 """
 Claude + MCP-Bastion Example
-Author: Viquar Khan
 
 Use with Claude Desktop, Claude Code, or API.
 Config: docs/LLM_INTEGRATION.md

@@ -1,8 +1,6 @@
 # MCP-Bastion LLM Integration Guide
 
-Author: Viquar Khan
-
-Configure MCP-Bastion with major LLM providers. Each example uses the same secure MCP server; only the client config differs.
+Configure MCP-Bastion with major LLM providers. Each example uses the same secure MCP server; only the client config differs. Each example uses the same secure MCP server; only the client config differs.
 
 ## LLM Example Files
 
@@ -225,6 +223,7 @@ $env:PYTHONPATH="src"; python examples/llm_mistral_example.py --http 8000
 
 ```python
 import asyncio
+import logging
 import os
 from pathlib import Path
 from mcp import StdioServerParameters
@@ -232,6 +231,7 @@ from mistralai.extra.mcp.stdio import MCPClientSTDIO
 from mistralai import Mistral
 from mistralai.extra.run.context import RunContext
 
+logger = logging.getLogger(__name__)
 cwd = Path("/path/to/MCP-Bastion")  # Replace with your path
 
 async def main():
@@ -248,7 +248,7 @@ async def main():
             run_ctx=run_ctx,
             inputs="Add 5 and 7, then get weather for Paris.",
         )
-        print(result.output_as_text)
+        logger.info("%s", result.output_as_text)
 
 asyncio.run(main())
 ```
@@ -273,11 +273,13 @@ $env:PYTHONPATH="src"; python examples/llm_grok_example.py
 ### Config: xAI SDK
 
 ```python
+import logging
 import os
 from xai_sdk import Client
 from xai_sdk.chat import user
 from xai_sdk.tools import mcp
 
+logger = logging.getLogger(__name__)
 client = Client(api_key=os.environ["XAI_API_KEY"])
 chat = client.chat.create(
     model="grok-4-1-fast-reasoning",
@@ -290,7 +292,7 @@ chat = client.chat.create(
 )
 chat.append(user("Add 10 and 20, then get weather for Tokyo."))
 response = chat.run()
-print(response)
+logger.info("%s", response)
 ```
 
 ### Config: OpenAI-compatible API (xAI Responses API)
@@ -370,3 +372,7 @@ bastion = MCPBastionMiddleware(
 | Linux | `~/.config/claude/claude_desktop_config.json` | `~/.../MCP-Bastion` |
 
 Replace `/path/to/MCP-Bastion` with your actual path.
+
+## TypeScript
+
+For TypeScript MCP servers using `@mcp-bastion/core`, set `MCP_BASTION_URL` to the Python sidecar URL (e.g. `http://localhost:8000`) to enable prompt guard and PII redaction. Omit it for rate limiting only. See `packages/core/README.md` and `docs/NOW_VS_FUTURE.md`.

@@ -1,6 +1,5 @@
 """
 Full demo: all MCP-Bastion features from SETUP_GUIDE.
-Author: Viquar Khan
 
 Demonstrates:
 - Custom rate limits (5 iterations, 30s for quick demo)

@@ -1,6 +1,6 @@
 {
   "name": "@mcp-bastion/core",
-  "version": "1.0.10",
+  "version": "1.0.8",
   "mcpName": "io.github.vaquarkhan/mcp-bastion",
   "description": "Security middleware for MCP servers protecting LLM agents from prompt injection, resource exhaustion, and PII leakage",
   "type": "module",
@@ -42,6 +42,7 @@
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "typescript": "^5.3.0",
     "vite": "^5.0.0",
     "vitest": "^1.0.0"
