@@ -209,6 +209,24 @@ npm install @mcp-bastion/core
 
 [npm](https://www.npmjs.com/package/@mcp-bastion/core)
 
+### Framework Integrations
+
+Drop-in security for your favorite LLM framework — each package auto-installs `mcp-bastion-python`:
+
+```bash
+pip install mcp-bastion-langchain   # LangChain agents & tools
+pip install mcp-bastion-openai      # OpenAI GPT API calls
+pip install mcp-bastion-anthropic   # Anthropic Claude API calls
+pip install mcp-bastion-bedrock     # AWS Bedrock runtime
+```
+
+| Package | Protects | PyPI |
+|---------|----------|------|
+| [mcp-bastion-langchain](https://pypi.org/project/mcp-bastion-langchain/) | LangChain callbacks & tools | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-langchain)](https://pypi.org/project/mcp-bastion-langchain/) |
+| [mcp-bastion-openai](https://pypi.org/project/mcp-bastion-openai/) | OpenAI chat completions | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-openai)](https://pypi.org/project/mcp-bastion-openai/) |
+| [mcp-bastion-anthropic](https://pypi.org/project/mcp-bastion-anthropic/) | Anthropic Claude messages | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-anthropic)](https://pypi.org/project/mcp-bastion-anthropic/) |
+| [mcp-bastion-bedrock](https://pypi.org/project/mcp-bastion-bedrock/) | AWS Bedrock invoke | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-bedrock)](https://pypi.org/project/mcp-bastion-bedrock/) |
+
 ## Publish (PyPI / npm)
 
 - **PyPI:** `python -m build && twine upload dist/*` (or use GitHub Actions on tag).
