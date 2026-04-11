@@ -39,6 +39,7 @@ jobs:
 
       - name: Publish to npm
         if: github.ref_type == 'tag'
+        continue-on-error: true
         run: |
           npm install -g npm@latest
           npm publish --workspace=@mcp-bastion/core --access public --provenance
