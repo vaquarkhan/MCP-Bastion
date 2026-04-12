@@ -22,6 +22,12 @@ jobs:
           - mcp-bastion-openai
           - mcp-bastion-anthropic
           - mcp-bastion-bedrock
+          - mcp-bastion-gemini
+          - mcp-bastion-crewai
+          - mcp-bastion-llamaindex
+          - mcp-bastion-groq
+          - mcp-bastion-mistral
+          - mcp-bastion-cohere
 
     steps:
       - name: Check out repository
