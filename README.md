@@ -226,6 +226,12 @@ pip install mcp-bastion-bedrock     # AWS Bedrock runtime
 | [mcp-bastion-openai](https://pypi.org/project/mcp-bastion-openai/) | OpenAI chat completions | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-openai)](https://pypi.org/project/mcp-bastion-openai/) |
 | [mcp-bastion-anthropic](https://pypi.org/project/mcp-bastion-anthropic/) | Anthropic Claude messages | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-anthropic)](https://pypi.org/project/mcp-bastion-anthropic/) |
 | [mcp-bastion-bedrock](https://pypi.org/project/mcp-bastion-bedrock/) | AWS Bedrock invoke | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-bedrock)](https://pypi.org/project/mcp-bastion-bedrock/) |
+| [mcp-bastion-gemini](https://pypi.org/project/mcp-bastion-gemini/) | Google Gemini | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-gemini)](https://pypi.org/project/mcp-bastion-gemini/) |
+| [mcp-bastion-crewai](https://pypi.org/project/mcp-bastion-crewai/) | CrewAI agent crews | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-crewai)](https://pypi.org/project/mcp-bastion-crewai/) |
+| [mcp-bastion-llamaindex](https://pypi.org/project/mcp-bastion-llamaindex/) | LlamaIndex RAG pipelines | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-llamaindex)](https://pypi.org/project/mcp-bastion-llamaindex/) |
+| [mcp-bastion-groq](https://pypi.org/project/mcp-bastion-groq/) | Groq inference | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-groq)](https://pypi.org/project/mcp-bastion-groq/) |
+| [mcp-bastion-mistral](https://pypi.org/project/mcp-bastion-mistral/) | Mistral AI | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-mistral)](https://pypi.org/project/mcp-bastion-mistral/) |
+| [mcp-bastion-cohere](https://pypi.org/project/mcp-bastion-cohere/) | Cohere | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-cohere)](https://pypi.org/project/mcp-bastion-cohere/) |
 
 ## Publish (PyPI / npm)
 
