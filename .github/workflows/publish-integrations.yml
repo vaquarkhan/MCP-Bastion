@@ -34,6 +34,7 @@ jobs:
           - mcp-bastion-deepseek
           - mcp-bastion-together
           - mcp-bastion-fireworks
+          - mcp-bastion-fastmcp
 
     steps:
       - name: Check out repository
