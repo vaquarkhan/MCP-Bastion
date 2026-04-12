@@ -1,6 +1,6 @@
 # MCP-Bastion
 
-mcp-name: io.github.vaquarkhan/mcp-bastion
+<!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
 
 [![PyPI Total Downloads](https://img.shields.io/pypi/dd/mcp-bastion-python?label=daily)](https://pypi.org/project/mcp-bastion-python/)
 [![PyPI Monthly Downloads](https://img.shields.io/pypi/dm/mcp-bastion-python?label=monthly)](https://pypi.org/project/mcp-bastion-python/)
