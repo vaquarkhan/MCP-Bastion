@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-azure"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP-Bastion security middleware for Azure OpenAI Service. Prompt injection, PII, and rate-limit protection."
 readme = "README.md"
 license = "MIT"
