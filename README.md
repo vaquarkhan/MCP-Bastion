@@ -237,6 +237,7 @@ pip install mcp-bastion-huggingface    # Hugging Face Inference
 pip install mcp-bastion-deepseek       # DeepSeek AI
 pip install mcp-bastion-together       # Together AI
 pip install mcp-bastion-fireworks      # Fireworks AI
+pip install mcp-bastion-fastmcp       # FastMCP servers
 ```
 
 | Package | Protects | Version | Downloads |
@@ -257,6 +258,7 @@ pip install mcp-bastion-fireworks      # Fireworks AI
 | [mcp-bastion-deepseek](https://pypi.org/project/mcp-bastion-deepseek/) | DeepSeek AI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-deepseek) |
 | [mcp-bastion-together](https://pypi.org/project/mcp-bastion-together/) | Together AI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-together) |
 | [mcp-bastion-fireworks](https://pypi.org/project/mcp-bastion-fireworks/) | Fireworks AI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-fireworks) |
+| [mcp-bastion-fastmcp](https://pypi.org/project/mcp-bastion-fastmcp/) | FastMCP servers | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-fastmcp) |
 
 ## Publish (PyPI / npm)
 
