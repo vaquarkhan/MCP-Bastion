@@ -2,6 +2,7 @@
 
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
 
+[![Total Downloads](https://img.shields.io/badge/total%20downloads-278-brightgreen)](https://pepy.tech/projects/mcp-bastion-python)
 [![PyPI Total Downloads](https://img.shields.io/pypi/dd/mcp-bastion-python?label=daily)](https://pypi.org/project/mcp-bastion-python/)
 [![PyPI Monthly Downloads](https://img.shields.io/pypi/dm/mcp-bastion-python?label=monthly)](https://pypi.org/project/mcp-bastion-python/)
 [![PyPI Version](https://img.shields.io/pypi/v/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
