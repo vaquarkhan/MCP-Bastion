@@ -28,6 +28,12 @@ jobs:
           - mcp-bastion-groq
           - mcp-bastion-mistral
           - mcp-bastion-cohere
+          - mcp-bastion-azure
+          - mcp-bastion-vertexai
+          - mcp-bastion-huggingface
+          - mcp-bastion-deepseek
+          - mcp-bastion-together
+          - mcp-bastion-fireworks
 
     steps:
       - name: Check out repository
