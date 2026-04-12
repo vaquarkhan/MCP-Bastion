@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-bastion-vertexai"
+version = "0.1.0"
+description = "MCP-Bastion security middleware for Google Cloud Vertex AI. Prompt injection, PII, and rate-limit protection."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Viquar Khan" }]
+keywords = ["mcp", "bastion", "vertexai", "google", "gcp", "security", "llm", "prompt-injection"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+dependencies = [
+    "mcp-bastion-python>=1.0.11",
+    "google-cloud-aiplatform>=1.38.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/vaquarkhan/MCP-Bastion"
+Repository = "https://github.com/vaquarkhan/MCP-Bastion"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_bastion_vertexai"]
