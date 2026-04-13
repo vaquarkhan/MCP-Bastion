@@ -105,8 +105,8 @@ class WebhookAlertSink(AlertSink):
             with urllib.request.urlopen(req, timeout=5) as resp:
                 if resp.status >= 400:
                     logger.warning("Webhook %s returned %s", self.url[:50], resp.status)
-        except Exception as e:  # pragma: no cover
-            logger.warning("Webhook alert failed: %s", e)  # pragma: no cover
+        except Exception as e:
+            logger.warning("Webhook alert failed: %s", e)
 
 
 def _reason_from_error(reason: str | None) -> str:
@@ -115,8 +115,8 @@ def _reason_from_error(reason: str | None) -> str:
     reason_lower = reason.lower()
     if "injection" in reason_lower or "prompt" in reason_lower:
         return "injection"
-    if "rate" in reason_lower or "iteration" in reason_lower:  # pragma: no cover
-        return "rate_limit"  # pragma: no cover
+    if "rate" in reason_lower or "iteration" in reason_lower:
+        return "rate_limit"
     if "rbac" in reason_lower or "cannot access" in reason_lower:
         return "rbac"
     if "cost" in reason_lower or "budget" in reason_lower:

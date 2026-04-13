@@ -62,7 +62,10 @@ class ContentFilter:
         self._code_regexes = [re.compile(p, re.IGNORECASE) for p in DEFAULT_CODE_PATTERNS]
         self._path_regexes = [re.compile(p) for p in DEFAULT_PATH_PATTERNS]
         self._url_regex = re.compile(DEFAULT_URL_PATTERN)
-        self._custom_regexes = [re.compile(p) for p in self.custom_patterns]
+        try:
+            self._custom_regexes = [re.compile(p) for p in self.custom_patterns]
+        except re.error as e:
+            raise ValueError(f"Invalid custom regex pattern: {e}") from e
 
     def _extract_text(self, value: Any) -> str:
         """Flatten value to string for scanning."""

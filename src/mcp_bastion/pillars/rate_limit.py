@@ -36,6 +36,12 @@ class TokenBucketRateLimiter:
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
         token_budget: int = DEFAULT_TOKEN_BUDGET,
     ) -> None:
+        if max_iterations < 1:
+            raise ValueError("max_iterations must be >= 1")
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be > 0")
+        if token_budget < 1:
+            raise ValueError("token_budget must be >= 1")
         self.max_iterations = max_iterations
         self.timeout_seconds = timeout_seconds
         self.token_budget = token_budget
