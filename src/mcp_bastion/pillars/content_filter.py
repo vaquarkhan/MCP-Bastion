@@ -67,8 +67,23 @@ class ContentFilter:
         self._code_regexes = [re.compile(p, re.IGNORECASE) for p in DEFAULT_CODE_PATTERNS]
         self._path_regexes = [re.compile(p) for p in DEFAULT_PATH_PATTERNS]
         self._url_regex = re.compile(DEFAULT_URL_PATTERN)
-        self._allowlist_regexes = [re.compile(p) for p in self.allowlist_patterns]
-        self._denylist_regexes = [re.compile(p) for p in self.denylist_patterns]
+
+        def _compile_patterns(patterns: list[str], label: str) -> list[re.Pattern[str]]:
+            compiled: list[re.Pattern[str]] = []
+            for p in patterns:
+                try:
+                    compiled.append(re.compile(p))
+                except re.error as e:
+                    raise ValueError(f"Invalid {label} regex pattern: {e}") from e
+            return compiled
+
+        self._allowlist_regexes = _compile_patterns(self.allowlist_patterns, "allowlist")
+        self._denylist_regexes = _compile_patterns(self.denylist_patterns, "custom")
+
+    @property
+    def _custom_regexes(self) -> list[re.Pattern[str]]:
+        """Alias for denylist regexes (backward compatible with older tests)."""
+        return self._denylist_regexes
 
     def _extract_text(self, value: Any) -> str:
         """Flatten value to string for scanning."""
