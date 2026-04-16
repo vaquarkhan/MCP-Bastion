@@ -194,6 +194,9 @@ def test_main_dashboard_help(monkeypatch):
         main()
 
 
+@pytest.mark.filterwarnings(
+    "ignore:.*mcp_bastion.cli.*sys.modules:RuntimeWarning"
+)
 def test_cli_main_entrypoint(monkeypatch):
     """Cover if __name__ == '__main__' by running the module as __main__."""
     monkeypatch.setattr("sys.argv", ["mcp-bastion", "validate", "--help"])
