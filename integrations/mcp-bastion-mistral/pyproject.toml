@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-mistral"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP-Bastion security middleware for Mistral AI — prompt injection, PII, and rate-limit protection"
 readme = "README.md"
-license = { file = "../../LICENSE" }
+license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
 requires-python = ">=3.10"
 authors = [{ name = "Viquar Khan" }]
 keywords = ["mcp", "bastion", "mistral", "security", "llm", "prompt-injection", "pii"]
@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp-bastion-python>=1.0.11",
+    "mcp-bastion-python>=1.0.13",
     "mistralai>=0.4.0",
 ]
 

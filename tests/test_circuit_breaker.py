@@ -114,3 +114,13 @@ def test_circuit_breaker_reset_single_tool():
         cb.check("a")
     cb.reset("a")
     cb.check("a")
+
+
+def test_circuit_breaker_does_not_increment_while_open():
+    cb = CircuitBreaker(failure_threshold=2, recovery_timeout=10.0)
+    cb.record_failure("t")
+    cb.record_failure("t")
+    assert cb._circuits["t"].state == "open"
+    failures_before = cb._circuits["t"].failures
+    cb.record_failure("t")
+    assert cb._circuits["t"].failures == failures_before
