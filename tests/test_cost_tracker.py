@@ -44,3 +44,10 @@ def test_cost_tracker_uses_request_id_fallback():
     ct = CostTracker(max_cost_per_session=0.50)
     ct.record(0.30, request_id="r1")
     ct.check(request_id="r1")
+
+
+def test_cost_tracker_rejects_negative_cost():
+    """Negative cost must be rejected to prevent budget bypass."""
+    ct = CostTracker(max_cost_per_session=1.0)
+    with pytest.raises(ValueError, match="cost"):
+        ct.record(-0.5, session_id="s1")
