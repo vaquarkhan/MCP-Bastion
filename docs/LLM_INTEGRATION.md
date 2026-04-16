@@ -375,4 +375,4 @@ Replace `/path/to/MCP-Bastion` with your actual path.
 
 ## TypeScript
 
-For TypeScript MCP servers using `@mcp-bastion/core`, set `MCP_BASTION_URL` to the Python sidecar URL (e.g. `http://localhost:8000`) to enable prompt guard and PII redaction. Omit it for rate limiting only. See `packages/core/README.md` and `docs/NOW_VS_FUTURE.md`.
+For TypeScript MCP servers using `@mcp-bastion/core`, set `MCP_BASTION_URL` to the Python sidecar URL (e.g. `http://localhost:8000`) to enable prompt guard and PII redaction. Omit it for rate limiting only. See `packages/core/README.md` and `docs/README.md`.

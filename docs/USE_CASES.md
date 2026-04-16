@@ -39,7 +39,7 @@ MCP-Bastion fits into production environments where MCP servers expose tools to 
 
 **Apply MCP-Bastion:**
 
-- Use content filter to block sensitive paths and custom patterns (e.g. `api_key`, `password`).
+- Use content filter to block sensitive paths and denylist patterns (e.g. `api_key`, `password`), and reserve allowlist patterns for trusted internal content.
 - Use RBAC so that “viewer” can only call read-only tools; “admin” can call write or dangerous tools.
 - Use rate limiting so a single session cannot flood the server.
 

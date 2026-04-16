@@ -39,6 +39,12 @@ class CostTracker:
         alert_threshold: float = 0.80,
         day_reset_seconds: float = 86400,
     ) -> None:
+        if max_cost_per_session < 0:
+            raise ValueError("max_cost_per_session must be >= 0")
+        if max_cost_per_day < 0:
+            raise ValueError("max_cost_per_day must be >= 0")
+        if not 0.0 <= alert_threshold <= 1.0:
+            raise ValueError("alert_threshold must be between 0.0 and 1.0")
         self.max_cost_per_session = max_cost_per_session
         self.max_cost_per_day = max_cost_per_day
         self.alert_threshold = alert_threshold

@@ -94,6 +94,14 @@ if __name__ == "__main__":
 
 See [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) and `examples/server_with_config.py`.
 
+To apply config changes without restarting, enable:
+
+```yaml
+hot_reload:
+  enabled: true
+  poll_seconds: 2.0
+```
+
 ### TypeScript: New MCP Server
 
 ```bash
@@ -331,7 +339,7 @@ Tools / Resources
 | PII redaction | pii_redaction | Mask SSN, email, phone via Presidio |
 | Rate limiting | rate_limit | Max iterations, timeout, token budget |
 | Audit logging | audit_log | Log who, what, when, blocked/allowed |
-| Content filter | content_filter | Block paths, code, custom patterns |
+| Content filter | content_filter | Block paths/code/URLs and tune allowlist/denylist patterns |
 | Circuit breaker | circuit_breaker | Disable failing tools after N failures |
 | RBAC | rbac | Tool-level permissions by role |
 | Schema validation | schema_validation | Validate tool input types |
@@ -517,11 +525,13 @@ Run the same checks as GitHub Actions before pushing:
 ```
 
 ```bash
-# Linux/Mac
+# Linux/Mac (install Node deps first: npm ci or npm install)
 npm ci && npm run build && npm test
 uv build  # or: python -m build --no-isolation
 PYTHONPATH=src pytest tests/ -v
 ```
+
+On Windows, from a fresh clone run `npm install` or `npm ci` in the repo root before `npm test`; otherwise `vitest` is not available.
 
 ### Run Enterprise Validation Checklist
 
@@ -540,16 +550,19 @@ cd MCP-Bastion
 $env:PYTHONPATH="src"; pytest tests/ -v --tb=short
 ```
 
-All tests should pass.
+All tests should pass (one test may be skipped depending on optional deps).
+
+**Windows note:** While Presidio or PromptGuard loads native libraries (Torch), the console may print `Windows fatal exception: access violation` lines. If pytest finishes with `passed` and exit code 0, the suite succeeded; the message is a known quirk of some Torch builds on Windows, not a failed test.
 
 ### Run TypeScript Tests
 
 ```bash
 cd MCP-Bastion
+npm install   # first time only: installs workspace deps including vitest
 npm run test --workspace=@mcp-bastion/core
 ```
 
-Expected: 3 passed.
+Expected: 9 tests passed (Vitest).
 
 ### Run TypeScript Build
 
