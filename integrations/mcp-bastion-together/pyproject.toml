@@ -7,7 +7,7 @@ name = "mcp-bastion-together"
 version = "0.1.2"
 description = "MCP-Bastion security middleware for Together AI. Prompt injection, PII, and rate-limit protection."
 readme = "README.md"
-license = { file = "../../LICENSE" }
+license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
 requires-python = ">=3.10"
 authors = [{ name = "Viquar Khan" }]
 keywords = ["mcp", "bastion", "together", "security", "llm", "prompt-injection"]
