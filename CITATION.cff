@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use MCP-Bastion, please cite this project in docs, papers, and releases."
+title: "MCP-Bastion"
+version: "1.0.13"
+type: software
+authors:
+  - family-names: Khan
+    given-names: Viquar
+repository-code: "https://github.com/vaquarkhan/MCP-Bastion"
+url: "https://github.com/vaquarkhan/MCP-Bastion"
+license: "proprietary"

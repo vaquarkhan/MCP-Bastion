@@ -94,6 +94,14 @@ if __name__ == "__main__":
 
 See [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) and `examples/server_with_config.py`.
 
+To apply config changes without restarting, enable:
+
+```yaml
+hot_reload:
+  enabled: true
+  poll_seconds: 2.0
+```
+
 ### TypeScript: New MCP Server
 
 ```bash
@@ -331,7 +339,7 @@ Tools / Resources
 | PII redaction | pii_redaction | Mask SSN, email, phone via Presidio |
 | Rate limiting | rate_limit | Max iterations, timeout, token budget |
 | Audit logging | audit_log | Log who, what, when, blocked/allowed |
-| Content filter | content_filter | Block paths, code, custom patterns |
+| Content filter | content_filter | Block paths/code/URLs and tune allowlist/denylist patterns |
 | Circuit breaker | circuit_breaker | Disable failing tools after N failures |
 | RBAC | rbac | Tool-level permissions by role |
 | Schema validation | schema_validation | Validate tool input types |

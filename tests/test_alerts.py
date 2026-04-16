@@ -115,6 +115,23 @@ def test_make_audit_export_callback_allowed():
     m = store.get_metrics()
     assert m["requests_total"] == 1
     assert m["top_tools"]["add"] == 1
+    assert m["latency_ms"]["samples"] == 1
+
+
+def test_make_audit_export_callback_non_numeric_latency():
+    store = MetricsStore.get()
+    store.reset()
+    cb = make_audit_export_callback(alert_sinks=[], alert_on=set())
+
+    class BadLat:
+        tool = "x"
+        session_id = None
+        action = "ALLOWED"
+        reason = None
+        latency_ms = "not-a-number"
+
+    cb(BadLat())
+    assert store.get_metrics()["latency_ms"]["samples"] == 0
 
 
 def test_make_audit_export_callback_blocked():
@@ -133,6 +150,7 @@ def test_make_audit_export_callback_blocked():
     cb(entry)
     m = store.get_metrics()
     assert m["blocked_total"] == 1
+    assert m["latency_ms"]["samples"] == 1
     assert "rate limit" in m["blocked_by_reason"]
 
 
@@ -201,6 +219,62 @@ def test_webhook_alert_sink_send_http_400(caplog):
         sink = WebhookAlertSink("http://example.com/hook")
         sink.send("test", "msg")
     assert "400" in caplog.text or "Webhook" in caplog.text
+
+
+def test_webhook_alert_sink_retries_then_succeeds():
+    import urllib.request
+
+    class Resp:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+    with mock.patch.object(
+        urllib.request,
+        "urlopen",
+        side_effect=[OSError("net"), Resp()],
+    ) as mocked:
+        with mock.patch("mcp_bastion.pillars.alerts.time.sleep") as sleep_mock:
+            sink = WebhookAlertSink(
+                "http://example.com/hook",
+                retry_attempts=2,
+                retry_backoff_seconds=0.01,
+            )
+            sink.send("test", "msg")
+    assert mocked.call_count == 2
+    sleep_mock.assert_called_once()
+
+
+def test_slack_alert_sink_retries_then_succeeds():
+    import urllib.request
+
+    class Resp:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+    with mock.patch.object(
+        urllib.request,
+        "urlopen",
+        side_effect=[OSError("net"), Resp()],
+    ) as mocked:
+        with mock.patch("mcp_bastion.pillars.alerts.time.sleep") as sleep_mock:
+            sink = SlackAlertSink(
+                "https://hooks.slack.com/fake",
+                retry_attempts=2,
+                retry_backoff_seconds=0.01,
+            )
+            sink.send("test", "msg")
+    assert mocked.call_count == 2
+    sleep_mock.assert_called_once()
 
 
 def test_notify_audit_entry_alert_on_all():

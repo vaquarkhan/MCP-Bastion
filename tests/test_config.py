@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 
 from mcp_bastion.config import BastionConfig, build_middleware_from_config, load_config
+from mcp_bastion.base import MiddlewareContext
 
 
 def test_bastion_config_defaults():
@@ -52,6 +53,46 @@ audit:
     assert result.rbac is True
     assert result.rbac_permissions.get("default") == ["read"]
     assert result.audit is False
+
+
+def test_load_config_content_filter_and_alert_and_hot_reload_fields(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+content_filter:
+  enabled: true
+  block_code_execution: false
+  block_file_paths: true
+  block_urls: true
+  allowlist_patterns:
+    - '^safe$'
+  denylist_patterns:
+    - secret
+alerts:
+  retry_attempts: 4
+  retry_backoff_seconds: 0.1
+  retry_backoff_max_seconds: 0.5
+  timeout_seconds: 7
+hot_reload:
+  enabled: true
+  poll_seconds: 1.5
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    result = load_config(str(yaml_path))
+    assert result.content_filter is True
+    assert result.content_filter_block_code_execution is False
+    assert result.content_filter_block_urls is True
+    assert result.content_filter_allowlist_patterns == ["^safe$"]
+    assert result.content_filter_denylist_patterns == ["secret"]
+    assert result.alerts_retry_attempts == 4
+    assert result.alerts_timeout_seconds == 7.0
+    assert result.hot_reload is True
+    assert result.hot_reload_poll_seconds == 1.5
 
 
 def test_load_config_uses_bastion_config_env(monkeypatch, tmp_path):
@@ -121,3 +162,31 @@ def test_load_config_yaml_import_error(tmp_path):
     with mock.patch("builtins.__import__", side_effect=fake_import):
         with pytest.raises(ImportError, match="PyYAML"):
             load_config(str(yaml_path))
+
+
+@pytest.mark.asyncio
+async def test_build_middleware_hot_reload_invalid_update_keeps_running(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        "hot_reload:\n  enabled: true\n  poll_seconds: 0.1\nprompt_guard:\n  enabled: false\n",
+        encoding="utf-8",
+    )
+    try:
+        import yaml
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+
+    config = load_config(str(yaml_path))
+    mw = build_middleware_from_config(config)
+
+    async def call_next(ctx):
+        return {"ok": True}
+
+    ctx = MiddlewareContext(message={"method": "ping"}, request_id="r1", session_id="s1")
+    first = await mw(ctx, call_next)
+    assert first == {"ok": True}
+
+    yaml_path.write_text("prompt_guard: [broken\n", encoding="utf-8")
+    os.utime(yaml_path, None)
+    second = await mw(ctx, call_next)
+    assert second == {"ok": True}

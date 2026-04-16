@@ -145,7 +145,7 @@ def test_cmd_validate_import_error(capsys, caplog):
 
 def test_cmd_dashboard_app_not_found():
     with mock.patch("uvicorn.run"):
-        with mock.patch.object(Path, "exists", return_value=False):
+        with mock.patch("mcp_bastion.cli._resolve_dashboard_repo", return_value=None):
             result = cmd_dashboard(7000)
     assert result == 1
 
