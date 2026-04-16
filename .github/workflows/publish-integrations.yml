@@ -64,11 +64,33 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           python-version: "3.11"
+
+      - name: Debug package metadata
+        if: |
+          (
+            github.event_name != 'workflow_dispatch' ||
+            github.event.inputs.package == 'all' ||
+            github.event.inputs.package == matrix.package
+          ) &&
+          (
+            github.event_name != 'push' ||
+            !contains(github.ref_name, 'mcp-bastion-') ||
+            contains(github.ref_name, matrix.package)
+          )
+        run: |
+          echo "Ref: $GITHUB_REF"
+          echo "SHA: $GITHUB_SHA"
+          echo "Tag/Ref name: ${{ github.ref_name }}"
+          echo "Package: ${{ matrix.package }}"
+          grep -n "^version = " integrations/${{ matrix.package }}/pyproject.toml || true
+          grep -n "^license = " integrations/${{ matrix.package }}/pyproject.toml || true
 
       - name: Build ${{ matrix.package }}
         if: |
