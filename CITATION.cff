@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use MCP-Bastion, please cite this project in docs, papers, and releases."
 title: "MCP-Bastion"
-version: "1.0.13"
+version: "1.0.14"
 type: software
 authors:
   - family-names: Khan

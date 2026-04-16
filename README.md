@@ -213,7 +213,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pinned latest
-pip install mcp-bastion-python==1.0.13
+pip install mcp-bastion-python==1.0.14
 ```
 
 **Prerequisites (recommended)**
