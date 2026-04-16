@@ -1,5 +1,7 @@
 """Tests for config load and build_middleware_from_config."""
 
+import asyncio
+import logging
 import os
 import tempfile
 from pathlib import Path
@@ -7,7 +9,12 @@ from unittest import mock
 
 import pytest
 
-from mcp_bastion.config import BastionConfig, build_middleware_from_config, load_config
+from mcp_bastion.config import (
+    BastionConfig,
+    _HotReloadingMiddleware,
+    build_middleware_from_config,
+    load_config,
+)
 from mcp_bastion.base import MiddlewareContext
 
 
@@ -188,5 +195,78 @@ async def test_build_middleware_hot_reload_invalid_update_keeps_running(tmp_path
 
     yaml_path.write_text("prompt_guard: [broken\n", encoding="utf-8")
     os.utime(yaml_path, None)
+    await asyncio.sleep(0.35)
     second = await mw(ctx, call_next)
     assert second == {"ok": True}
+
+
+def test_hot_reload_mtime_oserror(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        "hot_reload:\n  enabled: true\n  poll_seconds: 1.0\nprompt_guard:\n  enabled: false\n",
+        encoding="utf-8",
+    )
+    try:
+        import yaml
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    cfg = load_config(str(yaml_path))
+    h = _HotReloadingMiddleware(config_path=yaml_path, initial_config=cfg, poll_seconds=1.0)
+
+    real_stat = Path.stat
+
+    def stat_stub(self):
+        if self is yaml_path:
+            raise OSError("stat failed")
+        return real_stat(self)
+
+    with mock.patch.object(Path, "stat", stat_stub):
+        assert h._mtime() is None
+
+
+def test_hot_reload_maybe_skips_when_poll_interval_not_elapsed(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        "hot_reload:\n  enabled: true\n  poll_seconds: 1.0\nprompt_guard:\n  enabled: false\n",
+        encoding="utf-8",
+    )
+    try:
+        import yaml
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    cfg = load_config(str(yaml_path))
+    h = _HotReloadingMiddleware(config_path=yaml_path, initial_config=cfg, poll_seconds=1.0)
+    h._maybe_reload()
+    h._maybe_reload()
+
+
+@pytest.mark.asyncio
+async def test_build_middleware_hot_reload_valid_update_logs_reload(tmp_path, caplog):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        "hot_reload:\n  enabled: true\n  poll_seconds: 0.05\nprompt_guard:\n  enabled: false\naudit:\n  enabled: false\n",
+        encoding="utf-8",
+    )
+    try:
+        import yaml
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+
+    config = load_config(str(yaml_path))
+    mw = build_middleware_from_config(config)
+
+    async def call_next(ctx):
+        return {"ok": True}
+
+    ctx = MiddlewareContext(message={"method": "ping"}, request_id="r1", session_id="s1")
+    await mw(ctx, call_next)
+
+    yaml_path.write_text(
+        "hot_reload:\n  enabled: true\n  poll_seconds: 0.05\nprompt_guard:\n  enabled: false\naudit:\n  enabled: true\n",
+        encoding="utf-8",
+    )
+    os.utime(yaml_path, None)
+    await asyncio.sleep(0.35)
+    with caplog.at_level(logging.INFO, logger="mcp_bastion.config"):
+        await mw(ctx, call_next)
+    assert "Reloaded bastion config" in caplog.text

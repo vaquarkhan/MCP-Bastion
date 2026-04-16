@@ -22,7 +22,7 @@ def _post_with_retry(
     retry_backoff_seconds: float,
     retry_backoff_max_seconds: float,
     timeout_seconds: float,
-) -> int | None:
+) -> int:
     attempts = max(1, int(retry_attempts))
     backoff = max(0.0, float(retry_backoff_seconds))
     max_backoff = max(backoff, float(retry_backoff_max_seconds))
@@ -36,7 +36,6 @@ def _post_with_retry(
                 raise
             if backoff > 0:
                 time.sleep(min(backoff * (2 ** (attempt - 1)), max_backoff))
-    return None
 
 
 class AlertSink:
