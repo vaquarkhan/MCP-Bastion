@@ -52,3 +52,7 @@ await server.connect(transport);
 ## Full docs
 
 See [MCP-Bastion](https://github.com/vaquarkhan/MCP-Bastion) for Python package, examples, and documentation.
+
+## License
+
+Same terms as the monorepo: [LICENSE](https://github.com/vaquarkhan/MCP-Bastion/blob/main/LICENSE) (source-available; commercial use requires a separate agreement per [COMMERCIAL_LICENSE.md](https://github.com/vaquarkhan/MCP-Bastion/blob/main/COMMERCIAL_LICENSE.md)).

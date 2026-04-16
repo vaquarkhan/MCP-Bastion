@@ -44,9 +44,10 @@ cd MCP-Bastion
 $env:PYTHONPATH="src"; pytest tests/ -v --cov=src/mcp_bastion --cov-report=term-missing --cov-fail-under=99
 ```
 
-Omitted from coverage: optional paths in pii_redaction and prompt_guard. TypeScript:
+Omitted from coverage: optional paths in pii_redaction and prompt_guard. TypeScript (from repo root, run `npm install` once so Vitest is available):
 
 ```bash
+npm install
 npm run test --workspace=@mcp-bastion/core
 ```
 
