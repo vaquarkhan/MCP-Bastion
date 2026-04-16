@@ -7,6 +7,7 @@ Prevent request replay attacks via nonce and max age.
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Any
 import time
 from collections import OrderedDict
@@ -30,10 +31,15 @@ class ReplayGuard:
         max_request_age_seconds: float = 30.0,
         max_nonce_cache: int = 10_000,
     ) -> None:
+        if max_request_age_seconds < 0:
+            raise ValueError("max_request_age_seconds must be >= 0")
+        if max_nonce_cache < 1:
+            raise ValueError("max_nonce_cache must be >= 1")
         self.require_nonce = require_nonce
         self.max_request_age_seconds = max_request_age_seconds
         self._seen_nonces: OrderedDict[str, float] = OrderedDict()
         self._max_nonce_cache = max_nonce_cache
+        self._lock = threading.Lock()
 
     def _get_nonce(self, message: Any) -> str | None:
         """Extract nonce from message params or metadata."""
@@ -75,13 +81,14 @@ class ReplayGuard:
                 raise ReplayAttackError("Request must include nonce")
 
             nonce_str = str(nonce)
-            if nonce_str in self._seen_nonces:
-                logger.warning("replay_guard blocked duplicate_nonce")
-                raise ReplayAttackError("Duplicate nonce: replay detected")
+            with self._lock:
+                if nonce_str in self._seen_nonces:
+                    logger.warning("replay_guard blocked duplicate_nonce")
+                    raise ReplayAttackError("Duplicate nonce: replay detected")
 
-            while len(self._seen_nonces) >= self._max_nonce_cache:
-                self._seen_nonces.popitem(last=False)
-            self._seen_nonces[nonce_str] = now
+                while len(self._seen_nonces) >= self._max_nonce_cache:
+                    self._seen_nonces.popitem(last=False)
+                self._seen_nonces[nonce_str] = now
 
         if self.max_request_age_seconds > 0:
             ts = self._get_timestamp(message)

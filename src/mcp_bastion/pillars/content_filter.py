@@ -52,17 +52,38 @@ class ContentFilter:
         block_code_execution: bool = True,
         block_file_paths: bool = True,
         block_urls: bool = False,
+        allowlist_patterns: list[str] | None = None,
+        denylist_patterns: list[str] | None = None,
         custom_patterns: list[str] | None = None,
     ) -> None:
         self.block_code_execution = block_code_execution
         self.block_file_paths = block_file_paths
         self.block_urls = block_urls
-        self.custom_patterns = custom_patterns or []
+        self.allowlist_patterns = allowlist_patterns or []
+        self.denylist_patterns = denylist_patterns or custom_patterns or []
+        # Backward compatible alias retained for callers that still use custom_patterns.
+        self.custom_patterns = self.denylist_patterns
 
         self._code_regexes = [re.compile(p, re.IGNORECASE) for p in DEFAULT_CODE_PATTERNS]
         self._path_regexes = [re.compile(p) for p in DEFAULT_PATH_PATTERNS]
         self._url_regex = re.compile(DEFAULT_URL_PATTERN)
-        self._custom_regexes = [re.compile(p) for p in self.custom_patterns]
+
+        def _compile_patterns(patterns: list[str], label: str) -> list[re.Pattern[str]]:
+            compiled: list[re.Pattern[str]] = []
+            for p in patterns:
+                try:
+                    compiled.append(re.compile(p))
+                except re.error as e:
+                    raise ValueError(f"Invalid {label} regex pattern: {e}") from e
+            return compiled
+
+        self._allowlist_regexes = _compile_patterns(self.allowlist_patterns, "allowlist")
+        self._denylist_regexes = _compile_patterns(self.denylist_patterns, "custom")
+
+    @property
+    def _custom_regexes(self) -> list[re.Pattern[str]]:
+        """Alias for denylist regexes (backward compatible with older tests)."""
+        return self._denylist_regexes
 
     def _extract_text(self, value: Any) -> str:
         """Flatten value to string for scanning."""
@@ -87,6 +108,19 @@ class ContentFilter:
         if not flat or not flat.strip():
             return
         text = flat
+
+        for rx in self._allowlist_regexes:
+            if rx.search(text):
+                logger.debug("content_filter allowlisted pattern=%s", rx.pattern)
+                return
+
+        for rx in self._denylist_regexes:
+            if rx.search(text):
+                logger.warning("content_filter blocked denylist pattern=%s", rx.pattern)
+                raise ContentFilterError(
+                    "Content blocked: denylist pattern matched",
+                    matched_pattern=rx.pattern,
+                )
 
         if self.block_code_execution:
             for rx in self._code_regexes:
@@ -114,10 +148,3 @@ class ContentFilter:
                     matched_pattern=DEFAULT_URL_PATTERN,
                 )
 
-        for rx in self._custom_regexes:
-            if rx.search(text):
-                logger.warning("content_filter blocked custom pattern=%s", rx.pattern)
-                raise ContentFilterError(
-                    "Content blocked: custom pattern matched",
-                    matched_pattern=rx.pattern,
-                )

@@ -6,12 +6,36 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import urllib.request
 from typing import Any
 
 from mcp_bastion.pillars.metrics import MetricsStore
 
 logger = logging.getLogger(__name__)
+
+
+def _post_with_retry(
+    req_factory,
+    *,
+    retry_attempts: int,
+    retry_backoff_seconds: float,
+    retry_backoff_max_seconds: float,
+    timeout_seconds: float,
+) -> int:
+    attempts = max(1, int(retry_attempts))
+    backoff = max(0.0, float(retry_backoff_seconds))
+    max_backoff = max(backoff, float(retry_backoff_max_seconds))
+    for attempt in range(1, attempts + 1):
+        try:
+            req = req_factory()
+            with urllib.request.urlopen(req, timeout=timeout_seconds) as resp:
+                return int(getattr(resp, "status", 200))
+        except Exception:
+            if attempt >= attempts:
+                raise
+            if backoff > 0:
+                time.sleep(min(backoff * (2 ** (attempt - 1)), max_backoff))
 
 
 class AlertSink:
@@ -24,8 +48,20 @@ class AlertSink:
 class SlackAlertSink(AlertSink):
     """Send alerts to Slack via webhook."""
 
-    def __init__(self, webhook_url: str) -> None:
+    def __init__(
+        self,
+        webhook_url: str,
+        *,
+        retry_attempts: int = 3,
+        retry_backoff_seconds: float = 0.25,
+        retry_backoff_max_seconds: float = 2.0,
+        timeout_seconds: float = 5.0,
+    ) -> None:
         self.webhook_url = webhook_url
+        self.retry_attempts = retry_attempts
+        self.retry_backoff_seconds = retry_backoff_seconds
+        self.retry_backoff_max_seconds = retry_backoff_max_seconds
+        self.timeout_seconds = timeout_seconds
 
     def send(
         self,
@@ -45,16 +81,23 @@ class SlackAlertSink(AlertSink):
                 }
             ]
         }
-        try:
-            req = urllib.request.Request(
+        def _req():
+            return urllib.request.Request(
                 self.webhook_url,
                 data=json.dumps(payload).encode(),
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                if resp.status >= 400:
-                    logger.warning("Slack webhook returned %s", resp.status)
+        try:
+            status = _post_with_retry(
+                _req,
+                retry_attempts=self.retry_attempts,
+                retry_backoff_seconds=self.retry_backoff_seconds,
+                retry_backoff_max_seconds=self.retry_backoff_max_seconds,
+                timeout_seconds=self.timeout_seconds,
+            )
+            if status is not None and status >= 400:
+                logger.warning("Slack webhook returned %s", status)
         except Exception as e:
             logger.warning("Slack alert failed: %s", e)
 
@@ -75,11 +118,24 @@ class LoggingAlertSink(AlertSink):
 class WebhookAlertSink(AlertSink):
     """POST alerts to any webhook URL (Slack, PagerDuty, custom)."""
 
-    def __init__(self, url: str, headers: dict[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        url: str,
+        headers: dict[str, str] | None = None,
+        *,
+        retry_attempts: int = 3,
+        retry_backoff_seconds: float = 0.25,
+        retry_backoff_max_seconds: float = 2.0,
+        timeout_seconds: float = 5.0,
+    ) -> None:
         self.url = url
         self.headers = dict(headers or {})
         if "Content-Type" not in self.headers:
             self.headers["Content-Type"] = "application/json"
+        self.retry_attempts = retry_attempts
+        self.retry_backoff_seconds = retry_backoff_seconds
+        self.retry_backoff_max_seconds = retry_backoff_max_seconds
+        self.timeout_seconds = timeout_seconds
 
     def send(
         self,
@@ -95,16 +151,23 @@ class WebhookAlertSink(AlertSink):
             "severity": severity,
             "details": details or {},
         }
-        try:
-            req = urllib.request.Request(
+        def _req():
+            return urllib.request.Request(
                 self.url,
                 data=json.dumps(payload).encode(),
                 headers=self.headers,
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                if resp.status >= 400:
-                    logger.warning("Webhook %s returned %s", self.url[:50], resp.status)
+        try:
+            status = _post_with_retry(
+                _req,
+                retry_attempts=self.retry_attempts,
+                retry_backoff_seconds=self.retry_backoff_seconds,
+                retry_backoff_max_seconds=self.retry_backoff_max_seconds,
+                timeout_seconds=self.timeout_seconds,
+            )
+            if status is not None and status >= 400:
+                logger.warning("Webhook %s returned %s", self.url[:50], status)
         except Exception as e:  # pragma: no cover
             logger.warning("Webhook alert failed: %s", e)  # pragma: no cover
 
@@ -115,8 +178,8 @@ def _reason_from_error(reason: str | None) -> str:
     reason_lower = reason.lower()
     if "injection" in reason_lower or "prompt" in reason_lower:
         return "injection"
-    if "rate" in reason_lower or "iteration" in reason_lower:  # pragma: no cover
-        return "rate_limit"  # pragma: no cover
+    if "rate" in reason_lower or "iteration" in reason_lower:
+        return "rate_limit"
     if "rbac" in reason_lower or "cannot access" in reason_lower:
         return "rbac"
     if "cost" in reason_lower or "budget" in reason_lower:
@@ -169,6 +232,12 @@ def make_audit_export_callback(
             record_tool_span(entry.tool, entry.action, entry.latency_ms, entry.reason)
         except Exception:
             pass
+        try:
+            latency = float(entry.latency_ms)
+            store.record_latency_ms(latency)
+            store.record_tool_latency_ms(tool, latency)
+        except (TypeError, ValueError):
+            pass  # missing or non-numeric latency on synthetic entries
         if entry.action == "ALLOWED":
             store.record_request(tool, user)
         else:

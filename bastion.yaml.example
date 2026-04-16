@@ -18,6 +18,11 @@ circuit_breaker:
 
 content_filter:
   enabled: false
+  block_code_execution: true
+  block_file_paths: true
+  block_urls: false
+  allowlist_patterns: []
+  denylist_patterns: []
 
 rbac:
   enabled: false
@@ -48,7 +53,15 @@ alerts:
   slack_webhook: ${SLACK_WEBHOOK_URL}
   webhook_url: ${BASTION_WEBHOOK_URL}
   webhooks: []
+  retry_attempts: 3
+  retry_backoff_seconds: 0.25
+  retry_backoff_max_seconds: 2.0
+  timeout_seconds: 5.0
   alert_on:
     - injection
     - rate_limit
     - cost
+
+hot_reload:
+  enabled: false
+  poll_seconds: 2.0
