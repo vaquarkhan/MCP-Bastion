@@ -5,11 +5,47 @@ on:
     tags:
       - 'integration-v*'
   workflow_dispatch:
+    inputs:
+      package:
+        description: "Package to publish (or 'all')"
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - mcp-bastion-langchain
+          - mcp-bastion-openai
+          - mcp-bastion-anthropic
+          - mcp-bastion-bedrock
+          - mcp-bastion-gemini
+          - mcp-bastion-crewai
+          - mcp-bastion-llamaindex
+          - mcp-bastion-groq
+          - mcp-bastion-mistral
+          - mcp-bastion-cohere
+          - mcp-bastion-azure
+          - mcp-bastion-vertexai
+          - mcp-bastion-huggingface
+          - mcp-bastion-deepseek
+          - mcp-bastion-together
+          - mcp-bastion-fireworks
+          - mcp-bastion-fastmcp
 
 jobs:
   publish-integrations:
     name: Publish Integration Packages to PyPI
     runs-on: ubuntu-latest
+    if: |
+      (
+        github.event_name != 'workflow_dispatch' ||
+        github.event.inputs.package == 'all' ||
+        github.event.inputs.package == matrix.package
+      ) &&
+      (
+        github.event_name != 'push' ||
+        !contains(github.ref_name, 'mcp-bastion-') ||
+        contains(github.ref_name, matrix.package)
+      )
     permissions:
       contents: read
       id-token: write
