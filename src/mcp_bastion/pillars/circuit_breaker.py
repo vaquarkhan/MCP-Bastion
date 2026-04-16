@@ -69,6 +69,8 @@ class CircuitBreaker:
         key = self._get_tool_key(tool)
         with self._lock:
             state = self._circuits[key]
+            if state.state == "open":
+                return
             state.failures += 1
             state.last_failure_at = time.monotonic()
 

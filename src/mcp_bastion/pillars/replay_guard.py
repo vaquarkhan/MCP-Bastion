@@ -50,7 +50,7 @@ class ReplayGuard:
         if isinstance(msg, dict):
             params = msg.get("params") or msg.get("result") or msg
             if isinstance(params, dict):
-                return params.get("nonce") or params.get("id")
+                return params.get("nonce")
         return None
 
     def _get_timestamp(self, message: Any) -> float | None:

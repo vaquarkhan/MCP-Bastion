@@ -62,3 +62,10 @@ def test_rate_limiter_reset_session():
     limiter.reset_session(session_id="s1")
     allowed, _ = limiter.check_iteration(session_id="s1")
     assert allowed
+
+
+def test_rate_limiter_rejects_negative_tokens():
+    """Negative token usage must be rejected."""
+    limiter = TokenBucketRateLimiter(max_iterations=5, token_budget=100)
+    with pytest.raises(ValueError, match="tokens"):
+        limiter.consume_iteration(session_id="s1", tokens=-1)
