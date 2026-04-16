@@ -50,7 +50,7 @@ class SemanticCache:
         self.similarity_threshold = similarity_threshold
         self.max_entries = max_entries
         self.ttl_seconds = ttl_seconds
-        self._cache: OrderedDict[str, tuple[float, Any]] = OrderedDict()
+        self._cache: OrderedDict[str, tuple[float, str, str, Any]] = OrderedDict()
 
     def _make_key(self, tool: str, query: str) -> str:
         return hashlib.sha256(f"{tool}:{query}".encode()).hexdigest()
@@ -69,9 +69,13 @@ class SemanticCache:
         best_score = 0.0
         best_key = None
 
-        for key, (cached_at, (cached_norm, value)) in list(self._cache.items()):
+        for key, (cached_at, cached_tool, cached_norm, value) in list(
+            self._cache.items()
+        ):
             if now - cached_at > self.ttl_seconds:
                 to_remove.append(key)
+                continue
+            if cached_tool != tool:
                 continue
             score = _jaccard_similarity(norm, cached_norm)
             if score >= self.similarity_threshold and score > best_score:
@@ -97,4 +101,4 @@ class SemanticCache:
         key = self._make_key(tool, norm)
         while len(self._cache) >= self.max_entries:
             self._cache.popitem(last=False)
-        self._cache[key] = (time.monotonic(), (norm, value))
+        self._cache[key] = (time.monotonic(), tool, norm, value)

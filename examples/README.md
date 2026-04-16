@@ -165,7 +165,7 @@ PYTHONPATH=src python examples/server_with_config.py           # Linux/Mac
 | PII redaction | pii_redaction | Mask SSN, email, phone, etc. |
 | Rate limiting | rate_limit | Max iterations, timeout, token budget |
 | Audit logging | audit_log | Log who, what, when, blocked/allowed |
-| Content filter | content_filter | Block paths, code, custom patterns |
+| Content filter | content_filter | Block paths/code/URLs with allowlist and denylist tuning |
 | Circuit breaker | circuit_breaker | Disable failing tools after N failures |
 | RBAC | rbac | Tool-level permissions by role |
 | Schema validation | schema_validation | Validate tool input types |

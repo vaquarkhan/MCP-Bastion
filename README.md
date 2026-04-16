@@ -7,7 +7,7 @@
 [![PyPI Monthly Downloads](https://img.shields.io/pypi/dm/mcp-bastion-python?label=monthly)](https://pypi.org/project/mcp-bastion-python/)
 [![PyPI Version](https://img.shields.io/pypi/v/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![npm Version](https://img.shields.io/npm/v/@mcp-bastion/core)](https://www.npmjs.com/package/@mcp-bastion/core)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/mcp-bastion-python?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/mcp-bastion-python)
 
 **Enterprise-Grade Security Middleware for the Model Context Protocol**
@@ -59,10 +59,10 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | Feature | Description |
 |---------|-------------|
 | Prompt injection | Block jailbreaks via Meta PromptGuard |
-| PII redaction | Mask SSN, email, phone via Presidio |
+| PII redaction | Mask many entity types via Presidio (e.g. SSN, email, phone, credit card, passport, IBAN, medical license, and more—see Presidio docs) |
 | Rate limiting | Max iterations, timeout, token budget |
 | Audit logging | Log who, what, when, blocked/allowed |
-| Content filter | Block paths, code, custom patterns |
+| Content filter | Block paths/code/URLs, plus allowlist and denylist patterns |
 | Circuit breaker | Disable failing tools after N failures |
 | RBAC | Tool-level permissions by role |
 | Schema validation | Validate tool input types |
@@ -96,10 +96,13 @@ mcp-bastion dashboard --port 7000
 
 | Doc | Description |
 |-----|-------------|
+| [docs/index.md](docs/index.md) | GitHub Pages-ready docs home |
+| [docs/DETAILED_TUTORIAL.md](docs/DETAILED_TUTORIAL.md) | Step-by-step implementation tutorial for new teams |
 | [docs/USE_CASES.md](docs/USE_CASES.md) | Real use cases: enterprise gateway, LLM products, internal tools, SaaS, compliance |
 | [docs/ATTACK_PREVENTION.md](docs/ATTACK_PREVENTION.md) | Examples showing how MCP-Bastion prevents real attacks (injection, PII leak, rate exhaustion, path traversal, RBAC, replay) |
 | [docs/METRICS.md](docs/METRICS.md) | Performance overhead (&lt;5ms) and effectiveness metrics (dashboard, Prometheus, OTEL) |
 | [docs/TUTORIALS.md](docs/TUTORIALS.md) | Tutorials: integrating with FastMCP, TypeScript, GitHub MCP, and open-source MCP servers |
+| [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md) | Publish docs as a GitHub Pages website from this same repo |
 
 ### One-Line Docker
 
@@ -121,6 +124,8 @@ middleware = build_middleware_from_config()
 
 See [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md).
 
+Tip: set `hot_reload.enabled: true` in `bastion.yaml` to apply policy changes without restarting your MCP server when using `build_middleware_from_config()`.
+
 ### CLI for developers
 
 ```bash
@@ -137,7 +142,7 @@ Set `OTEL_EXPORTER_OTLP_ENDPOINT` to export tool-call spans to OTLP. Install opt
 
 ### Webhook alerts
 
-Use Slack webhook, a single generic webhook (`webhook_url` or `BASTION_WEBHOOK_URL`), or multiple URLs (`alerts.webhooks` in bastion.yaml). Each blocked event can POST to your endpoint (e.g. PagerDuty, custom API).
+Use Slack webhook, a single generic webhook (`webhook_url` or `BASTION_WEBHOOK_URL`), or multiple URLs (`alerts.webhooks` in bastion.yaml). Each blocked event can POST to your endpoint (e.g. PagerDuty, custom API). Webhook delivery now supports retry/backoff controls in `bastion.yaml` (`retry_attempts`, `retry_backoff_seconds`, `retry_backoff_max_seconds`, `timeout_seconds`).
 
 ---
 
@@ -208,6 +213,18 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 ```
+
+**Prerequisites (recommended)**
+
+- **PII redaction:** Presidio expects the spaCy English model. After install, run:  
+  `python -m spacy download en_core_web_sm`  
+  Without it, PII analysis can fail at runtime.
+- **Policy-as-Code (`bastion.yaml`):** install YAML support:  
+  `pip install mcp-bastion-python[policy]`  
+  (adds `pyyaml`; otherwise you may get `ImportError` when loading policy files).
+- **PromptGuard fail-open:** if the PromptGuard model fails to load or inference errors, MCP-Bastion **allows** the request and logs a warning. Treat this as a security degradation and fix the model/runtime before production.
+
+The PyPI wheel ships the full `mcp_bastion` tree (including `config`, `cli`, `otel`, dashboard metrics, and alert sinks). If you use an older wheel that omits modules, upgrade to the current release.
 
 **TypeScript**
 
@@ -577,6 +594,12 @@ When MCP-Bastion blocks a request, it returns standard MCP/JSON-RPC errors:
 | -32001 | `PromptInjectionError` | Tool args contain jailbreak/injection |
 | -32002 | `RateLimitExceededError` | Session exceeds iteration or timeout limit |
 | -32003 | `TokenBudgetExceededError` | Session exceeds token budget |
+| -32004 | `CircuitBreakerOpenError` | Tool’s circuit breaker is open after failures |
+| -32005 | `ContentFilterError` | Content filter matched a blocked pattern |
+| -32006 | `RBACError` | Caller not allowed to use this tool |
+| -32007 | `SchemaValidationError` | Tool arguments failed schema validation |
+| -32008 | `ReplayAttackError` | Duplicate nonce / replay detected |
+| -32009 | `CostBudgetExceededError` | Session cost budget exceeded |
 
 ```python
 # Python: exceptions
@@ -584,17 +607,29 @@ from mcp_bastion.errors import (
     PromptInjectionError,
     RateLimitExceededError,
     TokenBudgetExceededError,
+    CircuitBreakerOpenError,
+    ContentFilterError,
+    RBACError,
+    SchemaValidationError,
+    ReplayAttackError,
+    CostBudgetExceededError,
 )
 import logging
 logger = logging.getLogger(__name__)
 
 try:
     result = await middleware(context, call_next)
-except PromptInjectionError as e:
-    logger.warning("blocked: %s", e.to_mcp_error())
-except RateLimitExceededError as e:
-    logger.warning("blocked: %s", e.to_mcp_error())
-except TokenBudgetExceededError as e:
+except (
+    PromptInjectionError,
+    RateLimitExceededError,
+    TokenBudgetExceededError,
+    CircuitBreakerOpenError,
+    ContentFilterError,
+    RBACError,
+    SchemaValidationError,
+    ReplayAttackError,
+    CostBudgetExceededError,
+) as e:
     logger.warning("blocked: %s", e.to_mcp_error())
 ```
 
@@ -651,4 +686,13 @@ See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 C
 
 ## License
 
-#MIT
+MCP-Bastion is distributed under the **MCP-Bastion Community and Commercial License**.
+
+- Non-commercial use is permitted with required attribution/citation.
+- Commercial use requires a separate paid agreement.
+
+See:
+
+- [LICENSE](LICENSE)
+- [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
+- [CITATION.cff](CITATION.cff)

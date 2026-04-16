@@ -1,0 +1,58 @@
+MCP-Bastion Community and Commercial License
+Version 1.0
+
+Copyright (c) 2026 Viquar Khan
+All rights reserved.
+
+1. Definitions
+
+"Software" means the MCP-Bastion source code, binaries, documentation, and related files in this repository.
+"Licensor" means the copyright holder(s) of the Software.
+"You" means an individual or legal entity exercising rights under this License.
+"Non-Commercial Use" means use that is not primarily intended for or directed toward commercial advantage or monetary compensation.
+"Commercial Use" means any use of the Software by or for a business, government, or other organization in production, revenue-generating, internal enterprise, paid consulting, managed service, or other commercial context.
+
+2. Grant for Non-Commercial Use
+
+Subject to this License, Licensor grants You a personal, revocable, non-exclusive, non-transferable, worldwide license to use, copy, modify, and redistribute the Software for Non-Commercial Use only.
+
+3. Attribution and Citation Requirement
+
+Any distribution, public deployment, published benchmark, blog post, paper, or derivative work that uses or is based on the Software must include visible attribution to MCP-Bastion, including:
+
+- Project name: MCP-Bastion
+- Repository URL: https://github.com/vaquarkhan/MCP-Bastion
+- Copyright notice
+
+If citation metadata exists (for example `CITATION.cff`), You must include that citation information in documentation or acknowledgements.
+
+4. Commercial Use Requires Separate Paid License
+
+No rights are granted under this License for Commercial Use.
+For any Commercial Use, You must obtain a separate commercial license from Licensor before use.
+See `COMMERCIAL_LICENSE.md` for contact details.
+
+5. Restrictions
+
+You may not:
+
+- remove or alter copyright, attribution, or license notices;
+- represent this license as OSI-approved open source;
+- use Licensor trademarks, logos, or names except for required attribution.
+
+6. No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+7. Limitation of Liability
+
+IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+8. Termination
+
+Any use not expressly permitted by this License terminates Your rights automatically.
+Upon termination, You must stop use and distribution of the Software until rights are reinstated by Licensor in writing.
+
+9. Governing Terms
+
+For Commercial Use, the separate signed commercial agreement controls and supersedes this License for those use cases.
