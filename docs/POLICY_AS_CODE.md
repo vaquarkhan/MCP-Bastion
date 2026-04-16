@@ -40,6 +40,23 @@ alerts:
   webhooks:
     - https://hooks.slack.com/...
     - https://events.pagerduty.com/...
+  retry_attempts: 3
+  retry_backoff_seconds: 0.25
+  retry_backoff_max_seconds: 2.0
+  timeout_seconds: 5.0
+
+content_filter:
+  enabled: true
+  block_code_execution: true
+  block_file_paths: true
+  block_urls: false
+  allowlist_patterns: []
+  denylist_patterns:
+    - "(?i)password"
+
+hot_reload:
+  enabled: true
+  poll_seconds: 2.0
 ```
 
 ## Load in code
@@ -69,13 +86,14 @@ middleware = build_middleware_from_config()
 | pii | enabled | PII redaction (Presidio) |
 | rate_limit | enabled, max_iterations, timeout_seconds, token_budget | Token bucket |
 | circuit_breaker | enabled | Per-tool circuit breaker |
-| content_filter | enabled | Content filter |
+| content_filter | enabled, block_code_execution, block_file_paths, block_urls, allowlist_patterns, denylist_patterns | Content filter with explicit allow/deny tuning |
 | rbac | enabled, permissions | Role -> list of tools |
 | schema_validation | enabled | Input schema validation |
 | replay_guard | enabled, require_nonce | Replay protection |
 | cost_tracker | enabled, max_cost_per_session, max_cost_per_day | Cost budgets |
 | semantic_cache | enabled | Semantic cache |
 | audit | enabled | Audit log + metrics |
-| alerts | slack_webhook, webhook_url, webhooks, alert_on | Slack, generic webhook(s), and alert kinds |
+| alerts | slack_webhook, webhook_url, webhooks, alert_on, retry_attempts, retry_backoff_seconds, retry_backoff_max_seconds, timeout_seconds | Slack/generic webhook(s), alert kinds, and retry/backoff policy |
+| hot_reload | enabled, poll_seconds | Reload `bastion.yaml` in process without restart |
 
 Install PyYAML for YAML loading: `pip install pyyaml`.

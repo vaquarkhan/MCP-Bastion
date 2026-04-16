@@ -34,6 +34,15 @@ def test_semantic_cache_different_tool_isolated():
     assert sc.get("tool_b", "query") == {"b": 2}
 
 
+def test_semantic_cache_same_query_different_tool_order_independent():
+    """Hits must not leak across tools regardless of LRU order (regression)."""
+    sc = SemanticCache()
+    sc.set("tool_a", "query", {"a": 1})
+    sc.set("tool_b", "query", {"b": 2})
+    assert sc.get("tool_b", "query") == {"b": 2}
+    assert sc.get("tool_a", "query") == {"a": 1}
+
+
 def test_semantic_cache_jaccard_empty_strings():
     """Jaccard returns 0 for empty strings."""
     from mcp_bastion.pillars.semantic_cache import _jaccard_similarity

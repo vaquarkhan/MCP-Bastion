@@ -1,0 +1,6 @@
+title: MCP-Bastion Docs
+description: Security middleware for Model Context Protocol servers
+theme: minima
+markdown: kramdown
+plugins:
+  - jekyll-seo-tag

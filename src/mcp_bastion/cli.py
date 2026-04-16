@@ -95,6 +95,22 @@ def cmd_serve(config_path: str | None, http_port: int | None, host: str) -> int:
     return subprocess.run(argv, env=env).returncode
 
 
+def _resolve_dashboard_repo() -> Path | None:
+    """Directory that contains dashboard/app.py (prefer cwd so the right clone is used)."""
+    cwd = Path.cwd().resolve()
+    if (cwd / "dashboard" / "app.py").is_file():
+        return cwd
+    # Development layout: MCP-Bastion/src/mcp_bastion/cli.py -> repo root is 3 levels up
+    here = Path(__file__).resolve()
+    for depth in (3, 4):
+        cand = here
+        for _ in range(depth):
+            cand = cand.parent
+        if (cand / "dashboard" / "app.py").is_file():
+            return cand
+    return None
+
+
 def cmd_dashboard(port: int) -> int:
     _configure_cli_logging()
     _ensure_src_on_path()
@@ -103,15 +119,17 @@ def cmd_dashboard(port: int) -> int:
     except ImportError:
         logger.error("Install dashboard deps: pip install fastapi uvicorn")
         return 1
-    root = Path(__file__).resolve().parent.parent.parent
-    sys.path.insert(0, str(root / "src"))
-    dashboard_app = root / "dashboard" / "app.py"
-    if not dashboard_app.exists():
-        dashboard_app = Path("dashboard/app.py")
-    if not dashboard_app.exists():
-        logger.error("dashboard/app.py not found. Run from repo root.")
+    repo = _resolve_dashboard_repo()
+    if repo is None:
+        logger.error(
+            "dashboard/app.py not found. cd into the MCP-Bastion repo root (folder that contains dashboard/) and retry."
+        )
         return 1
-    sys.path.insert(0, str(root))
+    # cwd first in path so `import dashboard` always loads this repo, not another package
+    sys.path.insert(0, str(repo))
+    sys.path.insert(0, str(repo / "src"))
+    dash_py = repo / "dashboard" / "app.py"
+    logger.info("Dashboard app: %s", dash_py)
     uvicorn.run(
         "dashboard.app:app",
         host="0.0.0.0",

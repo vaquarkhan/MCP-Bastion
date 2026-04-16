@@ -38,6 +38,21 @@ def test_circuit_breaker_success_resets_half_open():
     cb.check("t")
 
 
+def test_circuit_breaker_half_open_allows_probe_without_raise():
+    """Second check() while half_open hits the early return at end of check()."""
+    import time
+
+    cb = CircuitBreaker(failure_threshold=2, recovery_timeout=0.05)
+    cb.record_failure("probe")
+    cb.record_failure("probe")
+    with pytest.raises(CircuitBreakerOpenError):
+        cb.check("probe")
+    time.sleep(0.07)
+    cb.check("probe")
+    cb.check("probe")
+    cb.record_success("probe")
+
+
 def test_circuit_breaker_reset():
     cb = CircuitBreaker(failure_threshold=3, recovery_timeout=10.0)
     cb.record_failure("t")

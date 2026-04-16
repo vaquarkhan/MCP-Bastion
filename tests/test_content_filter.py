@@ -51,6 +51,25 @@ def test_content_filter_custom_patterns():
         cf.check("api_key=123")
 
 
+def test_content_filter_denylist_patterns():
+    cf = ContentFilter(
+        block_code_execution=False,
+        block_file_paths=False,
+        denylist_patterns=[r"secret[_-]?token"],
+    )
+    with pytest.raises(ContentFilterError):
+        cf.check("secret_token=abc")
+
+
+def test_content_filter_allowlist_short_circuit():
+    cf = ContentFilter(
+        block_code_execution=True,
+        block_file_paths=True,
+        allowlist_patterns=[r"^safe-allowed-input$"],
+    )
+    cf.check("safe-allowed-input")
+
+
 def test_content_filter_safe_content():
     cf = ContentFilter()
     cf.check("hello world")

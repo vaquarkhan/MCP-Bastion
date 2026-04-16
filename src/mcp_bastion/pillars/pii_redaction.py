@@ -75,6 +75,14 @@ class PIIRedactor:
             if not results:
                 return text
             logger.debug("redacted %d entities", len(results))
+            try:
+                from collections import Counter
+
+                from mcp_bastion.pillars.metrics import MetricsStore
+
+                MetricsStore.get().record_pii_entities(dict(Counter(r.entity_type for r in results)))
+            except Exception:
+                pass
             anonymized = self._anonymizer.anonymize(text=text, analyzer_results=results)
             return anonymized.text
         except Exception as e:
