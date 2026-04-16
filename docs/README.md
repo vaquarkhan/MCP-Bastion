@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: `mcp-bastion-python==1.0.13`.
+Current Python package release: `mcp-bastion-python==1.0.14`.
 
 ## Start here
 
