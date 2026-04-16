@@ -7,7 +7,7 @@ name = "mcp-bastion-llamaindex"
 version = "0.1.1"
 description = "MCP-Bastion security middleware for LlamaIndex — prompt injection, PII, and rate-limit protection for RAG pipelines"
 readme = "README.md"
-license = { file = "../../LICENSE" }
+license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
 requires-python = ">=3.10"
 authors = [{ name = "Viquar Khan" }]
 keywords = ["mcp", "bastion", "llamaindex", "rag", "security", "llm", "prompt-injection", "pii"]

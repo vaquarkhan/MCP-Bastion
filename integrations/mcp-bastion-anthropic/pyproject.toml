@@ -7,7 +7,7 @@ name = "mcp-bastion-anthropic"
 version = "0.1.1"
 description = "MCP-Bastion security middleware for Anthropic Claude — prompt injection, PII, and rate-limit protection for AI agents"
 readme = "README.md"
-license = { file = "../../LICENSE" }
+license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
 requires-python = ">=3.10"
 authors = [
     { name = "Viquar Khan" }

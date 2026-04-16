@@ -7,7 +7,7 @@ name = "mcp-bastion-langchain"
 version = "0.1.1"
 description = "MCP-Bastion security middleware integration for LangChain — prompt injection, PII, and rate-limit protection for LLM agents"
 readme = "README.md"
-license = { file = "../../LICENSE" }
+license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
 requires-python = ">=3.10"
 authors = [
     { name = "Viquar Khan" }
