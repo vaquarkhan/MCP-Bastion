@@ -510,10 +510,15 @@ DASHBOARD_HTML = """
     const PALETTE = ['#38bdf8', '#a78bfa', '#34d399', '#fb7185', '#fbbf24', '#2dd4bf', '#f472b6', '#94a3b8'];
     const charts = {};
     let initialized = false;
+    let chartUnavailableNotified = false;
 
-    Chart.defaults.color = '#94a3b8';
-    Chart.defaults.borderColor = 'rgba(148, 163, 184, 0.15)';
-    Chart.defaults.font.family = '"DM Sans", system-ui, sans-serif';
+    function initChartDefaults() {
+      if (typeof Chart === 'undefined') return false;
+      Chart.defaults.color = '#94a3b8';
+      Chart.defaults.borderColor = 'rgba(148, 163, 184, 0.15)';
+      Chart.defaults.font.family = '"DM Sans", system-ui, sans-serif';
+      return true;
+    }
 
     function updateThemeButton() {
       var dark = document.documentElement.getAttribute('data-theme') !== 'light';
@@ -598,6 +603,7 @@ DASHBOARD_HTML = """
     }
 
     function createCharts() {
+      if (!initChartDefaults()) return false;
       const trafficCtx = document.getElementById('chartTraffic').getContext('2d');
       charts.traffic = new Chart(trafficCtx, {
         type: 'line',
@@ -788,6 +794,7 @@ DASHBOARD_HTML = """
         }
       });
       applyChartTheme();
+      return true;
     }
 
     function updateTraffic(ts) {
@@ -937,9 +944,15 @@ DASHBOARD_HTML = """
           return '<div class="alert ' + sev + '">' + a.kind + ': ' + (a.message || '') + '</div>';
         }).join('') || '<div class="alert" style="border-left-color:#64748b;">No alerts</div>';
 
+      if (!initialized && typeof Chart !== 'undefined') {
+        initialized = createCharts();
+      }
       if (!initialized) {
-        initialized = true;
-        createCharts();
+        if (!chartUnavailableNotified) {
+          chartUnavailableNotified = true;
+          console.warn('Chart.js not loaded yet; showing KPI data only until script is ready.');
+        }
+        return;
       }
       updateTraffic(d.time_series);
       updateReasons(d.blocked_by_reason);
@@ -951,7 +964,11 @@ DASHBOARD_HTML = """
     }
 
     (async function poll() {
-      try { render(await fetchMetrics()); } catch (e) { console.error(e); }
+      try {
+        render(await fetchMetrics());
+      } catch (e) {
+        console.error(e);
+      }
       setTimeout(poll, 2000);
     })();
   </script>

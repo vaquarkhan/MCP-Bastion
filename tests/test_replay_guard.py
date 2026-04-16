@@ -87,7 +87,8 @@ def test_replay_guard_nonce_cache_eviction():
     rg.check({"params": {"nonce": "n1"}})
 
 
-def test_replay_guard_extracts_nonce_from_id():
-    """Uses id as nonce fallback."""
+def test_replay_guard_does_not_use_id_as_nonce():
+    """JSON-RPC id must not be treated as replay nonce."""
     rg = ReplayGuard(require_nonce=True)
-    rg.check({"params": {"id": "req-123"}})
+    with pytest.raises(ReplayAttackError, match="nonce"):
+        rg.check({"params": {"id": "req-123"}})

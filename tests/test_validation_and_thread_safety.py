@@ -191,6 +191,50 @@ class TestCircuitBreakerThreadSafety:
             t.join()
 
 
+class TestRateLimiterThreadSafety:
+    def test_concurrent_consume_and_check(self):
+        rl = TokenBucketRateLimiter(max_iterations=1_000, timeout_seconds=60, token_budget=10_000)
+        barrier = threading.Barrier(12)
+        errors = []
+
+        def worker(i):
+            barrier.wait()
+            try:
+                rl.consume_iteration(session_id="s", tokens=i % 3)
+                rl.check_iteration(session_id="s")
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=worker, args=(i,)) for i in range(12)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert not errors
+
+
+class TestCostTrackerThreadSafety:
+    def test_concurrent_record_and_check(self):
+        ct = CostTracker(max_cost_per_session=100.0, max_cost_per_day=100.0)
+        barrier = threading.Barrier(10)
+        errors = []
+
+        def worker():
+            barrier.wait()
+            try:
+                ct.record(0.1, session_id="s")
+                ct.check(session_id="s")
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=worker) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert not errors
+
+
 # ── Coverage: alerts rate_limit reason ────────────────────────────────
 
 
