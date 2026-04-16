@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-groq"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP-Bastion security middleware for Groq — prompt injection, PII, and rate-limit protection for ultra-fast LLM inference"
 readme = "README.md"
 license = { file = "../../LICENSE" }
@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp-bastion-python>=1.0.11",
+    "mcp-bastion-python>=1.0.13",
     "groq>=0.5.0",
 ]
 
