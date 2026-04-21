@@ -4,7 +4,7 @@ CLI for MCP-Bastion developers.
 Usage:
   mcp-bastion validate [--config PATH]
   mcp-bastion serve [--config PATH] [--http PORT] [--host HOST]
-  mcp-bastion dashboard [--port PORT]
+  mcp-bastion dashboard [--port PORT] [--reload] [--demo | --no-demo]
 """
 
 from __future__ import annotations
@@ -111,9 +111,21 @@ def _resolve_dashboard_repo() -> Path | None:
     return None
 
 
-def cmd_dashboard(port: int) -> int:
+def cmd_dashboard(port: int, reload: bool = False, demo: bool = False, no_demo: bool = False) -> int:
     _configure_cli_logging()
     _ensure_src_on_path()
+    # Default: seed examples/dashboard_demo.py so local graphs are populated without a running MCP server.
+    # Opt out: --no-demo or MCP_BASTION_DEMO=0 / false / no
+    if no_demo:
+        os.environ["MCP_BASTION_DEMO"] = "0"
+    elif demo:
+        os.environ["MCP_BASTION_DEMO"] = "1"
+    else:
+        os.environ.setdefault("MCP_BASTION_DEMO", "1")
+    if os.environ.get("MCP_BASTION_DEMO", "").strip().lower() in ("1", "true", "yes"):
+        logger.info(
+            "Demo metrics enabled: graphs seed from examples/dashboard_demo.py on startup (disable: --no-demo)."
+        )
     try:
         import uvicorn
     except ImportError:
@@ -129,12 +141,30 @@ def cmd_dashboard(port: int) -> int:
     sys.path.insert(0, str(repo))
     sys.path.insert(0, str(repo / "src"))
     dash_py = repo / "dashboard" / "app.py"
+    env_reload = os.environ.get("MCP_BASTION_DASHBOARD_RELOAD", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    do_reload = reload or env_reload
     logger.info("Dashboard app: %s", dash_py)
+    if do_reload:
+        logger.info(
+            "Auto-reload enabled (dashboard/ changes). Or set MCP_BASTION_DASHBOARD_RELOAD=1."
+        )
+    else:
+        logger.info(
+            "No auto-reload: stop and restart this process after editing dashboard/app.py, "
+            "or run: mcp-bastion dashboard --reload"
+        )
+    bind_host = (os.environ.get("MCP_BASTION_DASHBOARD_HOST") or "127.0.0.1").strip() or "127.0.0.1"
+    logger.info("Open http://%s:%s/meta — check ui_revision matches your tree.", bind_host, port)
     uvicorn.run(
         "dashboard.app:app",
-        host="0.0.0.0",
+        host=bind_host,
         port=port,
-        reload=False,
+        reload=do_reload,
+        reload_dirs=[str(repo / "dashboard")] if do_reload else None,
     )
     return 0
 
@@ -158,7 +188,31 @@ def main() -> int:
 
     dash_parser = sub.add_parser("dashboard", help="Run metrics dashboard")
     dash_parser.add_argument("--port", "-p", type=int, default=7000, help="Dashboard port (default 7000)")
-    dash_parser.set_defaults(func=lambda **kw: cmd_dashboard(kw.get("port", 7000)))
+    dash_parser.add_argument(
+        "--reload",
+        action="store_true",
+        help="Restart the server when files under dashboard/ change (development). "
+        "Or set env MCP_BASTION_DASHBOARD_RELOAD=1.",
+    )
+    _dash_demo = dash_parser.add_mutually_exclusive_group()
+    _dash_demo.add_argument(
+        "--demo",
+        action="store_true",
+        help="Force MCP_BASTION_DEMO=1 (default seeds demo unless MCP_BASTION_DEMO disables it).",
+    )
+    _dash_demo.add_argument(
+        "--no-demo",
+        action="store_true",
+        help="Do not seed demo metrics; dashboard stays empty until middleware feeds MetricsStore.",
+    )
+    dash_parser.set_defaults(
+        func=lambda **kw: cmd_dashboard(
+            port=kw.get("port", 7000),
+            reload=bool(kw.get("reload")),
+            demo=bool(kw.get("demo")),
+            no_demo=bool(kw.get("no_demo")),
+        )
+    )
 
     args = parser.parse_args()
     ns = vars(args)
