@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [docs/ERRORS.md](docs/ERRORS.md): reference for JSON-RPC error codes `-32001` through `-32016` and matching Python exceptions.
+- Tests: `tests/test_release_metadata.py` (version alignment across `pyproject.toml`, `__version__`, `server.json`, `CITATION.cff`); expanded `tests/test_errors.py` for all policy error codes.
 
 ### Release notes
 
