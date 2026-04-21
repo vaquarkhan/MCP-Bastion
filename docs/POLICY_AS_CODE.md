@@ -95,5 +95,25 @@ middleware = build_middleware_from_config()
 | audit | enabled | Audit log + metrics |
 | alerts | slack_webhook, webhook_url, webhooks, alert_on, retry_attempts, retry_backoff_seconds, retry_backoff_max_seconds, timeout_seconds | Slack/generic webhook(s), alert kinds, and retry/backoff policy |
 | hot_reload | enabled, poll_seconds | Reload `bastion.yaml` in process without restart |
+| audit_hash_chain | anchor_every, anchor_webhook_url | Tamper-evident hash chain on audit exports; optional periodic anchors POSTed to webhook |
+| behavior_fingerprint | enabled | Per-session tool-sequence fingerprinting and drift anomalies |
+| cost_attribution | enabled | Merge token metadata with pricing tables for FinOps rollups in metrics |
+| policy_engine | type (`none` / `opa` / `cedar`), opa.*, cedar.* | Optional OPA or Cedar evaluation alongside YAML RBAC |
+| sensitive_classifier | enabled, threshold, use_transformers, model_name, block_labels | Model-weighted sensitive business content detection |
+| multi_tenant | enabled, config_dir, default_tenant | One process: load `<tenant>.yaml` from `config_dir` per resolved tenant |
+
+### Multi-tenant resolution
+
+Tenant ID is taken from (first match):
+
+1. `context.metadata["tenant_id"]`
+2. `tools/call` params `tenant_id` or `params.metadata.tenant_id`
+3. Session prefix `tenant:<id>|...`
+
+Missing files fall back to the **root** `bastion.yaml` policy with `multi_tenant` disabled for the built per-tenant chain.
+
+### Red-team validation
+
+Run `mcp-bastion redteam -c bastion.yaml -o report.json` to score the active policy against curated attack traffic (see CLI docs).
 
 Install PyYAML for YAML loading: `pip install pyyaml`.

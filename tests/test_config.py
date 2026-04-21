@@ -11,22 +11,32 @@ import pytest
 
 from mcp_bastion.config import (
     BastionConfig,
+    _bastion_distribution_version,
     _HotReloadingMiddleware,
     build_middleware_from_config,
     load_config,
 )
 from mcp_bastion.base import MiddlewareContext
+from mcp_bastion.errors import ContentFilterError
 
 
 def test_bastion_config_defaults():
     c = BastionConfig()
+    assert c.telemetry_export_mode == "all"
+    assert c.telemetry_sinks == []
+    assert c.tool_metadata_guard_enabled is False
     assert c.prompt_guard is True
     assert c.pii is True
     assert c.rate_limit is True
     assert c.audit is True
     assert c.rate_limit_max_iterations == 15
     assert c.rbac is False
+    assert c.semantic_firewall is False
     assert c.alerts_on == ["injection", "rate_limit", "cost"]
+    assert c.policy_engine_type == "none"
+    assert c.behavior_fingerprint is True
+    assert c.cost_attribution is True
+    assert c.audit_hash_chain_anchor_every == 0
 
 
 def test_load_config_missing_file_returns_defaults():
@@ -49,6 +59,8 @@ rbac:
     default: ["read"]
 audit:
   enabled: false
+semantic_firewall:
+  enabled: true
 """, encoding="utf-8")
     try:
         import yaml
@@ -60,6 +72,68 @@ audit:
     assert result.rbac is True
     assert result.rbac_permissions.get("default") == ["read"]
     assert result.audit is False
+    assert result.semantic_firewall is True
+
+
+def test_load_config_policy_engine_and_audit_hash(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+audit_hash_chain:
+  anchor_every: 10
+  anchor_webhook_url: https://example.com/anchor
+behavior_fingerprint:
+  enabled: false
+cost_attribution:
+  enabled: false
+policy_engine:
+  type: opa
+  opa:
+    policy_dir: /policies
+    query: data.test.allow
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    result = load_config(str(yaml_path))
+    assert result.audit_hash_chain_anchor_every == 10
+    assert result.audit_anchor_webhook_url == "https://example.com/anchor"
+    assert result.behavior_fingerprint is False
+    assert result.cost_attribution is False
+    assert result.policy_engine_type == "opa"
+    assert result.opa_policy_dir == "/policies"
+    assert result.opa_query == "data.test.allow"
+
+
+def test_load_config_multi_tenant_and_sensitive_classifier(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+multi_tenant:
+  enabled: true
+  config_dir: ./tenants
+  default_tenant: global
+sensitive_classifier:
+  enabled: true
+  threshold: 0.4
+  block_labels: [sensitive_business]
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    result = load_config(str(yaml_path))
+    assert result.multi_tenant_enabled is True
+    assert result.multi_tenant_config_dir == "./tenants"
+    assert result.multi_tenant_default_tenant == "global"
+    assert result.sensitive_classifier is True
+    assert result.sensitive_classifier_threshold == 0.4
+    assert result.sensitive_classifier_block_labels == ["sensitive_business"]
 
 
 def test_load_config_content_filter_and_alert_and_hot_reload_fields(tmp_path):
@@ -221,7 +295,7 @@ def test_hot_reload_mtime_oserror(tmp_path):
         return real_stat(self)
 
     with mock.patch.object(Path, "stat", stat_stub):
-        assert h._mtime() is None
+        assert h._file_sig() is None
 
 
 def test_hot_reload_maybe_skips_when_poll_interval_not_elapsed(tmp_path):
@@ -270,3 +344,139 @@ async def test_build_middleware_hot_reload_valid_update_logs_reload(tmp_path, ca
     with caplog.at_level(logging.INFO, logger="mcp_bastion.config"):
         await mw(ctx, call_next)
     assert "Reloaded bastion config" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_build_middleware_multi_tenant_uses_tenant_specific_file(tmp_path):
+    tenant_dir = tmp_path / "tenants"
+    tenant_dir.mkdir()
+    (tenant_dir / "acme.yaml").write_text(
+        "content_filter:\n  enabled: true\n  block_file_paths: true\nprompt_guard:\n  enabled: false\n",
+        encoding="utf-8",
+    )
+    base = BastionConfig(
+        prompt_guard=False,
+        content_filter=False,
+        audit=False,
+        multi_tenant_enabled=True,
+        multi_tenant_config_dir=str(tenant_dir),
+    )
+    mw = build_middleware_from_config(base)
+
+    async def call_next(ctx):
+        return {"ok": True}
+
+    ctx = MiddlewareContext(
+        message={"method": "tools/call", "params": {"name": "read", "arguments": {"path": "/etc/passwd"}}},
+        request_id="r1",
+        session_id="tenant:acme|s-1",
+    )
+    with pytest.raises(ContentFilterError):
+        await mw(ctx, call_next)
+
+
+def test_bastion_distribution_version_unknown_on_metadata_error():
+    with mock.patch("importlib.metadata.version", side_effect=Exception("no distribution")):
+        assert _bastion_distribution_version() == "unknown"
+
+
+def test_build_middleware_schedules_governance_beacon(tmp_path):
+    from mcp_bastion.governance_beacon import reset_registry_beacon_for_tests
+
+    reset_registry_beacon_for_tests()
+    p = tmp_path / "b.yaml"
+    p.write_text(
+        """
+governance:
+  registry_url: http://127.0.0.1:9/nope
+  service_id: unit-test
+hot_reload:
+  enabled: false
+multi_tenant:
+  enabled: false
+audit:
+  enabled: false
+prompt_guard:
+  enabled: false
+pii:
+  enabled: false
+rate_limit:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    with mock.patch("mcp_bastion.config.schedule_registry_beacon") as sb:
+        cfg = load_config(str(p))
+        build_middleware_from_config(cfg)
+    assert sb.called
+
+
+@pytest.mark.asyncio
+async def test_multi_tenant_missing_tenant_yaml_uses_base_chain(tmp_path):
+    tenant_dir = tmp_path / "tenants"
+    tenant_dir.mkdir()
+    base = BastionConfig(
+        prompt_guard=False,
+        content_filter=False,
+        audit=False,
+        multi_tenant_enabled=True,
+        multi_tenant_config_dir=str(tenant_dir),
+    )
+    mw = build_middleware_from_config(base)
+
+    async def call_next(ctx):
+        return {"ok": True}
+
+    ctx = MiddlewareContext(
+        message={"method": "tools/call", "params": {"name": "read", "arguments": {"path": "/etc/passwd"}}},
+        request_id="r1",
+        session_id="tenant:unknowncorp|s-1",
+    )
+    assert await mw(ctx, call_next) == {"ok": True}
+
+
+@pytest.mark.asyncio
+async def test_multi_tenant_reuses_cached_chain(tmp_path):
+    tenant_dir = tmp_path / "tenants"
+    tenant_dir.mkdir()
+    (tenant_dir / "acme.yaml").write_text(
+        "content_filter:\n  enabled: false\nprompt_guard:\n  enabled: false\n",
+        encoding="utf-8",
+    )
+    base = BastionConfig(
+        prompt_guard=False,
+        content_filter=False,
+        audit=False,
+        multi_tenant_enabled=True,
+        multi_tenant_config_dir=str(tenant_dir),
+    )
+    mw = build_middleware_from_config(base)
+
+    async def call_next(ctx):
+        return {"ok": True}
+
+    ctx = MiddlewareContext(
+        message={"method": "ping"},
+        request_id="r1",
+        session_id="tenant:acme|s1",
+    )
+    assert await mw(ctx, call_next) == {"ok": True}
+    assert await mw(ctx, call_next) == {"ok": True}
+
+
+def test_build_middleware_edge_auth_without_secret_warns(monkeypatch, caplog):
+    monkeypatch.delenv("BASTION_EDGE_SECRET", raising=False)
+    cfg = BastionConfig(
+        prompt_guard=False,
+        pii=False,
+        rate_limit=False,
+        audit=False,
+        edge_auth_enabled=True,
+    )
+    with caplog.at_level("WARNING", logger="mcp_bastion.config"):
+        build_middleware_from_config(cfg)
+    assert "edge_auth" in caplog.text.lower()

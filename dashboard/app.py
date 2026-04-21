@@ -18,30 +18,129 @@ root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(root / "src"))
 
 try:
-    from fastapi import FastAPI
+    from fastapi import FastAPI, HTTPException, Query
     from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
     from fastapi.staticfiles import StaticFiles
 except ImportError:
     logger.error("Install: pip install fastapi uvicorn")
     sys.exit(1)
 
+from mcp_bastion.pillars.audit_hash_chain import AuditHashChain
 from mcp_bastion.pillars.metrics import MetricsStore
+from mcp_bastion.policy_simulator import simulate_policy
 
 app = FastAPI(title="MCP-Bastion Dashboard")
 
 _static_dir = Path(__file__).resolve().parent / "static"
 if _static_dir.is_dir():
     app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+_images_dir = root / "images"
+if _images_dir.is_dir():
+    app.mount("/images", StaticFiles(directory=str(_images_dir)), name="product_images")
+
+
+@app.post("/api/audit/verify")
+def verify_audit_chain(payload: dict):
+    """Verify a list of exported audit/forensic entries still forms a valid hash chain."""
+    events = payload.get("events")
+    if not isinstance(events, list):
+        raise HTTPException(status_code=400, detail="body must include events: array")
+    return JSONResponse(AuditHashChain.get().verify_recent(events))
 
 
 @app.get("/api/metrics")
-def get_metrics():
+def get_metrics(tenant_id: str | None = Query(None)):
     try:
-        return JSONResponse(MetricsStore.get().get_metrics())
+        data = MetricsStore.get().get_metrics()
+        if tenant_id:
+            tenant = data.get("tenants", {}).get(tenant_id, {"requests_total": 0, "blocked_total": 0, "cost_total": 0.0})
+            data["tenant_view"] = {"tenant_id": tenant_id, **tenant}
+        return JSONResponse(data)
     except Exception as e:
         logger.exception("Failed to get metrics: %s", e)
         return JSONResponse(
             {"error": "metrics_unavailable", "message": str(e)},
+            status_code=500,
+        )
+
+
+@app.get("/api/forensics")
+def get_forensics(
+    blocked_only: bool = Query(True),
+    limit: int = Query(20, ge=1, le=200),
+    tenant_id: str | None = Query(None),
+):
+    try:
+        store = MetricsStore.get()
+        items = store.list_forensic_events(
+            blocked_only=blocked_only,
+            limit=max(1, min(limit * 5, 1000)) if tenant_id else limit,
+            include_full=False,
+        )
+        if tenant_id:
+            items = [x for x in items if x.get("tenant_id") == tenant_id][:limit]
+        return JSONResponse({"items": items})
+    except Exception as e:
+        logger.exception("Failed to get forensics: %s", e)
+        return JSONResponse(
+            {"error": "forensics_unavailable", "message": str(e)},
+            status_code=500,
+        )
+
+
+@app.get("/api/forensics/{event_id}")
+def get_forensic_event(event_id: str):
+    event = MetricsStore.get().get_forensic_event(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="forensic_event_not_found")
+    return JSONResponse(event)
+
+
+@app.get("/api/forensics/{event_id}/replay")
+def get_forensic_replay(event_id: str):
+    event = MetricsStore.get().get_forensic_event(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="forensic_event_not_found")
+    payload = event.get("replay_payload")
+    if payload is None:
+        raise HTTPException(status_code=404, detail="replay_payload_not_available")
+    return JSONResponse(
+        {
+            "event_id": event_id,
+            "tool": event.get("tool"),
+            "request_id": event.get("request_id"),
+            "session_id": event.get("session_id"),
+            "replay_payload": payload,
+        }
+    )
+
+
+@app.post("/api/policy/simulate")
+async def run_policy_simulation(payload: dict):
+    """
+    Shadow-run a candidate policy against recent forensic traffic.
+    Body:
+      {
+        "limit": 200,
+        "blocked_only": false,
+        "policy": { ... bastion-yaml-like dict ... }
+      }
+    """
+    try:
+        limit = int(payload.get("limit", 200))
+        blocked_only = bool(payload.get("blocked_only", False))
+        policy = payload.get("policy", {})
+        events = MetricsStore.get().list_forensic_events(
+            limit=max(1, min(limit, 2000)),
+            blocked_only=blocked_only,
+            include_full=True,
+        )
+        result = await simulate_policy(events, overrides=policy)
+        return JSONResponse(result)
+    except Exception as e:
+        logger.exception("Policy simulation failed: %s", e)
+        return JSONResponse(
+            {"error": "policy_simulation_failed", "message": str(e)},
             status_code=500,
         )
 
@@ -51,8 +150,8 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v4-pillar-health-tool-drilldown",
-        "hint": "If this is missing, you are not hitting dashboard/app.py — check port and process.",
+        "ui_revision": "v5-command-center-tenant-finops-audit",
+        "hint": "If this is missing, you are not hitting dashboard/app.py; check port and process.",
     }
 
 
@@ -76,7 +175,7 @@ def dashboard_meta():
 
 @app.get("/meta")
 def meta_short():
-    """Short URL — same payload as /api/dashboard-meta (easier to type)."""
+    """Short URL; same payload as /api/dashboard-meta (easier to type)."""
     return _dashboard_build_info()
 
 
@@ -412,17 +511,227 @@ DASHBOARD_HTML = """
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .forensic-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .forensic-item {
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(15, 23, 42, 0.24);
+    }
+    html[data-theme="light"] .forensic-item {
+      background: rgba(241, 245, 249, 0.82);
+    }
+    .forensic-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .forensic-meta {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .forensic-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .forensic-actions button {
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.72rem;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    .forensic-actions button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .forensic-detail {
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.38);
+      padding: 10px;
+      max-height: 260px;
+      overflow: auto;
+      font-size: 0.72rem;
+      white-space: pre-wrap;
+      line-height: 1.4;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 120px) 1fr;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 22px;
+      padding: 18px 20px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+    }
+    @media (max-width: 640px) { .hero { grid-template-columns: 1fr; text-align: center; } }
+    .hero img {
+      width: 100%;
+      max-width: 120px;
+      height: auto;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      object-fit: contain;
+    }
+    .hero h2 {
+      margin: 0 0 6px 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #f8fafc 0%, #38bdf8 55%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero .tagline { margin: 0; font-size: 0.95rem; color: var(--text); line-height: 1.45; }
+    .hero .sub { margin: 8px 0 0; font-size: 0.78rem; color: var(--muted); }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.35);
+    }
+    html[data-theme="light"] .toolbar { background: rgba(255, 255, 255, 0.75); }
+    .toolbar label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+    .toolbar input {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      min-width: 180px;
+    }
+    html[data-theme="light"] .toolbar input { background: #fff; color: var(--text); }
+    .toolbar button.apply {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      color: #0f172a;
+    }
+    .toolbar button.clear {
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: transparent;
+      color: var(--muted);
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .command-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 1000px) { .command-grid { grid-template-columns: 1fr; } }
+    .cmd-card {
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      padding: 14px 16px;
+      backdrop-filter: blur(12px);
+    }
+    .cmd-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.72rem;
+      word-break: break-all;
+      color: #cbd5e1;
+    }
+    html[data-theme="light"] .mono { color: #334155; }
+    .attr-list { font-size: 0.78rem; line-height: 1.55; color: var(--text); }
+    .attr-list div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--card-border); padding: 4px 0; }
+    .attr-list span:last-child { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; }
+    .tenant-chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow-y: auto; }
+    .tenant-chip {
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: rgba(56, 189, 248, 0.08);
+      cursor: pointer;
+    }
+    .tenant-chip:hover { border-color: var(--accent); color: var(--accent); }
   </style>
 </head>
 <body>
-  <div class="header">
+  <div class="hero">
+    <img src="/images/mcp-bastian.png" alt="MCP-Bastion" width="120" height="120" loading="lazy" />
     <div>
-      <h1>MCP-Bastion</h1>
-      <p>Live security &amp; FinOps · refreshes every 2s</p>
+      <h2>Stop agent attacks before they stop you.</h2>
+      <p class="tagline">One drop-in middleware for MCP: injection defense, PII, semantic firewall, sensitive-content classification, tamper-evident audit, FinOps attribution, OPA/Cedar policy, and multi-tenant SaaS isolation.</p>
+      <p class="sub">Live command center · Forensic replay · Policy shadow simulator · <code style="font-size:0.75rem;">mcp-bastion redteam</code></p>
+      <div class="header-right" style="margin-top:12px;justify-content:flex-start;">
+        <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle color theme">Light</button>
+        <span class="badge" id="alertCount">0 Alerts</span>
+      </div>
     </div>
-    <div class="header-right">
-      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle color theme">Light</button>
-      <span class="badge" id="alertCount">0 Alerts</span>
+  </div>
+
+  <div class="toolbar">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label for="tenantFilter">Tenant filter</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <input id="tenantFilter" type="text" placeholder="e.g. acme (empty = global)" autocomplete="off" />
+        <button type="button" class="apply" id="tenantApply">Apply</button>
+        <button type="button" class="clear" id="tenantClear">Clear</button>
+      </div>
+    </div>
+    <p class="muted" style="margin:0;flex:1;min-width:220px;font-size:0.78rem;">Filters metrics and blocked forensics for that tenant. Set <code>tenant_id</code> in MCP metadata or use session prefix <code>tenant:&lt;id&gt;|…</code>.</p>
+  </div>
+
+  <div class="command-grid">
+    <div class="cmd-card">
+      <h3>Tamper-evident audit chain</h3>
+      <div class="mono" id="auditHead">head: -</div>
+      <p class="muted" style="margin:8px 0 0;font-size:0.72rem;">Each forensic event links to the previous hash. POST <code>/api/audit/verify</code> with exported <code>events</code> to validate.</p>
+    </div>
+    <div class="cmd-card">
+      <h3>FinOps · top providers (USD)</h3>
+      <div class="attr-list" id="costAttrList">No spend yet.</div>
+    </div>
+    <div class="cmd-card">
+      <h3>Tenants (click to filter)</h3>
+      <div class="tenant-chips" id="tenantChips"></div>
+      <p class="muted" style="margin:8px 0 0;font-size:0.72rem;" id="tenantViewHint"></p>
     </div>
   </div>
 
@@ -475,6 +784,17 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
+  <div class="charts-row" style="grid-template-columns: 1fr 1fr;">
+    <div class="card" style="margin-bottom:0;">
+      <h2>FinOps · cost by LLM provider</h2>
+      <div class="chart-wrap sm"><canvas id="chartCostAttr"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <h2>FinOps · cost by model</h2>
+      <div class="chart-wrap sm"><canvas id="chartCostModel"></canvas></div>
+    </div>
+  </div>
+
   <div class="card">
     <h2>PII by entity type</h2>
     <div class="chart-wrap sm"><canvas id="chartPiiEntity"></canvas></div>
@@ -502,8 +822,19 @@ DASHBOARD_HTML = """
   </div>
 
   <div class="card">
+    <h2>Live blocked request forensics</h2>
+    <div class="forensic-list" id="forensicList"></div>
+    <div class="forensic-detail" id="forensicDetail">Select a blocked request to inspect full trace and replay payload.</div>
+  </div>
+
+  <div class="card">
     <h2>Recent alerts</h2>
     <div class="alerts" id="alerts"></div>
+  </div>
+
+  <div class="card">
+    <h2>Auto-tuning anomalies</h2>
+    <div class="alerts" id="anomalies"></div>
   </div>
 
   <script>
@@ -574,6 +905,16 @@ DASHBOARD_HTML = """
       patchScales(charts.cost.options.scales);
       patchTooltip(charts.cost.options.plugins);
       charts.cost.update('none');
+      if (charts.costAttr) {
+        patchScales(charts.costAttr.options.scales);
+        patchTooltip(charts.costAttr.options.plugins);
+        charts.costAttr.update('none');
+      }
+      if (charts.costModel) {
+        patchScales(charts.costModel.options.scales);
+        patchTooltip(charts.costModel.options.plugins);
+        charts.costModel.update('none');
+      }
       if (charts.piiEntity) {
         patchScales(charts.piiEntity.options.scales);
         patchTooltip(charts.piiEntity.options.plugins);
@@ -591,6 +932,23 @@ DASHBOARD_HTML = """
           localStorage.setItem('mcp-bastion-theme', next);
           updateThemeButton();
           applyChartTheme();
+        });
+      }
+      var ti = document.getElementById('tenantFilter');
+      if (ti) {
+        ti.value = localStorage.getItem('mcp-bastion-tenant') || '';
+      }
+      var ap = document.getElementById('tenantApply');
+      if (ap) {
+        ap.addEventListener('click', function () {
+          localStorage.setItem('mcp-bastion-tenant', (document.getElementById('tenantFilter') || {}).value || '');
+        });
+      }
+      var cl = document.getElementById('tenantClear');
+      if (cl) {
+        cl.addEventListener('click', function () {
+          localStorage.removeItem('mcp-bastion-tenant');
+          if (ti) ti.value = '';
         });
       }
     });
@@ -758,6 +1116,53 @@ DASHBOARD_HTML = """
         }
       });
 
+      const finopsBarOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 450, easing: 'easeOutQuart' },
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: 'rgba(148, 163, 184, 0.08)' },
+            ticks: {
+              callback: (v) => '$' + Number(v).toFixed(2),
+              font: { size: 10 }
+            }
+          },
+          y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+        }
+      };
+      charts.costAttr = new Chart(document.getElementById('chartCostAttr'), {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'USD',
+            data: [],
+            backgroundColor: gradBlue,
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: finopsBarOpts
+      });
+      charts.costModel = new Chart(document.getElementById('chartCostModel'), {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'USD',
+            data: [],
+            backgroundColor: gradGold,
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: finopsBarOpts
+      });
+
       const gradPii = (ctx) => {
         const c = ctx.chart.ctx;
         const g = c.createLinearGradient(0, 0, 0, 160);
@@ -825,7 +1230,7 @@ DASHBOARD_HTML = """
     function updateTools(obj) {
       const entries = Object.entries(obj || {}).slice(0, 8);
       if (!entries.length) {
-        charts.tools.data.labels = ['—'];
+        charts.tools.data.labels = ['(empty)'];
         charts.tools.data.datasets[0].data = [0];
       } else {
         charts.tools.data.labels = entries.map((e) => e[0]);
@@ -837,13 +1242,80 @@ DASHBOARD_HTML = """
     function updateCost(obj) {
       const entries = Object.entries(obj || {}).slice(0, 8);
       if (!entries.length) {
-        charts.cost.data.labels = ['—'];
+        charts.cost.data.labels = ['(empty)'];
         charts.cost.data.datasets[0].data = [0];
       } else {
         charts.cost.data.labels = entries.map((e) => e[0]);
         charts.cost.data.datasets[0].data = entries.map((e) => e[1]);
       }
       charts.cost.update('none');
+    }
+
+    function updateFinOpsBar(chart, obj) {
+      if (!chart) return;
+      const entries = Object.entries(obj || {}).slice(0, 10);
+      if (!entries.length) {
+        chart.data.labels = ['(empty)'];
+        chart.data.datasets[0].data = [0];
+      } else {
+        chart.data.labels = entries.map((e) => e[0]);
+        chart.data.datasets[0].data = entries.map((e) => e[1]);
+      }
+      chart.update('none');
+    }
+
+    function updateAuditStrip(ac) {
+      const el = document.getElementById('auditHead');
+      if (!el) return;
+      const h = ac || {};
+      const head = h.head_hash || '-';
+      const len = (h.chain_length != null) ? h.chain_length : '-';
+      el.textContent = 'chain_length=' + len + ' · head=' + String(head).slice(0, 18) + (String(head).length > 18 ? '…' : '');
+    }
+
+    function updateCostAttrList(ca) {
+      const el = document.getElementById('costAttrList');
+      if (!el) return;
+      const prov = (ca && ca.by_provider) ? Object.entries(ca.by_provider).slice(0, 6) : [];
+      if (!prov.length) {
+        el.innerHTML = '<div class="muted">No attributed LLM spend yet.</div>';
+        return;
+      }
+      el.innerHTML = prov.map(function (e) {
+        return '<div><span>' + escapeHtml(e[0]) + '</span><span>$' + Number(e[1]).toFixed(4) + '</span></div>';
+      }).join('');
+    }
+
+    function updateTenantChips(tenants, active) {
+      const el = document.getElementById('tenantChips');
+      const hint = document.getElementById('tenantViewHint');
+      if (!el) return;
+      const entries = Object.entries(tenants || {}).slice(0, 24);
+      if (!entries.length) {
+        el.innerHTML = '<span class="muted" style="font-size:0.75rem;">No tenant traffic recorded yet.</span>';
+        if (hint) hint.textContent = '';
+        return;
+      }
+      el.innerHTML = entries.map(function (kv) {
+        const tid = kv[0];
+        const v = kv[1] || {};
+        const label = tid + ' · req ' + (v.requests_total || 0) + ' · blk ' + (v.blocked_total || 0);
+        const activeCls = (active && tid === active) ? ' style="border-color:#38bdf8;color:#38bdf8;"' : '';
+        return '<span class="tenant-chip" data-tenant="' + escapeHtml(tid) + '"' + activeCls + '>' + escapeHtml(label) + '</span>';
+      }).join('');
+      el.querySelectorAll('.tenant-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          var t = this.getAttribute('data-tenant') || '';
+          localStorage.setItem('mcp-bastion-tenant', t);
+          var inp = document.getElementById('tenantFilter');
+          if (inp) inp.value = t;
+        });
+      });
+      if (hint) {
+        hint.textContent = active
+          ? ('Filtered view: ' + active + '; global KPIs still shown; tenant_view in JSON reflects selection.')
+          : '';
+      }
     }
 
     function updatePiiEntity(obj) {
@@ -899,14 +1371,93 @@ DASHBOARD_HTML = """
           + '<td>' + Number(s.blocked_pct || 0).toFixed(2) + '%</td>'
           + '<td>' + Number(s.latency_ms_p95 || 0).toFixed(2) + '</td>'
           + '<td>' + Number(s.latency_ms_avg || 0).toFixed(2) + '</td>'
-          + '<td>' + (reasons || '—') + '</td>'
+          + '<td>' + (reasons || '-') + '</td>'
           + '</tr>';
       }).join('');
     }
 
+    function tenantParam() {
+      var t = (localStorage.getItem('mcp-bastion-tenant') || '').trim();
+      return t ? ('tenant_id=' + encodeURIComponent(t)) : '';
+    }
+
     async function fetchMetrics() {
-      const r = await fetch('/api/metrics');
+      var q = tenantParam();
+      const r = await fetch('/api/metrics' + (q ? ('?' + q) : ''));
       return r.json();
+    }
+
+    async function fetchForensics() {
+      var q = tenantParam();
+      const r = await fetch('/api/forensics?blocked_only=true&limit=20' + (q ? ('&' + q) : ''));
+      return r.json();
+    }
+
+    async function fetchForensicEvent(id) {
+      const r = await fetch('/api/forensics/' + encodeURIComponent(id));
+      if (!r.ok) throw new Error('Forensic event unavailable');
+      return r.json();
+    }
+
+    async function fetchForensicReplay(id) {
+      const r = await fetch('/api/forensics/' + encodeURIComponent(id) + '/replay');
+      if (!r.ok) throw new Error('Replay payload unavailable');
+      return r.json();
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+    }
+
+    function updateForensics(items) {
+      const node = document.getElementById('forensicList');
+      const detail = document.getElementById('forensicDetail');
+      const list = (items || []);
+      if (!list.length) {
+        node.innerHTML = '<div class="forensic-item"><div class="forensic-meta">No blocked forensic events yet.</div></div>';
+        detail.textContent = 'Select a blocked request to inspect full trace and replay payload.';
+        return;
+      }
+      node.innerHTML = list.map((it) => {
+        const reason = it.reason || 'unknown';
+        const latency = (it.latency_ms != null) ? (Number(it.latency_ms).toFixed(2) + ' ms') : 'n/a';
+        return (
+          '<div class="forensic-item">'
+          + '<div class="forensic-title"><span>' + escapeHtml(it.tool || 'unknown') + '</span><span>' + escapeHtml(it.timestamp || '') + '</span></div>'
+          + '<div class="forensic-meta">Tenant: ' + escapeHtml(it.tenant_id || '-') + ' · Reason: ' + escapeHtml(reason) + ' · Latency: ' + latency + '</div>'
+          + '<div class="forensic-actions">'
+          + '<button type="button" data-forensic-detail="' + escapeHtml(it.event_id || '') + '">View Trace</button>'
+          + '<button type="button" data-forensic-replay="' + escapeHtml(it.event_id || '') + '">Reproduce Request</button>'
+          + '</div>'
+          + '</div>'
+        );
+      }).join('');
+
+      node.querySelectorAll('button[data-forensic-detail]').forEach((btn) => {
+        btn.addEventListener('click', async function () {
+          const id = this.getAttribute('data-forensic-detail');
+          try {
+            const event = await fetchForensicEvent(id);
+            detail.textContent = JSON.stringify(event, null, 2);
+          } catch (e) {
+            detail.textContent = 'Failed to load forensic trace: ' + e;
+          }
+        });
+      });
+      node.querySelectorAll('button[data-forensic-replay]').forEach((btn) => {
+        btn.addEventListener('click', async function () {
+          const id = this.getAttribute('data-forensic-replay');
+          try {
+            const replay = await fetchForensicReplay(id);
+            detail.textContent = JSON.stringify(replay.replay_payload || replay, null, 2);
+          } catch (e) {
+            detail.textContent = 'Replay payload unavailable: ' + e;
+          }
+        });
+      });
     }
 
     function render(d) {
@@ -944,6 +1495,15 @@ DASHBOARD_HTML = """
           return '<div class="alert ' + sev + '">' + a.kind + ': ' + (a.message || '') + '</div>';
         }).join('') || '<div class="alert" style="border-left-color:#64748b;">No alerts</div>';
 
+      const an = (((d.auto_tune || {}).recent_anomalies) || []).slice(-8).reverse();
+      document.getElementById('anomalies').innerHTML =
+        an.map((a) => '<div class="alert">[' + (a.kind || 'anomaly') + '] ' + (a.message || '') + '</div>').join('')
+        || '<div class="alert" style="border-left-color:#64748b;">No anomalies</div>';
+
+      updateAuditStrip(d.audit_chain);
+      updateCostAttrList(d.cost_attribution);
+      updateTenantChips(d.tenants, (d.tenant_view || {}).tenant_id);
+
       if (!initialized && typeof Chart !== 'undefined') {
         initialized = createCharts();
       }
@@ -958,14 +1518,19 @@ DASHBOARD_HTML = """
       updateReasons(d.blocked_by_reason);
       updateTools(d.top_tools);
       updateCost(d.cost_by_user);
+      updateFinOpsBar(charts.costAttr, (d.cost_attribution || {}).by_provider);
+      updateFinOpsBar(charts.costModel, (d.cost_attribution || {}).by_model);
       updatePiiEntity(d.pii_by_entity);
       updatePillarHealth(d.pillar_health);
       updateToolTable(d.tool_stats);
+      updateForensics(d.forensic_recent_blocked);
     }
 
     (async function poll() {
       try {
-        render(await fetchMetrics());
+        const [metrics, forensics] = await Promise.all([fetchMetrics(), fetchForensics()]);
+        render(metrics);
+        updateForensics(forensics.items || metrics.forensic_recent_blocked || []);
       } catch (e) {
         console.error(e);
       }

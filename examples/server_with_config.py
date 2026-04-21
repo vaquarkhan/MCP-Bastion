@@ -4,6 +4,11 @@ Example: MCP server using policy-as-code (bastion.yaml).
 Run from repo root with bastion.yaml (or bastion.yaml.example copied to bastion.yaml):
   PYTHONPATH=src python examples/server_with_config.py
 
+Try the advanced sample (semantic firewall, sensitive classifier, tool metadata guard, session limits):
+  set BASTION_CONFIG=examples/bastion.advanced.example.yaml   # Windows
+  export BASTION_CONFIG=examples/bastion.advanced.example.yaml  # Unix
+  PYTHONPATH=src python examples/server_with_config.py
+
 API:
   load_config(path=None)  -> BastionConfig (path from env BASTION_CONFIG or "bastion.yaml")
   build_middleware_from_config(config=None)  -> composed middleware (loads config if None)

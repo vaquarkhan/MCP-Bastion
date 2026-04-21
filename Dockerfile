@@ -1,19 +1,27 @@
-# MCP-Bastion proxy: one-line MCP server with security middleware.
-# Run: docker build -t mcp-bastion/proxy . && docker run -p 8080:8080 mcp-bastion/proxy
+# MCP-Bastion proxy: HTTP MCP server with bundled example entrypoint.
+# Build: docker build -t mcp-bastion/proxy .
+# Run:  docker run -p 8080:8080 -e BASTION_CONFIG=/app/bastion.yaml -v /path/to/bastion.yaml:/app/bastion.yaml:ro mcp-bastion/proxy
+#
+# Uses the published wheel (pinned by default). Override at build time:
+#   docker build --build-arg BASTION_PY_VERSION=1.0.14 -t mcp-bastion/proxy .
 
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install deps (minimal for stdio/HTTP server; add torch/presidio for full features)
-RUN pip install --no-cache-dir mcp mcp-bastion-python
+ARG BASTION_PY_VERSION=1.0.14
 
-# Copy server entrypoint
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir "mcp-bastion-python==${BASTION_PY_VERSION}" "mcp>=1.0.0"
+
 COPY examples/llm_server.py /app/llm_server.py
-COPY src /app/src
+COPY bastion.yaml.example /app/bastion.yaml.example
 
-ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
+ENV BASTION_CONFIG=/app/bastion.yaml.example
+
+LABEL org.opencontainers.image.title="MCP-Bastion proxy" \
+      org.opencontainers.image.description="MCP HTTP server with MCP-Bastion security middleware"
 
 EXPOSE 8080
 

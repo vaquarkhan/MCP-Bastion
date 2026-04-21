@@ -13,12 +13,25 @@ node_modules/
 .venv/
 venv/
 .DS_Store
+Thumbs.db
 *.tsbuildinfo
 .coverage
 htmlcov/
 coverage.xml
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.hypothesis/
+*.sqlite3
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Editor and local tooling
+.idea/
+# Cursor IDE local project state (do not ignore `.cursor/rules/` if you commit team rules)
+.cursor/projects/
+
 # Local config (optional: remove to track bastion.yaml)
 # bastion.yaml
 

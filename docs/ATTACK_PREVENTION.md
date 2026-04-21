@@ -169,4 +169,4 @@ pip install mcp-bastion-python torch presidio-analyzer presidio-anonymizer
 python -m spacy download en_core_web_sm
 ```
 
-See [examples/README.md](../examples/README.md) for the full list of demos (1–11) and [VALIDATION_CHECKLIST.md](../VALIDATION_CHECKLIST.md) for automated checks.
+See [examples/README.md](../examples/README.md) for demos including `full_demo.py` (11 scenarios), `advanced_features_demo.py` (semantic firewall, sensitive classifier, session limits, tool metadata guard), and [VALIDATION_CHECKLIST.md](../VALIDATION_CHECKLIST.md) for automated checks.

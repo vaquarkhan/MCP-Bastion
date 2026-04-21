@@ -61,10 +61,14 @@ class SemanticCache:
         self._cache: OrderedDict[str, tuple[float, str, str, Any]] = OrderedDict()
         self._lock = threading.Lock()
 
-    def _make_key(self, tool: str, query: str) -> str:
-        return hashlib.sha256(f"{tool}:{query}".encode()).hexdigest()
+    @staticmethod
+    def _scoped_tool(scope: str, tool: str) -> str:
+        return f"{scope}\x1f{tool}" if scope else tool
 
-    def get(self, tool: str, query: str) -> Any | None:
+    def _make_key(self, scoped_tool: str, query: str) -> str:
+        return hashlib.sha256(f"{scoped_tool}:{query}".encode()).hexdigest()
+
+    def get(self, tool: str, query: str, *, scope: str = "") -> Any | None:
         """
         Return cached result if similar query exists.
         """
@@ -72,6 +76,7 @@ class SemanticCache:
         if not norm:
             return None
 
+        scoped_tool = self._scoped_tool(scope, tool)
         now = time.monotonic()
         to_remove: list[str] = []
         best_match = None
@@ -83,7 +88,7 @@ class SemanticCache:
                 if now - cached_at > self.ttl_seconds:
                     to_remove.append(key)
                     continue
-                if cached_tool != tool:
+                if cached_tool != scoped_tool:
                     continue
                 score = _jaccard_similarity(norm, cached_norm)
                 if score >= self.similarity_threshold and score > best_score:
@@ -100,14 +105,15 @@ class SemanticCache:
                 return best_match
         return None
 
-    def set(self, tool: str, query: str, value: Any) -> None:
+    def set(self, tool: str, query: str, value: Any, *, scope: str = "") -> None:
         """Cache result for query."""
         norm = _normalize(query)
         if not norm:
             return
 
-        key = self._make_key(tool, norm)
+        scoped_tool = self._scoped_tool(scope, tool)
+        key = self._make_key(scoped_tool, norm)
         with self._lock:
             while len(self._cache) >= self.max_entries:
                 self._cache.popitem(last=False)
-            self._cache[key] = (time.monotonic(), tool, norm, value)
+            self._cache[key] = (time.monotonic(), scoped_tool, norm, value)

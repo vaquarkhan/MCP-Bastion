@@ -24,6 +24,8 @@ $env:PYTHONPATH="src"; python scripts/validate_checklist.py   # Windows
 PYTHONPATH=src python scripts/validate_checklist.py          # Linux/Mac
 ```
 
+**Policy scorecard:** after `bastion.yaml` is tuned, run `mcp-bastion redteam -c bastion.yaml -o redteam-report.json` and review `score_blocked_pct` plus per-case rows (OWASP LLM-oriented tags).
+
 ## Checklist Results
 
 | # | Item | Automated | Notes |
@@ -71,9 +73,9 @@ Use the official MCP Inspector to validate JSON-RPC 2.0 and CallTool/ReadResourc
 3. **Connect** via stdio or HTTP (`http://localhost:8000/mcp` if using streamable-http).
 
 4. **Verify**:
-   - List tools – succeeds
-   - Call tool with benign args (e.g. `add(2, 2)`) – succeeds
-   - Call tool with "Ignore previous instructions" – blocked (Python + torch)
+   - List tools: succeeds
+   - Call tool with benign args (e.g. `add(2, 2)`): succeeds
+   - Call tool with "Ignore previous instructions": blocked (Python + torch)
    - Response format is valid JSON-RPC 2.0
 
 ## Full Dependencies for All Tests
@@ -91,6 +93,6 @@ pip install pytest-asyncio
 
 ## Related Docs
 
-- [SETUP_GUIDE.md](SETUP_GUIDE.md) – Full setup, config, and validation
-- [examples/README.md](examples/README.md) – Example demos
-- [NOTICE](NOTICE) – Third-party licenses
+- [SETUP_GUIDE.md](SETUP_GUIDE.md): full setup, config, and validation
+- [examples/README.md](examples/README.md): example demos
+- [NOTICE](NOTICE): third-party licenses

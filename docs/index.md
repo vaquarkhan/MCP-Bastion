@@ -55,11 +55,16 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 
 - Prompt injection defense with PromptGuard.
 - PII redaction with Presidio.
+- Semantic firewall and optional sensitive-business content classifier.
 - Rate limiting and token budgets.
-- Cost tracking and alerts.
+- Cost tracking, FinOps-style attribution, and alerts.
 - Content filtering with allowlist/denylist rules.
+- Optional OPA (Rego) or Cedar policy engines.
+- Tamper-evident audit hash chain and optional anchor webhooks.
+- Multi-tenant routing (per-tenant `bastion.yaml`).
+- Integrated `mcp-bastion redteam` security harness.
 - Optional hot-reload of `bastion.yaml`.
-- Dashboard + Prometheus + OTEL observability.
+- Dashboard + Prometheus + OTEL observability (including zero-config OTLP / CloudWatch paths).
 
 ## Feature highlights
 
@@ -70,7 +75,9 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 | Rate and cost controls | Prevents runaway loops and budget overruns |
 | Content filter allow/deny rules | Blocks risky content while allowing trusted internal patterns |
 | Audit and alerts | Creates actionable security event trails |
-| Dashboard and metrics API | Enables SOC/Platform visibility and trend tracking |
+| Audit hash chain | Cryptographic linkage of audit events for tamper detection |
+| Dashboard and metrics API | Enables SOC/Platform visibility, tenant drill-down, and FinOps charts |
+| Red-team CLI | Validates policy tightness with a curated attack suite |
 
 ## Ideal users
 

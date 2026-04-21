@@ -116,6 +116,10 @@ def test_make_audit_export_callback_allowed():
     assert m["requests_total"] == 1
     assert m["top_tools"]["add"] == 1
     assert m["latency_ms"]["samples"] == 1
+    forensic = store.list_forensic_events(limit=5, blocked_only=False, include_full=True)
+    assert forensic[0]["tool"] == "add"
+    assert forensic[0].get("audit_entry_hash")
+    assert forensic[0].get("audit_prev_hash")
 
 
 def test_make_audit_export_callback_non_numeric_latency():
@@ -152,6 +156,8 @@ def test_make_audit_export_callback_blocked():
     assert m["blocked_total"] == 1
     assert m["latency_ms"]["samples"] == 1
     assert "rate limit" in m["blocked_by_reason"]
+    forensic = store.list_forensic_events(limit=5, blocked_only=True, include_full=True)
+    assert forensic[0]["action"] == "BLOCKED"
 
 
 def test_check_cost_anomaly_below_threshold():

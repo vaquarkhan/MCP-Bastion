@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mcp-bastion-bedrock"
 version = "0.1.1"
-description = "MCP-Bastion security middleware for AWS Bedrock — prompt injection, PII, and rate-limit protection for cloud AI agents"
+description = "MCP-Bastion security middleware for AWS Bedrock: prompt injection, PII, and rate-limit protection for cloud AI agents"
 readme = "README.md"
 license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
 requires-python = ">=3.10"

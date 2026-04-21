@@ -1,0 +1,136 @@
+# Example policy for newer pillars: semantic firewall, sensitive classifier,
+# tool metadata guard (MCP03-style list poisoning), and session tool breadth limits.
+# Use from repo root:
+#   set BASTION_CONFIG=examples/bastion.advanced.example.yaml   (Windows)
+#   export BASTION_CONFIG=examples/bastion.advanced.example.yaml  (Unix)
+#   PYTHONPATH=src python examples/server_with_config.py
+#
+# Or merge these sections into your main bastion.yaml.
+
+prompt_guard:
+  enabled: true
+
+pii:
+  enabled: false
+
+rate_limit:
+  enabled: true
+  max_iterations: 30
+  timeout_seconds: 60
+  token_budget: 50000
+
+circuit_breaker:
+  enabled: false
+
+content_filter:
+  enabled: true
+  block_code_execution: true
+  block_file_paths: true
+  block_urls: false
+  block_secrets: false
+  allowlist_patterns: []
+  denylist_patterns: []
+
+edge_auth:
+  enabled: false
+  metadata_key: bastion_edge_token
+  secret_env: BASTION_EDGE_SECRET
+
+tool_allowlist:
+  enabled: false
+  tools: []
+
+session_limits:
+  max_unique_tools_per_session: 4
+
+governance:
+  registry_url: null
+  service_id: null
+
+rbac:
+  enabled: false
+  permissions:
+    default: ["*"]
+    analyst: ["read_data", "query"]
+    admin: ["*"]
+
+schema_validation:
+  enabled: false
+
+replay_guard:
+  enabled: false
+  require_nonce: false
+
+cost_tracker:
+  enabled: false
+  max_cost_per_session: 0.50
+  max_cost_per_day: 10.0
+
+semantic_cache:
+  enabled: false
+
+semantic_firewall:
+  enabled: true
+
+tool_metadata_guard:
+  enabled: true
+  on_poison: remove_tool
+  use_content_filter: true
+
+audit:
+  enabled: true
+
+telemetry:
+  export_mode: all
+  sinks: []
+
+alerts:
+  slack_webhook: ${SLACK_WEBHOOK_URL}
+  webhook_url: ${BASTION_WEBHOOK_URL}
+  webhooks: []
+  retry_attempts: 3
+  retry_backoff_seconds: 0.25
+  retry_backoff_max_seconds: 2.0
+  timeout_seconds: 5.0
+  alert_on:
+    - injection
+    - rate_limit
+    - cost
+
+hot_reload:
+  enabled: false
+  poll_seconds: 2.0
+
+audit_hash_chain:
+  anchor_every: 0
+  anchor_webhook_url: ${BASTION_ANCHOR_WEBHOOK_URL}
+
+behavior_fingerprint:
+  enabled: true
+
+cost_attribution:
+  enabled: true
+
+policy_engine:
+  type: none
+  opa:
+    binary: opa
+    policy_dir: null
+    query: data.bastion.allow
+  cedar:
+    binary: cedar
+    policies_dir: null
+    schema: null
+
+sensitive_classifier:
+  enabled: true
+  threshold: 0.25
+  use_transformers: false
+  model_name: distilbert-base-uncased-finetuned-sst-2-english
+  block_labels:
+    - sensitive_business
+
+multi_tenant:
+  enabled: false
+  config_dir: ./tenants
+  default_tenant: default

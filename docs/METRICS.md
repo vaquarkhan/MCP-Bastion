@@ -48,15 +48,22 @@ Run `mcp-bastion dashboard --port 7000` and open http://localhost:7000/. You get
 | **Top tools** | Most frequently used tools; helps identify high-value or high-risk tools. |
 | **Cost by user** | Cost per user/session when cost tracker is used with a user identifier. |
 | **Recent alerts** | Last N alerts (injection, rate_limit, cost, rbac, etc.) for quick triage. |
+| **Cost attribution** | `cost_attribution.by_provider`, `by_model`, `by_tool`, `by_dataset` for FinOps drill-down. |
+| **Tenants** | `tenants` map: per-tenant `requests_total`, `blocked_total`, `cost_total` when multi-tenant traffic is tagged. |
+| **Audit chain** | `audit_chain` includes `head_hash`, `chain_length`, recent links for tamper-evidence visibility. |
+| **Auto-tune** | `auto_tune.recent_anomalies` surfaces latency spikes, call-rate spikes, and behavior drift. |
 
 ### From the API
 
 - **JSON metrics:** `GET http://localhost:7000/api/metrics` returns the same data as the dashboard in JSON (e.g. for custom dashboards or automation).
+- **Tenant-scoped metrics:** `GET http://localhost:7000/api/metrics?tenant_id=acme` adds a `tenant_view` object for that tenant while preserving global aggregates.
+- **Forensics with tenant:** `GET http://localhost:7000/api/forensics?blocked_only=true&limit=20&tenant_id=acme`
+- **Audit verify:** `POST http://localhost:7000/api/audit/verify` with JSON body `{ "events": [ ... exported forensic rows ... ] }` returns chain validity.
 - **Prometheus:** `GET http://localhost:7000/metrics` exposes Prometheus format so you can scrape with Grafana/Datadog and set alerts (e.g. on `blocked_total` or `blocked_pct`).
 
 ### From OpenTelemetry
 
-If you set `OTEL_EXPORTER_OTLP_ENDPOINT`, each tool call is recorded as a span with attributes such as `mcp.tool`, `mcp.action`, `mcp.latency_ms`, and `mcp.error` when blocked. Use that to measure latency and blocked rate per tool in your observability stack.
+If OTLP is configured (explicitly or via auto-detection; see [OTEL.md](OTEL.md)), each tool call is recorded as a span with attributes such as `mcp.tool`, `mcp.action`, `mcp.latency_ms`, and `mcp.error` when blocked. Use that to measure latency and blocked rate per tool in your observability stack.
 
 ---
 

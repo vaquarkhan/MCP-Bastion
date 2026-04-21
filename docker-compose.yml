@@ -10,7 +10,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - PYTHONPATH=/app/src
+      # Image ships bastion.yaml.example; override for production:
+      #   -e BASTION_CONFIG=/app/bastion.yaml -v $PWD/bastion.yaml:/app/bastion.yaml:ro
+      - BASTION_CONFIG=/app/bastion.yaml.example
 
   # Optional: run as sidecar next to your app. Your app uses MCP at http://bastion:8080/mcp
   bastion:
@@ -19,7 +21,7 @@ services:
     ports:
       - "8081:8080"
     environment:
-      - PYTHONPATH=/app/src
+      - BASTION_CONFIG=/app/bastion.yaml.example
       - ENABLE_PII=true
       - ENABLE_RATE_LIMIT=true
     profiles:
@@ -32,7 +34,5 @@ services:
     image: mcp-bastion/dashboard
     ports:
       - "7000:7000"
-    environment:
-      - PYTHONPATH=/app/src
     profiles:
       - with-dashboard

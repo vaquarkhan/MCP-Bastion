@@ -6,12 +6,15 @@ MCP-Bastion mitigates several categories that align with OWASP Top 10 and LLM-sp
 
 | Risk / OWASP-relevant | MCP-Bastion mitigation |
 |-----------------------|-------------------------|
-| **A03:2021 – Injection** | Prompt injection defense via Meta PromptGuard; content filter blocks path/code injection and suspicious patterns. |
+| **A03:2021 - Injection** | Prompt injection defense via Meta PromptGuard; content filter blocks path/code injection and suspicious patterns. |
 | **Sensitive data exposure** | PII redaction (Presidio) for SSN, email, phone, etc. before data reaches LLM or clients. |
-| **A04:2021 – Insecure design / resource exhaustion** | Rate limiting (iterations, timeout, token budget), circuit breaker, cost tracker to prevent denial-of-wallet and runaway agents. |
-| **A01:2021 – Broken access control** | RBAC pillar for tool-level permissions by role. |
+| **Sensitive business content** | Optional sensitive-content classifier (beyond regex) for unstructured risk (e.g. M&A, fraud narratives). |
+| **A04:2021 - Insecure design / resource exhaustion** | Rate limiting (iterations, timeout, token budget), circuit breaker, cost tracker to prevent denial-of-wallet and runaway agents. |
+| **A01:2021 - Broken access control** | RBAC pillar for tool-level permissions by role; optional **OPA / Cedar** external policy for enterprise policy-as-code pipelines. |
 | **Replay / integrity** | Replay guard (nonce) to block duplicate requests. |
 | **Input validation** | Schema validation for tool inputs; audit logging for who/what/when. |
+| **Log integrity (compliance)** | Tamper-evident **audit hash chain** on exported events; optional anchor webhooks. |
+| **Continuous assurance** | `mcp-bastion redteam` produces an OWASP LLM-oriented scorecard for the active `bastion.yaml`. |
 
 The project does **not** implement authentication or transport-layer security (TLS); secure the transport (HTTPS, mTLS) and identity (e.g. API keys, OAuth) in your deployment.
 

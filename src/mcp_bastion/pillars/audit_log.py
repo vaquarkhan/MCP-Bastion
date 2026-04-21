@@ -14,6 +14,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any
+from uuid import uuid4
 
 from mcp_bastion.base import CallNext, Middleware, MiddlewareContext
 
@@ -29,10 +30,18 @@ class AuditEntry:
     request_id: str | None
     tool: str
     action: str  # ALLOWED | BLOCKED
+    tenant_id: str | None = None
     reason: str | None = None
     latency_ms: float = 0.0
     tokens_used: int = 0
     error_code: int | None = None
+    forensic_event_id: str | None = None
+    forensic_request: dict[str, Any] | None = None
+    forensic_response: dict[str, Any] | None = None
+    forensic_trace: list[dict[str, Any]] = field(default_factory=list)
+    replay_payload: dict[str, Any] | None = None
+    cost_usd: float = 0.0
+    cost_dimensions: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -118,9 +127,14 @@ class AuditLogMiddleware(Middleware[Any]):
             latency_ms = (time.perf_counter() - start) * 1000
             if not self.include_tokens:
                 tokens_used = 0
+            cost_usd = float(context.metadata.get("cost_usd") or context.metadata.get("cost") or 0.0)
+            cost_dimensions = context.metadata.get("cost_dimensions")
+            if not isinstance(cost_dimensions, dict):
+                cost_dimensions = None
 
             entry = AuditEntry(
                 timestamp=datetime.now(timezone.utc).isoformat(),
+                tenant_id=context.metadata.get("tenant_id"),
                 session_id=context.session_id,
                 request_id=context.request_id,
                 tool=tool,
@@ -129,6 +143,13 @@ class AuditLogMiddleware(Middleware[Any]):
                 latency_ms=round(latency_ms, 2),
                 tokens_used=tokens_used,
                 error_code=error_code,
+                forensic_event_id=context.metadata.get("forensic_event_id") or str(uuid4()),
+                forensic_request=context.metadata.get("forensic_request"),
+                forensic_response=context.metadata.get("forensic_response"),
+                forensic_trace=context.metadata.get("pillar_trace", []),
+                replay_payload=context.metadata.get("replay_payload"),
+                cost_usd=cost_usd,
+                cost_dimensions=cost_dimensions,
             )
 
             logger.log(self.log_level, "audit %s", entry.to_json())
