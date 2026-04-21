@@ -1,0 +1,11 @@
+---
+description: Keep commits and PR text free of tool attribution wording
+alwaysApply: true
+---
+
+# Git commits and PRs: no tool attribution lines
+
+- Do not include `Made with Cursor`, `Made-with: Cursor`, `Co-authored-by: Cursor`, or similar vendor/tool attribution lines in commit messages or PR descriptions.
+- Do not include misspelled variants such as `Cusrsur` or similar wording.
+- Keep commit messages focused on repository changes only.
+- If a commit message must mention a tool name for a functional reason, do it only when the user explicitly asks.
