@@ -46,6 +46,7 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 - [Detailed Tutorial](DETAILED_TUTORIAL.md)
 - [Policy as Code](POLICY_AS_CODE.md)
 - [CLI Reference](CLI.md)
+- [Error codes](ERRORS.md) (`-32001`–`-32016`)
 - [LLM Integration](LLM_INTEGRATION.md)
 - [Metrics and Dashboard](METRICS.md)
 - [Security Guidance](SECURITY.md)

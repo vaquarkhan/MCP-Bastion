@@ -4,13 +4,13 @@
 # Run:  docker run -p 7000:7000 mcp-bastion/dashboard
 #
 # Pin matches main proxy image by default:
-#   docker build -f Dockerfile.dashboard --build-arg BASTION_PY_VERSION=1.0.14 -t mcp-bastion/dashboard .
+#   docker build -f Dockerfile.dashboard --build-arg BASTION_PY_VERSION=1.0.15 -t mcp-bastion/dashboard .
 
 FROM python:3.11-slim
 
 WORKDIR /app
 
-ARG BASTION_PY_VERSION=1.0.14
+ARG BASTION_PY_VERSION=1.0.15
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir "mcp-bastion-python==${BASTION_PY_VERSION}" "fastapi>=0.100.0" "uvicorn>=0.22.0"

@@ -47,7 +47,7 @@ cd my-mcp-server
 # 3. Install MCP and MCP-Bastion
 pip install mcp mcp-bastion-python
 # Optional: pin latest tested release
-pip install mcp mcp-bastion-python==1.0.14
+pip install mcp mcp-bastion-python==1.0.15
 
 # 4. Download spaCy model (required for PII)
 python -m spacy download en_core_web_sm

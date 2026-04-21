@@ -3,13 +3,13 @@
 # Run:  docker run -p 8080:8080 -e BASTION_CONFIG=/app/bastion.yaml -v /path/to/bastion.yaml:/app/bastion.yaml:ro mcp-bastion/proxy
 #
 # Uses the published wheel (pinned by default). Override at build time:
-#   docker build --build-arg BASTION_PY_VERSION=1.0.14 -t mcp-bastion/proxy .
+#   docker build --build-arg BASTION_PY_VERSION=1.0.15 -t mcp-bastion/proxy .
 
 FROM python:3.11-slim
 
 WORKDIR /app
 
-ARG BASTION_PY_VERSION=1.0.14
+ARG BASTION_PY_VERSION=1.0.15
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir "mcp-bastion-python==${BASTION_PY_VERSION}" "mcp>=1.0.0"

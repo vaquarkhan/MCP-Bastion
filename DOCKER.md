@@ -1,6 +1,6 @@
 # MCP-Bastion Docker
 
-Images install the published **`mcp-bastion-python`** wheel (default pin `1.0.14`; override with `--build-arg BASTION_PY_VERSION=...`). The proxy image includes `bastion.yaml.example` and sets **`BASTION_CONFIG=/app/bastion.yaml.example`** by default. For production, mount your own file and point `BASTION_CONFIG` at it.
+Images install the published **`mcp-bastion-python`** wheel (default pin `1.0.15`; override with `--build-arg BASTION_PY_VERSION=...`). The proxy image includes `bastion.yaml.example` and sets **`BASTION_CONFIG=/app/bastion.yaml.example`** by default. For production, mount your own file and point `BASTION_CONFIG` at it.
 
 **Image size and build time:** `mcp-bastion-python` declares heavy dependencies (PyTorch, spaCy, Presidio, and related stacks). On Linux `amd64`, `pip` may pull large CUDA-related wheels for PyTorch. Expect a multi-gigabyte image and a long first `docker build` unless you use a private index or a slim dependency variant you maintain yourself.
 

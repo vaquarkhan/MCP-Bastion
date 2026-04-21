@@ -28,6 +28,8 @@
 | [Installation](#installation) | PyPI, npm, prerequisites, integrations |
 | [Repository layout](#structure) | Directories and example files |
 | [Citing MCP-Bastion](#citing-mcp-bastion) | Citation file, BibTeX, and acknowledgements |
+| [Changelog](CHANGELOG.md) | Version history and release notes |
+| [Error codes](docs/ERRORS.md) | JSON-RPC codes `-32001`–`-32016` and Python exceptions |
 
 ## Overview
 
@@ -168,6 +170,7 @@ flowchart TB
 | [docs/TUTORIALS.md](docs/TUTORIALS.md) | Tutorials: integrating with FastMCP, TypeScript, GitHub MCP, and open-source MCP servers |
 | [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md) | Publish docs as a GitHub Pages website from this same repo |
 | [docs/FEATURES.md](docs/FEATURES.md) | Consolidated enterprise & security feature matrix |
+| [docs/ERRORS.md](docs/ERRORS.md) | JSON-RPC error codes (`-32001`–`-32016`) and Python exceptions |
 
 ### One-Line Docker
 
@@ -286,7 +289,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pinned latest
-pip install mcp-bastion-python==1.0.14
+pip install mcp-bastion-python==1.0.15
 ```
 
 **Prerequisites (recommended)**
@@ -771,7 +774,7 @@ Use the repository [CITATION.cff](CITATION.cff) (Citation File Format). On GitHu
 
 **Plain text (example):**
 
-Khan, V. (2026). *MCP-Bastion* (Version 1.0.14) [Computer software]. https://github.com/vaquarkhan/MCP-Bastion
+Khan, V. (2026). *MCP-Bastion* (Version 1.0.15) [Computer software]. https://github.com/vaquarkhan/MCP-Bastion
 
 **BibTeX (software entry; adjust `version` / `year` if you cite a specific release):**
 
@@ -780,7 +783,7 @@ Khan, V. (2026). *MCP-Bastion* (Version 1.0.14) [Computer software]. https://git
   author  = {Khan, Viquar},
   title   = {MCP-Bastion: Security middleware for the {Model Context Protocol}},
   year    = {2026},
-  version = {1.0.14},
+  version = {1.0.15},
   url     = {https://github.com/vaquarkhan/MCP-Bastion},
   note    = {Python package \texttt{mcp-bastion-python}; npm scope \texttt{@mcp-bastion/core}}
 }

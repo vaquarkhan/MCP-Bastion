@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: `mcp-bastion-python==1.0.14`.
+Current Python package release: `mcp-bastion-python==1.0.15`.
 
 ## Start here
 
@@ -13,6 +13,7 @@ Current Python package release: `mcp-bastion-python==1.0.14`.
 | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) | Full `bastion.yaml` schema and examples |
 | [FEATURES.md](FEATURES.md) | Enterprise / security feature matrix |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI reference |
+| [ERRORS.md](ERRORS.md) | JSON-RPC error codes `-32001`–`-32016` and exceptions |
 | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) | OpenAI/Claude/Gemini/Mistral/Grok integration patterns |
 | [TUTORIALS.md](TUTORIALS.md) | Popular MCP integration approaches |
 
