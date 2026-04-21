@@ -1,11 +1,29 @@
 cff-version: 1.2.0
-message: "If you use MCP-Bastion, please cite this project in docs, papers, and releases."
-title: "MCP-Bastion"
-version: "1.0.14"
+title: MCP-Bastion
+message: >-
+  If you use this software in research, benchmarks, blog posts, or other
+  published work, please cite it using the metadata in this file.
 type: software
 authors:
   - family-names: Khan
     given-names: Viquar
+identifiers:
+  - type: url
+    description: Source repository
+    value: https://github.com/vaquarkhan/MCP-Bastion
 repository-code: "https://github.com/vaquarkhan/MCP-Bastion"
-url: "https://github.com/vaquarkhan/MCP-Bastion"
-license: "proprietary"
+url: "https://pypi.org/project/mcp-bastion-python/"
+abstract: >-
+  Policy-as-code security middleware for the Model Context Protocol (MCP):
+  prompt and content checks, PII handling, rate and cost limits, RBAC, audit and
+  hash chains, optional OPA/Cedar, multi-tenant routing, and observability.
+keywords:
+  - model-context-protocol
+  - mcp
+  - llm-security
+  - prompt-injection
+  - middleware
+license: LicenseRef-MCP-Bastion-License
+license-url: https://github.com/vaquarkhan/MCP-Bastion/blob/main/LICENSE
+version: 1.0.15
+date-released: "2026-04-21"

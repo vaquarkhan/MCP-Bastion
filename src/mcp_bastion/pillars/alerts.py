@@ -96,7 +96,7 @@ class SlackAlertSink(AlertSink):
                 retry_backoff_max_seconds=self.retry_backoff_max_seconds,
                 timeout_seconds=self.timeout_seconds,
             )
-            if status is not None and status >= 400:
+            if status >= 400:
                 logger.warning("Slack webhook returned %s", status)
         except Exception as e:
             logger.warning("Slack alert failed: %s", e)
@@ -166,7 +166,7 @@ class WebhookAlertSink(AlertSink):
                 retry_backoff_max_seconds=self.retry_backoff_max_seconds,
                 timeout_seconds=self.timeout_seconds,
             )
-            if status is not None and status >= 400:
+            if status >= 400:
                 logger.warning("Webhook %s returned %s", self.url[:50], status)
         except Exception as e:  # pragma: no cover
             logger.warning("Webhook alert failed: %s", e)  # pragma: no cover

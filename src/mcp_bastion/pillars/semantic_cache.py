@@ -79,7 +79,9 @@ class SemanticCache:
         best_key = None
 
         with self._lock:
-            for key, (cached_at, cached_tool, cached_norm, value) in list(self._cache.items()):
+            for key, (cached_at, cached_tool, cached_norm, value) in list(
+                self._cache.items()
+            ):
                 if now - cached_at > self.ttl_seconds:
                     to_remove.append(key)
                     continue
