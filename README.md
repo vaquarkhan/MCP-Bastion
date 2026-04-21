@@ -1,14 +1,14 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/images/mcp-bastian.png" alt="MCP-Bastion" width="520" />
+</p>
+
 # MCP-Bastion
 
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
 
-[![Total Downloads](https://img.shields.io/badge/total%20downloads-565-brightgreen)](https://pepy.tech/projects/mcp-bastion-python)
-[![PyPI Total Downloads](https://img.shields.io/pypi/dd/mcp-bastion-python?label=daily)](https://pypi.org/project/mcp-bastion-python/)
-[![PyPI Monthly Downloads](https://img.shields.io/pypi/dm/mcp-bastion-python?label=monthly)](https://pypi.org/project/mcp-bastion-python/)
 [![PyPI Version](https://img.shields.io/pypi/v/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![npm Version](https://img.shields.io/npm/v/@mcp-bastion/core)](https://www.npmjs.com/package/@mcp-bastion/core)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
-[![PyPI Downloads](https://static.pepy.tech/personalized-badge/mcp-bastion-python?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/mcp-bastion-python)
 
 **Enterprise-Grade Security Middleware for the Model Context Protocol**
 
@@ -86,9 +86,7 @@ mcp-bastion dashboard --port 7000
 | [http://localhost:7000/api/health](http://localhost:7000/api/health) | `{"status": "ok"}` |
 | [http://localhost:7000/metrics](http://localhost:7000/metrics) | Prometheus text format for Grafana/Datadog |
 
-![MCP-Bastion Dashboard](docs/images/dashboard.png)
-
-*Dashboard: total requests, blocked count and %, PII redacted, cost; blocked-by-reason bars; top tools; cost by user; recent alerts.*
+*Dashboard: total requests, blocked count and %, PII redacted, cost; blocked-by-reason bars; top tools; cost by user; recent alerts — open [http://localhost:7000/](http://localhost:7000/) while `mcp-bastion dashboard` is running.*
 
 - **Alerts:** Slack webhook and cost-threshold alerts. See [dashboard/README.md](dashboard/README.md).
 
