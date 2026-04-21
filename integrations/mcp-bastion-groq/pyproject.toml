@@ -4,22 +4,22 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-groq"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP-Bastion security middleware for Groq — prompt injection, PII, and rate-limit protection for ultra-fast LLM inference"
 readme = "README.md"
-license = "MIT"
+license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
 requires-python = ">=3.10"
 authors = [{ name = "Viquar Khan" }]
 keywords = ["mcp", "bastion", "groq", "security", "llm", "prompt-injection", "pii"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3",
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp-bastion-python>=1.0.11",
+    "mcp-bastion-python>=1.0.13",
     "groq>=0.5.0",
 ]
 

@@ -245,3 +245,44 @@ def test_metrics_store_tool_stats_and_pillar_health():
 
 def test_metrics_elapsed_window_bad_iso():
     assert MetricsStore._elapsed_seconds_window("invalid") == 1.0
+
+
+def test_metrics_elapsed_window_valid_iso():
+    elapsed = MetricsStore._elapsed_seconds_window("2020-01-01T00:00:00+00:00")
+    assert elapsed >= 1.0
+
+
+def test_metrics_elapsed_window_naive_iso_gets_utc():
+    elapsed = MetricsStore._elapsed_seconds_window("2020-01-01T12:00:00")
+    assert elapsed >= 1.0
+
+
+def test_metrics_percentile_upper_index_branch():
+    assert MetricsStore._percentile_ms([10.0, 20.0, 30.0], 100.0) == 30.0
+
+
+def test_metrics_normalize_reason_kinds_and_tool_latency_bounds():
+    store = MetricsStore.get()
+    store.reset()
+    store.record_blocked("", "t1")
+    store.record_blocked("rbac cannot access tool", "t1")
+    store.record_blocked("cost budget exceeded", "t1")
+    store.record_blocked("content filter blocked", "t1")
+    store.record_blocked("circuit breaker open", "t1")
+    store.record_blocked("replay nonce invalid", "t1")
+    store.record_blocked("schema validation error on input", "t1")
+    store.record_blocked("weird custom reason xyz", "t1")
+    m = store.get_metrics()
+    bbk = m["blocked_by_kind"]
+    assert bbk.get("unknown", 0) >= 1
+    assert bbk.get("rbac", 0) >= 1
+    assert bbk.get("cost", 0) >= 1
+    assert bbk.get("content_filter", 0) >= 1
+    assert bbk.get("circuit_breaker", 0) >= 1
+    assert bbk.get("replay", 0) >= 1
+    assert bbk.get("schema_validation", 0) >= 1
+    assert bbk.get("other", 0) >= 1
+
+    store.record_tool_latency_ms("t1", -5)
+    store.record_tool_latency_ms("t1", 9999999)
+    assert store.get_metrics()["tool_stats"]["t1"]["latency_samples"] == 0

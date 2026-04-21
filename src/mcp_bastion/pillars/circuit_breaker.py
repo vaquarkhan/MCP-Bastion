@@ -7,6 +7,7 @@ Auto-disable failing tools after N failures. Fail fast when external APIs are do
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -41,9 +42,14 @@ class CircuitBreaker:
         failure_threshold: int = 5,
         recovery_timeout: float = 60.0,
     ) -> None:
+        if failure_threshold < 1:
+            raise ValueError("failure_threshold must be >= 1")
+        if recovery_timeout <= 0:
+            raise ValueError("recovery_timeout must be > 0")
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self._circuits: dict[str, CircuitState] = defaultdict(CircuitState)
+        self._lock = threading.Lock()
 
     def _get_tool_key(self, tool: str) -> str:
         return tool or "default"
@@ -51,56 +57,62 @@ class CircuitBreaker:
     def record_success(self, tool: str) -> None:
         """Record successful call. Reset circuit if half-open."""
         key = self._get_tool_key(tool)
-        state = self._circuits[key]
-        if state.state == "half_open":
-            state.state = "closed"
-            state.failures = 0
-            logger.info("circuit_breaker closed tool=%s", tool)
+        with self._lock:
+            state = self._circuits[key]
+            if state.state == "half_open":
+                state.state = "closed"
+                state.failures = 0
+                logger.info("circuit_breaker closed tool=%s", tool)
 
     def record_failure(self, tool: str) -> None:
         """Record failed call. Open circuit if threshold reached."""
         key = self._get_tool_key(tool)
-        state = self._circuits[key]
-        state.failures += 1
-        state.last_failure_at = time.monotonic()
+        with self._lock:
+            state = self._circuits[key]
+            if state.state == "open":
+                return
+            state.failures += 1
+            state.last_failure_at = time.monotonic()
 
-        if state.failures >= self.failure_threshold:
-            state.state = "open"
-            logger.warning(
-                "circuit_breaker open tool=%s failures=%d",
-                tool,
-                state.failures,
-            )
+            if state.failures >= self.failure_threshold:
+                state.state = "open"
+                logger.warning(
+                    "circuit_breaker open tool=%s failures=%d",
+                    tool,
+                    state.failures,
+                )
 
     def check(self, tool: str) -> None:
         """
         Check if request is allowed. Raises CircuitBreakerOpenError if open.
         """
         key = self._get_tool_key(tool)
-        state = self._circuits[key]
+        with self._lock:
+            state = self._circuits[key]
 
-        if state.state == "closed":
-            return
-
-        if state.state == "open":
-            elapsed = time.monotonic() - state.last_failure_at
-            if elapsed >= self.recovery_timeout:
-                state.state = "half_open"
-                logger.info("circuit_breaker half_open tool=%s", tool)
+            if state.state == "closed":
                 return
-            raise _make_circuit_error(
-                tool,
-                f"Circuit open. Retry after {self.recovery_timeout - elapsed:.0f}s",
-            )
 
-        if state.state == "half_open":
-            return
+            if state.state == "open":
+                elapsed = time.monotonic() - state.last_failure_at
+                if elapsed >= self.recovery_timeout:
+                    state.state = "half_open"
+                    logger.info("circuit_breaker half_open tool=%s", tool)
+                    return
+                raise _make_circuit_error(
+                    tool,
+                    f"Circuit open. Retry after {self.recovery_timeout - elapsed:.0f}s",
+                )
+
+            if state.state == "half_open":
+                return
 
     def reset(self, tool: str | None = None) -> None:
         """Reset circuit(s). If tool is None, reset all."""
-        if tool:
-            key = self._get_tool_key(tool)
-            if key in self._circuits:
-                del self._circuits[key]
-        else:  # pragma: no cover
-            self._circuits.clear()  # pragma: no cover
+        with self._lock:
+            if tool:
+                key = self._get_tool_key(tool)
+                if key in self._circuits:
+                    del self._circuits[key]
+            else:
+                self._circuits.clear()

@@ -44,9 +44,10 @@ cd MCP-Bastion
 $env:PYTHONPATH="src"; pytest tests/ -v --cov=src/mcp_bastion --cov-report=term-missing --cov-fail-under=99
 ```
 
-Omitted from coverage: optional paths in pii_redaction and prompt_guard. TypeScript:
+Omitted from coverage: optional paths in pii_redaction and prompt_guard. TypeScript (from repo root, run `npm install` once so Vitest is available):
 
 ```bash
+npm install
 npm run test --workspace=@mcp-bastion/core
 ```
 
@@ -80,6 +81,8 @@ Use the official MCP Inspector to validate JSON-RPC 2.0 and CallTool/ReadResourc
 ```bash
 # Python
 pip install mcp-bastion-python torch transformers presidio-analyzer presidio-anonymizer spacy
+# Optional: pin latest tested release
+pip install mcp-bastion-python==1.0.14
 python -m spacy download en_core_web_sm
 
 # Dev (for pytest async)

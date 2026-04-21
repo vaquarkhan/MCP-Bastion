@@ -212,6 +212,8 @@ Early security packages (mcp-guardian, mcp-shield) focus on logging or static sc
 uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
+# pinned latest
+pip install mcp-bastion-python==1.0.14
 ```
 
 **Prerequisites (recommended)**

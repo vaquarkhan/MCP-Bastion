@@ -46,6 +46,8 @@ cd my-mcp-server
 
 # 3. Install MCP and MCP-Bastion
 pip install mcp mcp-bastion-python
+# Optional: pin latest tested release
+pip install mcp mcp-bastion-python==1.0.14
 
 # 4. Download spaCy model (required for PII)
 python -m spacy download en_core_web_sm
@@ -525,11 +527,13 @@ Run the same checks as GitHub Actions before pushing:
 ```
 
 ```bash
-# Linux/Mac
+# Linux/Mac (install Node deps first: npm ci or npm install)
 npm ci && npm run build && npm test
 uv build  # or: python -m build --no-isolation
 PYTHONPATH=src pytest tests/ -v
 ```
+
+On Windows, from a fresh clone run `npm install` or `npm ci` in the repo root before `npm test`; otherwise `vitest` is not available.
 
 ### Run Enterprise Validation Checklist
 
@@ -548,16 +552,19 @@ cd MCP-Bastion
 $env:PYTHONPATH="src"; pytest tests/ -v --tb=short
 ```
 
-All tests should pass.
+All tests should pass (one test may be skipped depending on optional deps).
+
+**Windows note:** While Presidio or PromptGuard loads native libraries (Torch), the console may print `Windows fatal exception: access violation` lines. If pytest finishes with `passed` and exit code 0, the suite succeeded; the message is a known quirk of some Torch builds on Windows, not a failed test.
 
 ### Run TypeScript Tests
 
 ```bash
 cd MCP-Bastion
+npm install   # first time only: installs workspace deps including vitest
 npm run test --workspace=@mcp-bastion/core
 ```
 
-Expected: 3 passed.
+Expected: 9 tests passed (Vitest).
 
 ### Run TypeScript Build
 

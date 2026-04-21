@@ -7,6 +7,7 @@ Max 15 iterations, 60s timeout, optional token budget (50k default).
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -36,10 +37,17 @@ class TokenBucketRateLimiter:
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
         token_budget: int = DEFAULT_TOKEN_BUDGET,
     ) -> None:
+        if max_iterations < 1:
+            raise ValueError("max_iterations must be >= 1")
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be > 0")
+        if token_budget < 1:
+            raise ValueError("token_budget must be >= 1")
         self.max_iterations = max_iterations
         self.timeout_seconds = timeout_seconds
         self.token_budget = token_budget
         self._sessions: dict[str, SessionState] = defaultdict(SessionState)
+        self._lock = threading.Lock()
 
     def _get_session_id(self, request_id: str | None, session_id: str | None) -> str:
         """Resolve session key from request or session ID."""
@@ -66,22 +74,23 @@ class TokenBucketRateLimiter:
         describes the violation.
         """
         key = self._get_session_id(request_id, session_id)
-        self._cleanup_expired(key)
+        with self._lock:
+            self._cleanup_expired(key)
 
-        state = self._sessions[key]
-        elapsed = time.monotonic() - state.started_at
+            state = self._sessions[key]
+            elapsed = time.monotonic() - state.started_at
 
-        if elapsed > self.timeout_seconds:
-            del self._sessions[key]
-            return False, "Session timeout exceeded (60s limit)"
+            if elapsed > self.timeout_seconds:
+                del self._sessions[key]
+                return False, "Session timeout exceeded (60s limit)"
 
-        if state.iterations >= self.max_iterations:
-            return False, f"Maximum iterations exceeded ({self.max_iterations} limit)"
+            if state.iterations >= self.max_iterations:
+                return False, f"Maximum iterations exceeded ({self.max_iterations} limit)"
 
-        if state.tokens_used >= self.token_budget:
-            return False, f"Token budget exhausted ({self.token_budget} limit)"
+            if state.tokens_used >= self.token_budget:
+                return False, f"Token budget exhausted ({self.token_budget} limit)"
 
-        return True, None
+            return True, None
 
     def consume_iteration(
         self,
@@ -90,10 +99,13 @@ class TokenBucketRateLimiter:
         tokens: int = 0,
     ) -> None:
         """Record one iteration and optional token consumption."""
+        if tokens < 0:
+            raise ValueError("tokens must be >= 0")
         key = self._get_session_id(request_id, session_id)
-        state = self._sessions[key]
-        state.iterations += 1
-        state.tokens_used += tokens
+        with self._lock:
+            state = self._sessions[key]
+            state.iterations += 1
+            state.tokens_used += tokens
 
     def reset_session(
         self,
@@ -102,5 +114,6 @@ class TokenBucketRateLimiter:
     ) -> None:
         """Reset session state (e.g., on new request)."""
         key = self._get_session_id(request_id, session_id)
-        if key in self._sessions:
-            del self._sessions[key]
+        with self._lock:
+            if key in self._sessions:
+                del self._sessions[key]

@@ -10,7 +10,14 @@ import pytest
 # Ensure src is on path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from mcp_bastion.cli import cmd_validate, cmd_serve, cmd_dashboard, main, _ensure_src_on_path
+from mcp_bastion.cli import (
+    cmd_validate,
+    cmd_serve,
+    cmd_dashboard,
+    main,
+    _ensure_src_on_path,
+    _resolve_dashboard_repo,
+)
 
 
 def test_cmd_validate_missing_file_returns_one():
@@ -60,6 +67,28 @@ def test_ensure_src_on_path():
     _ensure_src_on_path()
     # Either no change or src was inserted when running from repo root
     assert True
+
+
+def test_resolve_dashboard_repo_finds_repo_when_cwd_has_no_dashboard(monkeypatch, tmp_path):
+    """When cwd is not the repo, still resolve repo root via cli.py location."""
+    monkeypatch.chdir(tmp_path)
+    root = _resolve_dashboard_repo()
+    assert root is not None
+    assert (root / "dashboard" / "app.py").is_file()
+
+
+def test_resolve_dashboard_repo_returns_none_when_dashboard_missing(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    real_is_file = Path.is_file
+
+    def is_file_stub(self):
+        s = str(self).replace("\\", "/")
+        if s.endswith("dashboard/app.py"):
+            return False
+        return real_is_file(self)
+
+    with mock.patch.object(Path, "is_file", is_file_stub):
+        assert _resolve_dashboard_repo() is None
 
 
 def test_ensure_src_on_path_inserts_when_repo_root(monkeypatch, tmp_path):
@@ -194,6 +223,9 @@ def test_main_dashboard_help(monkeypatch):
         main()
 
 
+@pytest.mark.filterwarnings(
+    "ignore:.*mcp_bastion.cli.*sys.modules:RuntimeWarning"
+)
 def test_cli_main_entrypoint(monkeypatch):
     """Cover if __name__ == '__main__' by running the module as __main__."""
     monkeypatch.setattr("sys.argv", ["mcp-bastion", "validate", "--help"])
