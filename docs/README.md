@@ -11,6 +11,7 @@ Current Python package release: `mcp-bastion-python==1.0.14`.
 | [index.md](index.md) | Landing page for docs website (GitHub Pages home) |
 | [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) | End-to-end tutorial from install to production checks |
 | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) | Full `bastion.yaml` schema and examples |
+| [FEATURES.md](FEATURES.md) | Enterprise / security feature matrix |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI reference |
 | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) | OpenAI/Claude/Gemini/Mistral/Grok integration patterns |
 | [TUTORIALS.md](TUTORIALS.md) | Popular MCP integration approaches |
@@ -19,6 +20,8 @@ Current Python package release: `mcp-bastion-python==1.0.14`.
 
 | Doc | Description |
 |-----|-------------|
+| [OWASP_MCP_TOP10.md](OWASP_MCP_TOP10.md) | OWASP MCP Top 10 mapping: Bastion controls vs customer responsibilities |
+| [MCP_SECURITY_LANDSCAPE.md](MCP_SECURITY_LANDSCAPE.md) | Incident themes, kill chains, and public documentation wording (GitHub issue link) |
 | [SECURITY.md](SECURITY.md) | OWASP mapping, mitigations, vulnerability reporting |
 | [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) | Attack scenarios and prevention walkthroughs |
 | [METRICS.md](METRICS.md) | Metrics, dashboard, Prometheus and effectiveness guidance |

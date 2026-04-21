@@ -34,6 +34,15 @@ def test_semantic_cache_different_tool_isolated():
     assert sc.get("tool_b", "query") == {"b": 2}
 
 
+def test_semantic_cache_scope_isolates_tenants():
+    """Same tool+query under different tenant scopes must not share cache (MCP10)."""
+    sc = SemanticCache(similarity_threshold=0.95)
+    sc.set("search", "hello world", {"tenant": "a"}, scope="tenant-a")
+    sc.set("search", "hello world", {"tenant": "b"}, scope="tenant-b")
+    assert sc.get("search", "hello world", scope="tenant-a") == {"tenant": "a"}
+    assert sc.get("search", "hello world", scope="tenant-b") == {"tenant": "b"}
+
+
 def test_semantic_cache_same_query_different_tool_order_independent():
     """Hits must not leak across tools regardless of LRU order (regression)."""
     sc = SemanticCache()

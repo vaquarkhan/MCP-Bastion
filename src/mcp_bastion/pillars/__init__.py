@@ -14,6 +14,8 @@ from mcp_bastion.pillars.rbac import RBAC
 from mcp_bastion.pillars.replay_guard import ReplayGuard
 from mcp_bastion.pillars.schema_validation import SchemaValidator
 from mcp_bastion.pillars.semantic_cache import SemanticCache
+from mcp_bastion.pillars.sensitive_classifier import SensitiveContentClassifier
+from mcp_bastion.pillars.semantic_firewall import SemanticFirewall
 
 __all__ = [
     "AlertSink",
@@ -37,5 +39,7 @@ __all__ = [
     "ReplayGuard",
     "SchemaValidator",
     "SemanticCache",
+    "SensitiveContentClassifier",
+    "SemanticFirewall",
     "TokenBucketRateLimiter",
 ]

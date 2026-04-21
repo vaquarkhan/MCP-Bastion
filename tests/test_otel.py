@@ -8,6 +8,20 @@ import pytest
 from mcp_bastion import otel
 
 
+@pytest.fixture(autouse=True)
+def _reset_otel_state(monkeypatch):
+    otel._tracer = None
+    otel._meter = None
+    otel._cw_client = None
+    otel._observability_target = None
+    monkeypatch.setattr(otel, "_is_port_open", lambda host, port, timeout=0.2: False)
+    yield
+    otel._tracer = None
+    otel._meter = None
+    otel._cw_client = None
+    otel._observability_target = None
+
+
 def test_get_tracer_without_endpoint_returns_none(monkeypatch):
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
     # Reset module state so _init_otel runs again
@@ -278,5 +292,29 @@ def test_init_otel_otlp_both_grpc_and_http_fail(monkeypatch):
     with mock.patch("builtins.__import__", side_effect=fake_import):
         tr = otel.get_tracer()
     assert tr is None
-    otel._tracer = None
-    otel._meter = None
+
+
+def test_detect_observability_target_prefers_grafana(monkeypatch):
+    monkeypatch.setenv("GRAFANA_CLOUD_OTLP_ENDPOINT", "https://otlp-gateway.grafana.net/otlp")
+    monkeypatch.setenv("GRAFANA_CLOUD_USERNAME", "u")
+    monkeypatch.setenv("GRAFANA_CLOUD_API_KEY", "k")
+    endpoint, headers = otel.detect_observability_target()
+    assert endpoint.startswith("https://")
+    assert "Authorization" in headers
+
+
+def test_detect_observability_target_datadog(monkeypatch):
+    monkeypatch.delenv("GRAFANA_CLOUD_OTLP_ENDPOINT", raising=False)
+    monkeypatch.setenv("DD_AGENT_HOST", "127.0.0.2")
+    monkeypatch.setattr(otel, "_is_port_open", lambda host, port, timeout=0.2: True)
+    endpoint, headers = otel.detect_observability_target()
+    assert endpoint == "http://127.0.0.2:4317"
+    assert headers == {}
+
+
+def test_record_tool_span_cloudwatch_fallback(monkeypatch):
+    cw = mock.MagicMock()
+    otel._cw_client = cw
+    with mock.patch.object(otel, "get_tracer", return_value=None):
+        otel.record_tool_span("ask", "ALLOWED", 12.0, None)
+    assert cw.put_metric_data.called

@@ -21,8 +21,30 @@ content_filter:
   block_code_execution: true
   block_file_paths: true
   block_urls: false
+  # MCP01: block common API key / credential shapes in tool arguments (tune false-positive risk)
+  block_secrets: false
   allowlist_patterns: []
   denylist_patterns: []
+
+# MCP07: optional shared-secret check; host must set context.metadata[metadata_key] before Bastion.
+edge_auth:
+  enabled: false
+  metadata_key: bastion_edge_token
+  secret_env: BASTION_EDGE_SECRET
+
+# MCP03: when enabled, only listed tool names are accepted (empty list = deny all tools).
+tool_allowlist:
+  enabled: false
+  tools: []
+
+# MCP02: cap distinct tool names per session_id (0 = disabled).
+session_limits:
+  max_unique_tools_per_session: 0
+
+# MCP09: optional POST on process start for governance / inventory systems.
+governance:
+  registry_url: null
+  service_id: null
 
 rbac:
   enabled: false
@@ -46,8 +68,39 @@ cost_tracker:
 semantic_cache:
   enabled: false
 
+semantic_firewall:
+  enabled: false
+
+# Scan tools/list (and similar) responses: name + description + inputSchema.
+# Mitigates description-based tool poisoning when list traffic passes through Bastion.
+# Use with prompt_guard and/or content_filter. on_poison: remove_tool | block_all
+tool_metadata_guard:
+  enabled: false
+  on_poison: remove_tool
+  use_content_filter: true
+
 audit:
   enabled: true
+
+# Forward structured audit JSON to Datadog, New Relic, Splunk HEC, or any HTTPS intake
+# (API Gateway → EventBridge, Azure Logic App, GCP Pub/Sub push endpoint, etc.).
+# Requires audit.enabled. Headers support %ENVVAR% / $ENVVAR expansion on Windows.
+telemetry:
+  export_mode: all
+  # export_mode: blocked_only   # lower volume: only BLOCKED events
+  sinks: []
+  # Example: Datadog Logs API v2 (set DD_API_KEY in the environment):
+  # sinks:
+  #   - format: datadog_logs
+  #     url: https://httpintake.logs.datadoghq.com/api/v2/logs
+  #     headers:
+  #       DD-API-KEY: "%DD_API_KEY%"
+  #     ddtags: "env:prod,team:platform"
+  # Example: New Relic Log API:
+  #   - format: new_relic_logs
+  #     url: https://log-api.newrelic.com/log/v1
+  #     headers:
+  #       Api-Key: "%NEW_RELIC_LICENSE_KEY%"
 
 alerts:
   slack_webhook: ${SLACK_WEBHOOK_URL}
@@ -65,3 +118,41 @@ alerts:
 hot_reload:
   enabled: false
   poll_seconds: 2.0
+
+# Tamper-evident audit hash chain (SHA-256); optional periodic anchors + webhook (S3 Object Lock, etc.)
+audit_hash_chain:
+  anchor_every: 0
+  anchor_webhook_url: ${BASTION_ANCHOR_WEBHOOK_URL}
+
+behavior_fingerprint:
+  enabled: true
+
+cost_attribution:
+  enabled: true
+
+# Optional OPA (Rego) or Cedar; complements YAML/Python RBAC for policy-as-code pipelines
+policy_engine:
+  type: none
+  opa:
+    binary: opa
+    policy_dir: null
+    query: data.bastion.allow
+  cedar:
+    binary: cedar
+    policies_dir: null
+    schema: null
+
+# Model-based classifier for sensitive unstructured business data
+sensitive_classifier:
+  enabled: false
+  threshold: 0.65
+  use_transformers: false
+  model_name: distilbert-base-uncased-finetuned-sst-2-english
+  block_labels:
+    - sensitive_business
+
+# SaaS mode: one Bastion instance serves many tenants, each with its own YAML under config_dir/<tenant>.yaml
+multi_tenant:
+  enabled: false
+  config_dir: ./tenants
+  default_tenant: default

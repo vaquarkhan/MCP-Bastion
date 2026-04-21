@@ -496,7 +496,7 @@ async def test_middleware_prompt_guard_json_decode_error():
 async def test_middleware_semantic_cache_hit_skips_handler():
     """Semantic cache hit returns cached without calling handler."""
     sc = SemanticCache()
-    sc.set("search", "hello", {"cached": True})
+    sc.set("search", "hello", {"cached": True}, scope="default")
     mw = MCPBastionMiddleware(
         prompt_guard=PromptGuardEngine(),
         rate_limiter=TokenBucketRateLimiter(max_iterations=100),
@@ -559,3 +559,29 @@ async def test_middleware_get_content_from_result_no_contents():
 def test_middleware_get_content_items_not_list():
     """Result with non-list items returns None."""
     assert _get_content_from_result({"contents": "not a list"}) is None
+
+
+@pytest.mark.asyncio
+async def test_middleware_populates_forensic_metadata_and_trace():
+    mw = MCPBastionMiddleware(
+        enable_prompt_guard=False,
+        enable_pii_redaction=False,
+        enable_rate_limit=True,
+        rate_limiter=TokenBucketRateLimiter(max_iterations=5),
+    )
+    ctx = MiddlewareContext(
+        message={"method": "tools/call", "id": "req-1", "params": {"name": "safe_tool", "arguments": {"q": "ok"}}},
+        request_id="req-1",
+        session_id="sess-1",
+    )
+
+    async def handler(c):
+        return {"ok": True}
+
+    result = await mw(ctx, handler)
+    assert result == {"ok": True}
+    assert "forensic_request" in ctx.metadata
+    assert "replay_payload" in ctx.metadata
+    assert "forensic_response" in ctx.metadata
+    assert isinstance(ctx.metadata.get("pillar_trace"), list)
+    assert any(step.get("pillar") == "handler" for step in ctx.metadata["pillar_trace"])

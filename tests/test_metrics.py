@@ -86,6 +86,50 @@ def test_metrics_store_record_cost():
     assert m["cost_by_user"]["user2"] == 0.2
 
 
+def test_metrics_store_record_cost_dimensions():
+    store = MetricsStore.get()
+    store.reset()
+    store.record_cost(
+        0.12,
+        "u1",
+        dimensions={
+            "llm_provider": "openai",
+            "llm_model": "gpt-4o-mini",
+            "tool": "ask",
+            "dataset": "corp_kb",
+        },
+    )
+    m = store.get_metrics()
+    assert m["cost_attribution"]["by_provider"].get("openai") == pytest.approx(0.12)
+    assert m["cost_attribution"]["by_model"].get("gpt-4o-mini") == pytest.approx(0.12)
+    assert m["cost_attribution"]["by_tool"].get("ask") == pytest.approx(0.12)
+    assert m["cost_attribution"]["by_dataset"].get("corp_kb") == pytest.approx(0.12)
+
+
+def test_metrics_store_tenant_rollup():
+    store = MetricsStore.get()
+    store.reset()
+    store.record_request("read", "u1", tenant="acme")
+    store.record_blocked("rate limit", "read", tenant="acme")
+    store.record_cost(0.3, "u1", tenant="acme")
+    m = store.get_metrics()
+    assert m["tenants"]["acme"]["requests_total"] == 1
+    assert m["tenants"]["acme"]["blocked_total"] == 1
+    assert m["tenants"]["acme"]["cost_total"] == pytest.approx(0.3)
+
+
+def test_behavior_drift_emits_anomaly():
+    store = MetricsStore.get()
+    store.reset()
+    for _ in range(18):
+        store.record_session_tool("sess", "stable")
+    for _ in range(10):
+        store.record_session_tool("sess", "other")
+    m = store.get_metrics()
+    kinds = [a["kind"] for a in m["auto_tune"]["recent_anomalies"]]
+    assert "behavior_drift" in kinds
+
+
 def test_metrics_store_add_alert():
     store = MetricsStore.get()
     store.reset()
@@ -241,6 +285,60 @@ def test_metrics_store_tool_stats_and_pillar_health():
     pillars = {p["name"]: p for p in m["pillar_health"]}
     assert pillars["Rate Limiter"]["status"] == "active"
     assert pillars["PII Redaction"]["status"] == "active"
+
+
+def test_metrics_store_forensic_event_roundtrip():
+    store = MetricsStore.get()
+    store.reset()
+    store.record_forensic_event(
+        {
+            "event_id": "evt-1",
+            "timestamp": "2026-04-21T00:00:00Z",
+            "tool": "run_query",
+            "action": "BLOCKED",
+            "reason": "rate limit",
+            "forensic_trace": [{"pillar": "rate_limit", "status": "blocked"}],
+            "replay_payload": {"method": "tools/call"},
+        }
+    )
+    listed = store.list_forensic_events(limit=10, blocked_only=True, include_full=False)
+    assert listed[0]["event_id"] == "evt-1"
+    full = store.get_forensic_event("evt-1")
+    assert full is not None
+    assert full["tool"] == "run_query"
+    assert full["forensic_trace"][0]["pillar"] == "rate_limit"
+
+
+def test_metrics_store_forensic_summary_present_in_metrics():
+    store = MetricsStore.get()
+    store.reset()
+    store.record_forensic_event(
+        {
+            "event_id": "evt-2",
+            "timestamp": "2026-04-21T00:00:00Z",
+            "tool": "dangerous_call",
+            "action": "BLOCKED",
+            "reason": "prompt injection",
+        }
+    )
+    metrics = store.get_metrics()
+    assert "forensic_recent_blocked" in metrics
+    assert metrics["forensic_recent_blocked"][0]["event_id"] == "evt-2"
+
+
+def test_metrics_auto_tune_latency_and_rate_baseline_fields():
+    store = MetricsStore.get()
+    store.reset()
+    for _ in range(5):
+        store.record_request("run_query", "u1")
+        store.record_tool_latency_ms("run_query", 10.0)
+    store.record_tool_latency_ms("run_query", 200.0)
+    metrics = store.get_metrics()
+    auto = metrics["auto_tune"]
+    assert "latency_baseline_ms" in auto
+    assert "call_rate_baseline_per_min" in auto
+    assert "recent_anomalies" in auto
+    assert "run_query" in auto["latency_baseline_ms"]
 
 
 def test_metrics_elapsed_window_bad_iso():

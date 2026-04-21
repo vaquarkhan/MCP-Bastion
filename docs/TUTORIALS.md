@@ -94,10 +94,10 @@ await server.connect(transport);
 
 Many teams use or fork open-source MCP servers (e.g. GitHub API, filesystem, database, Slack). You usually cannot change their code. You can still protect them by running MCP-Bastion as a **proxy** in front of the server:
 
-**Option A – Same process (if you run a wrapper script):**  
+**Option A: same process (if you run a wrapper script):**  
 Write a small Python script that (1) starts or connects to the existing MCP server, (2) wraps every incoming JSON-RPC message with MCP-Bastion middleware, and (3) forwards allowed requests to the real server. This requires your wrapper to speak MCP (stdio or HTTP) and call the real server. The examples in this repo show middleware in-process; for a true proxy you would run the upstream server as a subprocess or HTTP client and pass messages through Bastion first.
 
-**Option B – Use the existing “serve” pattern:**  
+**Option B: use the existing “serve” pattern:**  
 If your MCP server is the one in this repo (e.g. `examples/llm_server.py`), you already use `mcp-bastion serve` or the same middleware in-process. For a third-party server you run (e.g. a community GitHub MCP server), you can:
 
 1. Run the third-party server as-is on a port (e.g. 8001).
@@ -111,8 +111,8 @@ If your MCP server is the one in this repo (e.g. `examples/llm_server.py`), you 
 
 Examples of open-source MCP servers you might host yourself:
 
-- **GitHub MCP Server** – [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) or GitHub’s official server: exposes repos, issues, PRs. When you run your own instance, wrap it with MCP-Bastion so that prompt injection and rate limits are enforced before any GitHub API call.
-- **Filesystem / Database / Slack MCP** – Community servers that expose tools for file read, DB query, or Slack. Same idea: run the server in a process where Bastion middleware wraps the request handler so that path traversal, injection, and rate limits are enforced.
+- **GitHub MCP Server**: [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) or GitHub’s official server: exposes repos, issues, PRs. When you run your own instance, wrap it with MCP-Bastion so that prompt injection and rate limits are enforced before any GitHub API call.
+- **Filesystem / Database / Slack MCP**: community servers that expose tools for file read, DB query, or Slack. Same idea: run the server in a process where Bastion middleware wraps the request handler so that path traversal, injection, and rate limits are enforced.
 
 **Generic steps:**
 

@@ -10,9 +10,31 @@ import time
 import urllib.request
 from typing import Any
 
+from mcp_bastion.pillars.audit_hash_chain import AuditHashChain
 from mcp_bastion.pillars.metrics import MetricsStore
 
 logger = logging.getLogger(__name__)
+
+
+def _post_audit_anchor(url: str, payload: dict[str, Any], *, timeout_seconds: float = 2.0) -> None:
+    """Best-effort POST of a periodic anchor (immutable store / webhook)."""
+    if not url:
+        return
+
+    def _req():
+        return urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+    try:
+        with urllib.request.urlopen(_req(), timeout=timeout_seconds) as resp:
+            if int(getattr(resp, "status", 200)) >= 400:
+                logger.debug("anchor webhook returned non-2xx")
+    except Exception as e:
+        logger.debug("audit anchor webhook failed: %s", e)
 
 
 def _post_with_retry(
@@ -192,6 +214,12 @@ def _reason_from_error(reason: str | None) -> str:
         return "replay"
     if "schema" in reason_lower or "validation" in reason_lower:
         return "schema_validation"
+    if "semantic firewall" in reason_lower or "intent mismatch" in reason_lower or "dangerous tool chain" in reason_lower:
+        return "semantic_firewall"
+    if "external policy" in reason_lower or "opa denied" in reason_lower or "cedar denied" in reason_lower:
+        return "external_policy"
+    if "sensitive content" in reason_lower or "classifier" in reason_lower:
+        return "sensitive_classifier"
     return "other"
 
 
@@ -216,17 +244,57 @@ def notify_audit_entry(
 def make_audit_export_callback(
     alert_sinks: list[AlertSink] | None = None,
     alert_on: set[str] | None = None,
+    *,
+    behavior_fingerprint: bool = True,
+    anchor_webhook_url: str | None = None,
+    telemetry_sinks: list[Any] | None = None,
+    telemetry_export_mode: str = "all",
 ):
     """Return a callback for AuditLogMiddleware that updates MetricsStore and optionally sends alerts."""
     from mcp_bastion.pillars.audit_log import AuditEntry
 
     sinks = alert_sinks or []
     on_events = alert_on or {"injection", "rate_limit", "cost"}
+    tel_sinks = list(telemetry_sinks or [])
+    tel_mode = (telemetry_export_mode or "all").strip().lower()
 
     def _callback(entry: AuditEntry) -> None:
         store = MetricsStore.get()
         tool = entry.tool
         user = entry.session_id
+        tenant = getattr(entry, "tenant_id", None)
+        evt: dict[str, Any] = {
+            "event_id": getattr(entry, "forensic_event_id", None),
+            "timestamp": getattr(entry, "timestamp", None),
+            "tenant_id": tenant,
+            "request_id": getattr(entry, "request_id", None),
+            "session_id": getattr(entry, "session_id", None),
+            "tool": getattr(entry, "tool", "unknown"),
+            "action": getattr(entry, "action", "unknown"),
+            "reason": getattr(entry, "reason", None),
+            "latency_ms": getattr(entry, "latency_ms", 0.0),
+            "tokens_used": getattr(entry, "tokens_used", 0),
+            "error_code": getattr(entry, "error_code", None),
+            "cost_usd": float(getattr(entry, "cost_usd", 0.0) or 0.0),
+            "cost_dimensions": getattr(entry, "cost_dimensions", None),
+            "forensic_request": getattr(entry, "forensic_request", None),
+            "forensic_response": getattr(entry, "forensic_response", None),
+            "forensic_trace": getattr(entry, "forensic_trace", []),
+            "replay_payload": getattr(entry, "replay_payload", None),
+        }
+        AuditHashChain.get().append(evt)
+        anchor = evt.get("audit_anchor")
+        if anchor_webhook_url and isinstance(anchor, dict):
+            _post_audit_anchor(anchor_webhook_url, anchor)
+        store.record_forensic_event(evt)
+        if tel_sinks:
+            send_telemetry = tel_mode == "all" or (tel_mode == "blocked_only" and entry.action == "BLOCKED")
+            if send_telemetry:
+                for fn in tel_sinks:
+                    try:
+                        fn(entry)
+                    except Exception as ex:
+                        logger.debug("telemetry sink error: %s", ex)
         try:
             from mcp_bastion.otel import record_tool_span
             record_tool_span(entry.tool, entry.action, entry.latency_ms, entry.reason)
@@ -239,10 +307,12 @@ def make_audit_export_callback(
         except (TypeError, ValueError):
             pass  # missing or non-numeric latency on synthetic entries
         if entry.action == "ALLOWED":
-            store.record_request(tool, user)
+            store.record_request(tool, user, tenant=tenant)
+            if behavior_fingerprint:
+                store.record_session_tool(entry.session_id, tool)
         else:
             reason = entry.reason or "unknown"
-            store.record_blocked(reason, tool)
+            store.record_blocked(reason, tool, tenant=tenant)
             notify_audit_entry(entry.action, tool, reason, sinks, on_events)
 
     return _callback

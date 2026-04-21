@@ -2,6 +2,8 @@
 
 Python examples demonstrating MCP-Bastion middleware integration.
 
+**Also try:** `mcp-bastion dashboard` for the live command-center UI, and `mcp-bastion redteam` for a JSON security report against your `bastion.yaml`. See [dashboard/README.md](../dashboard/README.md) and [docs/CLI.md](../docs/CLI.md).
+
 ---
 
 ## Files in examples/
@@ -12,6 +14,11 @@ All Python files in this folder:
 |------|---------|
 | `examples/python_server_example.py` | Minimal middleware chain |
 | `examples/full_demo.py` | All features demo (11 scenarios) |
+| `examples/advanced_features_demo.py` | Semantic firewall, sensitive classifier, session tool limits, tool metadata guard |
+| `examples/owasp_security_showcase.py` | OWASP MCP Top 10–style controls: secrets, allowlist, edge auth, replay; optional embedded red team |
+| `examples/connect_any_mcp_tool_example.py` | Same middleware stack for arbitrary downstream tool names (`await bastion(ctx, downstream)`) |
+| `examples/policy_simulator_example.py` | Shadow `simulate_policy()` on sample events (FinOps / policy tuning) |
+| `examples/bastion.advanced.example.yaml` | Sample `bastion.yaml` with newer pillars enabled (merge or set `BASTION_CONFIG`) |
 | `examples/llm_server.py` | Shared MCP server for LLM clients |
 | `examples/llm_openai_example.py` | OpenAI (ChatGPT, API, Agents SDK) |
 | `examples/llm_claude_example.py` | Claude (Desktop, Code, API) |
@@ -172,11 +179,91 @@ PYTHONPATH=src python examples/server_with_config.py           # Linux/Mac
 | Replay guard | replay_guard | Block duplicate nonces |
 | Cost tracker | cost_tracker | Per-session cost budget |
 | Semantic cache | semantic_cache | Cache similar queries |
+| Semantic firewall | semantic_firewall | Tool intent and dangerous tool chains |
+| Sensitive classifier | sensitive_classifier | Unstructured sensitive business text |
+| Tool metadata guard | middleware | Strip or block poisoned `tools/list` metadata |
+| Session tool scope | middleware | Cap distinct tool names per session |
+| Policy simulator | policy_simulator | Shadow replay of events (`simulate_policy`) |
+
+---
+
+## Example 5: advanced_features_demo.py
+
+Runnable checks for pillars that shipped after the original `full_demo.py` scenarios:
+
+| Step | Pillar | What you should see |
+|------|--------|----------------------|
+| 1 | Semantic firewall | `get_weather` with SQL-like args blocked |
+| 2 | Sensitive classifier | Business-sensitive narrative blocked at a low threshold |
+| 3 | Session limits | Third distinct tool name in the same session blocked |
+| 4 | Tool metadata guard | Poisoned `tools/list` entry removed; only safe tools remain |
+
+**Run:**
+
+```bash
+$env:PYTHONPATH="src"; python examples/advanced_features_demo.py   # Windows
+PYTHONPATH=src python examples/advanced_features_demo.py          # Linux/Mac
+```
+
+**Policy-as-code:** copy [bastion.advanced.example.yaml](bastion.advanced.example.yaml) or point `BASTION_CONFIG` at it, then run `server_with_config.py` to load the same toggles from YAML.
+
+---
+
+## Example 6: policy_simulator_example.py
+
+Async sample calling `simulate_policy()` with two synthetic events and `content_filter` enabled in overrides. Use this pattern in CI or notebooks to compare candidate YAML against exported forensics.
+
+**Run:**
+
+```bash
+$env:PYTHONPATH="src"; python examples/policy_simulator_example.py
+```
+
+---
+
+## Example 7: owasp_security_showcase.py (OWASP MCP Top 10)
+
+Runnable demos aligned with [docs/OWASP_MCP_TOP10.md](../docs/OWASP_MCP_TOP10.md). The script exercises the **same** `MCPBastionMiddleware` path your MCP host uses; tool names are arbitrary strings (`tools/call`), so “any tool” is just configuration plus your downstream handler.
+
+| OWASP MCP tag | Risk (short) | What this example shows | Bastion knobs (see doc for full list) |
+|---------------|--------------|-------------------------|----------------------------------------|
+| MCP01 | Token / secret mishandling | Payload with AWS-like key blocked | `content_filter.block_secrets`, PII, audit |
+| MCP03 | Tool poisoning / shadow tools | Disallowed tool name blocked | `tool_allowlist`, `tool_metadata_guard`, schema |
+| MCP05 / MCP06 | Injection / confused deputy | Several allowed tool names on one stack | Content filter, schema, semantic firewall, prompt guard |
+| MCP07 | Weak edge auth | Missing vs valid metadata token | `edge_auth` |
+| — | Replay / duplicate requests | Duplicate `nonce` blocked | `replay_guard` (pairs with audit / hash chain for MCP08-style assurance in [OWASP doc](../docs/OWASP_MCP_TOP10.md)) |
+
+**Run:**
+
+```bash
+$env:PYTHONPATH="src"; python examples/owasp_security_showcase.py
+```
+
+**Full JSON report (recommended for CI):** `mcp-bastion redteam -c bastion.yaml -o redteam-report.json` — includes `mcp_top10_summary`.
+
+**Optional embedded red team** (uses your loadable `bastion.yaml` / `BASTION_CONFIG`; can be slow):
+
+```bash
+$env:MCP_BASTION_OWASP_RUN_REDTO_TEAM="1"
+$env:PYTHONPATH="src"; python examples/owasp_security_showcase.py
+```
+
+---
+
+## Example 8: connect_any_mcp_tool_example.py
+
+Shows the integration pattern: build `MCPBastionMiddleware` once, then for each `tools/call` wrap your **downstream** tool executor in `async def downstream(): ...` and invoke **`await bastion(ctx, downstream)`**. Tool names can be CRM, ERP, webhooks, or vendor-specific; policy (allowlist, firewall, etc.) applies uniformly.
+
+**Run:**
+
+```bash
+$env:PYTHONPATH="src"; python examples/connect_any_mcp_tool_example.py
+```
 
 ---
 
 ## Next Steps
 
-- [docs/LLM_INTEGRATION.md](../docs/LLM_INTEGRATION.md) – Config for OpenAI, Claude, Gemini, Mistral, Grok
-- [VALIDATION_CHECKLIST.md](../VALIDATION_CHECKLIST.md) – Run enterprise validation
-- [SETUP_GUIDE.md](../SETUP_GUIDE.md) – Full config and customization
+- [docs/LLM_INTEGRATION.md](../docs/LLM_INTEGRATION.md): config for OpenAI, Claude, Gemini, Mistral, Grok
+- [VALIDATION_CHECKLIST.md](../VALIDATION_CHECKLIST.md): run enterprise validation
+- [SETUP_GUIDE.md](../SETUP_GUIDE.md): full config and customization

@@ -1,0 +1,38 @@
+# Git and IDE
+.git
+.github
+.cursor
+.vscode
+.idea
+
+# Python / test artifacts (not needed in image context)
+**/__pycache__
+*.py[cod]
+*$py.class
+*.egg-info
+.eggs
+dist
+build
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+coverage.xml
+htmlcov
+.tox
+.hypothesis
+
+# Large trees not required for proxy or dashboard images
+tests
+integrations
+docs
+scripts
+packages/core/node_modules
+**/node_modules
+
+# Local secrets and env
+.env
+.env.*
+!.env.example
+
+# Keep: Dockerfile*, docker-compose.yml, examples/, src/, dashboard/, bastion.yaml.example, images/, pyproject.toml (if ever used in multi-stage)

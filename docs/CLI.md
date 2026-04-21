@@ -44,7 +44,20 @@ mcp-bastion dashboard --port 7000
 
 Requires: `pip install fastapi uvicorn` (or `pip install mcp-bastion-python[dashboard]`).
 
+The dashboard UI includes tenant filtering (stored in the browser), FinOps charts (provider/model), tamper-evident audit chain summary, and forensics drill-down.
+
+### redteam
+
+Run the integrated red-team suite against your loaded `bastion.yaml` and emit a JSON report (OWASP LLM Top 10-style tags):
+
+```bash
+mcp-bastion redteam --config bastion.yaml
+mcp-bastion redteam -c bastion.yaml -o redteam-report.json
+```
+
+Exit code `0` when the command completes; inspect `score_blocked_pct` and per-case rows in the report.
+
 ## Environment
 
-- `BASTION_CONFIG` – path to config file (default `bastion.yaml`)
-- `PYTHONPATH` – CLI adds repo `src` when run from repo root
+- `BASTION_CONFIG`: path to config file (default `bastion.yaml`)
+- `PYTHONPATH`: CLI adds repo `src` when run from repo root

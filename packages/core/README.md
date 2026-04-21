@@ -4,6 +4,8 @@
 
 Security middleware for MCP servers. Rate limiting in-process; prompt injection and PII via optional sidecar.
 
+> **Python parity:** advanced pillars (semantic firewall, hash-chain audit, OPA/Cedar, multi-tenant router, red-team CLI, FinOps dashboard) ship in the [`mcp-bastion-python`](https://pypi.org/project/mcp-bastion-python/) package; see the repo root [README.md](../../README.md).
+
 ## Install
 
 ```bash

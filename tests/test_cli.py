@@ -14,6 +14,8 @@ from mcp_bastion.cli import (
     cmd_validate,
     cmd_serve,
     cmd_dashboard,
+    cmd_doctor,
+    cmd_redteam,
     main,
     _ensure_src_on_path,
     _resolve_dashboard_repo,
@@ -221,6 +223,89 @@ def test_main_dashboard_help(monkeypatch):
     monkeypatch.setattr("sys.argv", ["mcp-bastion", "dashboard", "--help"])
     with pytest.raises(SystemExit):
         main()
+
+
+def test_cmd_redteam_success(tmp_path):
+    out = tmp_path / "report.json"
+    result = cmd_redteam(None, str(out))
+    assert result == 0
+    assert out.exists()
+
+
+def test_cmd_redteam_import_error():
+    with mock.patch("mcp_bastion.redteam.run_redteam_sync", side_effect=ImportError("bad")):
+        result = cmd_redteam(None, None)
+    assert result == 1
+
+
+def test_cmd_redteam_module_import_error():
+    key = "mcp_bastion.redteam"
+    saved = sys.modules.pop(key, None)
+    real_import = __import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == key:
+            raise ImportError("no redteam")
+        return real_import(name, *args, **kwargs)
+
+    try:
+        with mock.patch("builtins.__import__", side_effect=fake_import):
+            assert cmd_redteam(None, None) == 1
+    finally:
+        if saved is not None:
+            sys.modules[key] = saved
+        else:
+            import importlib
+
+            importlib.import_module(key)
+
+
+def test_cmd_redteam_stdout_only_without_output_path(caplog):
+    with mock.patch("mcp_bastion.redteam.run_redteam_sync", return_value={"score_blocked_pct": 1.0, "totals": {}}):
+        with caplog.at_level("INFO"):
+            assert cmd_redteam(None, None) == 0
+
+
+def test_cmd_redteam_write_failure_returns_one(tmp_path):
+    bad = tmp_path / "nope" / "out.json"
+    with mock.patch("mcp_bastion.redteam.run_redteam_sync", return_value={"x": 1}):
+        assert cmd_redteam(None, str(bad)) == 1
+
+
+def test_cmd_doctor_success(tmp_path):
+    p = tmp_path / "b.yaml"
+    p.write_text("audit:\n  enabled: true\n", encoding="utf-8")
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    with mock.patch("mcp_bastion.doctor.run_doctor", return_value={"ok": True, "checks": []}):
+        assert cmd_doctor(str(p), str(tmp_path)) == 0
+
+
+def test_cmd_doctor_reports_failure():
+    with mock.patch("mcp_bastion.doctor.run_doctor", return_value={"ok": False, "checks": []}):
+        assert cmd_doctor(None, None) == 1
+
+
+def test_cmd_doctor_import_error():
+    real_import = __import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "mcp_bastion.doctor":
+            raise ImportError("no doctor")
+        return real_import(name, *args, **kwargs)
+
+    with mock.patch("builtins.__import__", side_effect=fake_import):
+        assert cmd_doctor(None, None) == 1
+
+
+def test_main_doctor_runs(tmp_path, monkeypatch):
+    p = tmp_path / "b.yaml"
+    p.write_text("audit:\n  enabled: true\n", encoding="utf-8")
+    monkeypatch.setattr("sys.argv", ["mcp-bastion", "doctor", "-c", str(p), "--repo-root", str(tmp_path)])
+    with mock.patch("mcp_bastion.doctor.run_doctor", return_value={"ok": True, "checks": []}):
+        assert main() == 0
 
 
 @pytest.mark.filterwarnings(

@@ -428,6 +428,18 @@ See `examples/full_demo.py` for a complete demo of all features.
 
 ---
 
+## Enterprise features (dashboard, tenants, red team, observability)
+
+| Topic | What to do |
+|-------|----------------|
+| **Command-center dashboard** | `mcp-bastion dashboard --port 7000`: live KPIs, FinOps charts, audit chain summary, tenant filter, forensics and replay. |
+| **Per-tenant metrics** | `GET /api/metrics?tenant_id=...` and matching forensics query; see [METRICS.md](docs/METRICS.md). |
+| **Multi-tenant isolation** | Enable `multi_tenant` in `bastion.yaml` and place `<tenant>.yaml` files under `config_dir`. |
+| **Red-team scorecard** | `mcp-bastion redteam -c bastion.yaml -o report.json`; see [CLI.md](docs/CLI.md). |
+| **OTEL without hand-tuning** | Grafana OTLP envs, Datadog agent probe, or AWS CloudWatch fallback; see [OTEL.md](docs/OTEL.md). |
+
+---
+
 ## Value Add and Results
 
 ### What You Get
@@ -515,7 +527,7 @@ $env:PYTHONPATH="src"   # Windows PowerShell
 python examples/full_demo.py
 ```
 
-Expected (with minimal deps): Demo 1–2 succeed; Demo 3 blocks the 6th call (rate limit); Demo 4 allows (PromptGuard needs torch). With full deps (`pip install mcp-bastion-python torch presidio-analyzer presidio-anonymizer`, `python -m spacy download en_core_web_sm`), PII is redacted and prompt injection is blocked.
+Expected (with minimal deps): Demo 1-2 succeed; Demo 3 blocks the 6th call (rate limit); Demo 4 allows (PromptGuard needs torch). With full deps (`pip install mcp-bastion-python torch presidio-analyzer presidio-anonymizer`, `python -m spacy download en_core_web_sm`), PII is redacted and prompt injection is blocked.
 
 ### Validate Locally Before Push (CI-equivalent)
 
@@ -587,10 +599,10 @@ npx -y @modelcontextprotocol/inspector
 
 Connect via HTTP (`http://localhost:8000/mcp`) or stdio. Test:
 
-1. List tools – should succeed.
-2. Call tool with benign args – should succeed.
-3. Call tool with "Ignore previous instructions" – should be blocked (Python).
-4. Read resource with PII – response should have PII redacted (Python).
+1. List tools: should succeed.
+2. Call tool with benign args: should succeed.
+3. Call tool with "Ignore previous instructions": should be blocked (Python).
+4. Read resource with PII: response should have PII redacted (Python).
 
 ---
 

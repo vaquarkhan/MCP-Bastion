@@ -142,6 +142,34 @@ async def test_audit_log_captures_tokens_from_metadata():
 
     await audit(ctx, handler)
     assert entries[0].tokens_used == 500
+    assert entries[0].forensic_event_id is not None
+
+
+@pytest.mark.asyncio
+async def test_audit_log_captures_forensic_metadata_fields():
+    entries = []
+
+    def capture(e):
+        entries.append(e)
+
+    audit = AuditLogMiddleware(export_callback=capture)
+    ctx = MiddlewareContext(
+        message={"method": "tools/call", "params": {"name": "x"}},
+    )
+    ctx.metadata["forensic_request"] = {"tool": "x"}
+    ctx.metadata["forensic_response"] = {"ok": True}
+    ctx.metadata["pillar_trace"] = [{"pillar": "handler", "status": "ok"}]
+    ctx.metadata["replay_payload"] = {"method": "tools/call"}
+
+    async def handler(c):
+        return "ok"
+
+    await audit(ctx, handler)
+    entry = entries[0]
+    assert entry.forensic_request == {"tool": "x"}
+    assert entry.forensic_response == {"ok": True}
+    assert entry.forensic_trace[0]["pillar"] == "handler"
+    assert entry.replay_payload == {"method": "tools/call"}
 
 
 @pytest.mark.asyncio
