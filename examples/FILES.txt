@@ -1,5 +1,6 @@
 MCP-Bastion examples - all Python files
 
+examples/dashboard_demo.py
 examples/python_server_example.py
 examples/full_demo.py
 examples/llm_server.py

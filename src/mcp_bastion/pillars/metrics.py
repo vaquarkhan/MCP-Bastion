@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import threading
 import time
+import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -15,6 +16,8 @@ from typing import Any
 TIME_BUCKET_SECONDS = 30
 TIME_BUCKET_COUNT = 20
 LATENCY_SAMPLE_CAP = 2000
+# Recent blocked calls with ids for dashboard forensics (newest appended; maxlen enforced)
+BLOCKED_INCIDENT_CAP = 48
 
 
 @dataclass
@@ -70,6 +73,7 @@ class MetricsStore:
         self._tool_latency_ms: dict[str, deque[float]] = defaultdict(
             lambda: deque(maxlen=LATENCY_SAMPLE_CAP // 4)
         )
+        self._blocked_incidents: deque[dict[str, Any]] = deque(maxlen=BLOCKED_INCIDENT_CAP)
 
     @staticmethod
     def _normalize_reason_kind(reason: str | None) -> str:
@@ -169,7 +173,15 @@ class MetricsStore:
             if user:
                 pass  # cost_by_user updated by record_cost
 
-    def record_blocked(self, reason: str, tool: str = "unknown") -> None:
+    def record_blocked(
+        self,
+        reason: str,
+        tool: str = "unknown",
+        *,
+        tenant_id: str | None = None,
+        trace_id: str | None = None,
+        request_id: str | None = None,
+    ) -> None:
         with self._lock:
             kind = self._normalize_reason_kind(reason)
             self._metrics.blocked_total += 1
@@ -179,6 +191,16 @@ class MetricsStore:
             self._tool_blocked[tool] += 1
             self._tool_reason_counts[tool][kind] += 1
             self._bump_time_bucket(blocked=1)
+            self._blocked_incidents.append(
+                {
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "tenant_id": tenant_id or "default",
+                    "tool": tool,
+                    "reason": (reason or "")[:2000],
+                    "trace_id": trace_id or f"trc-{uuid.uuid4().hex[:20]}",
+                    "request_id": request_id or f"req-{uuid.uuid4().hex[:16]}",
+                }
+            )
 
     def record_pii_redacted(self, count: int = 1) -> None:
         with self._lock:
@@ -291,6 +313,123 @@ class MetricsStore:
         ]
         return items
 
+    def _build_dashboard_insights(self) -> list[dict[str, Any]]:
+        """Heuristic anomaly / tuning hints from current aggregates (not ML)."""
+        out: list[dict[str, Any]] = []
+        m = self._metrics
+        req = int(m.requests_total)
+        reason_sum = sum(m.blocked_by_reason.values())
+        blk = max(int(m.blocked_total), int(reason_sum))
+        total_inv = req + blk
+
+        if total_inv >= 8:
+            share = blk / max(total_inv, 1)
+            if share > 0.14:
+                out.append(
+                    {
+                        "severity": "warning",
+                        "code": "high_block_share",
+                        "title": "Elevated block share",
+                        "detail": f"{share * 100:.1f}% of invocations blocked — review policies, tenants, and top tools.",
+                    }
+                )
+
+        samples = list(self._latency_ms)
+        if len(samples) >= 25:
+            p50 = self._percentile_ms(samples, 50)
+            p95 = self._percentile_ms(samples, 95)
+            if p50 > 0.5 and p95 > 2.8 * p50:
+                out.append(
+                    {
+                        "severity": "info",
+                        "code": "latency_tail",
+                        "title": "Latency tail vs median",
+                        "detail": f"P95 {p95:.1f} ms vs P50 {p50:.1f} ms — inspect slow tools and upstream MCP latency.",
+                    }
+                )
+
+        ts = self._snapshot_time_series()
+        if len(ts) >= 10:
+            lb = [int(b.get("blocked") or 0) for b in ts]
+            recent = sum(lb[-3:])
+            baseline = sum(lb[-10:-3]) / 7.0
+            if baseline >= 1.5 and recent >= baseline * 2.2:
+                out.append(
+                    {
+                        "severity": "warning",
+                        "code": "blocked_spike",
+                        "title": "Blocked traffic spike",
+                        "detail": "Recent 30s buckets show more blocks than the prior window — possible abuse or misconfiguration.",
+                    }
+                )
+
+        stats = self._build_tool_stats()
+        for tname, s in stats.items():
+            tot = int(s.get("total") or 0)
+            bp = float(s.get("blocked_pct") or 0)
+            if tot >= 12 and bp >= 32:
+                out.append(
+                    {
+                        "severity": "warning",
+                        "code": "tool_hot",
+                        "title": f'Tool "{tname}" is denial-heavy',
+                        "detail": f"{bp:.0f}% blocked ({s.get('blocked', 0)} / {tot}) — check RBAC, rate limits, and reasons column.",
+                    }
+                )
+                break
+
+        elapsed = self._elapsed_seconds_window(m.window_start)
+        if m.cost_total > 0 and elapsed > 2 and req > 0:
+            per_h = float(m.cost_total) / elapsed * 3600.0
+            if per_h >= 4.0:
+                out.append(
+                    {
+                        "severity": "info",
+                        "code": "cost_run",
+                        "title": "Sustained cost burn",
+                        "detail": f"~${per_h:.2f}/hr implied from this metrics window — align with FinOps budgets.",
+                    }
+                )
+
+        if m.pii_redacted_total > 25 and req > 0:
+            ratio = m.pii_redacted_total / max(req, 1)
+            if ratio > 0.4:
+                out.append(
+                    {
+                        "severity": "info",
+                        "code": "pii_dense",
+                        "title": "High PII touch rate",
+                        "detail": f"{m.pii_redacted_total} redactions vs {req} allowed calls — validate detectors and data minimization.",
+                    }
+                )
+
+        kinds = dict(m.blocked_by_kind)
+        if kinds and blk >= 6:
+            top_kind, top_n = max(kinds.items(), key=lambda x: x[1])
+            if top_n / max(blk, 1) >= 0.52:
+                out.append(
+                    {
+                        "severity": "info",
+                        "code": "kind_skew",
+                        "title": f'Blocks skew toward "{top_kind}"',
+                        "detail": f"{100 * top_n / max(blk, 1):.0f}% of blocks share one category — tune rules if unintended.",
+                    }
+                )
+
+        for a in m.alerts[-8:]:
+            if a.get("severity") == "critical":
+                out.append(
+                    {
+                        "severity": "warning",
+                        "code": "alert_critical",
+                        "title": "Critical alert in feed",
+                        "detail": (a.get("message") or "")[:220],
+                    }
+                )
+                break
+
+        return out[:12]
+
     def record_cost(self, amount: float, user: str | None = None) -> None:
         with self._lock:
             self._metrics.cost_total += amount
@@ -331,6 +470,8 @@ class MetricsStore:
             }
             d["tool_stats"] = self._build_tool_stats()
             d["pillar_health"] = self._build_pillar_health()
+            d["blocked_incidents"] = list(reversed(self._blocked_incidents))
+            d["dashboard_insights"] = self._build_dashboard_insights()
             return d
 
     def reset(self) -> None:
@@ -342,3 +483,4 @@ class MetricsStore:
             self._tool_blocked = defaultdict(int)
             self._tool_reason_counts = defaultdict(lambda: defaultdict(int))
             self._tool_latency_ms = defaultdict(lambda: deque(maxlen=LATENCY_SAMPLE_CAP // 4))
+            self._blocked_incidents.clear()

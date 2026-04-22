@@ -39,6 +39,14 @@ def test_metrics_store_get_singleton():
     assert a is b
 
 
+def test_get_metrics_includes_dashboard_insights():
+    store = MetricsStore.get()
+    store.reset()
+    m = store.get_metrics()
+    assert "dashboard_insights" in m
+    assert isinstance(m["dashboard_insights"], list)
+
+
 def test_metrics_store_record_request():
     store = MetricsStore.get()
     store.reset()
@@ -63,6 +71,28 @@ def test_metrics_store_record_blocked():
     assert m["blocked_by_reason"]["injection"] == 1
     assert m["blocked_by_kind"]["rate_limit"] == 2
     assert m["blocked_by_kind"]["injection"] == 1
+    assert len(m["blocked_incidents"]) == 3
+    assert m["blocked_incidents"][0]["tool"] == "run"
+    assert m["blocked_incidents"][0]["tenant_id"] == "default"
+    assert "trace_id" in m["blocked_incidents"][0]
+
+
+def test_metrics_store_record_blocked_with_tenant_and_ids():
+    store = MetricsStore.get()
+    store.reset()
+    store.record_blocked(
+        "rate limit",
+        "search",
+        tenant_id="acme-prod",
+        trace_id="trc-fixed-1",
+        request_id="req-fixed-1",
+    )
+    m = store.get_metrics()
+    assert len(m["blocked_incidents"]) == 1
+    row = m["blocked_incidents"][0]
+    assert row["tenant_id"] == "acme-prod"
+    assert row["trace_id"] == "trc-fixed-1"
+    assert row["request_id"] == "req-fixed-1"
 
 
 def test_metrics_store_record_pii_redacted():
@@ -100,10 +130,12 @@ def test_metrics_store_add_alert():
 def test_metrics_store_reset():
     store = MetricsStore.get()
     store.record_request("add", "u1")
+    store.record_blocked("x", "b")
     store.reset()
     m = store.get_metrics()
     assert m["requests_total"] == 0
     assert m["top_tools"] == {}
+    assert m["blocked_incidents"] == []
 
 
 def test_metrics_store_add_alert_truncates_at_100():

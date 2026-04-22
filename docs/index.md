@@ -48,6 +48,7 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 - [CLI Reference](CLI.md)
 - [LLM Integration](LLM_INTEGRATION.md)
 - [Metrics and Dashboard](METRICS.md)
+- [Security, OWASP MCP Top 10, and observability integrations](SECURITY_OBSERVABILITY.md)
 - [Security Guidance](SECURITY.md)
 - [GitHub Pages Setup](GITHUB_PAGES.md)
 

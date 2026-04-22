@@ -1,5 +1,8 @@
 # MCP-Bastion policy-as-code (single config file)
 # Copy to bastion.yaml and customize. Load via load_config() or env BASTION_CONFIG.
+#
+# Red-team / harness note: a low "block %" often means pillars were intentionally disabled
+# (e.g. no prompt guard model). See docs/REDTEAM.md for what to enable to tighten posture.
 
 prompt_guard:
   enabled: true
@@ -13,17 +16,19 @@ rate_limit:
   timeout_seconds: 60
   token_budget: 50000
 
+# Safer defaults: block risky patterns in tool arguments (paths, code-ish payloads).
 circuit_breaker:
-  enabled: false
+  enabled: true
 
 content_filter:
-  enabled: false
+  enabled: true
   block_code_execution: true
   block_file_paths: true
   block_urls: false
   allowlist_patterns: []
   denylist_patterns: []
 
+# Tighten further when you define roles and tool lists (off until you wire identities).
 rbac:
   enabled: false
   permissions:
@@ -31,11 +36,12 @@ rbac:
     analyst: ["read_data", "query"]
     admin: ["*"]
 
+# Enable when you attach JSON schemas to tools.
 schema_validation:
   enabled: false
 
 replay_guard:
-  enabled: false
+  enabled: true
   require_nonce: false
 
 cost_tracker:
@@ -62,6 +68,7 @@ alerts:
     - rate_limit
     - cost
 
+# Reload policy when bastion.yaml changes (uses build_middleware_from_config()).
 hot_reload:
-  enabled: false
+  enabled: true
   poll_seconds: 2.0

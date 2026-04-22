@@ -7,14 +7,29 @@ Real-time dashboard and metrics API for MCP-Bastion.
 ```bash
 cd MCP-Bastion
 pip install fastapi uvicorn
+# With demo metrics (charts non-zero without an MCP server feeding the store):
+MCP_BASTION_DEMO=1 PYTHONPATH=src python dashboard/app.py
+# Windows PowerShell:
+#   $env:MCP_BASTION_DEMO="1"; $env:PYTHONPATH="src"; python dashboard/app.py
+# or CLI:
+mcp-bastion dashboard --demo
+# Plain dashboard (zeros until your MCP process records metrics):
 PYTHONPATH=src python dashboard/app.py
+mcp-bastion dashboard
+# while editing dashboard/app.py, auto-reload:
+mcp-bastion dashboard --reload --demo
+# same as: set MCP_BASTION_DASHBOARD_RELOAD=1
 ```
+
+Richer scripted demo (same seed + optional live background traffic): `PYTHONPATH=src python examples/dashboard_demo.py`
 
 Open [http://localhost:7000/](http://localhost:7000/)
 
 **If you see `{"detail":"Not Found"}`** on some URL, that response is from *a* FastAPI app, but not our route — wrong path, wrong port, or another process. Try [http://localhost:7000/api/health](http://localhost:7000/api/health) first: it must include `"service":"mcp-bastion-dashboard"` and `"ui_revision"`. Short diagnostic: [http://localhost:7000/meta](http://localhost:7000/meta).
 
-**If the UI looks like an old version** (plain bars, title “MCP-Bastion Dashboard” in one line): stop the server, `cd` to the **repository root** (the folder that contains `dashboard/`), then run `mcp-bastion dashboard` or `PYTHONPATH=src python dashboard/app.py`. Check `/api/health` or `/meta` — `ui_revision` should be `v2-chartjs-dmsans` and `dashboard_app_py` should point at this repo’s `dashboard/app.py`.
+**If the UI looks unchanged after editing `dashboard/app.py`:** the server only loads HTML at startup. Stop the process and start again, **or** run `mcp-bastion dashboard --reload` so `dashboard/` is watched. Always run from the **repository root** (the folder that contains `dashboard/`). Check `/meta` — `dashboard_app_py` must point at this repo’s `dashboard/app.py`, and `ui_revision` should match the current code (for example `v9-demo-seed-theme`).
+
+**If charts show all zeros:** the in-memory store is empty until middleware records traffic. Use **`mcp-bastion dashboard --demo`** or **`MCP_BASTION_DEMO=1`** to load the same rich seed as `examples/dashboard_demo.py`, or run the full `examples/dashboard_demo.py` process.
 
 ## Endpoints
 

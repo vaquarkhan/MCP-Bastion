@@ -10,6 +10,7 @@ All Python files in this folder:
 
 | File | Purpose |
 |------|---------|
+| `examples/dashboard_demo.py` | Web dashboard with **rich seeded metrics** (KPIs, time series, forensics, alerts, **Insights & anomalies** — run with or without `--no-live`) |
 | `examples/python_server_example.py` | Minimal middleware chain |
 | `examples/full_demo.py` | All features demo (11 scenarios) |
 | `examples/llm_server.py` | Shared MCP server for LLM clients |
@@ -30,6 +31,33 @@ pip install mcp mcp-bastion-python
 # For PII redaction: pip install presidio-analyzer presidio-anonymizer
 # python -m spacy download en_core_web_sm
 ```
+
+---
+
+## Dashboard demo (dummy metrics)
+
+Runs the FastAPI dashboard (`dashboard/app.py`) in-process and fills `MetricsStore` with realistic fake traffic so you can validate charts, KPIs, and tables without a live MCP server.
+
+**Install:** `pip install fastapi uvicorn` (or `pip install mcp-bastion-python[dashboard]`).
+
+**Run** — repo root:
+
+```bash
+# Windows PowerShell
+$env:PYTHONPATH="src"; python examples/dashboard_demo.py
+
+# Linux / macOS
+PYTHONPATH=src python examples/dashboard_demo.py
+```
+
+**Or** from `examples/` (paths are bootstrapped; no `PYTHONPATH` needed):
+
+```bash
+cd examples
+python dashboard_demo.py
+```
+
+Open **http://127.0.0.1:7000/** (prefer `127.0.0.1` over `localhost` if metrics fail — IPv6 vs IPv4). The demo binds **127.0.0.1** by default so Windows can open the port reliably; use `--host 0.0.0.0` for LAN. If **7000** is busy, the script **tries 7001…7007** automatically. Use `--no-live` for a static snapshot only.
 
 ---
 

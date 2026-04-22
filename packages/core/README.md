@@ -49,6 +49,10 @@ await server.connect(transport);
 | enablePromptGuard | false | Needs sidecar (sidecarUrl or MCP_BASTION_URL) |
 | enablePiiRedaction | false | Needs sidecar |
 
+### Parity with Python (`mcp-bastion-python`)
+
+The **npm** package is intentionally smaller: in-process **rate limiting** plus optional **sidecar** for prompt guard and PII. It does **not** embed the full Python pillar set (semantic firewall, tool-metadata guard, sensitive-term classifier, edge auth, tool allowlist, content filter, replay guard, schema validation, etc.). For those controls, use **`mcp-bastion-python`** middleware or a sidecar that runs the same checks. Version **1.0.15** on npm reflects this scope; feature parity is **Python-first**.
+
 ## Full docs
 
 See [MCP-Bastion](https://github.com/vaquarkhan/MCP-Bastion) for Python package, examples, and documentation.

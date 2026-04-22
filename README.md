@@ -1,14 +1,16 @@
+<p align="center">
+  <img src="images/mcp-bastian.png" alt="MCP-Bastion" width="520" />
+</p>
+
 # MCP-Bastion
 
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
 
-[![Total Downloads](https://img.shields.io/badge/total%20downloads-565-brightgreen)](https://pepy.tech/projects/mcp-bastion-python)
-[![PyPI Total Downloads](https://img.shields.io/pypi/dd/mcp-bastion-python?label=daily)](https://pypi.org/project/mcp-bastion-python/)
-[![PyPI Monthly Downloads](https://img.shields.io/pypi/dm/mcp-bastion-python?label=monthly)](https://pypi.org/project/mcp-bastion-python/)
 [![PyPI Version](https://img.shields.io/pypi/v/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
+[![PyPI downloads / month](https://img.shields.io/pypi/dm/mcp-bastion-python?label=downloads%2Fmonth)](https://pypi.org/project/mcp-bastion-python/)
+[![Downloads](https://static.pepy.tech/personalized-badge/mcp-bastion-python?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![npm Version](https://img.shields.io/npm/v/@mcp-bastion/core)](https://www.npmjs.com/package/@mcp-bastion/core)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
-[![PyPI Downloads](https://static.pepy.tech/personalized-badge/mcp-bastion-python?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/mcp-bastion-python)
 
 **Enterprise-Grade Security Middleware for the Model Context Protocol**
 
@@ -54,21 +56,56 @@ Drop-in middleware, under 5ms overhead.
 
 Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No business logic changes.
 
-### All Features
+### Complete feature catalog
 
-| Feature | Description |
-|---------|-------------|
-| Prompt injection | Block jailbreaks via Meta PromptGuard |
-| PII redaction | Mask many entity types via Presidio (e.g. SSN, email, phone, credit card, passport, IBAN, medical license, and more—see Presidio docs) |
-| Rate limiting | Max iterations, timeout, token budget |
-| Audit logging | Log who, what, when, blocked/allowed |
-| Content filter | Block paths/code/URLs, plus allowlist and denylist patterns |
-| Circuit breaker | Disable failing tools after N failures |
-| RBAC | Tool-level permissions by role |
-| Schema validation | Validate tool input types |
-| Replay guard | Block duplicate nonces |
-| Cost tracker | Per-session cost budget |
-| Semantic cache | Cache similar queries |
+> **Deeper context:** [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) — **OWASP MCP Top 10** alignment, attack scenarios, and SIEM/log integrations. **Framework add-ons** (LangChain, OpenAI, Bedrock, …) are listed under [Framework Integrations](#framework-integrations) below.
+
+#### Threat prevention & content safety
+
+| Feature | What you get |
+|--------|----------------|
+| **Prompt injection defense** | Meta **PromptGuard** scores tool arguments; malicious / jailbreak-style payloads can be blocked before execution (local inference, no third-party API). |
+| **Content filter** | Block **shell/code execution** patterns, **sensitive file paths**, and **URLs**; optional **allowlist** / **denylist** regex or substring rules. |
+| **PII redaction** | **Microsoft Presidio** detects many entity types in outbound tool/resource text (SSN, email, phone, cards, passport, IBAN, licenses, etc.—see Presidio docs). |
+
+#### Access control, integrity & abuse
+
+| Feature | What you get |
+|--------|----------------|
+| **RBAC** | **Tool-level** allow/deny by **role** (from request metadata); map roles to tool names in `bastion.yaml`. |
+| **Schema validation** | Validate `tools/call` arguments against **JSON Schema** before the tool runs (block malformed or bypass attempts). |
+| **Replay guard** | **Nonce** tracking to reject replayed requests (configurable **require_nonce**). |
+| **Rate limiting** | **Token-bucket** style limits: **max iterations** per session, **timeout**, **token budget**—stops runaway loops and brute-force patterns. |
+| **Circuit breaker** | Stop calling tools that fail repeatedly (limits blast radius of bad upstreams or poisoned tools). |
+
+#### FinOps & performance
+
+| Feature | What you get |
+|--------|----------------|
+| **Cost tracker** | Per-**session** and optional per-**day** USD caps; blocks when budget is exceeded. |
+| **Semantic cache** | Optional **similarity-based** caching for tool semantics (reduce duplicate expensive calls). |
+| **Low overhead** | Middleware on the hot path targeting **&lt;5 ms** typical overhead (see [docs/METRICS.md](docs/METRICS.md)). |
+
+#### Audit, metrics & alerting
+
+| Feature | What you get |
+|--------|----------------|
+| **Audit logging** | Structured **allow/deny** decisions with **reason**, **tool**, **tenant_id**, **trace_id**, **request_id**—feed SOC / compliance. |
+| **Alert sinks** | **Slack** incoming webhook; **generic HTTP** webhooks (PagerDuty, Teams, custom APIs); **multiple URLs**; **retry**, **backoff**, **timeout** in `bastion.yaml`. |
+| **In-memory metrics** | **Global MetricsStore**: requests, blocks, PII counts, cost, per-tool stats, latency samples, rolling **time series** buckets. |
+| **Real-time dashboard** | **Web UI** with KPIs, **traffic & block charts**, **blocked-by-reason/kind**, **top tools**, **cost by user**, **PII by entity**, **latency P50/P95/P99**, **forensics table** (tenant filter, trace/replay helpers), **recent alerts**, **insights & anomalies** (heuristic signals), **dark/light theme**, **Prometheus** `/metrics`, **JSON** `/api/metrics`. |
+| **OpenTelemetry** | Optional **OTLP** span export — `pip install mcp-bastion-python[otel]` — [docs/OTEL.md](docs/OTEL.md). |
+
+#### Policy, packaging & developer experience
+
+| Feature | What you get |
+|--------|----------------|
+| **Policy-as-code** | Single **`bastion.yaml`**: toggles and knobs for every pillar; load via `load_config` / `build_middleware_from_config`. |
+| **Hot reload** | Optional **reload `bastion.yaml` on change** without restarting the MCP server ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)). |
+| **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
+| **CLI** | **`mcp-bastion validate`**, **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** for UI dev) — [docs/CLI.md](docs/CLI.md). |
+| **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
+| **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard) — [DOCKER.md](DOCKER.md). |
 
 ### Real-Time Dashboard and Alerts
 
@@ -81,14 +118,12 @@ mcp-bastion dashboard --port 7000
 
 | URL | What it returns |
 |-----|-----------------|
-| [http://localhost:7000/](http://localhost:7000/) | Visual dashboard with charts (requests, blocked by reason, top tools, cost by user, recent alerts) |
-| [http://localhost:7000/api/metrics](http://localhost:7000/api/metrics) | JSON: `requests_total`, `blocked_total`, `blocked_pct`, `pii_redacted_total`, `cost_total`, `blocked_by_reason`, `top_tools`, `cost_by_user`, `alerts` |
+| [http://localhost:7000/](http://localhost:7000/) | Charts, KPIs, **forensics**, **insights & anomalies**, alerts, **tool drill-down** (signal vs global block rate), theme toggle |
+| [http://localhost:7000/api/metrics](http://localhost:7000/api/metrics) | JSON: `requests_total`, `blocked_total`, `blocked_pct`, `pii_redacted_total`, `cost_total`, `blocked_by_reason`, `blocked_by_kind`, `top_tools`, `tool_stats`, `cost_by_user`, `time_series`, `latency_ms`, `dashboard_insights`, `blocked_incidents`, `alerts`, … |
 | [http://localhost:7000/api/health](http://localhost:7000/api/health) | `{"status": "ok"}` |
 | [http://localhost:7000/metrics](http://localhost:7000/metrics) | Prometheus text format for Grafana/Datadog |
 
-![MCP-Bastion Dashboard](docs/images/dashboard.png)
-
-*Dashboard: total requests, blocked count and %, PII redacted, cost; blocked-by-reason bars; top tools; cost by user; recent alerts.*
+*Dashboard: total requests, blocked count and %, PII redacted, cost; blocked-by-reason bars; top tools; cost by user; recent alerts — open [http://localhost:7000/](http://localhost:7000/) while `mcp-bastion dashboard` is running.*
 
 - **Alerts:** Slack webhook and cost-threshold alerts. See [dashboard/README.md](dashboard/README.md).
 
@@ -100,6 +135,8 @@ mcp-bastion dashboard --port 7000
 | [docs/DETAILED_TUTORIAL.md](docs/DETAILED_TUTORIAL.md) | Step-by-step implementation tutorial for new teams |
 | [docs/USE_CASES.md](docs/USE_CASES.md) | Real use cases: enterprise gateway, LLM products, internal tools, SaaS, compliance |
 | [docs/ATTACK_PREVENTION.md](docs/ATTACK_PREVENTION.md) | Examples showing how MCP-Bastion prevents real attacks (injection, PII leak, rate exhaustion, path traversal, RBAC, replay) |
+| [docs/REDTEAM.md](docs/REDTEAM.md) | Interpreting harness / red-team scores; which `bastion.yaml` pillars to enable; Node vs Python parity |
+| [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) | **OWASP MCP Top 10** mapping, feature highlights, attack classes, Slack/webhook/Prometheus/OTEL/log integrations |
 | [docs/METRICS.md](docs/METRICS.md) | Performance overhead (&lt;5ms) and effectiveness metrics (dashboard, Prometheus, OTEL) |
 | [docs/TUTORIALS.md](docs/TUTORIALS.md) | Tutorials: integrating with FastMCP, TypeScript, GitHub MCP, and open-source MCP servers |
 | [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md) | Publish docs as a GitHub Pages website from this same repo |
@@ -140,9 +177,13 @@ See [docs/CLI.md](docs/CLI.md).
 
 Set `OTEL_EXPORTER_OTLP_ENDPOINT` to export tool-call spans to OTLP. Install optional deps: `pip install mcp-bastion-python[otel]`. See [docs/OTEL.md](docs/OTEL.md).
 
-### Webhook alerts
+### Webhook alerts and external logging
 
-Use Slack webhook, a single generic webhook (`webhook_url` or `BASTION_WEBHOOK_URL`), or multiple URLs (`alerts.webhooks` in bastion.yaml). Each blocked event can POST to your endpoint (e.g. PagerDuty, custom API). Webhook delivery now supports retry/backoff controls in `bastion.yaml` (`retry_attempts`, `retry_backoff_seconds`, `retry_backoff_max_seconds`, `timeout_seconds`).
+Use **Slack** (`slack_webhook` / `SLACK_WEBHOOK_URL`), a **generic HTTP webhook** (`webhook_url` / `BASTION_WEBHOOK_URL`), or **multiple URLs** (`alerts.webhooks` in `bastion.yaml`). POSTs can drive **PagerDuty**, **Microsoft Teams**, **Datadog Events**, or any HTTP collector your SIEM exposes. Configure **retry/backoff** in `bastion.yaml` (`retry_attempts`, `retry_backoff_seconds`, `retry_backoff_max_seconds`, `timeout_seconds`).
+
+**Metrics & traces:** scrape the dashboard **`/metrics`** (Prometheus) or poll **`/api/metrics`** (JSON) for Grafana, Datadog, or custom pollers. Set **`OTEL_EXPORTER_OTLP_ENDPOINT`** for traces to Jaeger, Honeycomb, **AWS ADOT**, etc. (`pip install mcp-bastion-python[otel]`). Route **Python logs** (including `LoggingAlertSink`) through **Fluent Bit**, **Vector**, or the **CloudWatch agent** into Splunk / Elastic / CloudWatch Logs.
+
+See **[docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md)** for the full integration table and **OWASP MCP Top 10** alignment.
 
 ---
 
