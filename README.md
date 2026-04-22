@@ -111,17 +111,24 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
 
-**Demo (screen recording):**
+**Demo (screen recording):** GitHub’s README page does not stream MP4 like a normal page — raw links open a **download**. To **watch in the browser**, open the file on GitHub (built-in player) or use the image link below.
 
-<!-- GitHub README does not treat relative paths inside <video> like <img>; use raw.githubusercontent.com so the player loads. -->
 <p align="center">
-  <video width="920" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25)" controls playsinline preload="metadata" poster="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/4eb2e02030c5740995f4647a352da49ec53a5323/images/mcp-bastian.png">
-    <source src="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/4eb2e02030c5740995f4647a352da49ec53a5323/images/mcp-bastian-mp.mp4" type="video/mp4" />
-    Your browser does not support embedded video — use the link below, or run the command under this section to start the live dashboard.
-  </video>
+  <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/20260415-feature-clean/images/mcp-bastian-mp.mp4" title="Watch dashboard demo (opens on GitHub with player)">
+    <img
+      src="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/4eb2e02030c5740995f4647a352da49ec53a5323/images/mcp-bastian.png"
+      alt="Dashboard — click to open the screen recording on GitHub"
+      width="920"
+      style="max-width:100%; height:auto; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.25);"
+    />
+  </a>
 </p>
-<p align="center"><a href="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/4eb2e02030c5740995f4647a352da49ec53a5323/images/mcp-bastian-mp.mp4"><strong>Open / download the demo (MP4)</strong></a> · in-repo: <code>images/mcp-bastian-mp.mp4</code></p>
-<p align="center"><sub>Record shows live KPIs, charts, and theme. If the player is blank, open the link above (GitHub’s README view can be strict about media).</sub></p>
+<p align="center">
+  <strong><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/20260415-feature-clean/images/mcp-bastian-mp.mp4">▶ Watch the demo (opens on GitHub — in-browser video)</a></strong>
+  <br />
+  <sub>Repository path: <code>images/mcp-bastian-mp.mp4</code> ·
+  <a href="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/4eb2e02030c5740995f4647a352da49ec53a5323/images/mcp-bastian-mp.mp4">Direct download (raw MP4)</a> if you need the file.</sub>
+</p>
 
 ```bash
 mcp-bastion dashboard --port 7000
