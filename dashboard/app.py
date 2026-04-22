@@ -8,13 +8,20 @@ Demo data (non-zero charts without a separate MCP server) — on by default for 
   python dashboard/app.py
   mcp-bastion dashboard
   Opt out: MCP_BASTION_DEMO=0 or mcp-bastion dashboard --no-demo
+
+Optional continuous fake traffic (KPIs tick over time) — off by default (stable baseline).
+  Enable: MCP_BASTION_DEMO_LIVE=1 or mcp-bastion dashboard --live
+  Or run: python examples/dashboard_demo.py (includes live loop by default)
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import os
+import random
 import sys
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -27,7 +34,13 @@ sys.path.insert(0, str(root / "src"))
 try:
     from fastapi import FastAPI
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
+    from fastapi.responses import (
+        FileResponse,
+        HTMLResponse,
+        JSONResponse,
+        PlainTextResponse,
+        RedirectResponse,
+    )
     from fastapi.staticfiles import StaticFiles
 except ImportError:
     logger.error("Install: pip install fastapi uvicorn")
@@ -36,6 +49,81 @@ except ImportError:
 from mcp_bastion.pillars.metrics import MetricsStore
 
 _demo_seed_applied = False
+_demo_live_stop: threading.Event | None = None
+_demo_live_thread: threading.Thread | None = None
+
+
+def _demo_metrics_enabled() -> bool:
+    """
+    Synthetic KPIs/charts seeding is ON unless explicitly turned off.
+
+    Important: do not use os.environ.get("MCP_BASTION_DEMO", "") — when the variable is *unset*,
+    that becomes "" which is not in ("1","true","yes") and would skip the seed even though we
+    intend "demo on by default".
+    """
+    raw = os.environ.get("MCP_BASTION_DEMO")
+    if raw is None:
+        return True
+    v = raw.strip().lower()
+    if v == "":
+        return True
+    if v in ("0", "false", "no", "off"):
+        return False
+    return v in ("1", "true", "yes", "on")
+
+
+def _demo_live_enabled() -> bool:
+    """Background traffic only when explicitly requested (avoids extra threads by default)."""
+    if not _demo_metrics_enabled():
+        return False
+    v = os.environ.get("MCP_BASTION_DEMO_LIVE", "").strip().lower()
+    return v in ("1", "true", "yes", "on")
+
+
+def _maybe_start_demo_live_traffic() -> None:
+    global _demo_live_stop, _demo_live_thread
+    if not _demo_live_enabled():
+        return
+    if _demo_live_thread is not None and _demo_live_thread.is_alive():
+        return
+    try:
+        from mcp_bastion.demo_live_traffic import live_simulator
+    except Exception:
+        logger.exception("Could not import demo live traffic module")
+        return
+    _demo_live_stop = threading.Event()
+    _demo_live_thread = threading.Thread(
+        target=live_simulator,
+        args=(_demo_live_stop, random.Random(42)),
+        name="mcp-bastion-demo-live",
+        daemon=True,
+    )
+    _demo_live_thread.start()
+    logger.info("Demo live traffic thread started (set MCP_BASTION_DEMO_LIVE=0 or omit --live to disable).")
+
+
+def _get_dashboard_metrics_dict() -> dict[str, object]:
+    """Single source for /, /api/metrics, and HTML bootstrap (demo seed + empty re-seed)."""
+    global _demo_seed_applied
+    if os.environ.get("MCP_BASTION_DEMO") is None:
+        os.environ["MCP_BASTION_DEMO"] = "1"
+    _maybe_seed_demo_metrics()
+    m = MetricsStore.get().get_metrics()
+    if _demo_metrics_enabled():
+        rt = int(m.get("requests_total") or 0)
+        bt = int(m.get("blocked_total") or 0)
+        if rt == 0 and bt == 0:
+            logger.warning("Metrics store empty with demo on; forcing re-seed.")
+            _demo_seed_applied = False
+            _maybe_seed_demo_metrics()
+            m = MetricsStore.get().get_metrics()
+    return m
+
+
+def _metrics_json_for_html_embed(m: dict[str, object]) -> str:
+    """JSON for <script type=\"application/json\">; escape '<' so payloads cannot close the tag."""
+    s = json.dumps(m, separators=(",", ":"), default=str)
+    return s.replace("<", "\\u003c")
 
 
 def _maybe_seed_demo_metrics() -> None:
@@ -43,7 +131,7 @@ def _maybe_seed_demo_metrics() -> None:
     global _demo_seed_applied
     if _demo_seed_applied:
         return
-    if os.environ.get("MCP_BASTION_DEMO", "").strip().lower() not in ("1", "true", "yes"):
+    if not _demo_metrics_enabled():
         return
     try:
         import random
@@ -59,10 +147,19 @@ def _maybe_seed_demo_metrics() -> None:
 
 @asynccontextmanager
 async def _dashboard_lifespan(_app: FastAPI):
-    # Same default as `python dashboard/app.py` / CLI: charts show demo data unless MCP_BASTION_DEMO is 0/false/no.
-    os.environ.setdefault("MCP_BASTION_DEMO", "1")
+    global _demo_live_stop, _demo_live_thread
+    # Default demo metrics on; explicit MCP_BASTION_DEMO=0/false/no disables.
+    if os.environ.get("MCP_BASTION_DEMO") is None:
+        os.environ["MCP_BASTION_DEMO"] = "1"
     _maybe_seed_demo_metrics()
+    _maybe_start_demo_live_traffic()
     yield
+    if _demo_live_stop is not None:
+        _demo_live_stop.set()
+    if _demo_live_thread is not None and _demo_live_thread.is_alive():
+        _demo_live_thread.join(timeout=3.0)
+    _demo_live_stop = None
+    _demo_live_thread = None
 
 
 app = FastAPI(title="MCP-Bastion Dashboard", lifespan=_dashboard_lifespan)
@@ -70,7 +167,7 @@ app = FastAPI(title="MCP-Bastion Dashboard", lifespan=_dashboard_lifespan)
 
 @app.get("/images/mcp-bastian.png")
 def legacy_branding_png():
-    """Old URL; branding now ships under /static/ so pip installs always resolve."""
+    """Bookmarks and README use this path; canonical asset lives under /static/."""
     return RedirectResponse(url="/static/mcp-bastian.png", status_code=307)
 
 
@@ -84,8 +181,23 @@ app.add_middleware(
 )
 
 _static_dir = Path(__file__).resolve().parent / "static"
+
+
+@app.get("/favicon.ico")
+def favicon():
+    """Browsers request this by default; serve branding from /static/ (200 + body). Registered before /static mount."""
+    png = _static_dir / "mcp-bastian.png"
+    if png.is_file():
+        return FileResponse(png, media_type="image/png")
+    svg = _static_dir / "mcp-bastian.svg"
+    if svg.is_file():
+        return FileResponse(svg, media_type="image/svg+xml")
+    return PlainTextResponse("", status_code=404)
+
+
 if _static_dir.is_dir():
     app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+
 
 # Repo-root images/ (e.g. branding) — optional; path is stable regardless of cwd
 _images_dir = root / "images"
@@ -95,11 +207,16 @@ if _images_dir.is_dir():
 
 @app.get("/api/metrics")
 def get_metrics():
-    # If startup lifespan did not run (some ASGI hosts), still seed once on first poll.
-    os.environ.setdefault("MCP_BASTION_DEMO", "1")
-    _maybe_seed_demo_metrics()
+    """Return metrics JSON; ensure demo seed ran (retries if store is still empty)."""
     try:
-        return JSONResponse(MetricsStore.get().get_metrics())
+        m = _get_dashboard_metrics_dict()
+        return JSONResponse(
+            m,
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate",
+                "Pragma": "no-cache",
+            },
+        )
     except Exception as e:
         logger.exception("Failed to get metrics: %s", e)
         return JSONResponse(
@@ -113,7 +230,7 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v14-light-gradient-lazy-seed",
+        "ui_revision": "v25-external-dashboard-js",
         "hint": "If this is missing, you are not hitting dashboard/app.py - check port and process.",
     }
 
@@ -173,8 +290,9 @@ DASHBOARD_HTML = """
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="dark light">
+  <meta id="metaColorScheme" name="color-scheme" content="dark">
   <title>MCP-Bastion Dashboard</title>
+  <link rel="icon" href="/static/mcp-bastian.png" type="image/png" sizes="any" />
   <script>
     (function () {
       var t = "dark";
@@ -185,6 +303,8 @@ DASHBOARD_HTML = """
       } catch (e) {}
       document.documentElement.setAttribute("data-theme", t);
       document.documentElement.style.colorScheme = t === "light" ? "light" : "dark";
+      var m = document.getElementById("metaColorScheme");
+      if (m) m.setAttribute("content", t === "light" ? "light" : "dark");
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -257,18 +377,33 @@ DASHBOARD_HTML = """
       max-width: 1220px;
       margin: 0 auto;
     }
+    .header-logo-wrap {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      border-radius: 14px;
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.55) 0%, rgba(15, 23, 42, 0.35) 100%);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.06) inset,
+        0 8px 28px rgba(0, 0, 0, 0.22),
+        0 0 0 1px rgba(56, 189, 248, 0.12);
+      backdrop-filter: blur(10px);
+    }
+    html[data-theme="light"] .header-logo-wrap {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(241, 245, 249, 0.75) 100%);
+      border-color: rgba(100, 116, 139, 0.2);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 6px 22px rgba(15, 23, 42, 0.08),
+        0 0 0 1px rgba(2, 132, 199, 0.1);
+    }
     .header-banner-img {
-      height: 28px;
+      height: 48px;
       width: auto;
-      max-width: 72px;
+      max-width: min(280px, 52vw);
       object-fit: contain;
       display: block;
-      flex-shrink: 0;
-      border-radius: 6px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
-    }
-    html[data-theme="light"] .header-banner-img {
-      box-shadow: 0 2px 14px rgba(15, 23, 42, 0.12);
+      border-radius: 8px;
     }
     .header-brand-text {
       min-width: 0;
@@ -435,7 +570,7 @@ DASHBOARD_HTML = """
     .header-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 16px;
       min-width: 0;
       flex-wrap: nowrap;
     }
@@ -1097,25 +1232,28 @@ DASHBOARD_HTML = """
   </style>
 </head>
 <body>
+  <!--MCP_BASTION_METRICS_BOOTSTRAP-->
   <div class="dash-shell">
   <div class="header">
     <div class="header-brand">
+      <div class="header-logo-wrap">
       <img
-        src="/static/mcp-bastian.png"
+        src="/images/mcp-bastian.png"
         alt="MCP-Bastion"
         class="header-banner-img"
-        width="72"
-        height="28"
+        width="280"
+        height="48"
         decoding="async"
-        onerror="this.onerror=null;this.src='/images/mcp-bastian.png'"
+        onerror="if(!this.dataset._fb){this.dataset._fb='1';this.src='/static/mcp-bastian.png';return;}this.onerror=null;this.src='/static/mcp-bastian.svg'"
       />
+      </div>
       <div class="header-brand-text">
         <h1>MCP-Bastion</h1>
         <p>Live security &amp; FinOps · refreshes every 2s</p>
       </div>
     </div>
     <div class="header-right">
-      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch between dark and light theme">Use light theme</button>
+      <button type="button" class="theme-toggle" id="themeToggle" aria-pressed="true" aria-label="Switch to light or dark theme">Switch to light theme</button>
       <div class="alert-menu" id="alertMenu">
         <button type="button" class="badge badge-btn" id="alertCountBtn" aria-expanded="false" aria-haspopup="true" aria-controls="alertDropdownPanel">
           <span id="alertCountLabel">0 Alerts</span><span class="caret" aria-hidden="true">v</span>
@@ -1328,968 +1466,7 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script>
-    const PALETTE = ['#38bdf8', '#a78bfa', '#34d399', '#fb7185', '#fbbf24', '#2dd4bf', '#f472b6', '#94a3b8'];
-    const charts = {};
-    let initialized = false;
-    let chartUnavailableNotified = false;
-    let lastBlockedIncidents = [];
-    let lastForensicsRows = [];
-    let forensicsTenantFilter = '';
-    let lastSnapshotAt = 0;
-    let lastMetricsSnapshot = null;
-    let freshnessTimerStarted = false;
-
-    function initChartDefaults() {
-      if (typeof Chart === 'undefined') return false;
-      var th = chartThemeColors();
-      Chart.defaults.color = th.tick;
-      Chart.defaults.borderColor = th.grid;
-      Chart.defaults.font.family = '"DM Sans", system-ui, sans-serif';
-      return true;
-    }
-
-    function updateThemeButton() {
-      var theme = document.documentElement.getAttribute('data-theme');
-      if (theme !== 'light' && theme !== 'dark') theme = 'dark';
-      var dark = theme === 'dark';
-      var btn = document.getElementById('themeToggle');
-      if (!btn) return;
-      btn.textContent = dark ? 'Light mode' : 'Dark mode';
-      btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
-      btn.title = dark ? 'Switch to light background' : 'Switch to dark background';
-    }
-    function syncBodyThemeAttr() {
-      var theme = document.documentElement.getAttribute('data-theme');
-      if (theme !== 'light' && theme !== 'dark') theme = 'dark';
-      if (document.body) document.body.setAttribute('data-theme', theme);
-    }
-    function setAppTheme(next) {
-      if (next !== 'light' && next !== 'dark') next = 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      syncBodyThemeAttr();
-      document.documentElement.style.colorScheme = next === 'light' ? 'light' : 'dark';
-      try {
-        localStorage.setItem('mcp-bastion-theme', next);
-      } catch (e) {
-        try { sessionStorage.setItem('mcp-bastion-theme', next); } catch (e2) {}
-      }
-      updateThemeButton();
-      applyChartTheme();
-      requestAnimationFrame(function () { applyChartTheme(); });
-    }
-    function chartThemeColors() {
-      var theme = document.documentElement.getAttribute('data-theme');
-      if (theme !== 'light' && theme !== 'dark') theme = 'dark';
-      var light = theme === 'light';
-      return {
-        tick: light ? '#475569' : '#94a3b8',
-        grid: light ? 'rgba(71, 85, 105, 0.14)' : 'rgba(148, 163, 184, 0.08)',
-        tooltipBg: light ? 'rgba(255, 255, 255, 0.96)' : 'rgba(15, 23, 42, 0.92)',
-        titleColor: light ? '#0f172a' : '#f1f5f9',
-        bodyColor: light ? '#334155' : '#cbd5e1',
-        border: light ? 'rgba(100, 116, 139, 0.3)' : 'rgba(148, 163, 184, 0.2)'
-      };
-    }
-    function applyChartTheme() {
-      if (typeof Chart === 'undefined' || !charts.traffic) return;
-      var th = chartThemeColors();
-      Chart.defaults.color = th.tick;
-      Chart.defaults.borderColor = th.grid;
-      function patchTooltip(plug) {
-        if (!plug) return;
-        if (!plug.tooltip) plug.tooltip = {};
-        var tip = plug.tooltip;
-        tip.backgroundColor = th.tooltipBg;
-        tip.titleColor = th.titleColor;
-        tip.bodyColor = th.bodyColor;
-        tip.borderColor = th.border;
-      }
-      function patchScales(scales) {
-        if (!scales) return;
-        ['x', 'y'].forEach(function (axis) {
-          if (scales[axis] && scales[axis].grid) scales[axis].grid.color = th.grid;
-          if (scales[axis] && scales[axis].ticks) scales[axis].ticks.color = th.tick;
-        });
-      }
-      patchScales(charts.traffic.options.scales);
-      patchTooltip(charts.traffic.options.plugins);
-      charts.traffic.update('none');
-      if (charts.reasons.options.plugins && charts.reasons.options.plugins.legend && charts.reasons.options.plugins.legend.labels) {
-        charts.reasons.options.plugins.legend.labels.color = th.tick;
-      }
-      patchTooltip(charts.reasons.options.plugins);
-      charts.reasons.update('none');
-      if (charts.blockKinds.options.plugins && charts.blockKinds.options.plugins.legend && charts.blockKinds.options.plugins.legend.labels) {
-        charts.blockKinds.options.plugins.legend.labels.color = th.tick;
-      }
-      patchTooltip(charts.blockKinds.options.plugins);
-      charts.blockKinds.update('none');
-      patchScales(charts.tools.options.scales);
-      patchTooltip(charts.tools.options.plugins);
-      charts.tools.update('none');
-      patchScales(charts.cost.options.scales);
-      patchTooltip(charts.cost.options.plugins);
-      charts.cost.update('none');
-      if (charts.piiEntity) {
-        patchScales(charts.piiEntity.options.scales);
-        patchTooltip(charts.piiEntity.options.plugins);
-        charts.piiEntity.update('none');
-      }
-    }
-    function closeAlertMenu() {
-      var menu = document.getElementById('alertMenu');
-      var ab = document.getElementById('alertCountBtn');
-      if (menu) menu.classList.remove('open');
-      if (ab) ab.setAttribute('aria-expanded', 'false');
-    }
-    function openAlertMenu() {
-      var menu = document.getElementById('alertMenu');
-      var ab = document.getElementById('alertCountBtn');
-      if (menu) menu.classList.add('open');
-      if (ab) ab.setAttribute('aria-expanded', 'true');
-    }
-
-    function closeForensicsModals() {
-      var a = document.getElementById('traceModal');
-      var b = document.getElementById('replayModal');
-      if (a) a.classList.remove('open');
-      if (b) b.classList.remove('open');
-    }
-    function openTraceModal(inc) {
-      var payload = {
-        trace_id: inc.trace_id,
-        request_id: inc.request_id,
-        tenant_id: inc.tenant_id,
-        tool: inc.tool,
-        reason: inc.reason,
-        decision: 'blocked',
-        middleware: [
-          { name: 'audit_log', ms: 0.8 },
-          { name: 'mcp_bastion', ms: 3.1, outcome: 'deny' },
-          { name: 'policy', ms: 1.2 }
-        ],
-        recorded_at: inc.ts
-      };
-      var body = document.getElementById('traceModalBody');
-      var mo = document.getElementById('traceModal');
-      if (body) body.textContent = JSON.stringify(payload, null, 2);
-      if (mo) mo.classList.add('open');
-    }
-    function openReplayModal(inc) {
-      var bodyObj = {
-        jsonrpc: '2.0',
-        method: 'tools/call',
-        params: { name: inc.tool || 'unknown', arguments: {} },
-        id: inc.request_id || '1'
-      };
-      var raw = JSON.stringify(bodyObj);
-      var body = document.getElementById('replayModalBody');
-      var mo = document.getElementById('replayModal');
-      if (body) {
-        body.textContent = [
-          '1) Point MCP_HTTP_URL at your streamable HTTP MCP server.',
-          '   export MCP_HTTP_URL=http://127.0.0.1:8080/mcp',
-          '',
-          '2) Required header for this row:',
-          '   X-Tenant-Id: ' + (inc.tenant_id || 'default'),
-          '',
-          '3) JSON-RPC body:',
-          raw,
-          '',
-          '4) Example curl (body is shell-quoted):',
-          'curl -sS -X POST "$MCP_HTTP_URL" -H "Content-Type: application/json" -H "X-Tenant-Id: ' + (inc.tenant_id || 'default') + '" --data-raw ' + JSON.stringify(raw)
-        ].join('\n');
-      }
-      if (mo) mo.classList.add('open');
-    }
-    function updateTenantSelect() {
-      var sel = document.getElementById('tenantFilter');
-      if (!sel) return;
-      var tenants = {};
-      (lastBlockedIncidents || []).forEach(function (i) {
-        if (i.tenant_id) tenants[i.tenant_id] = true;
-      });
-      sel.innerHTML = '<option value="">All tenants</option>';
-      Object.keys(tenants).sort().forEach(function (t) {
-        var o = document.createElement('option');
-        o.value = t;
-        o.textContent = t;
-        sel.appendChild(o);
-      });
-      if (forensicsTenantFilter && tenants[forensicsTenantFilter]) {
-        sel.value = forensicsTenantFilter;
-      } else {
-        sel.value = '';
-      }
-    }
-    function renderForensicsRows() {
-      var tbody = document.getElementById('blockedForensicsBody');
-      var hint = document.getElementById('forensicsHint');
-      if (!tbody) return;
-      var filter = forensicsTenantFilter || '';
-      var rows = (lastBlockedIncidents || []).filter(function (i) {
-        return !filter || i.tenant_id === filter;
-      });
-      lastForensicsRows = rows;
-      if (hint) {
-        hint.textContent = rows.length + ' row(s)' + (filter ? ' · tenant ' + filter : ' · all tenants');
-      }
-      if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="muted">No blocked requests in memory for this filter.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = rows.map(function (row, idx) {
-        var ts = '';
-        try {
-          ts = new Date(row.ts).toISOString().replace('T', ' ').slice(0, 19);
-        } catch (e1) { ts = String(row.ts || ''); }
-        var reason = (row.reason || '').slice(0, 160);
-        return '<tr>'
-          + '<td>' + escapeHtml(ts) + '</td>'
-          + '<td>' + escapeHtml(row.tenant_id || '') + '</td>'
-          + '<td>' + escapeHtml(row.tool || '') + '</td>'
-          + '<td>' + escapeHtml(reason) + '</td>'
-          + '<td style="font-size:0.72rem;">' + escapeHtml(String(row.trace_id || '').slice(0, 40)) + '</td>'
-          + '<td style="font-size:0.72rem;">' + escapeHtml(String(row.request_id || '').slice(0, 32)) + '</td>'
-          + '<td><span class="btn-row-act">'
-          + '<button type="button" class="btn-mini" data-act="trace" data-i="' + idx + '">View trace</button>'
-          + '<button type="button" class="btn-mini" data-act="replay" data-i="' + idx + '">Reproduce</button>'
-          + '</span></td>'
-          + '</tr>';
-      }).join('');
-    }
-    function renderForensics(incidents) {
-      lastBlockedIncidents = incidents || [];
-      updateTenantSelect();
-      renderForensicsRows();
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      var th0 = document.documentElement.getAttribute('data-theme');
-      if (th0 === 'light' || th0 === 'dark') {
-        document.documentElement.style.colorScheme = th0 === 'light' ? 'light' : 'dark';
-      }
-      syncBodyThemeAttr();
-      updateThemeButton();
-      var btn = document.getElementById('themeToggle');
-      if (btn) {
-        btn.addEventListener('click', function () {
-          var cur = document.documentElement.getAttribute('data-theme');
-          if (cur !== 'light' && cur !== 'dark') cur = 'dark';
-          var next = cur === 'light' ? 'dark' : 'light';
-          setAppTheme(next);
-        });
-      }
-      var alertMenu = document.getElementById('alertMenu');
-      var alertBtn = document.getElementById('alertCountBtn');
-      var alertPanel = document.getElementById('alertDropdownPanel');
-      if (alertMenu && alertBtn && alertPanel) {
-        alertBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          if (alertMenu.classList.contains('open')) {
-            closeAlertMenu();
-          } else {
-            openAlertMenu();
-          }
-        });
-        document.addEventListener('click', function () {
-          closeAlertMenu();
-        });
-        alertMenu.addEventListener('click', function (e) {
-          e.stopPropagation();
-        });
-        document.addEventListener('keydown', function (e) {
-          if (e.key === 'Escape') {
-            closeAlertMenu();
-            closeForensicsModals();
-          }
-        });
-      }
-      var fbody = document.getElementById('blockedForensicsBody');
-      if (fbody) {
-        fbody.addEventListener('click', function (e) {
-          var t = e.target;
-          if (!t.getAttribute || !t.getAttribute('data-act')) return;
-          var idx = parseInt(t.getAttribute('data-i'), 10);
-          var row = lastForensicsRows[idx];
-          if (!row) return;
-          if (t.getAttribute('data-act') === 'trace') openTraceModal(row);
-          if (t.getAttribute('data-act') === 'replay') openReplayModal(row);
-        });
-      }
-      var tc = document.getElementById('traceModalClose');
-      var rc = document.getElementById('replayModalClose');
-      if (tc) tc.addEventListener('click', closeForensicsModals);
-      if (rc) rc.addEventListener('click', closeForensicsModals);
-      var tm = document.getElementById('traceModal');
-      var rm = document.getElementById('replayModal');
-      if (tm) tm.addEventListener('click', function (e) { if (e.target === tm) closeForensicsModals(); });
-      if (rm) rm.addEventListener('click', function (e) { if (e.target === rm) closeForensicsModals(); });
-      var tap = document.getElementById('tenantApply');
-      var tcl = document.getElementById('tenantClear');
-      if (tap) {
-        tap.addEventListener('click', function () {
-          var sel = document.getElementById('tenantFilter');
-          forensicsTenantFilter = sel ? sel.value : '';
-          renderForensicsRows();
-        });
-      }
-      if (tcl) {
-        tcl.addEventListener('click', function () {
-          forensicsTenantFilter = '';
-          var sel = document.getElementById('tenantFilter');
-          if (sel) sel.value = '';
-          renderForensicsRows();
-        });
-      }
-      var ex = document.getElementById('btnExportMetrics');
-      if (ex) {
-        ex.addEventListener('click', function () {
-          exportMetricsSnapshot();
-        });
-      }
-      var bt = document.getElementById('backTop');
-      if (bt) {
-        window.addEventListener('scroll', function () {
-          bt.classList.toggle('visible', window.scrollY > 380);
-        }, { passive: true });
-        bt.addEventListener('click', function () {
-          window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-        });
-      }
-    });
-
-    function shortLabel(iso) {
-      try {
-        const d = new Date(iso);
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      } catch (e) { return ''; }
-    }
-
-    function createCharts() {
-      if (!initChartDefaults()) return false;
-      const trafficCtx = document.getElementById('chartTraffic').getContext('2d');
-      charts.traffic = new Chart(trafficCtx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [
-            {
-              label: 'Allowed',
-              data: [],
-              borderColor: '#34d399',
-              backgroundColor: 'rgba(52, 211, 153, 0.12)',
-              fill: true,
-              tension: 0.38,
-              borderWidth: 2.5,
-              pointRadius: 0,
-              pointHoverRadius: 4
-            },
-            {
-              label: 'Blocked',
-              data: [],
-              borderColor: '#fb7185',
-              backgroundColor: 'rgba(251, 113, 133, 0.1)',
-              fill: true,
-              tension: 0.38,
-              borderWidth: 2.5,
-              pointRadius: 0,
-              pointHoverRadius: 4
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: { duration: 450, easing: 'easeOutQuart' },
-          interaction: { mode: 'index', intersect: false },
-          scales: {
-            x: {
-              grid: { color: 'rgba(148, 163, 184, 0.08)' },
-              ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10, font: { size: 10 } }
-            },
-            y: {
-              beginAtZero: true,
-              grid: { color: 'rgba(148, 163, 184, 0.08)' },
-              ticks: { font: { size: 10 }, precision: 0 }
-            }
-          },
-          plugins: {
-            legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } },
-            tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.92)',
-              titleColor: '#f1f5f9',
-              bodyColor: '#cbd5e1',
-              borderColor: 'rgba(148, 163, 184, 0.2)',
-              borderWidth: 1,
-              padding: 12,
-              cornerRadius: 10
-            }
-          }
-        }
-      });
-
-      charts.reasons = new Chart(document.getElementById('chartReasons'), {
-        type: 'doughnut',
-        data: { labels: [], datasets: [{ data: [], backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 8 }] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '62%',
-          plugins: {
-            legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } },
-            tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.92)',
-              borderColor: 'rgba(148, 163, 184, 0.2)',
-              borderWidth: 1
-            }
-          }
-        }
-      });
-
-      charts.blockKinds = new Chart(document.getElementById('chartBlockKinds'), {
-        type: 'doughnut',
-        data: { labels: [], datasets: [{ data: [], backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 8 }] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '58%',
-          plugins: {
-            legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } },
-            tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.92)',
-              borderColor: 'rgba(148, 163, 184, 0.2)',
-              borderWidth: 1
-            }
-          }
-        }
-      });
-
-      const gradBlue = (ctx) => {
-        const c = ctx.chart.ctx;
-        const g = c.createLinearGradient(0, 0, 0, 200);
-        g.addColorStop(0, 'rgba(56, 189, 248, 0.9)');
-        g.addColorStop(1, 'rgba(37, 99, 235, 0.45)');
-        return g;
-      };
-      charts.tools = new Chart(document.getElementById('chartTools'), {
-        type: 'bar',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'Calls',
-            data: [],
-            backgroundColor: gradBlue,
-            borderRadius: 8,
-            borderSkipped: false
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: { duration: 450, easing: 'easeOutQuart' },
-          indexAxis: 'y',
-          plugins: { legend: { display: false } },
-          scales: {
-            x: {
-              beginAtZero: true,
-              grid: { color: 'rgba(148, 163, 184, 0.08)' },
-              ticks: { font: { size: 10 }, precision: 0 }
-            },
-            y: { grid: { display: false }, ticks: { font: { size: 11 } } }
-          }
-        }
-      });
-
-      const gradGold = (ctx) => {
-        const c = ctx.chart.ctx;
-        const g = c.createLinearGradient(220, 0, 0, 0);
-        g.addColorStop(0, 'rgba(251, 191, 36, 0.95)');
-        g.addColorStop(1, 'rgba(217, 119, 6, 0.4)');
-        return g;
-      };
-      charts.cost = new Chart(document.getElementById('chartCost'), {
-        type: 'bar',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'USD',
-            data: [],
-            backgroundColor: gradGold,
-            borderRadius: 8,
-            borderSkipped: false
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: { duration: 450, easing: 'easeOutQuart' },
-          indexAxis: 'y',
-          plugins: { legend: { display: false } },
-          scales: {
-            x: {
-              beginAtZero: true,
-              grid: { color: 'rgba(148, 163, 184, 0.08)' },
-              ticks: {
-                callback: (v) => '$' + Number(v).toFixed(2),
-                font: { size: 10 }
-              }
-            },
-            y: { grid: { display: false }, ticks: { font: { size: 11 } } }
-          }
-        }
-      });
-
-      const gradPii = (ctx) => {
-        const c = ctx.chart.ctx;
-        const g = c.createLinearGradient(0, 0, 0, 160);
-        g.addColorStop(0, 'rgba(167, 139, 250, 0.88)');
-        g.addColorStop(1, 'rgba(99, 102, 241, 0.42)');
-        return g;
-      };
-      charts.piiEntity = new Chart(document.getElementById('chartPiiEntity'), {
-        type: 'bar',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'Detections',
-            data: [],
-            backgroundColor: gradPii,
-            borderRadius: 8,
-            borderSkipped: false
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: { duration: 450, easing: 'easeOutQuart' },
-          indexAxis: 'y',
-          plugins: { legend: { display: false } },
-          scales: {
-            x: {
-              beginAtZero: true,
-              grid: { color: 'rgba(148, 163, 184, 0.08)' },
-              ticks: { font: { size: 10 }, precision: 0 }
-            },
-            y: { grid: { display: false }, ticks: { font: { size: 10 } } }
-          }
-        }
-      });
-      applyChartTheme();
-      return true;
-    }
-
-    function updateTraffic(ts) {
-      const series = ts || [];
-      const labels = series.map((b) => shortLabel(b.bucket_start));
-      const allowed = series.map((b) => b.allowed || 0);
-      const blocked = series.map((b) => b.blocked || 0);
-      charts.traffic.data.labels = labels;
-      charts.traffic.data.datasets[0].data = allowed;
-      charts.traffic.data.datasets[1].data = blocked;
-      charts.traffic.update('none');
-    }
-
-    function updateReasons(obj) {
-      const entries = Object.entries(obj || {});
-      if (!entries.length) {
-        charts.reasons.data.labels = ['No blocks yet'];
-        charts.reasons.data.datasets[0].data = [1];
-        charts.reasons.data.datasets[0].backgroundColor = ['rgba(148, 163, 184, 0.25)'];
-      } else {
-        charts.reasons.data.labels = entries.map((e) => e[0]);
-        charts.reasons.data.datasets[0].data = entries.map((e) => e[1]);
-        charts.reasons.data.datasets[0].backgroundColor = entries.map((_, i) => PALETTE[i % PALETTE.length]);
-      }
-      charts.reasons.update('none');
-    }
-
-    function updateBlockKinds(obj) {
-      const entries = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
-      if (!entries.length) {
-        charts.blockKinds.data.labels = ['No categorized blocks'];
-        charts.blockKinds.data.datasets[0].data = [1];
-        charts.blockKinds.data.datasets[0].backgroundColor = ['rgba(148, 163, 184, 0.22)'];
-      } else {
-        charts.blockKinds.data.labels = entries.map((e) => e[0]);
-        charts.blockKinds.data.datasets[0].data = entries.map((e) => e[1]);
-        charts.blockKinds.data.datasets[0].backgroundColor = entries.map((_, i) => PALETTE[i % PALETTE.length]);
-      }
-      charts.blockKinds.update('none');
-    }
-
-    function updateTools(obj) {
-      const entries = Object.entries(obj || {}).slice(0, 8);
-      if (!entries.length) {
-        charts.tools.data.labels = ['—'];
-        charts.tools.data.datasets[0].data = [0];
-      } else {
-        charts.tools.data.labels = entries.map((e) => e[0]);
-        charts.tools.data.datasets[0].data = entries.map((e) => e[1]);
-      }
-      charts.tools.update('none');
-    }
-
-    function updateCost(obj) {
-      const entries = Object.entries(obj || {}).slice(0, 8);
-      if (!entries.length) {
-        charts.cost.data.labels = ['—'];
-        charts.cost.data.datasets[0].data = [0];
-      } else {
-        charts.cost.data.labels = entries.map((e) => e[0]);
-        charts.cost.data.datasets[0].data = entries.map((e) => e[1]);
-      }
-      charts.cost.update('none');
-    }
-
-    function updatePiiEntity(obj) {
-      const entries = Object.entries(obj || {}).slice(0, 12);
-      if (!entries.length) {
-        charts.piiEntity.data.labels = ['(none yet)'];
-        charts.piiEntity.data.datasets[0].data = [0];
-      } else {
-        charts.piiEntity.data.labels = entries.map((e) => e[0]);
-        charts.piiEntity.data.datasets[0].data = entries.map((e) => e[1]);
-      }
-      charts.piiEntity.update('none');
-    }
-
-    function updatePillarHealth(items) {
-      const node = document.getElementById('pillarHealth');
-      const data = (items || []);
-      if (!data.length) {
-        node.innerHTML = '<div class="pillar"><div class="name">No data</div><div class="detail">No telemetry yet.</div></div>';
-        return;
-      }
-      node.innerHTML = data.map(function (p) {
-        var st = (p.status || 'idle').toLowerCase();
-        var label = st === 'active' ? 'Active' : (st === 'healthy' ? 'Healthy' : 'Idle');
-        return '<div class="pillar">'
-          + '<div class="name">' + (p.name || 'Unknown') + '</div>'
-          + '<span class="pill ' + st + '">' + label + '</span>'
-          + '<div class="detail">' + (p.detail || '') + '</div>'
-          + '</div>';
-      }).join('');
-    }
-
-    function globalBlockedPct(d) {
-      var req = d.requests_total || 0;
-      var blk = d.blocked_total || 0;
-      var inv = req + blk;
-      return inv > 0 ? (100 * blk / inv) : 0;
-    }
-
-    function toolSignal(s, globalBp) {
-      var t = s.total || 0;
-      var bp = Number(s.blocked_pct || 0);
-      var b = s.blocked || 0;
-      if (t < 3) return { label: 'OK', cls: 'signal-ok' };
-      var delta = bp - globalBp;
-      if (bp >= 35 || delta >= 15) return { label: 'Hot', cls: 'signal-hot' };
-      if (bp > globalBp + 5 || b >= 5 || bp >= 15) return { label: 'Watch', cls: 'signal-watch' };
-      return { label: 'OK', cls: 'signal-ok' };
-    }
-
-    function formatDeltaPct(toolBp, globalBp) {
-      var d = toolBp - globalBp;
-      var sign = d > 0 ? '+' : '';
-      return sign + d.toFixed(1) + ' pp';
-    }
-
-    function updateInsightSummaryBar(insights) {
-      var bar = document.getElementById('insightSummaryBar');
-      if (!bar) return;
-      var list = insights || [];
-      if (!list.length) {
-        bar.innerHTML = '<span class="insight-chip muted" style="text-transform:none;font-weight:600;letter-spacing:0;border:1px solid var(--card-border);">No signals yet</span>';
-        return;
-      }
-      var w = 0;
-      var inf = 0;
-      list.forEach(function (x) {
-        if ((x.severity || '') === 'warning') w++;
-        else inf++;
-      });
-      var parts = [];
-      if (w) parts.push('<span class="insight-chip warn">' + w + ' attention</span>');
-      if (inf) parts.push('<span class="insight-chip info">' + inf + ' informational</span>');
-      bar.innerHTML = parts.join('');
-    }
-
-    function startFreshnessTicker() {
-      if (freshnessTimerStarted) return;
-      freshnessTimerStarted = true;
-      setInterval(function () {
-        var el = document.getElementById('dataFreshness');
-        if (!el || !lastSnapshotAt) return;
-        var sec = Math.floor((Date.now() - lastSnapshotAt) / 1000);
-        el.textContent = sec < 2 ? 'just now' : sec + 's ago';
-      }, 1000);
-    }
-
-    function flashPollStatus(msg) {
-      var ps = document.getElementById('pollStatus');
-      if (!ps) return;
-      var prev = ps.textContent;
-      ps.textContent = msg;
-      setTimeout(function () {
-        if (ps && ps.textContent === msg) ps.textContent = prev;
-      }, 2400);
-    }
-
-    function exportMetricsSnapshot() {
-      if (!lastMetricsSnapshot) {
-        flashPollStatus('Export: wait until the first metrics sync completes.');
-        return;
-      }
-      try {
-        var blob = new Blob([JSON.stringify(lastMetricsSnapshot, null, 2)], { type: 'application/json' });
-        var a = document.createElement('a');
-        var stamp = new Date().toISOString().replace(/[:.]/g, '-');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'mcp-bastion-metrics-' + stamp + '.json';
-        a.rel = 'noopener';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
-        var exBtn = document.getElementById('btnExportMetrics');
-        if (exBtn) {
-          var ob = exBtn.textContent;
-          exBtn.textContent = 'Downloaded';
-          exBtn.disabled = true;
-          setTimeout(function () {
-            exBtn.textContent = ob;
-            exBtn.disabled = false;
-          }, 1600);
-        }
-      } catch (e) {
-        console.error(e);
-        flashPollStatus('Export failed — see console.');
-      }
-    }
-
-    function renderInsights(insights) {
-      updateInsightSummaryBar(insights);
-      var node = document.getElementById('dashboardInsights');
-      if (!node) return;
-      var list = insights || [];
-      if (!list.length) {
-        node.innerHTML = '<p class="insights-empty">No anomalies flagged yet — need more traffic or stronger signals (blocks, latency spread, cost burn).</p>';
-        return;
-      }
-      node.innerHTML = list.map(function (x) {
-        var sev = (x.severity === 'warning') ? 'warning' : 'info';
-        return '<div class="insight-item ' + sev + '">'
-          + '<div class="insight-title">' + escapeHtml(x.title || '') + '</div>'
-          + '<div class="insight-detail">' + escapeHtml(x.detail || '') + '</div>'
-          + '</div>';
-      }).join('');
-    }
-
-    function updateToolTable(stats, d) {
-      const body = document.querySelector('#toolTable tbody');
-      d = d || {};
-      var gbp = globalBlockedPct(d);
-      const entries = Object.entries(stats || {})
-        .sort((a, b) => (b[1].total || 0) - (a[1].total || 0))
-        .slice(0, 12);
-      if (!entries.length) {
-        body.innerHTML = '<tr><td colspan="10" class="muted">No tool activity yet.</td></tr>';
-        return;
-      }
-      body.innerHTML = entries.map(function (entry) {
-        var tool = entry[0];
-        var s = entry[1] || {};
-        var reasons = Object.entries(s.blocked_reasons || {}).map(function (r) {
-          return r[0] + ' (' + r[1] + ')';
-        }).join(', ');
-        var sig = toolSignal(s, gbp);
-        var tbp = Number(s.blocked_pct || 0);
-        return '<tr>'
-          + '<td>' + escapeHtml(tool) + '</td>'
-          + '<td><span class="signal-badge ' + sig.cls + '">' + escapeHtml(sig.label) + '</span></td>'
-          + '<td>' + (s.total || 0) + '</td>'
-          + '<td>' + (s.allowed || 0) + '</td>'
-          + '<td>' + (s.blocked || 0) + '</td>'
-          + '<td>' + tbp.toFixed(2) + '%</td>'
-          + '<td>' + formatDeltaPct(tbp, gbp) + '</td>'
-          + '<td>' + Number(s.latency_ms_p95 || 0).toFixed(2) + '</td>'
-          + '<td>' + Number(s.latency_ms_avg || 0).toFixed(2) + '</td>'
-          + '<td>' + escapeHtml(reasons || '—') + '</td>'
-          + '</tr>';
-      }).join('');
-    }
-
-    async function fetchMetrics() {
-      const url = window.location.origin + '/api/metrics';
-      const r = await fetch(url, { cache: 'no-store', credentials: 'same-origin' });
-      if (!r.ok) {
-        throw new Error('HTTP ' + r.status + ' from ' + url);
-      }
-      return r.json();
-    }
-
-    function formatWindowStart(iso) {
-      if (!iso) return '';
-      try {
-        return 'Window started ' + new Date(iso).toLocaleString();
-      } catch (e) {
-        return '';
-      }
-    }
-
-    function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-
-    function formatAlertTs(iso) {
-      if (!iso) return '';
-      try {
-        return new Date(iso).toLocaleString();
-      } catch (e) {
-        return '';
-      }
-    }
-
-    function buildAlertsInnerHtml(alertsArr, opts) {
-      opts = opts || {};
-      var maxN = opts.max != null ? opts.max : 999;
-      var includeTs = !!opts.includeTs;
-      var list = (alertsArr || []).slice();
-      if (maxN < 999) list = list.slice(-maxN);
-      list = list.slice().reverse();
-      if (!list.length) {
-        return '<div class="alert" style="border-left-color:#64748b;">No alerts</div>';
-      }
-      return list.map(function (a) {
-        var sev = (a.severity === 'critical') ? ' critical' : '';
-        var ts = '';
-        if (includeTs && a.ts) {
-          ts = '<div class="alert-ts">' + escapeHtml(formatAlertTs(a.ts)) + '</div>';
-        }
-        return '<div class="alert' + sev + '">' + ts + escapeHtml(a.kind) + ': ' + escapeHtml(a.message || '') + '</div>';
-      }).join('');
-    }
-
-    function render(d) {
-      const n = (d.alerts && d.alerts.length) || 0;
-      var countEl = document.getElementById('alertCountLabel');
-      if (countEl) countEl.textContent = n + (n === 1 ? ' Alert' : ' Alerts');
-      var acb = document.getElementById('alertCountBtn');
-      if (acb) acb.setAttribute('aria-label', n + ' alert' + (n === 1 ? '' : 's') + ', open list');
-
-      var ws = document.getElementById('windowStartLine');
-      if (ws) ws.textContent = formatWindowStart(d.window_start);
-
-      var fu = document.getElementById('footerUpdated');
-      if (fu) fu.textContent = 'Last refresh: ' + new Date().toLocaleString();
-
-      var req = d.requests_total || 0;
-      var blk = d.blocked_total || 0;
-      var total = req + blk;
-      var ir = document.getElementById('insightPassRate');
-      var iv = document.getElementById('insightVolumeLine');
-      if (ir && iv) {
-        if (total > 0) {
-          var pass = (100 * req / total).toFixed(1);
-          ir.innerHTML = pass + '<span class="unit">%</span>';
-          iv.textContent = total.toLocaleString() + ' total invocations (' + req.toLocaleString() + ' allowed · ' + blk.toLocaleString() + ' blocked).';
-        } else {
-          ir.textContent = '—';
-          iv.textContent = 'No traffic yet — route MCP tool calls through middleware that writes to this MetricsStore.';
-        }
-      }
-
-      var kp = document.getElementById('kindPreview');
-      if (kp) {
-        var kinds = Object.entries(d.blocked_by_kind || {}).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
-        if (!kinds.length) {
-          kp.innerHTML = '<li class="muted">No categorized blocks yet</li>';
-        } else {
-          kp.innerHTML = kinds.map(function (kv) {
-            return '<li><span class="k">' + escapeHtml(kv[0]) + '</span><span class="v">' + kv[1] + '</span></li>';
-          }).join('');
-        }
-      }
-
-      document.getElementById('kpiReq').textContent = d.requests_total ?? 0;
-      document.getElementById('kpiBlocked').textContent =
-        (d.blocked_total ?? 0) + ' (' + (d.blocked_pct ?? 0) + '%)';
-      document.getElementById('kpiPii').textContent = d.pii_redacted_total ?? 0;
-      document.getElementById('kpiCost').textContent =
-        '$' + Number(d.cost_total ?? 0).toFixed(2);
-
-      var lm = d.latency_ms || {};
-      document.getElementById('latP50').textContent = (lm.p50 != null) ? lm.p50 : '0';
-      document.getElementById('latP95').textContent = (lm.p95 != null) ? lm.p95 : '0';
-      document.getElementById('latP99').textContent = (lm.p99 != null) ? lm.p99 : '0';
-      document.getElementById('latSamples').textContent = (lm.samples || 0) + ' samples';
-
-      var br = d.cost_burn || {};
-      var ph = (br.per_hour_usd != null) ? Number(br.per_hour_usd).toFixed(4) : '0.0000';
-      var pd = (br.projected_daily_usd != null) ? Number(br.projected_daily_usd).toFixed(2) : '0.00';
-      document.getElementById('costBurn').textContent =
-        '$' + ph + ' / hr projected · $' + pd + ' / day projected';
-      document.getElementById('burnWindow').textContent =
-        'Window elapsed: ' + (br.window_elapsed_seconds || 0) + ' s';
-
-      const winSec = d.time_series_window_seconds || 600;
-      document.getElementById('tsWindow').textContent = Math.round(winSec / 60) + ' min';
-      document.getElementById('tsBucket').textContent = (d.time_series_bucket_seconds || 30) + 's';
-
-      document.getElementById('alerts').innerHTML = buildAlertsInnerHtml(d.alerts, { max: 12, includeTs: true });
-      var drop = document.getElementById('alertDropdownList');
-      if (drop) drop.innerHTML = buildAlertsInnerHtml(d.alerts, { max: 10, includeTs: true });
-
-      renderInsights(d.dashboard_insights || []);
-
-      renderForensics(d.blocked_incidents || []);
-
-      if (!initialized && typeof Chart !== 'undefined') {
-        initialized = createCharts();
-      }
-      if (!initialized) {
-        if (!chartUnavailableNotified) {
-          chartUnavailableNotified = true;
-          console.warn('Chart.js not loaded yet; showing KPI data only until script is ready.');
-        }
-        return;
-      }
-      updateTraffic(d.time_series);
-      updateReasons(d.blocked_by_reason);
-      updateBlockKinds(d.blocked_by_kind);
-      updateTools(d.top_tools);
-      updateCost(d.cost_by_user);
-      updatePiiEntity(d.pii_by_entity);
-      updatePillarHealth(d.pillar_health);
-      updateToolTable(d.tool_stats, d);
-    }
-
-    (async function poll() {
-      try {
-        var d = await fetchMetrics();
-        lastMetricsSnapshot = d;
-        lastSnapshotAt = Date.now();
-        startFreshnessTicker();
-        var ps = document.getElementById('pollStatus');
-        if (ps) ps.textContent = 'Updated ' + new Date().toLocaleTimeString() + ' · every 2s';
-        render(d);
-      } catch (e) {
-        console.error(e);
-        var ps = document.getElementById('pollStatus');
-        if (ps) {
-          ps.textContent = 'Metrics unavailable — is the dashboard running on ' + window.location.origin + '? Try http://127.0.0.1:' + (window.location.port || '7000') + '/ if localhost fails (IPv6).';
-        }
-      }
-      setTimeout(poll, 2000);
-    })();
-  </script>
+  <script src="/static/dashboard-app.js?v=25-external" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>
@@ -2308,8 +1485,22 @@ DASHBOARD_HTML = """
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard():
+    """Serve SPA HTML with an embedded metrics snapshot so KPIs/charts work even if fetch fails."""
+    html = DASHBOARD_HTML
+    try:
+        m = _get_dashboard_metrics_dict()
+        payload = _metrics_json_for_html_embed(m)
+        tag = (
+            '<script type="application/json" id="mcp-bastion-bootstrap-json">'
+            + payload
+            + "</script>"
+        )
+        html = DASHBOARD_HTML.replace("<!--MCP_BASTION_METRICS_BOOTSTRAP-->", tag, 1)
+    except Exception as e:
+        logger.exception("dashboard bootstrap omitted: %s", e)
+        html = DASHBOARD_HTML.replace("<!--MCP_BASTION_METRICS_BOOTSTRAP-->", "", 1)
     return HTMLResponse(
-        DASHBOARD_HTML,
+        html,
         headers={
             "Cache-Control": "no-store, no-cache, must-revalidate",
             "Pragma": "no-cache",
@@ -2318,8 +1509,12 @@ def dashboard():
 
 
 def _dashboard_bind() -> tuple[str, int]:
-    """Host/port for local dashboard (override: MCP_BASTION_DASHBOARD_HOST, MCP_BASTION_DASHBOARD_PORT)."""
-    host = (os.environ.get("MCP_BASTION_DASHBOARD_HOST") or "127.0.0.1").strip() or "127.0.0.1"
+    """Host/port for local dashboard (override: MCP_BASTION_DASHBOARD_HOST, MCP_BASTION_DASHBOARD_PORT).
+
+    Default bind 0.0.0.0 so http://localhost:PORT and http://127.0.0.1:PORT both reach the server on Windows
+    (localhost IPv6 vs IPv4 quirks). Use 127.0.0.1 only if you want loopback-only IPv4.
+    """
+    host = (os.environ.get("MCP_BASTION_DASHBOARD_HOST") or "0.0.0.0").strip() or "0.0.0.0"
     try:
         port = int((os.environ.get("MCP_BASTION_DASHBOARD_PORT") or "7000").strip() or "7000")
     except ValueError:
@@ -2329,9 +1524,13 @@ def _dashboard_bind() -> tuple[str, int]:
 
 if __name__ == "__main__":
     # Same as CLI: seed demo metrics unless explicitly disabled (MCP_BASTION_DEMO=0 / false / no).
-    os.environ.setdefault("MCP_BASTION_DEMO", "1")
+    if os.environ.get("MCP_BASTION_DEMO") is None:
+        os.environ["MCP_BASTION_DEMO"] = "1"
     import uvicorn
 
     _h, _p = _dashboard_bind()
-    print(f"MCP-Bastion dashboard: http://{_h}:{_p}/  (leave this window open; Ctrl+C to stop)", flush=True)
+    print(
+        f"MCP-Bastion dashboard: http://127.0.0.1:{_p}/  (bound {_h}:{_p}; leave this window open; Ctrl+C to stop)",
+        flush=True,
+    )
     uvicorn.run(app, host=_h, port=_p)

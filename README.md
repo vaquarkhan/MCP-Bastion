@@ -135,6 +135,7 @@ mcp-bastion dashboard --port 7000
 | [docs/DETAILED_TUTORIAL.md](docs/DETAILED_TUTORIAL.md) | Step-by-step implementation tutorial for new teams |
 | [docs/USE_CASES.md](docs/USE_CASES.md) | Real use cases: enterprise gateway, LLM products, internal tools, SaaS, compliance |
 | [docs/ATTACK_PREVENTION.md](docs/ATTACK_PREVENTION.md) | Examples showing how MCP-Bastion prevents real attacks (injection, PII leak, rate exhaustion, path traversal, RBAC, replay) |
+| [docs/REDTEAM.md](docs/REDTEAM.md) | Interpreting harness / red-team scores; which `bastion.yaml` pillars to enable; Node vs Python parity |
 | [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) | **OWASP MCP Top 10** mapping, feature highlights, attack classes, Slack/webhook/Prometheus/OTEL/log integrations |
 | [docs/METRICS.md](docs/METRICS.md) | Performance overhead (&lt;5ms) and effectiveness metrics (dashboard, Prometheus, OTEL) |
 | [docs/TUTORIALS.md](docs/TUTORIALS.md) | Tutorials: integrating with FastMCP, TypeScript, GitHub MCP, and open-source MCP servers |

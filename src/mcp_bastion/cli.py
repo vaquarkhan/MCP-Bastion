@@ -4,7 +4,7 @@ CLI for MCP-Bastion developers.
 Usage:
   mcp-bastion validate [--config PATH]
   mcp-bastion serve [--config PATH] [--http PORT] [--host HOST]
-  mcp-bastion dashboard [--port PORT] [--reload] [--demo | --no-demo]
+  mcp-bastion dashboard [--port PORT] [--reload] [--demo | --no-demo] [--live] [--no-live]
 """
 
 from __future__ import annotations
@@ -111,7 +111,14 @@ def _resolve_dashboard_repo() -> Path | None:
     return None
 
 
-def cmd_dashboard(port: int, reload: bool = False, demo: bool = False, no_demo: bool = False) -> int:
+def cmd_dashboard(
+    port: int,
+    reload: bool = False,
+    demo: bool = False,
+    no_demo: bool = False,
+    no_live: bool = False,
+    live: bool = False,
+) -> int:
     _configure_cli_logging()
     _ensure_src_on_path()
     # Default: seed examples/dashboard_demo.py so local graphs are populated without a running MCP server.
@@ -122,9 +129,14 @@ def cmd_dashboard(port: int, reload: bool = False, demo: bool = False, no_demo: 
         os.environ["MCP_BASTION_DEMO"] = "1"
     else:
         os.environ.setdefault("MCP_BASTION_DEMO", "1")
+    if no_live:
+        os.environ["MCP_BASTION_DEMO_LIVE"] = "0"
+    elif live:
+        os.environ["MCP_BASTION_DEMO_LIVE"] = "1"
     if os.environ.get("MCP_BASTION_DEMO", "").strip().lower() in ("1", "true", "yes"):
         logger.info(
-            "Demo metrics enabled: graphs seed from examples/dashboard_demo.py on startup (disable: --no-demo)."
+            "Demo metrics: bundled seed on startup (disable: --no-demo). "
+            "Background fake traffic is opt-in: --live or MCP_BASTION_DEMO_LIVE=1."
         )
     try:
         import uvicorn
@@ -157,7 +169,7 @@ def cmd_dashboard(port: int, reload: bool = False, demo: bool = False, no_demo: 
             "No auto-reload: stop and restart this process after editing dashboard/app.py, "
             "or run: mcp-bastion dashboard --reload"
         )
-    bind_host = (os.environ.get("MCP_BASTION_DASHBOARD_HOST") or "127.0.0.1").strip() or "127.0.0.1"
+    bind_host = (os.environ.get("MCP_BASTION_DASHBOARD_HOST") or "0.0.0.0").strip() or "0.0.0.0"
     logger.info("Open http://%s:%s/meta — check ui_revision matches your tree.", bind_host, port)
     uvicorn.run(
         "dashboard.app:app",
@@ -205,12 +217,24 @@ def main() -> int:
         action="store_true",
         help="Do not seed demo metrics; dashboard stays empty until middleware feeds MetricsStore.",
     )
+    dash_parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Spawn background fake traffic (moving KPIs). Default is seed-only; same as MCP_BASTION_DEMO_LIVE=1.",
+    )
+    dash_parser.add_argument(
+        "--no-live",
+        action="store_true",
+        help="Do not spawn background fake traffic (same as MCP_BASTION_DEMO_LIVE=0).",
+    )
     dash_parser.set_defaults(
         func=lambda **kw: cmd_dashboard(
             port=kw.get("port", 7000),
             reload=bool(kw.get("reload")),
             demo=bool(kw.get("demo")),
             no_demo=bool(kw.get("no_demo")),
+            no_live=bool(kw.get("no_live")),
+            live=bool(kw.get("live")),
         )
     )
 

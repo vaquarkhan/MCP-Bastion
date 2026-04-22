@@ -22,7 +22,6 @@ import os
 import random
 import sys
 import threading
-import time
 from pathlib import Path
 
 # Repo root: parent of examples/ (this file lives at examples/dashboard_demo.py)
@@ -42,6 +41,7 @@ def _bootstrap_sys_path() -> None:
 _bootstrap_sys_path()
 
 from mcp_bastion.demo_dashboard_metrics import seed_metrics
+from mcp_bastion.demo_live_traffic import live_simulator
 
 
 def _ensure_repo_layout() -> None:
@@ -53,65 +53,6 @@ def _ensure_repo_layout() -> None:
     if not (REPO_ROOT / "dashboard" / "app.py").is_file():
         print(f"Expected dashboard/app.py under {REPO_ROOT}", file=sys.stderr)
         sys.exit(1)
-
-
-def live_simulator(stop: threading.Event, rng: random.Random) -> None:
-    from mcp_bastion.pillars.metrics import MetricsStore
-
-    tools = (
-        "read_file",
-        "write_file",
-        "web_search",
-        "invoke_github",
-        "query_llm",
-        "query_db",
-    )
-    reasons = (
-        "rate limit: too many requests",
-        "Prompt injection blocked by guard",
-        "RBAC: cannot access tool for role viewer",
-        "schema validation failed: missing required field",
-        "circuit breaker tripped on upstream",
-    )
-    users = ("alice@acme.com", "bob@acme.com", "dana@acme.com")
-    pii_types = (
-        "EMAIL_ADDRESS",
-        "PERSON",
-        "PHONE_NUMBER",
-        "LOCATION",
-        "ORGANIZATION",
-        "DATE_TIME",
-        "IP_ADDRESS",
-        "URL",
-        "CREDIT_CARD",
-        "US_SSN",
-        "NRP",
-    )
-
-    while not stop.wait(rng.uniform(0.25, 1.1)):
-        store = MetricsStore.get()
-        roll = rng.random()
-        if roll < 0.68:
-            store.record_request(rng.choice(tools))
-        elif roll < 0.86:
-            store.record_blocked(
-                rng.choice(reasons),
-                rng.choice(tools),
-                tenant_id=rng.choice(("acme-prod", "acme-staging", "tenant-demo", "default")),
-            )
-        elif roll < 0.92:
-            store.record_cost(rng.uniform(0.001, 0.06), rng.choice(users))
-        elif roll < 0.96:
-            if rng.random() < 0.15:
-                a, b = rng.sample(pii_types, 2)
-                store.record_pii_entities({a: rng.randint(1, 2), b: rng.randint(1, 2)})
-            else:
-                store.record_pii_entities({rng.choice(pii_types): rng.randint(1, 4)})
-        else:
-            store.record_tool_latency_ms(rng.choice(tools), rng.uniform(8.0, 90.0))
-        store.record_latency_ms(rng.uniform(4.0, 62.0))
-        if roll > 0.985:
-            store.add_alert("demo", "Synthetic alert from dashboard_demo.py", "warning")
 
 
 def _configure_stdio() -> None:
@@ -144,6 +85,13 @@ def main() -> int:
     _ensure_repo_layout()
     os.chdir(REPO_ROOT)
 
+    # Ensure dashboard lifespan/API agree to load synthetic data (matches python dashboard/app.py defaults).
+    os.environ["MCP_BASTION_DEMO"] = "1"
+    if args.no_live:
+        os.environ["MCP_BASTION_DEMO_LIVE"] = "0"
+    else:
+        os.environ["MCP_BASTION_DEMO_LIVE"] = "1"
+
     try:
         import uvicorn
     except ImportError:
@@ -157,6 +105,7 @@ def main() -> int:
     stop = threading.Event()
     if not args.no_live:
         threading.Thread(target=live_simulator, args=(stop, rng), daemon=True).start()
+        print("Background simulation: MCP_BASTION_DEMO_LIVE=1 (use --no-live for static snapshot only).")
 
     from dashboard.app import app
 

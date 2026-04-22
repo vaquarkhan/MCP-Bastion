@@ -14,6 +14,11 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     exit 1
 }
 Write-Host ""
+# Match docs/README: dashboard on 127.0.0.1:7000 (override with MCP_BASTION_DASHBOARD_* env).
+$env:MCP_BASTION_DASHBOARD_HOST = "0.0.0.0"
+$env:MCP_BASTION_DASHBOARD_PORT = "7000"
+$env:PYTHONPATH = "src"
+$env:MCP_BASTION_DEMO = "1"
 Write-Host "Dashboard URL: http://127.0.0.1:7000/" -ForegroundColor Cyan
 Write-Host "Leave this window open while you use the browser. Press Ctrl+C to stop." -ForegroundColor Gray
 Write-Host ""

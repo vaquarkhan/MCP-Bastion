@@ -7,9 +7,20 @@ presidio-analyzer, presidio-anonymizer, spaCy. Sanitizes TextContent.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Presidio's US_SSN recognizer can miss well-formed dashed SSNs in short strings; supplement with a format pass.
+_SSN_DASHED_PATTERN = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
+
+
+def _redact_dashed_ssn_patterns(text: str, placeholder: str = "<US_SSN>") -> str:
+    """Redact XXX-XX-XXXX (dashes required). Does not validate SSN assignment validity."""
+    if not text:
+        return text
+    return _SSN_DASHED_PATTERN.sub(placeholder, text)
 
 
 class PIIRedactor:
@@ -73,7 +84,7 @@ class PIIRedactor:
                 entities=self.entities,
             )
             if not results:
-                return text
+                return _redact_dashed_ssn_patterns(text)
             logger.debug("redacted %d entities", len(results))
             try:
                 from collections import Counter
@@ -84,10 +95,11 @@ class PIIRedactor:
             except Exception:
                 pass
             anonymized = self._anonymizer.anonymize(text=text, analyzer_results=results)
-            return anonymized.text
+            out = _redact_dashed_ssn_patterns(anonymized.text)
+            return out
         except Exception as e:
-            logger.warning("PII redaction failed: %s. Returning original text.", e)
-            return text
+            logger.warning("PII redaction failed: %s. Applying pattern fallback only.", e)
+            return _redact_dashed_ssn_patterns(text)
 
     def redact_content_items(self, content: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """

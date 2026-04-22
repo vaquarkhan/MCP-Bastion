@@ -446,6 +446,8 @@ async def test_middleware_tool_call_pii_redaction():
     result = await mw(ctx, handler)
     assert result is not None
     assert "contents" in result.get("result", {})
+    text = result["result"]["contents"][0].get("text", "")
+    assert "123-45-6789" not in text, "SSN should be redacted (Presidio and/or dashed-SSN fallback)"
 
 
 @pytest.mark.asyncio
