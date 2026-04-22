@@ -39,7 +39,6 @@ try:
         HTMLResponse,
         JSONResponse,
         PlainTextResponse,
-        RedirectResponse,
     )
     from fastapi.staticfiles import StaticFiles
 except ImportError:
@@ -165,12 +164,6 @@ async def _dashboard_lifespan(_app: FastAPI):
 app = FastAPI(title="MCP-Bastion Dashboard", lifespan=_dashboard_lifespan)
 
 
-@app.get("/images/mcp-bastian.png")
-def legacy_branding_png():
-    """Bookmarks and README use this path; canonical asset lives under /static/."""
-    return RedirectResponse(url="/static/mcp-bastian.png", status_code=307)
-
-
 # Allow cross-origin reads of metrics (proxies, Live Preview, tools on another port).
 app.add_middleware(
     CORSMiddleware,
@@ -181,6 +174,19 @@ app.add_middleware(
 )
 
 _static_dir = Path(__file__).resolve().parent / "static"
+# Repo: MCP-Bastion/images/mcp-bastian.png (header uses this URL first; explicit route = reliable vs mount order).
+_header_brand_png = root / "images" / "mcp-bastian.png"
+
+
+@app.get("/images/mcp-bastian.png")
+def serve_mcp_bastian_png():
+    """Header banner: prefer repo `images/mcp-bastian.png`, else dashboard/static copy."""
+    if _header_brand_png.is_file():
+        return FileResponse(_header_brand_png, media_type="image/png")
+    fallback = _static_dir / "mcp-bastian.png"
+    if fallback.is_file():
+        return FileResponse(fallback, media_type="image/png")
+    return PlainTextResponse("Not found", status_code=404)
 
 
 @app.get("/favicon.ico")
@@ -199,7 +205,7 @@ if _static_dir.is_dir():
     app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
-# Repo-root images/ (e.g. branding) — optional; path is stable regardless of cwd
+# Other files under /images/ (mcp-bastian.png is handled by serve_mcp_bastian_png above).
 _images_dir = root / "images"
 if _images_dir.is_dir():
     app.mount("/images", StaticFiles(directory=str(_images_dir)), name="images")
@@ -379,8 +385,8 @@ DASHBOARD_HTML = """
     }
     .header-logo-wrap {
       flex-shrink: 0;
-      padding: 8px 14px;
-      border-radius: 14px;
+      padding: 10px 16px;
+      border-radius: 16px;
       background: linear-gradient(145deg, rgba(30, 41, 59, 0.55) 0%, rgba(15, 23, 42, 0.35) 100%);
       border: 1px solid rgba(148, 163, 184, 0.18);
       box-shadow:
@@ -398,12 +404,19 @@ DASHBOARD_HTML = """
         0 0 0 1px rgba(2, 132, 199, 0.1);
     }
     .header-banner-img {
-      height: 48px;
+      height: 68px;
       width: auto;
-      max-width: min(280px, 52vw);
+      max-width: min(400px, 70vw);
       object-fit: contain;
+      object-position: left center;
       display: block;
-      border-radius: 8px;
+      border-radius: 10px;
+    }
+    @media (max-width: 600px) {
+      .header-banner-img {
+        height: 56px;
+        max-width: min(340px, 88vw);
+      }
     }
     .header-brand-text {
       min-width: 0;
@@ -1241,8 +1254,9 @@ DASHBOARD_HTML = """
         src="/images/mcp-bastian.png"
         alt="MCP-Bastion"
         class="header-banner-img"
-        width="280"
-        height="48"
+        width="400"
+        height="68"
+        loading="eager"
         decoding="async"
         onerror="if(!this.dataset._fb){this.dataset._fb='1';this.src='/static/mcp-bastian.png';return;}this.onerror=null;this.src='/static/mcp-bastian.svg'"
       />
