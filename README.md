@@ -2,16 +2,6 @@
   <img src="images/mcp-bastian.png" alt="MCP-Bastion" width="520" />
 </p>
 
-### Dashboard · demo
-
-<p align="center">
-  <video width="920" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25)" controls playsinline preload="metadata">
-    <source src="images/mcp-bastian-mp.mp4" type="video/mp4" />
-    Your browser does not support embedded video — <a href="images/mcp-bastian-mp.mp4">open the MP4</a> or run the <a href="#real-time-dashboard-and-alerts">dashboard locally</a>.
-  </video>
-</p>
-<p align="center"><sub>Screen recording of the MCP-Bastion metrics dashboard (live KPIs, charts, and theme). File: <code>images/mcp-bastian-mp.mp4</code>.</sub></p>
-
 # MCP-Bastion
 
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
@@ -119,7 +109,17 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 ### Real-Time Dashboard and Alerts
 
-Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts:
+Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
+
+**Demo (screen recording):**
+
+<p align="center">
+  <video width="920" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25)" controls playsinline preload="metadata">
+    <source src="images/mcp-bastian-mp.mp4" type="video/mp4" />
+    Your browser does not support embedded video — <a href="images/mcp-bastian-mp.mp4">open the MP4</a> or follow the command below to run the dashboard.
+  </video>
+</p>
+<p align="center"><sub>File: <code>images/mcp-bastian-mp.mp4</code> — live KPIs, charts, and theme.</sub></p>
 
 ```bash
 mcp-bastion dashboard --port 7000
