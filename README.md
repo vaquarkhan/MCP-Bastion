@@ -117,22 +117,14 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
 
-**Demo (screen recording):** hosted on **Vimeo** — watch in the browser from the link or the poster below. The live dashboard also embeds the same tour at the top of the UI.
+**🎥 Demo (screen recording):** the walkthrough is hosted on **Vimeo** (full **video** — GitHub’s README cannot play inline players, so use the link below or run the dashboard locally to see the embedded player). The live dashboard also shows the same tour at the top of the UI.
 
 <p align="center">
-  <a href="https://vimeo.com/1186084574" title="Watch dashboard demo on Vimeo">
-    <img
-      src="images/mcp-bastian.png"
-      alt="Dashboard — click to open the screen recording on Vimeo"
-      width="920"
-      style="max-width:100%; height:auto; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.25);"
-    />
-  </a>
-</p>
-<p align="center">
-  <strong><a href="https://vimeo.com/1186084574">▶ Watch the demo on Vimeo</a></strong>
+  <strong><a href="https://vimeo.com/1186084574">🎥 Watch the screen recording on Vimeo</a></strong>
   <br />
-  <sub>Same video is embedded when you run <code>mcp-bastion dashboard</code> (section <strong>Dashboard tour</strong>).</sub>
+  <sub>Opens the Vimeo page with the video player (not a static screenshot).</sub>
+  <br />
+  <sub><strong>Or:</strong> run <code>mcp-bastion dashboard</code> — the <strong>Dashboard tour</strong> block embeds the same Vimeo player on <code>localhost</code>.</sub>
 </p>
 
 ```bash
