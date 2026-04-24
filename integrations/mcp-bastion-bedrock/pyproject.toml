@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp-bastion-python>=1.0.17",
+    "mcp-bastion-python>=1.0.16",
     "boto3>=1.28.0",
 ]
 

@@ -4,7 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
-## [1.0.17] - 2026-04-24
+## [1.0.16] - 2026-04-24
+
+PyPI, npm, and MCP registry publish **1.0.16**; extended pillars (semantic firewall, sensitive classifier, external policy, etc.) and the documentation below are part of this line.
 
 ### Documentation
 
@@ -26,6 +28,6 @@ All notable changes to this project are documented in this file.
 - Cost summary includes `unattributed_usd` when totals are not fully attributed to providers; demo `record_cost` calls use provider dimensions.
 - Tests expanded for demo metrics, live traffic helpers, and reason normalization; line coverage for `mcp_bastion` remains at or above 92%.
 
-## [1.0.16] and earlier
+## Earlier
 
-See git history and [releases](https://github.com/vaquarkhan/MCP-Bastion/releases) for prior versions; 1.0.16 introduced extended pillars (semantic firewall, sensitive classifier, etc.) and related docs.
+See [releases](https://github.com/vaquarkhan/MCP-Bastion/releases) and git history for versions before **1.0.16**.
