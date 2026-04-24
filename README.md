@@ -111,7 +111,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
 | **CLI** | **`mcp-bastion validate`**, **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** / **`--demo`**), **`redteam`**, **`doctor`** — [docs/CLI.md](docs/CLI.md). |
 | **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
-| **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard) — [DOCKER.md](DOCKER.md). |
+| **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard) — [DOCKER.md](DOCKER.md). **Prebuilt images (GHCR):** [`mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy), [`mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard) — published on each `v*` tag ([publish-docker.yml](.github/workflows/publish-docker.yml)). |
 
 ### Real-Time Dashboard and Alerts
 
@@ -173,12 +173,24 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 
 ### One-Line Docker
 
+**Prebuilt images (after the first [publish-docker](.github/workflows/publish-docker.yml) run, usually on a `v*` release tag):**
+
+```bash
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
+docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
+# Dashboard (optional, port 7000):
+# docker pull ghcr.io/vaquarkhan/mcp-bastion-dashboard:latest
+# docker run -p 7000:7000 ghcr.io/vaquarkhan/mcp-bastion-dashboard:latest
+```
+
+**Build locally** (any revision):
+
 ```bash
 docker build -t mcp-bastion/proxy .
 docker run -p 8080:8080 mcp-bastion/proxy
 ```
 
-MCP endpoint: `http://localhost:8080/mcp`. Use `docker-compose up -d` for proxy; add `--profile with-dashboard` for the dashboard. See [DOCKER.md](DOCKER.md).
+MCP endpoint: `http://localhost:8080/mcp`. Use `docker-compose up -d` for proxy; add `--profile with-dashboard` for the dashboard. See [DOCKER.md](DOCKER.md) (includes GHCR pull commands and **package** links for forks: replace `vaquarkhan` with your org or user in image paths).
 
 ### Policy-as-Code (bastion.yaml)
 

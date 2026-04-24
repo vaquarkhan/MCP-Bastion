@@ -1,6 +1,22 @@
 # MCP-Bastion Docker
 
-## One-line run
+## Prebuilt images (GitHub Container Registry)
+
+Images are built by [`.github/workflows/publish-docker.yml`](.github/workflows/publish-docker.yml) on each **`v*`** tag (and can be run manually with **Actions → Publish Docker**). For upstream releases:
+
+| Image | Use |
+|-------|-----|
+| [`ghcr.io/vaquarkhan/mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy) | HTTP MCP entrypoint (see [Dockerfile](Dockerfile)) — port `8080` |
+| [`ghcr.io/vaquarkhan/mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard) | Metrics dashboard — port `7000` |
+
+```bash
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
+docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
+```
+
+**Forks:** replace `vaquarkhan` in the path with your GitHub user or org (lowercase). If a package is private, sign in: `echo "$GITHUB_TOKEN" | docker login ghcr.io -u USER --password-stdin` (use a personal access token with `read:packages`).
+
+## One-line run (local build)
 
 ```bash
 docker build -t mcp-bastion/proxy .

@@ -1,0 +1,92 @@
+# Build and push proxy + dashboard images to GitHub Container Registry (GHCR).
+# Runs on release tags (v*) and on manual workflow dispatch.
+
+name: Publish Docker (GHCR)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag (e.g. v1.0.16 or a snapshot like main-2026-04-24)"
+        required: true
+        default: "main"
+
+concurrency:
+  group: publish-docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Lowercase owner (GHCR)
+        id: o
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Set image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "t=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "t=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags (add latest only on v* tag push)
+        id: tlist
+        env:
+          O: ${{ steps.o.outputs.owner }}
+          TAG: ${{ steps.tag.outputs.t }}
+        run: |
+          PROXY="ghcr.io/${O}/mcp-bastion-proxy"
+          DASH="ghcr.io/${O}/mcp-bastion-dashboard"
+          {
+            echo "proxy<<EOT"
+            echo "${PROXY}:${TAG}"
+            if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_type }}" = "tag" ]; then
+              echo "${PROXY}:latest"
+            fi
+            echo "EOT"
+            echo "dash<<EOT"
+            echo "${DASH}:${TAG}"
+            if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_type }}" = "tag" ]; then
+              echo "${DASH}:latest"
+            fi
+            echo "EOT"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push proxy
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.tlist.outputs.proxy }}
+
+      - name: Build and push dashboard
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.dashboard
+          push: true
+          tags: ${{ steps.tlist.outputs.dash }}
