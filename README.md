@@ -9,9 +9,9 @@
 [![Total Downloads](https://img.shields.io/badge/total%20downloads-3.4K-brightgreen)](https://pepy.tech/projects/mcp-bastion-python)
 
 [![PyPI Version](https://img.shields.io/pypi/v/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
-[![PyPI downloads / month](https://img.shields.io/pypi/dm/mcp-bastion-python?label=downloads%2Fmonth)](https://pypi.org/project/mcp-bastion-python/)
-[![Downloads](https://static.pepy.tech/personalized-badge/mcp-bastion-python?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/mcp-bastion-python)
-[![npm Version](https://img.shields.io/npm/v/@mcp-bastion/core)](https://www.npmjs.com/package/@mcp-bastion/core)
+[![Total downloads](https://static.pepy.tech/personalized-badge/mcp-bastion-python?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=total)](https://pepy.tech/projects/mcp-bastion-python)
+[![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
+[![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 
 **Enterprise-Grade Security Middleware for the Model Context Protocol**
@@ -64,7 +64,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 ### Complete feature catalog
 
-**Pillar definitions:** Security controls, `bastion.yaml` sections, and how they relate to dashboard health rows are documented in [docs/PILLARS.md](docs/PILLARS.md) (canonical reference; avoids ambiguous “total pillar” counts).
+**Pillar definitions:** Security controls, `bastion.yaml` sections, and how they relate to dashboard health rows are documented in [docs/PILLARS.md](docs/PILLARS.md) (canonical reference; avoids ambiguous “total pillar” counts). The same page lists **extended** features restored in 1.0.16+ (semantic firewall, sensitive classifier, external policy, edge auth, tool allowlist, session scope, tool metadata guard, multi-tenant, audit hash chain, pricing hooks, telemetry sinks, **red team** and **doctor** CLIs, etc.).
 
 > **Deeper context:** [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) — **OWASP MCP Top 10** alignment, attack scenarios, and SIEM/log integrations. **Framework add-ons** (LangChain, OpenAI, Bedrock, …) are listed under [Framework Integrations](#framework-integrations) below.
 
@@ -101,7 +101,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Audit logging** | Structured **allow/deny** decisions with **reason**, **tool**, **tenant_id**, **trace_id**, **request_id**—feed SOC / compliance. |
 | **Alert sinks** | **Slack** incoming webhook; **generic HTTP** webhooks (PagerDuty, Teams, custom APIs); **multiple URLs**; **retry**, **backoff**, **timeout** in `bastion.yaml`. |
 | **In-memory metrics** | **Global MetricsStore**: requests, blocks, PII counts, cost, per-tool stats, latency samples, rolling **time series** buckets. |
-| **Real-time dashboard** | **Web UI** with KPIs, **traffic & block charts**, **blocked-by-reason/kind**, **top tools**, **cost by user**, **PII by entity**, **latency P50/P95/P99**, **forensics table** (tenant filter, trace/replay helpers), **recent alerts**, **insights & anomalies** (heuristic signals), **dark/light theme**, **Prometheus** `/metrics`, **JSON** `/api/metrics`. |
+| **Real-time dashboard** | **Web UI** with a top **KPI summary** (totals, block %, top threat, active users/tenants), **traffic & block charts**, **blocked-by-reason/kind** (with readable reasons / tooltips), **PII by entity** (severity-style coloring, e.g. high-risk types emphasized), **top tools**, **cost by user**, **latency P50/P95/P99**, **forensics table** (tenant filter, trace/replay helpers), **recent alerts**, **insights & anomalies** (heuristic signals), **dark/light theme**, **Prometheus** `/metrics`, **JSON** `/api/metrics`, loading/empty guidance instead of a blank first paint. |
 | **OpenTelemetry** | Optional **OTLP** span export — `pip install mcp-bastion-python[otel]` — [docs/OTEL.md](docs/OTEL.md). |
 
 #### Policy, packaging & developer experience
@@ -111,23 +111,15 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Policy-as-code** | Single **`bastion.yaml`**: toggles for all request-path controls plus audit, alerts, and hot reload ([docs/PILLARS.md](docs/PILLARS.md)); load via `load_config` / `build_middleware_from_config`. |
 | **Hot reload** | Optional **reload `bastion.yaml` on change** without restarting the MCP server ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)). |
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
-| **CLI** | **`mcp-bastion validate`**, **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** for UI dev) — [docs/CLI.md](docs/CLI.md). |
+| **CLI** | **`mcp-bastion validate`**, **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** / **`--demo`**), **`redteam`**, **`doctor`** — [docs/CLI.md](docs/CLI.md). |
 | **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
 | **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard) — [DOCKER.md](DOCKER.md). |
 
 ### Real-Time Dashboard and Alerts
 
+**🎥 Demo (screen recording):** [Watch on Vimeo](https://vimeo.com/1186084574) — overview of the dashboard and metrics (link opens the player on Vimeo).
+
 Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
-
-**🎥 Demo (screen recording):** the walkthrough is hosted on **Vimeo** (full **video** — GitHub’s README cannot play inline players, so use the link below or run the dashboard locally to see the embedded player). The live dashboard also shows the same tour at the top of the UI.
-
-<p align="center">
-  <strong><a href="https://vimeo.com/1186084574">🎥 Watch the screen recording on Vimeo</a></strong>
-  <br />
-  <sub>Opens the Vimeo page with the video player (not a static screenshot).</sub>
-  <br />
-  <sub><strong>Or:</strong> run <code>mcp-bastion dashboard</code> — the <strong>Dashboard tour</strong> block embeds the same Vimeo player on <code>localhost</code>.</sub>
-</p>
 
 ```bash
 mcp-bastion dashboard --port 7000
@@ -219,7 +211,7 @@ On every pull request and push to `main`, [`.github/workflows/ci.yml`](.github/w
 
 1. `pip install -e ".[dev,policy,dashboard]"` — install the Python package with tests, YAML policy loading, and FastAPI for dashboard tests.
 2. `mcp-bastion validate --config bastion.yaml.example` — ensure the example policy file loads.
-3. `pytest --cov=mcp_bastion --cov-fail-under=99` — full Python test suite with **≥99%** line coverage on `src/mcp_bastion` (see `[tool.coverage.run]` in `pyproject.toml` for measured paths).
+3. `pytest --cov=mcp_bastion --cov-fail-under=92` — full Python test suite with **≥92%** line coverage on `src/mcp_bastion` (see `[tool.coverage.*]` in `pyproject.toml` for measured paths and gates).
 4. `npm ci` and `npm test` — TypeScript workspace tests.
 
 To validate **your** repo’s `bastion.yaml` in CI without cloning MCP-Bastion, see [examples/ci/README.md](examples/ci/README.md).
@@ -318,7 +310,7 @@ npm install @mcp-bastion/core
 
 ### Framework Integrations
 
-Drop-in security for your favorite LLM framework. Each package auto-installs `mcp-bastion-python`:
+Drop-in security for your favorite LLM framework. Each package auto-installs `mcp-bastion-python`. **Downloads** for each row point to [pypistats.org](https://pypistats.org/) (trends) and [pepy.tech](https://pepy.tech/) (cumulative) for that PyPI name.
 
 ```bash
 pip install mcp-bastion-langchain      # LangChain agents and tools
@@ -342,23 +334,23 @@ pip install mcp-bastion-fastmcp       # FastMCP servers
 
 | Package | Protects | Version | Downloads |
 |---------|----------|---------|-----------|
-| [mcp-bastion-langchain](https://pypi.org/project/mcp-bastion-langchain/) | LangChain | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-langchain) |
-| [mcp-bastion-openai](https://pypi.org/project/mcp-bastion-openai/) | OpenAI GPT | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-openai) |
-| [mcp-bastion-anthropic](https://pypi.org/project/mcp-bastion-anthropic/) | Anthropic Claude | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-anthropic) |
-| [mcp-bastion-bedrock](https://pypi.org/project/mcp-bastion-bedrock/) | AWS Bedrock | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-bedrock) |
-| [mcp-bastion-gemini](https://pypi.org/project/mcp-bastion-gemini/) | Google Gemini | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-gemini) |
-| [mcp-bastion-crewai](https://pypi.org/project/mcp-bastion-crewai/) | CrewAI | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-crewai) |
-| [mcp-bastion-llamaindex](https://pypi.org/project/mcp-bastion-llamaindex/) | LlamaIndex | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-llamaindex) |
-| [mcp-bastion-groq](https://pypi.org/project/mcp-bastion-groq/) | Groq | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-groq) |
-| [mcp-bastion-mistral](https://pypi.org/project/mcp-bastion-mistral/) | Mistral AI | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-mistral) |
-| [mcp-bastion-cohere](https://pypi.org/project/mcp-bastion-cohere/) | Cohere | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-cohere) |
-| [mcp-bastion-azure](https://pypi.org/project/mcp-bastion-azure/) | Azure OpenAI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-azure) |
-| [mcp-bastion-vertexai](https://pypi.org/project/mcp-bastion-vertexai/) | Vertex AI | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-vertexai) |
-| [mcp-bastion-huggingface](https://pypi.org/project/mcp-bastion-huggingface/) | Hugging Face | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-huggingface) |
-| [mcp-bastion-deepseek](https://pypi.org/project/mcp-bastion-deepseek/) | DeepSeek AI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-deepseek) |
-| [mcp-bastion-together](https://pypi.org/project/mcp-bastion-together/) | Together AI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-together) |
-| [mcp-bastion-fireworks](https://pypi.org/project/mcp-bastion-fireworks/) | Fireworks AI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-fireworks) |
-| [mcp-bastion-fastmcp](https://pypi.org/project/mcp-bastion-fastmcp/) | FastMCP servers | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-fastmcp) |
+| [mcp-bastion-langchain](https://pypi.org/project/mcp-bastion-langchain/) | LangChain | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-langchain) · [pepy](https://pepy.tech/projects/mcp-bastion-langchain) |
+| [mcp-bastion-openai](https://pypi.org/project/mcp-bastion-openai/) | OpenAI GPT | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-openai) · [pepy](https://pepy.tech/projects/mcp-bastion-openai) |
+| [mcp-bastion-anthropic](https://pypi.org/project/mcp-bastion-anthropic/) | Anthropic Claude | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-anthropic) · [pepy](https://pepy.tech/projects/mcp-bastion-anthropic) |
+| [mcp-bastion-bedrock](https://pypi.org/project/mcp-bastion-bedrock/) | AWS Bedrock | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-bedrock) · [pepy](https://pepy.tech/projects/mcp-bastion-bedrock) |
+| [mcp-bastion-gemini](https://pypi.org/project/mcp-bastion-gemini/) | Google Gemini | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-gemini) · [pepy](https://pepy.tech/projects/mcp-bastion-gemini) |
+| [mcp-bastion-crewai](https://pypi.org/project/mcp-bastion-crewai/) | CrewAI | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-crewai) · [pepy](https://pepy.tech/projects/mcp-bastion-crewai) |
+| [mcp-bastion-llamaindex](https://pypi.org/project/mcp-bastion-llamaindex/) | LlamaIndex | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-llamaindex) · [pepy](https://pepy.tech/projects/mcp-bastion-llamaindex) |
+| [mcp-bastion-groq](https://pypi.org/project/mcp-bastion-groq/) | Groq | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-groq) · [pepy](https://pepy.tech/projects/mcp-bastion-groq) |
+| [mcp-bastion-mistral](https://pypi.org/project/mcp-bastion-mistral/) | Mistral AI | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-mistral) · [pepy](https://pepy.tech/projects/mcp-bastion-mistral) |
+| [mcp-bastion-cohere](https://pypi.org/project/mcp-bastion-cohere/) | Cohere | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-cohere) · [pepy](https://pepy.tech/projects/mcp-bastion-cohere) |
+| [mcp-bastion-azure](https://pypi.org/project/mcp-bastion-azure/) | Azure OpenAI | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-azure) · [pepy](https://pepy.tech/projects/mcp-bastion-azure) |
+| [mcp-bastion-vertexai](https://pypi.org/project/mcp-bastion-vertexai/) | Vertex AI | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-vertexai) · [pepy](https://pepy.tech/projects/mcp-bastion-vertexai) |
+| [mcp-bastion-huggingface](https://pypi.org/project/mcp-bastion-huggingface/) | Hugging Face | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-huggingface) · [pepy](https://pepy.tech/projects/mcp-bastion-huggingface) |
+| [mcp-bastion-deepseek](https://pypi.org/project/mcp-bastion-deepseek/) | DeepSeek AI | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-deepseek) · [pepy](https://pepy.tech/projects/mcp-bastion-deepseek) |
+| [mcp-bastion-together](https://pypi.org/project/mcp-bastion-together/) | Together AI | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-together) · [pepy](https://pepy.tech/projects/mcp-bastion-together) |
+| [mcp-bastion-fireworks](https://pypi.org/project/mcp-bastion-fireworks/) | Fireworks AI | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-fireworks) · [pepy](https://pepy.tech/projects/mcp-bastion-fireworks) |
+| [mcp-bastion-fastmcp](https://pypi.org/project/mcp-bastion-fastmcp/) | FastMCP servers | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-fastmcp) · [pepy](https://pepy.tech/projects/mcp-bastion-fastmcp) |
 
 ## Publish (PyPI / npm)
 

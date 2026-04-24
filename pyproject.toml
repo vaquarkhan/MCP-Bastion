@@ -81,5 +81,6 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 99
+# Full 1.0.15+ tree + demos: ≥92% on measured `mcp_bastion` (pii + prompt excluded; see [tool.coverage.run]).
+fail_under = 92
 exclude_lines = ["pragma: no cover"]

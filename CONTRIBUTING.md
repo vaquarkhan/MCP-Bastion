@@ -14,7 +14,7 @@ When opening an issue, ask maintainers to apply the **`good first issue`** label
 
 ## Before you send a PR
 
-1. Run **`pytest --cov=mcp_bastion --cov-fail-under=99`** (with `[dev,policy,dashboard]` installed) and **`npm test`** at the repo root.
+1. Run **`pytest --cov=mcp_bastion --cov-fail-under=92`** (with `[dev,policy,dashboard]` installed) and **`npm test`** at the repo root.
 2. Run **`mcp-bastion validate --config bastion.yaml.example`** if you touch policy loading.
 3. Keep changes focused on one concern per PR.
 

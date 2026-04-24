@@ -460,6 +460,183 @@ DASHBOARD_HTML = """
       color: var(--card-border);
       user-select: none;
     }
+    .kpi-summary-bar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px 14px;
+      margin: -8px 0 18px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(167, 139, 250, 0.06));
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+    }
+    @media (max-width: 900px) {
+      .kpi-summary-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 480px) {
+      .kpi-summary-bar { grid-template-columns: 1fr; }
+    }
+    html[data-theme="light"] .kpi-summary-bar {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(167, 139, 250, 0.08));
+    }
+    .kpi-summary-bar .sum-item {
+      min-width: 0;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid var(--card-border);
+    }
+    html[data-theme="light"] .kpi-summary-bar .sum-item {
+      background: rgba(255, 255, 255, 0.85);
+    }
+    .kpi-summary-bar .sum-item.sum-threat {
+      border-color: rgba(251, 113, 133, 0.35);
+      background: rgba(251, 113, 133, 0.08);
+    }
+    .kpi-summary-bar .sum-lab {
+      display: block;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .kpi-summary-bar .sum-val {
+      font-family: "Outfit", "DM Sans", sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1.25;
+      word-break: break-word;
+    }
+    .kpi-summary-bar .sum-val.skeleton-text {
+      min-height: 1.25em;
+      border-radius: 6px;
+      background: linear-gradient(90deg, rgba(148, 163, 184, 0.15), rgba(148, 163, 184, 0.28), rgba(148, 163, 184, 0.15));
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.2s ease-in-out infinite;
+      color: transparent;
+    }
+    @keyframes skeleton-shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+    body.dashboard-ready .kpi-summary-bar .sum-val.skeleton-text {
+      animation: none;
+      background: none;
+      color: var(--text);
+      min-height: unset;
+    }
+    .dashboard-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      margin: 0 0 16px;
+      padding: 20px 18px;
+      border-radius: 14px;
+      border: 1px dashed rgba(56, 189, 248, 0.35);
+      background: rgba(15, 23, 42, 0.25);
+    }
+    html[data-theme="light"] .dashboard-loading {
+      background: rgba(241, 245, 249, 0.9);
+    }
+    body.dashboard-ready .dashboard-loading {
+      display: none;
+    }
+    .loading-inner {
+      text-align: center;
+      max-width: 420px;
+    }
+    .loading-spinner {
+      width: 36px;
+      height: 36px;
+      margin: 0 auto 12px;
+      border: 3px solid rgba(56, 189, 248, 0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin-load 0.85s linear infinite;
+    }
+    @keyframes spin-load {
+      to { transform: rotate(360deg); }
+    }
+    .loading-title {
+      margin: 0 0 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .loading-hint {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .loading-hint code {
+      font-size: 0.72rem;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(56, 189, 248, 0.12);
+    }
+    .chart-card-hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.3);
+      border-left: 3px solid rgba(56, 189, 248, 0.5);
+    }
+    html[data-theme="light"] .chart-card-hint {
+      background: rgba(241, 245, 249, 0.95);
+    }
+    .reason-cell {
+      max-width: 280px;
+      vertical-align: top;
+    }
+    .reason-expand summary {
+      cursor: pointer;
+      list-style: none;
+      font-size: 0.78rem;
+      line-height: 1.35;
+      color: var(--text);
+    }
+    .reason-expand summary::-webkit-details-marker { display: none; }
+    .reason-expand summary::before {
+      content: "▸ ";
+      color: var(--accent);
+      font-size: 0.65rem;
+    }
+    .reason-expand[open] summary::before { content: "▾ "; }
+    .reason-full {
+      font-size: 0.72rem;
+      color: var(--muted);
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid var(--card-border);
+    }
+    html[data-theme="light"] .reason-full {
+      background: rgba(241, 245, 249, 0.95);
+    }
+    .tool-reasons-cell {
+      max-width: 220px;
+      font-size: 0.75rem;
+      word-break: break-word;
+    }
+    .pii-legend-note {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin: 0 0 10px;
+    }
+    .pii-urgent { color: #fb7185; font-weight: 600; }
+    html[data-theme="light"] .pii-urgent { color: #e11d48; }
     .insight-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1242,36 +1419,6 @@ DASHBOARD_HTML = """
     @media (prefers-reduced-motion: reduce) {
       .back-top { transition: none; }
     }
-    .video-embed-shell {
-      position: relative;
-      width: 100%;
-      max-width: 960px;
-      margin: 0 auto 12px auto;
-      padding-bottom: 56.25%;
-      height: 0;
-      overflow: hidden;
-      border-radius: 12px;
-      border: 1px solid var(--card-border);
-      background: #020617;
-    }
-    .video-embed-shell iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border: 0;
-    }
-    .demo-video-foot {
-      text-align: center;
-      margin: 0;
-      font-size: 0.82rem;
-      color: var(--muted);
-    }
-    .demo-video-foot a {
-      color: var(--accent);
-      font-weight: 600;
-    }
   </style>
 </head>
 <body>
@@ -1312,7 +1459,7 @@ DASHBOARD_HTML = """
   <div class="status-bar" role="status">
     <span class="live-indicator"><span class="live-dot" aria-hidden="true"></span><span id="liveLabel">Live</span></span>
     <span class="sep" aria-hidden="true">·</span>
-    <span id="pollStatus">Syncing metrics…</span>
+    <span id="pollStatus">Connecting to MCP-Bastion metrics…</span>
     <span class="sep" aria-hidden="true">·</span>
     <span class="muted">Data age</span>
     <span id="dataFreshness" class="muted">—</span>
@@ -1320,9 +1467,35 @@ DASHBOARD_HTML = """
     <span id="windowStartLine" class="muted"></span>
   </div>
 
+  <div class="kpi-summary-bar" id="kpiSummaryBar" role="region" aria-label="At a glance">
+    <div class="sum-item">
+      <span class="sum-lab">Total requests</span>
+      <span class="sum-val skeleton-text" id="sumTotalReq">—</span>
+    </div>
+    <div class="sum-item">
+      <span class="sum-lab">Block rate</span>
+      <span class="sum-val skeleton-text" id="sumBlockPct">—</span>
+    </div>
+    <div class="sum-item sum-threat">
+      <span class="sum-lab">Top threat</span>
+      <span class="sum-val skeleton-text" id="sumTopThreat" title="">—</span>
+    </div>
+    <div class="sum-item">
+      <span class="sum-lab">Active users / tenants</span>
+      <span class="sum-val skeleton-text" id="sumActiveUsers">—</span>
+    </div>
+  </div>
+
+  <div class="dashboard-loading" id="dashboardLoading" aria-live="polite" aria-busy="true">
+    <div class="loading-inner">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p class="loading-title">Preparing your security overview…</p>
+      <p class="loading-hint">If charts stay empty, route MCP tool traffic through middleware that reports to <code>MetricsStore</code>. Poll: <code>/api/metrics</code> every 2s.</p>
+    </div>
+  </div>
+
   <nav class="dash-jump" aria-label="Jump to sections">
     <span class="jump-label">Jump</span>
-    <a href="#dash-demo-video">Demo video</a>
     <a href="#dash-alerts-insights">Alerts &amp; insights</a>
     <a href="#dash-forensics">Forensics</a>
     <a href="#dash-traffic">Traffic</a>
@@ -1331,26 +1504,6 @@ DASHBOARD_HTML = """
       <button type="button" class="btn-export" id="btnExportMetrics" title="Download last /api/metrics snapshot">Export JSON snapshot</button>
     </span>
   </nav>
-
-  <div class="card demo-video-card" id="dash-demo-video">
-    <div class="card-head">
-      <h2>Dashboard tour</h2>
-      <p class="card-desc">Screen overview of the live UI (Vimeo).</p>
-    </div>
-    <div class="video-embed-shell">
-      <iframe
-        title="MCP-Bastion dashboard demo"
-        src="https://player.vimeo.com/video/1186084574"
-        allow="autoplay; fullscreen; picture-in-picture"
-        allowfullscreen
-        referrerpolicy="strict-origin-when-cross-origin"
-      ></iframe>
-    </div>
-    <p class="demo-video-foot">
-      <a href="https://vimeo.com/1186084574" target="_blank" rel="noopener noreferrer">Open on Vimeo</a>
-      if the embed is blocked by your network.
-    </p>
-  </div>
 
   <div class="insight-row">
     <div class="insight-card">
@@ -1469,6 +1622,7 @@ DASHBOARD_HTML = """
       <h2>Traffic · last <span id="tsWindow">10 min</span> · <span id="tsBucket">30s</span> buckets</h2>
       <p class="card-desc">Allowed vs blocked requests per bucket across the rolling window.</p>
     </div>
+    <p class="chart-card-hint">Time series fill as the Bastion process records invocations. <strong>Still flat?</strong> Confirm middleware is mounted and MCP clients are calling tools.</p>
     <div class="chart-wrap"><canvas id="chartTraffic"></canvas></div>
   </div>
 
@@ -1489,6 +1643,7 @@ DASHBOARD_HTML = """
 
   <div class="card">
     <h2>PII by entity type</h2>
+    <p class="pii-legend-note">Severity coloring: <span class="pii-urgent">CREDIT_CARD / payment</span> (most urgent) · SSN / passport / bank · email &amp; phone · other entities.</p>
     <div class="chart-wrap sm"><canvas id="chartPiiEntity"></canvas></div>
   </div>
 

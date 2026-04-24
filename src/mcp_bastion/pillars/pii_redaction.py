@@ -95,8 +95,7 @@ class PIIRedactor:
             except Exception:
                 pass
             anonymized = self._anonymizer.anonymize(text=text, analyzer_results=results)
-            out = _redact_dashed_ssn_patterns(anonymized.text)
-            return out
+            return _redact_dashed_ssn_patterns(anonymized.text)
         except Exception as e:
             logger.warning("PII redaction failed: %s. Applying pattern fallback only.", e)
             return _redact_dashed_ssn_patterns(text)

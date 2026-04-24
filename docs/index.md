@@ -14,7 +14,7 @@ MCP-Bastion helps teams ship AI agents faster without exposing enterprise system
 - **Reduce security risk:** blocks prompt injection and suspicious tool payloads before execution.
 - **Protect sensitive data:** redacts PII in responses before it reaches downstream clients or models.
 - **Control cost and blast radius:** enforces rate limits, token budgets, and cost guardrails.
-- **Improve operational confidence:** built-in dashboard, alerts, and telemetry for real-time visibility.
+- **Improve operational confidence:** built-in dashboard (KPI strip, charts, forensics), alerts, telemetry, plus **red team** and **doctor** CLIs for repeatable checks.
 
 ## Value proposition
 

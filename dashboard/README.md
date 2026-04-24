@@ -23,7 +23,7 @@ mcp-bastion dashboard --reload --demo
 
 Richer scripted demo (same seed + optional live background traffic): `PYTHONPATH=src python examples/dashboard_demo.py`
 
-Open [http://localhost:7000/](http://localhost:7000/)
+Open [http://localhost:7000/](http://localhost:7000/) — the UI shows a **KPI summary strip** (totals, block %, top threat, active users) and loading guidance while metrics connect; **PII** charts use **severity-style** colors for entity types, and long **block reasons** are readable via tooltips / expand-in-place where applicable.
 
 **If you see `{"detail":"Not Found"}`** on some URL, that response is from *a* FastAPI app, but not our route — wrong path, wrong port, or another process. Try [http://localhost:7000/api/health](http://localhost:7000/api/health) first: it must include `"service":"mcp-bastion-dashboard"` and `"ui_revision"`. Short diagnostic: [http://localhost:7000/meta](http://localhost:7000/meta).
 

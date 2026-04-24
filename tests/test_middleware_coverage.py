@@ -498,7 +498,8 @@ async def test_middleware_prompt_guard_json_decode_error():
 async def test_middleware_semantic_cache_hit_skips_handler():
     """Semantic cache hit returns cached without calling handler."""
     sc = SemanticCache()
-    sc.set("search", "hello", {"cached": True})
+    # Scope must match resolve_tenant_id default ("default") used by middleware cache lookups.
+    sc.set("search", "hello", {"cached": True}, scope="default")
     mw = MCPBastionMiddleware(
         prompt_guard=PromptGuardEngine(),
         rate_limiter=TokenBucketRateLimiter(max_iterations=100),

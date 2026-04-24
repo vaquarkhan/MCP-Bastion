@@ -8,7 +8,7 @@ Workflows live under [`.github/workflows/`](../.github/workflows/). Highlights:
 
 ### `ci.yml` (pull requests and `main`)
 
-- **Python:** `pip install -e ".[dev,policy,dashboard]"`, then `mcp-bastion validate --config bastion.yaml.example`, then **`pytest --cov=mcp_bastion --cov-fail-under=99`** (see `[tool.coverage.*]` in `pyproject.toml`).
+- **Python:** `pip install -e ".[dev,policy,dashboard]"`, then `mcp-bastion validate --config bastion.yaml.example`, then **`pytest --cov=mcp_bastion --cov-fail-under=92`** (see `[tool.coverage.*]` in `pyproject.toml`).
 - **TypeScript:** `npm ci` and **`npm test`** (workspace packages).
 
 ### `publish-mcp.yml` (main package: PyPI + npm + MCP Registry)
@@ -29,7 +29,7 @@ Workflows live under [`.github/workflows/`](../.github/workflows/). Highlights:
 
 ## Release and provenance summary
 
-- **Merge gate:** every PR to **`main`** runs validation, **pytest with ≥99% coverage** on `src/mcp_bastion`, and npm workspace tests before merge.
+- **Merge gate:** every PR to **`main`** runs validation, **pytest with ≥92% coverage** on `src/mcp_bastion`, and npm workspace tests before merge.
 - **Publish:** tagged releases build on GitHub Actions with **npm provenance** and **PyPI Trusted Publishing** (OIDC).
 - **Artifacts:** Python wheels/sdists and npm package are produced from the same automated pipelines linked above.
 

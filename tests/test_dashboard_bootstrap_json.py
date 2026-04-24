@@ -24,8 +24,7 @@ async def test_root_embeds_nonzero_demo_metrics_json(monkeypatch: pytest.MonkeyP
         r = await c.get("/")
     assert r.status_code == 200
     assert 'id="mcp-bastion-bootstrap-json"' in r.text
-    assert "player.vimeo.com/video/1186084574" in r.text
-    assert 'id="dash-demo-video"' in r.text
+    assert 'id="kpiReq"' in r.text
     m = re.search(
         r'<script type="application/json" id="mcp-bastion-bootstrap-json">(.+?)</script>',
         r.text,

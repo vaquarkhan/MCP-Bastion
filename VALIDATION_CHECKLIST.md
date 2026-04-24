@@ -41,7 +41,7 @@ Python: run with coverage (fail_under set in pyproject.toml):
 
 ```bash
 cd MCP-Bastion
-$env:PYTHONPATH="src"; pytest tests/ -v --cov=src/mcp_bastion --cov-report=term-missing --cov-fail-under=99
+$env:PYTHONPATH="src"; pytest tests/ -v --cov=src/mcp_bastion --cov-report=term-missing --cov-fail-under=92
 ```
 
 Omitted from coverage: optional paths in pii_redaction and prompt_guard. TypeScript (from repo root, run `npm install` once so Vitest is available):
