@@ -9,7 +9,7 @@
 [![Total Downloads](https://img.shields.io/badge/total%20downloads-3.4K-brightgreen)](https://pepy.tech/projects/mcp-bastion-python)
 
 [![PyPI Version](https://img.shields.io/pypi/v/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
-[![Total downloads](https://static.pepy.tech/personalized-badge/mcp-bastion-python?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=total)](https://pepy.tech/projects/mcp-bastion-python)
+[![PyPI downloads](https://img.shields.io/pepy/dt/mcp-bastion-python)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
@@ -159,7 +159,7 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 | [docs/DETAILED_TUTORIAL.md](docs/DETAILED_TUTORIAL.md) | Step-by-step implementation tutorial for new teams |
 | [docs/USE_CASES.md](docs/USE_CASES.md) | Real use cases: enterprise gateway, LLM products, internal tools, SaaS, compliance |
 | [docs/ATTACK_PREVENTION.md](docs/ATTACK_PREVENTION.md) | Examples showing how MCP-Bastion prevents real attacks (injection, PII leak, rate exhaustion, path traversal, RBAC, replay) |
-| [docs/PILLARS.md](docs/PILLARS.md) | Canonical pillar list: 10 request-path controls, 13 `bastion.yaml` sections, 11 dashboard health rows |
+| [docs/PILLARS.md](docs/PILLARS.md) | Canonical pillar counts: **18** request-path features (10 core + 8 extended), **14** dashboard `pillar_health` rows, **20+** `bastion.yaml` top-level areas — see the doc for scope |
 | [docs/SUPPLY_CHAIN.md](docs/SUPPLY_CHAIN.md) | CI merge gates, releases, npm provenance, PyPI Trusted Publishing |
 | [docs/INTEGRATION_MODELS.md](docs/INTEGRATION_MODELS.md) | Middleware + `bastion.yaml` vs “change base URL”; bridge for Python, TS, Desktop, HTTP, integrations |
 | [examples/ci/README.md](examples/ci/README.md) | Copy-paste GitHub Actions snippet to run `mcp-bastion validate` on your policy file |
