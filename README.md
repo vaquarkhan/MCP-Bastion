@@ -791,12 +791,13 @@ See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 C
 
 ## License
 
-MCP-Bastion is distributed under the **MCP-Bastion Community and Commercial License**.
+MCP-Bastion is distributed under the **MCP-Bastion Community and Commercial License** ([LICENSE](LICENSE)).
 
-- Non-commercial use is permitted with required attribution/citation.
-- Commercial use requires a separate paid agreement.
+- **Free** for non‑commercial use when you **cite MCP-Bastion** and the **copyright** notice (see [CITATION.cff](CITATION.cff); you can list *your* name, team, or org as authors or as who used the software, while still including the project and repository in the credit).
+- **Copyright** is retained. Do not remove license or copyright text, and do not republish a duplicate of the work as if it were unrelated software without meeting the License terms.
+- **Commercial use** (as defined in the License) may still require a **separate written agreement** — see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
-See:
+See also:
 
 - [LICENSE](LICENSE)
 - [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)

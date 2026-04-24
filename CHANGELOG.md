@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Documentation
+
+- [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) reframed: free community use with **citation/attribution**, **copyright** and anti–misattribution, and a shorter note on when a **separate commercial** agreement may still apply (governing text remains [LICENSE](LICENSE)). README, `packages/core`, and integration readmes updated for consistency.
+
 ### Added
 
 - **Docker on GHCR:** [`.github/workflows/publish-docker.yml`](.github/workflows/publish-docker.yml) builds and pushes `mcp-bastion-proxy` and `mcp-bastion-dashboard` to [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) on every **`v*`** tag (and supports manual **workflow_dispatch** with a custom tag; `latest` is updated only on `v*` tag pushes). [README](README.md) and [DOCKER.md](DOCKER.md) document pull links.
