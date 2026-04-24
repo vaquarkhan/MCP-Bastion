@@ -7,7 +7,7 @@ Validates build, security pillars (prompt injection, PII redaction, rate limitin
 All Python files in `examples/`:
 
 - `examples/python_server_example.py` - Minimal middleware
-- `examples/full_demo.py` - All 11 features
+- `examples/full_demo.py` - Multi-pillar demo (core stack; see docs/PILLARS.md)
 - `examples/llm_server.py` - Shared LLM server
 - `examples/llm_openai_example.py` - OpenAI
 - `examples/llm_claude_example.py` - Claude

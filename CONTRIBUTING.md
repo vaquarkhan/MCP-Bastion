@@ -21,3 +21,13 @@ When opening an issue, ask maintainers to apply the **`good first issue`** label
 ## Maintainer note (labels)
 
 Repository owners can create a **`good first issue`** label and apply it to small docs/test tasks to signal a welcoming backlog.
+
+## GitHub settings (merge rules, reviews, Code Owners)
+
+In-repo files:
+
+- [`.github/CODEOWNERS`](.github/CODEOWNERS) — default review requests (update paths and `@` handles for your org).
+- [`.github/dependabot.yml`](.github/dependabot.yml) — scheduled dependency update PRs (Actions, npm, pip).
+- [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) — default PR description checklist.
+
+**Branch protection and rulesets** (require CI, approvals, no force-push) are turned on in **GitHub → Repository → Settings → Rules** (or **Branches**). See [`.github/REPOSITORY_RULES.md`](.github/REPOSITORY_RULES.md) for a recommended checklist.

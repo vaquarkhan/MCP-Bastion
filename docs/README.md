@@ -14,6 +14,7 @@ Current Python package release: `mcp-bastion-python==1.0.16`.
 | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) | Full `bastion.yaml` schema and examples |
 | [PILLARS.md](PILLARS.md) | Canonical mapping: base controls, **extended** policy features (1.0.16+), `bastion.yaml` ↔ dashboard |
 | [REDTEAM.md](REDTEAM.md) | Interpreting harness scores; **`mcp-bastion redteam`** |
+| [Advanced_Tutorials.md](Advanced_Tutorials.md) | Index of deeper docs (points to **DETAILED_TUTORIAL**, **TUTORIALS**, **PILLARS**, …) |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI (`validate`, `serve`, `dashboard`, `redteam`, `doctor`, …) |
 | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) | OpenAI/Claude/Gemini/Mistral/Grok integration patterns |
 | [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) | How Bastion fits stdio, HTTP, Python, TypeScript, and frameworks |

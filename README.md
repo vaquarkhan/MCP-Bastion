@@ -20,7 +20,7 @@
 
 **Documentation:** structured paths for **policy** and **LLM integration** live in [docs/README.md](docs/README.md) and [docs/index.md](docs/index.md). **Community:** open a GitHub **Issue** for bugs or gaps, a **Discussion** for integration questions (if enabled on the repo), or a **PR** for docs and examples—those help every adopter.
 
-**Hello world (minimal Bastion on code):** see **[docs/QUICK_START.md](docs/QUICK_START.md)** — FastMCP one-liner `secure_fastmcp(mcp)`, or two-line `build_middleware_from_config()`, plus a **CI validate** snippet for pipeline-driven installs.
+**Hello world (minimal Bastion on code):** see **[docs/QUICK_START.md](docs/QUICK_START.md)** — FastMCP helper `secure_fastmcp(mcp)` (wires `MCPBastionMiddleware` into tool dispatch), or two-line `build_middleware_from_config()` for full `bastion.yaml` policy, plus a **CI validate** snippet for pipeline-driven installs.
 
 The Model Context Protocol (MCP) has rapidly become the universally accepted standard for connecting AI agents to enterprise databases and APIs. However, this connectivity introduces a massive new attack surface: unpredictable, non-deterministic agentic behavior.
 
@@ -113,7 +113,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
 | **CLI** | **`mcp-bastion validate`**, **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** / **`--demo`**), **`redteam`**, **`doctor`** — [docs/CLI.md](docs/CLI.md). |
 | **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
-| **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard) — [DOCKER.md](DOCKER.md). |
+| **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard) — [DOCKER.md](DOCKER.md). **Prebuilt images (GHCR):** [`mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy), [`mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard) — published on each `v*` tag ([publish-docker.yml](.github/workflows/publish-docker.yml)). |
 
 ### Real-Time Dashboard and Alerts
 
@@ -175,12 +175,24 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 
 ### One-Line Docker
 
+**Prebuilt images (after the first [publish-docker](.github/workflows/publish-docker.yml) run, usually on a `v*` release tag):**
+
+```bash
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
+docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
+# Dashboard (optional, port 7000):
+# docker pull ghcr.io/vaquarkhan/mcp-bastion-dashboard:latest
+# docker run -p 7000:7000 ghcr.io/vaquarkhan/mcp-bastion-dashboard:latest
+```
+
+**Build locally** (any revision):
+
 ```bash
 docker build -t mcp-bastion/proxy .
 docker run -p 8080:8080 mcp-bastion/proxy
 ```
 
-MCP endpoint: `http://localhost:8080/mcp`. Use `docker-compose up -d` for proxy; add `--profile with-dashboard` for the dashboard. See [DOCKER.md](DOCKER.md).
+MCP endpoint: `http://localhost:8080/mcp`. Use `docker-compose up -d` for proxy; add `--profile with-dashboard` for the dashboard. See [DOCKER.md](DOCKER.md) (includes GHCR pull commands and **package** links for forks: replace `vaquarkhan` with your org or user in image paths).
 
 ### Policy-as-Code (bastion.yaml)
 
@@ -267,7 +279,7 @@ See **[docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md)** for the
 | File | Purpose |
 |------|---------|
 | `examples/python_server_example.py` | Minimal middleware chain |
-| `examples/full_demo.py` | All 11 features (rate limit, PII, RBAC, etc.) |
+| `examples/full_demo.py` | Multi-pillar stack (core toggles: rate limit, PII, RBAC, … — see **docs/PILLARS.md**) |
 | `examples/llm_server.py` | Shared MCP server for LLM clients |
 | `examples/llm_openai_example.py` | OpenAI |
 | `examples/llm_claude_example.py` | Claude |
@@ -390,7 +402,7 @@ middleware = compose_middleware(bastion)
 | Example | Description |
 |---------|-------------|
 | `examples/python_server_example.py` | Basic middleware chain |
-| `examples/full_demo.py` | All features: add, PII, rate limit, prompt injection |
+| `examples/full_demo.py` | Full middleware stack: add, PII, rate limit, prompt injection, etc. |
 | `examples/llm_openai_example.py` | MCP server for OpenAI |
 | `examples/llm_claude_example.py` | MCP server for Claude |
 | `examples/llm_gemini_example.py` | MCP server for Gemini |
@@ -674,6 +686,13 @@ When MCP-Bastion blocks a request, it returns standard MCP/JSON-RPC errors:
 | -32007 | `SchemaValidationError` | Tool arguments failed schema validation |
 | -32008 | `ReplayAttackError` | Duplicate nonce / replay detected |
 | -32009 | `CostBudgetExceededError` | Session cost budget exceeded |
+| -32010 | `SemanticFirewallError` | Tool sequence / argument pattern failed semantic firewall |
+| -32011 | `ExternalPolicyDeniedError` | OPA/Cedar (or other external) policy denied the request |
+| -32012 | `SensitiveContentError` | Sensitive-business classifier above threshold |
+| -32013 | `AuthenticationError` | Edge / gateway authentication (metadata token) failed |
+| -32014 | `ToolNotAllowedError` | Tool not on allowlist |
+| -32015 | `SessionScopeExceededError` | Too many distinct tools per session (scope creep) |
+| -32016 | `ToolMetadataPoisoningError` | Tool list / metadata failed safety checks |
 
 ```python
 # Python: exceptions
@@ -687,6 +706,13 @@ from mcp_bastion.errors import (
     SchemaValidationError,
     ReplayAttackError,
     CostBudgetExceededError,
+    SemanticFirewallError,
+    ExternalPolicyDeniedError,
+    SensitiveContentError,
+    AuthenticationError,
+    ToolNotAllowedError,
+    SessionScopeExceededError,
+    ToolMetadataPoisoningError,
 )
 import logging
 logger = logging.getLogger(__name__)
@@ -703,6 +729,13 @@ except (
     SchemaValidationError,
     ReplayAttackError,
     CostBudgetExceededError,
+    SemanticFirewallError,
+    ExternalPolicyDeniedError,
+    SensitiveContentError,
+    AuthenticationError,
+    ToolNotAllowedError,
+    SessionScopeExceededError,
+    ToolMetadataPoisoningError,
 ) as e:
     logger.warning("blocked: %s", e.to_mcp_error())
 ```
@@ -760,12 +793,13 @@ See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 C
 
 ## License
 
-MCP-Bastion is distributed under the **MCP-Bastion Community and Commercial License**.
+MCP-Bastion is distributed under the **MCP-Bastion Community and Commercial License** ([LICENSE](LICENSE)).
 
-- Non-commercial use is permitted with required attribution/citation.
-- Commercial use requires a separate paid agreement.
+- **Free** for non‑commercial use when you **cite MCP-Bastion** and the **copyright** notice (see [CITATION.cff](CITATION.cff); you can list *your* name, team, or org as authors or as who used the software, while still including the project and repository in the credit).
+- **Copyright** is retained. Do not remove license or copyright text, and do not republish a duplicate of the work as if it were unrelated software without meeting the License terms.
+- **Commercial use** (as defined in the License) may still require a **separate written agreement** — see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
-See:
+See also:
 
 - [LICENSE](LICENSE)
 - [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)

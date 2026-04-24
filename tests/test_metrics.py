@@ -303,6 +303,10 @@ def test_metrics_normalize_reason_kinds_and_tool_latency_bounds():
     store.record_blocked("circuit breaker open", "t1")
     store.record_blocked("replay nonce invalid", "t1")
     store.record_blocked("schema validation error on input", "t1")
+    store.record_blocked(
+        "Tool intent mismatch: weather tool received command/injection-like arguments", "t1"
+    )
+    store.record_blocked("Request blocked: sensitive content classifier label=x score=0.9", "t1")
     store.record_blocked("weird custom reason xyz", "t1")
     m = store.get_metrics()
     bbk = m["blocked_by_kind"]
@@ -313,6 +317,8 @@ def test_metrics_normalize_reason_kinds_and_tool_latency_bounds():
     assert bbk.get("circuit_breaker", 0) >= 1
     assert bbk.get("replay", 0) >= 1
     assert bbk.get("schema_validation", 0) >= 1
+    assert bbk.get("semantic_firewall", 0) >= 1
+    assert bbk.get("sensitive_classifier", 0) >= 1
     assert bbk.get("other", 0) >= 1
 
     store.record_tool_latency_ms("t1", -5)

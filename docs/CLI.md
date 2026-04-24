@@ -1,6 +1,14 @@
 # MCP-Bastion CLI
 
-Developer CLI for validating config, running the server, and the dashboard.
+Developer CLI for validating config, running the server, the dashboard, and operational tools.
+
+| Command | Purpose |
+|---------|---------|
+| `validate` | Check `bastion.yaml` / policy |
+| `serve` | Run the example MCP server with config |
+| `dashboard` | Metrics UI + `/api/metrics` |
+| `redteam` | Run integrated OWASP / MCP Top 10 style harness |
+| `doctor` | Preflight + supply-chain style checks |
 
 ## Install
 

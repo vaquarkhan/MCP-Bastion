@@ -1,9 +1,11 @@
 """FastMCP server wrapper with MCP-Bastion security."""
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from mcp_bastion import MCPBastionMiddleware, compose_middleware
+from mcp_bastion.base import MiddlewareContext
 
 
 def secure_fastmcp(
@@ -12,9 +14,14 @@ def secure_fastmcp(
     enable_pii_redaction: bool = True,
     enable_rate_limit: bool = True,
 ) -> Any:
-    """Add MCP-Bastion security to a FastMCP server instance.
+    """Wire :class:`MCPBastionMiddleware` into a :class:`mcp.server.fastmcp.FastMCP` server.
 
-    Usage::
+    The official FastMCP API does not expose a generic JSON-RPC middleware hook, so this
+    function patches ``mcp._tool_manager.call_tool`` to run each ``tools/call`` through
+    the same composed chain used by the low-level MCP server examples.
+
+    Call **immediately after** ``FastMCP(...)`` and **before** tools are invoked (e.g. before
+    ``mcp.run()``)::
 
         from mcp.server.fastmcp import FastMCP
         from mcp_bastion_fastmcp import secure_fastmcp
@@ -22,19 +29,65 @@ def secure_fastmcp(
         mcp = FastMCP("My Server")
         secure_fastmcp(mcp)
 
+        @mcp.tool()
+        def f(x: int) -> int:
+            return x
+
+    For **full** policy-as-code (``bastion.yaml``) including semantic firewall, external
+    policy, allowlists, etc., use :func:`mcp_bastion.build_middleware_from_config` with
+    the low-level MCP server or a transport you control; see **docs/QUICK_START.md** path B.
+
     Args:
-        mcp: A FastMCP server instance.
-        enable_prompt_guard: Block malicious prompts via PromptGuard.
-        enable_pii_redaction: Mask PII in outgoing content.
-        enable_rate_limit: Enforce iteration and timeout caps.
+        mcp: A :class:`mcp.server.fastmcp.FastMCP` instance.
+        enable_prompt_guard: Pass-through to :class:`MCPBastionMiddleware`.
+        enable_pii_redaction: Pass-through to :class:`MCPBastionMiddleware`.
+        enable_rate_limit: Pass-through to :class:`MCPBastionMiddleware`.
 
     Returns:
-        The composed middleware instance.
+        The same ``mcp`` instance (for call chaining).
     """
     bastion = MCPBastionMiddleware(
         enable_prompt_guard=enable_prompt_guard,
         enable_pii_redaction=enable_pii_redaction,
         enable_rate_limit=enable_rate_limit,
     )
-    middleware = compose_middleware(bastion)
-    return middleware
+    chain = compose_middleware(bastion)
+
+    tm = mcp._tool_manager
+    _orig = tm.call_tool
+
+    async def _guarded_call_tool(
+        name: str,
+        arguments: dict[str, Any],
+        context: Any = None,
+        convert_result: bool = False,
+    ) -> Any:
+        session_id = "fastmcp"
+        if context is not None:
+            try:
+                rc = getattr(context, "request_context", None)
+                if rc is not None:
+                    session_id = f"ses:{id(rc)}"
+            except Exception:
+                pass
+        req_id = str(uuid.uuid4())
+        msg: dict[str, Any] = {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "method": "tools/call",
+            "params": {"name": name, "arguments": arguments or {}},
+        }
+        mw_ctx = MiddlewareContext(
+            message=msg,
+            request_id=req_id,
+            session_id=session_id,
+            metadata={},
+        )
+
+        async def call_next(_ctx: MiddlewareContext[Any]) -> Any:
+            return await _orig(name, arguments, context=context, convert_result=convert_result)
+
+        return await chain(mw_ctx, call_next)
+
+    tm.call_tool = _guarded_call_tool  # type: ignore[method-assign]
+    return mcp

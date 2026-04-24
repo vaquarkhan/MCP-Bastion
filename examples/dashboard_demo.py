@@ -98,13 +98,16 @@ def main() -> int:
         print("Install dashboard deps: pip install fastapi uvicorn", file=sys.stderr)
         return 1
 
+    from mcp_bastion.config import load_config
+
+    cfg = load_config()
     rng = random.Random(42)
-    seed_metrics(rng)
+    seed_metrics(rng, config=cfg)
     print("Seeded dummy metrics (time series + KPIs + alerts).")
 
     stop = threading.Event()
     if not args.no_live:
-        threading.Thread(target=live_simulator, args=(stop, rng), daemon=True).start()
+        threading.Thread(target=live_simulator, args=(stop, rng, cfg), daemon=True).start()
         print("Background simulation: MCP_BASTION_DEMO_LIVE=1 (use --no-live for static snapshot only).")
 
     from dashboard.app import app
