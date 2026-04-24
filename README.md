@@ -7,9 +7,9 @@
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
 
 [![PyPI Version](https://img.shields.io/pypi/v/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
-[![PyPI downloads / month](https://img.shields.io/pypi/dm/mcp-bastion-python?label=downloads%2Fmonth)](https://pypi.org/project/mcp-bastion-python/)
-[![Downloads](https://static.pepy.tech/personalized-badge/mcp-bastion-python?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/mcp-bastion-python)
-[![npm Version](https://img.shields.io/npm/v/@mcp-bastion/core)](https://www.npmjs.com/package/@mcp-bastion/core)
+[![Total downloads](https://static.pepy.tech/personalized-badge/mcp-bastion-python?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=total)](https://pepy.tech/projects/mcp-bastion-python)
+[![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
+[![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 
 **Enterprise-Grade Security Middleware for the Model Context Protocol**
@@ -316,7 +316,7 @@ npm install @mcp-bastion/core
 
 ### Framework Integrations
 
-Drop-in security for your favorite LLM framework. Each package auto-installs `mcp-bastion-python`:
+Drop-in security for your favorite LLM framework. Each package auto-installs `mcp-bastion-python`. **Downloads** for each row point to [pypistats.org](https://pypistats.org/) (trends) and [pepy.tech](https://pepy.tech/) (cumulative) for that PyPI name.
 
 ```bash
 pip install mcp-bastion-langchain      # LangChain agents and tools
@@ -340,23 +340,23 @@ pip install mcp-bastion-fastmcp       # FastMCP servers
 
 | Package | Protects | Version | Downloads |
 |---------|----------|---------|-----------|
-| [mcp-bastion-langchain](https://pypi.org/project/mcp-bastion-langchain/) | LangChain | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-langchain) |
-| [mcp-bastion-openai](https://pypi.org/project/mcp-bastion-openai/) | OpenAI GPT | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-openai) |
-| [mcp-bastion-anthropic](https://pypi.org/project/mcp-bastion-anthropic/) | Anthropic Claude | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-anthropic) |
-| [mcp-bastion-bedrock](https://pypi.org/project/mcp-bastion-bedrock/) | AWS Bedrock | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-bedrock) |
-| [mcp-bastion-gemini](https://pypi.org/project/mcp-bastion-gemini/) | Google Gemini | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-gemini) |
-| [mcp-bastion-crewai](https://pypi.org/project/mcp-bastion-crewai/) | CrewAI | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-crewai) |
-| [mcp-bastion-llamaindex](https://pypi.org/project/mcp-bastion-llamaindex/) | LlamaIndex | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-llamaindex) |
-| [mcp-bastion-groq](https://pypi.org/project/mcp-bastion-groq/) | Groq | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-groq) |
-| [mcp-bastion-mistral](https://pypi.org/project/mcp-bastion-mistral/) | Mistral AI | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-mistral) |
-| [mcp-bastion-cohere](https://pypi.org/project/mcp-bastion-cohere/) | Cohere | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-cohere) |
-| [mcp-bastion-azure](https://pypi.org/project/mcp-bastion-azure/) | Azure OpenAI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-azure) |
-| [mcp-bastion-vertexai](https://pypi.org/project/mcp-bastion-vertexai/) | Vertex AI | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-vertexai) |
-| [mcp-bastion-huggingface](https://pypi.org/project/mcp-bastion-huggingface/) | Hugging Face | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-huggingface) |
-| [mcp-bastion-deepseek](https://pypi.org/project/mcp-bastion-deepseek/) | DeepSeek AI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-deepseek) |
-| [mcp-bastion-together](https://pypi.org/project/mcp-bastion-together/) | Together AI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-together) |
-| [mcp-bastion-fireworks](https://pypi.org/project/mcp-bastion-fireworks/) | Fireworks AI | 0.1.1 | [stats](https://pypistats.org/packages/mcp-bastion-fireworks) |
-| [mcp-bastion-fastmcp](https://pypi.org/project/mcp-bastion-fastmcp/) | FastMCP servers | 0.1.0 | [stats](https://pypistats.org/packages/mcp-bastion-fastmcp) |
+| [mcp-bastion-langchain](https://pypi.org/project/mcp-bastion-langchain/) | LangChain | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-langchain) · [pepy](https://pepy.tech/projects/mcp-bastion-langchain) |
+| [mcp-bastion-openai](https://pypi.org/project/mcp-bastion-openai/) | OpenAI GPT | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-openai) · [pepy](https://pepy.tech/projects/mcp-bastion-openai) |
+| [mcp-bastion-anthropic](https://pypi.org/project/mcp-bastion-anthropic/) | Anthropic Claude | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-anthropic) · [pepy](https://pepy.tech/projects/mcp-bastion-anthropic) |
+| [mcp-bastion-bedrock](https://pypi.org/project/mcp-bastion-bedrock/) | AWS Bedrock | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-bedrock) · [pepy](https://pepy.tech/projects/mcp-bastion-bedrock) |
+| [mcp-bastion-gemini](https://pypi.org/project/mcp-bastion-gemini/) | Google Gemini | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-gemini) · [pepy](https://pepy.tech/projects/mcp-bastion-gemini) |
+| [mcp-bastion-crewai](https://pypi.org/project/mcp-bastion-crewai/) | CrewAI | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-crewai) · [pepy](https://pepy.tech/projects/mcp-bastion-crewai) |
+| [mcp-bastion-llamaindex](https://pypi.org/project/mcp-bastion-llamaindex/) | LlamaIndex | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-llamaindex) · [pepy](https://pepy.tech/projects/mcp-bastion-llamaindex) |
+| [mcp-bastion-groq](https://pypi.org/project/mcp-bastion-groq/) | Groq | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-groq) · [pepy](https://pepy.tech/projects/mcp-bastion-groq) |
+| [mcp-bastion-mistral](https://pypi.org/project/mcp-bastion-mistral/) | Mistral AI | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-mistral) · [pepy](https://pepy.tech/projects/mcp-bastion-mistral) |
+| [mcp-bastion-cohere](https://pypi.org/project/mcp-bastion-cohere/) | Cohere | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-cohere) · [pepy](https://pepy.tech/projects/mcp-bastion-cohere) |
+| [mcp-bastion-azure](https://pypi.org/project/mcp-bastion-azure/) | Azure OpenAI | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-azure) · [pepy](https://pepy.tech/projects/mcp-bastion-azure) |
+| [mcp-bastion-vertexai](https://pypi.org/project/mcp-bastion-vertexai/) | Vertex AI | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-vertexai) · [pepy](https://pepy.tech/projects/mcp-bastion-vertexai) |
+| [mcp-bastion-huggingface](https://pypi.org/project/mcp-bastion-huggingface/) | Hugging Face | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-huggingface) · [pepy](https://pepy.tech/projects/mcp-bastion-huggingface) |
+| [mcp-bastion-deepseek](https://pypi.org/project/mcp-bastion-deepseek/) | DeepSeek AI | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-deepseek) · [pepy](https://pepy.tech/projects/mcp-bastion-deepseek) |
+| [mcp-bastion-together](https://pypi.org/project/mcp-bastion-together/) | Together AI | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-together) · [pepy](https://pepy.tech/projects/mcp-bastion-together) |
+| [mcp-bastion-fireworks](https://pypi.org/project/mcp-bastion-fireworks/) | Fireworks AI | 0.1.3 | [pypistats](https://pypistats.org/packages/mcp-bastion-fireworks) · [pepy](https://pepy.tech/projects/mcp-bastion-fireworks) |
+| [mcp-bastion-fastmcp](https://pypi.org/project/mcp-bastion-fastmcp/) | FastMCP servers | 0.1.2 | [pypistats](https://pypistats.org/packages/mcp-bastion-fastmcp) · [pepy](https://pepy.tech/projects/mcp-bastion-fastmcp) |
 
 ## Publish (PyPI / npm)
 
