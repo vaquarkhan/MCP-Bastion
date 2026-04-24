@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Image tag (e.g. v1.0.16 or a snapshot like main-2026-04-24)"
+        description: "Image tag (e.g. v1.0.17 or a snapshot like main-2026-04-24)"
         required: true
         default: "main"
 

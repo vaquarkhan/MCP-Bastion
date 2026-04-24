@@ -2,15 +2,16 @@
 
 This page is the **authoritative** reference for what “pillar” means in MCP-Bastion: how controls map to **`bastion.yaml`**, **`BastionConfig`**, and the **dashboard** `pillar_health` field. Counts differ by **scope** (core toggles vs full policy file vs health rows) — use the tables below; avoid a single vague “N pillars” without defining scope.
 
-## How to count (three different numbers)
+## How to count (scope matters—several common totals)
 
 | Term | Count | What it includes |
 |------|-------|------------------|
 | **Core request-path toggles** | **10** | Original `MCPBastionMiddleware` feature flags: prompt guard, PII, rate limit, circuit breaker, content filter, RBAC, schema validation, replay guard, cost tracker, semantic cache (`BastionConfig` fields wired to `enable_*` on the middleware). |
-| **Extended request-path / policy features** | **7+** | Additional `enable_*` controls and YAML sections: **semantic firewall**, **sensitive classifier**, **external policy** (OPA/Cedar), **edge auth**, **tool allowlist**, **session tool-cap** (scope), **tool metadata guard**; plus **shadow mode** (constructor flag on the middleware, not a YAML boolean). |
+| **Extended request-path / policy features** | **8** | **Semantic firewall**, **sensitive classifier**, **external policy** (OPA/Cedar), **edge auth**, **tool allowlist**, **session tool-cap** (scope), **tool metadata guard**, and **shadow mode** (constructor flag on the middleware, not a YAML boolean). |
+| **Combined “pillars” (core + extended, request path)** | **18** | **10 + 8** from the two rows above. This is the usual full stack count when you list **all** first-class request-path and policy features together. **Additional** capabilities (multi-tenant, audit hash chain, pricing hooks, telemetry, governance, etc.) are configured separately; see the extended table below. |
 | **JSON-RPC deny codes** | **16** | Errors **-32001** through **-32016** in `mcp_bastion.errors` (see [README error table](../README.md#error-handling)). |
 | **Policy file surface (`bastion.yaml`)** | **20+** | Top-level keys read by `load_config()` — core sections, **audit_hash_chain**, **behavior_fingerprint**, **cost_attribution**, **policy_engine**, **multi_tenant**, **governance**, **telemetry**, **tool_metadata_guard**, **edge_auth**, **tool_allowlist**, **session_limits**, **sensitive_classifier**, **semantic_firewall**, plus **audit**, **alerts**, **hot_reload**, etc. Exact set evolves with `BastionConfig`; treat `bastion.yaml.example` + `config.py` as source of truth. |
-| **Dashboard `pillar_health` rows** | **14** | Built in `MetricsStore._build_pillar_health()`: one row per listed control (injection/PII/rate/circuit/content/RBAC/schema/semantic firewall/sensitive classifier/external policy/replay/cost/semantic cache) plus **Audit log**. Not every YAML-only feature has its own row. |
+| **Dashboard `pillar_health` rows** | **14** | Built in `MetricsStore._build_pillar_health()`: 14 named rows in code (Prompt Guard, PII, Rate Limiter, Circuit Breaker, Content Filter, RBAC, Schema Validation, Semantic Firewall, Sensitive Classifier, External Policy, Replay Guard, Cost Tracker, Semantic Cache, Audit Log). Not every config-only or auxiliary feature (e.g. multi-tenant, edge auth alone) has its own row. |
 
 **Programmatic access:** `from mcp_bastion import load_config, BastionConfig, build_middleware_from_config` — policy flows through **`BastionConfig`** and **`build_middleware_from_config()`**, which returns composed middleware for your MCP server.
 
@@ -74,4 +75,4 @@ Prompt Guard, PII redaction, rate limit, circuit breaker, content filter, RBAC, 
 
 - For **policy-as-code**, use **`bastion.yaml.example`**, [POLICY_AS_CODE.md](POLICY_AS_CODE.md), and the extended table above.
 - For **error codes**, use the [README error table](../README.md#error-handling) (**-32001** … **-32016**).
-- When stating a single “how many pillars” number, **name the scope** (core 10, extended features, dashboard rows, or YAML sections) or link to this page.
+- When stating a single “how many pillars” number, **name the scope** — for example: **18** = core **10** + extended **8**; **14** = dashboard `pillar_health` rows; **20+** = top-level `bastion.yaml` areas — or link to this page.

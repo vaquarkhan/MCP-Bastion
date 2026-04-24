@@ -23,10 +23,6 @@ Workflows live under [`.github/workflows/`](../.github/workflows/). Highlights:
 
 - Per-package **`uv build`** and PyPI publish via the same **OIDC** pattern (`id-token: write`).
 
-### `update-downloads.yml`
-
-- Scheduled README badge refresh for download stats.
-
 ## Release and provenance summary
 
 - **Merge gate:** every PR to **`main`** runs validation, **pytest with ≥92% coverage** on `src/mcp_bastion`, and npm workspace tests before merge.
