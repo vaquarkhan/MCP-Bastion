@@ -19,6 +19,26 @@ htmlcov/
 coverage.xml
 .pytest_cache/
 .mypy_cache/
+
+# Ad-hoc Windows scripts and wrappers (use `git add -f path` to commit one on purpose)
+*.ps1
+!run-dashboard.ps1
+!scripts/validate-ci-local.ps1
+!tests/run_inspector_test.ps1
+*.cmd
+!run-dashboard.cmd
+*.bat
+
+# Windows / editors / merge cruft
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.stackdump
+*.orig
+*.bak
+*~
+.vs/
+
 # Local config (optional: remove to track bastion.yaml)
 # bastion.yaml
 

@@ -13,7 +13,20 @@ MCP-Bastion mitigates several categories that align with OWASP Top 10 and LLM-sp
 | **Replay / integrity** | Replay guard (nonce) to block duplicate requests. |
 | **Input validation** | Schema validation for tool inputs; audit logging for who/what/when. |
 
-The project does **not** implement authentication or transport-layer security (TLS); secure the transport (HTTPS, mTLS) and identity (e.g. API keys, OAuth) in your deployment.
+**Layer with platform security:** terminate **TLS** at your load balancer or API gateway, authenticate callers with your **identity provider** (API keys, OAuth/OIDC, mTLS—whatever your platform standard is), and run MCP-Bastion on the MCP tool path **inside** a least-privilege service account. That pairing is how teams run MCP-Bastion in **production** today.
+
+---
+
+## Production readiness and defense in depth
+
+MCP-Bastion is intended for **production** when operated like other security-sensitive components:
+
+- **Policy as trusted configuration** — treat `bastion.yaml` like code: version it, review changes, and run **`mcp-bastion validate`** in CI ([examples/ci/README.md](examples/ci/README.md)).
+- **Alert destinations you trust** — point Slack and HTTP webhooks at endpoints **you** control or have approved for egress.
+- **Dependencies and builds** — keep packages updated; Python releases are built in GitHub Actions with **high test coverage** on the core package; see [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md) for publish and provenance details.
+- **Monitoring** — use the dashboard, **`/api/metrics`**, **Prometheus**, and optional **OpenTelemetry** so blocks and policy hits are visible to your SOC.
+
+The middleware runs **in-process with your MCP server**, using the same deployment unit and monitoring you already use for that service—so policy upgrades ship with your normal release process.
 
 ---
 
@@ -42,6 +55,10 @@ npm run test
 If you pin or upgrade `vite` / `vitest` to patched versions when available, re-run `npm audit` to confirm.
 
 ---
+
+## Supply chain and release provenance
+
+Releases are automated in GitHub Actions; **npm** uses **`npm publish --provenance`** and **PyPI** uses **OIDC Trusted Publishing**. See [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md) for a concise map of workflows, provenance, and scope boundaries—useful for security questionnaires and release notes.
 
 ## Reporting Vulnerabilities
 

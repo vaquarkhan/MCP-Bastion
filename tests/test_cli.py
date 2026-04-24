@@ -201,6 +201,75 @@ def test_cmd_dashboard_success(monkeypatch):
     assert result == 0
 
 
+def _restore_env(keys: dict[str, str | None]) -> None:
+    for k, v in keys.items():
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
+
+
+def test_cmd_dashboard_no_demo_sets_env():
+    root = Path(__file__).resolve().parent.parent
+    if not (root / "dashboard" / "app.py").exists():
+        pytest.skip("dashboard/app.py not found")
+    prev = {k: os.environ.get(k) for k in ("MCP_BASTION_DEMO", "MCP_BASTION_DEMO_LIVE")}
+    try:
+        os.environ.pop("MCP_BASTION_DEMO", None)
+        with mock.patch("uvicorn.run"):
+            result = cmd_dashboard(7000, no_demo=True)
+        assert result == 0
+        assert os.environ.get("MCP_BASTION_DEMO") == "0"
+    finally:
+        _restore_env({k: prev[k] for k in prev})
+
+
+def test_cmd_dashboard_demo_flag_sets_env():
+    root = Path(__file__).resolve().parent.parent
+    if not (root / "dashboard" / "app.py").exists():
+        pytest.skip("dashboard/app.py not found")
+    prev = {k: os.environ.get(k) for k in ("MCP_BASTION_DEMO", "MCP_BASTION_DEMO_LIVE")}
+    try:
+        with mock.patch("uvicorn.run"):
+            result = cmd_dashboard(7000, demo=True)
+        assert result == 0
+        assert os.environ.get("MCP_BASTION_DEMO") == "1"
+    finally:
+        _restore_env({k: prev[k] for k in prev})
+
+
+def test_cmd_dashboard_no_live_and_live_flags():
+    root = Path(__file__).resolve().parent.parent
+    if not (root / "dashboard" / "app.py").exists():
+        pytest.skip("dashboard/app.py not found")
+    prev = {k: os.environ.get(k) for k in ("MCP_BASTION_DEMO", "MCP_BASTION_DEMO_LIVE")}
+    try:
+        with mock.patch("uvicorn.run"):
+            assert cmd_dashboard(7000, no_live=True) == 0
+        assert os.environ.get("MCP_BASTION_DEMO_LIVE") == "0"
+        with mock.patch("uvicorn.run"):
+            assert cmd_dashboard(7000, live=True) == 0
+        assert os.environ.get("MCP_BASTION_DEMO_LIVE") == "1"
+    finally:
+        _restore_env({k: prev[k] for k in prev})
+
+
+def test_cmd_dashboard_reload_logs_auto_reload(caplog):
+    root = Path(__file__).resolve().parent.parent
+    if not (root / "dashboard" / "app.py").exists():
+        pytest.skip("dashboard/app.py not found")
+    prev = {k: os.environ.get(k) for k in ("MCP_BASTION_DEMO", "MCP_BASTION_DEMO_LIVE", "MCP_BASTION_DASHBOARD_RELOAD")}
+    try:
+        os.environ.pop("MCP_BASTION_DASHBOARD_RELOAD", None)
+        with mock.patch("uvicorn.run"):
+            with caplog.at_level("INFO"):
+                result = cmd_dashboard(7000, reload=True)
+        assert result == 0
+        assert "Auto-reload enabled" in caplog.text
+    finally:
+        _restore_env({k: prev[k] for k in prev})
+
+
 def test_main_validate(monkeypatch):
     root = Path(__file__).resolve().parent.parent
     config_path = root / "bastion.yaml.example"

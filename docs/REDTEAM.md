@@ -19,7 +19,7 @@ After changing policy, **re-run the harness with the same profile** and compare.
 
 ## Sensitive / weighted classifiers (if your harness uses them)
 
-Short sentences may score **below** a high classifier threshold with only one or two keywords. Lower the threshold or enrich weighted terms in **your** classifier config (this repository’s Python middleware does not ship a separate “sensitive classifier” pillar; behavior depends on the harness or a custom integration).
+Short sentences may score **below** a high classifier threshold with only one or two keywords. Lower the threshold or enrich weighted terms in **your** harness or classifier configuration so scores match your risk tolerance.
 
 ## Operational features
 
@@ -29,4 +29,4 @@ Short sentences may score **below** a high classifier threshold with only one or
 
 ## Node.js (`@mcp-bastion/core`)
 
-The npm package focuses on **in-process rate limiting** and optional **sidecar** flows for prompt/PII. It does **not** mirror every Python pillar (content filter, replay, schema, etc.). For full parity, run the **Python** middleware or a sidecar that implements the same checks. See `packages/core/README.md`.
+The npm package focuses on **in-process rate limiting** and optional **sidecar** flows for prompt/PII. It does **not** mirror every Python control in `bastion.yaml` (content filter, replay, schema, etc.). For that full set, run **`mcp-bastion-python`** middleware or a sidecar you operate that implements the same checks. See `packages/core/README.md`.

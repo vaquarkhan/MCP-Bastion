@@ -1,6 +1,8 @@
 # Policy-as-Code (bastion.yaml)
 
-Single config file controls all MCP-Bastion pillars. Use `bastion.yaml` in project root or set `BASTION_CONFIG` to a path.
+Single config file controls MCP-Bastion policy. Use `bastion.yaml` in project root or set `BASTION_CONFIG` to a path.
+
+**Canonical pillar list and counts** (request-path vs `bastion.yaml` vs dashboard): see [PILLARS.md](PILLARS.md).
 
 ## Example
 

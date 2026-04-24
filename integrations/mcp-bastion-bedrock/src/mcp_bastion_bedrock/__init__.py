@@ -1,6 +1,6 @@
 """MCP-Bastion security integration for AWS Bedrock."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 from mcp_bastion_bedrock.middleware import SecureBedrock
 

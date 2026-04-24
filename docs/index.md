@@ -41,14 +41,37 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 4. Run dashboard:
    - `mcp-bastion dashboard --port 7000`
 
+## Fast path
+
+- **[Quick start (minimal code + CI)](QUICK_START.md)** — wrap FastMCP or load `bastion.yaml` in two lines; validate in pipelines  
+- **[Discovery checklist](DISCOVERY.md)** — registries and lists for ecosystem visibility  
+- **[Contributing](../CONTRIBUTING.md)** — **`good first issue`**-friendly tasks  
+
+## Documentation map
+
+| Your goal | Start here |
+|-------------|------------|
+| **Configure `bastion.yaml`** | [PILLARS.md](PILLARS.md) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) → repo `bastion.yaml.example` |
+| **Connect Claude, ChatGPT, OpenAI, Gemini, …** | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) → [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) |
+| **FastMCP, npm server, or proxy patterns** | [TUTORIALS.md](TUTORIALS.md) → [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) |
+| **Fleet policy rollout + SIEM / SOC** | [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) (large-scale deployments + audit trails) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) |
+
+Hub with all files: [Docs README](README.md).
+
 ## Documentation
 
+- [Quick start](QUICK_START.md) — minimal FastMCP / `bastion.yaml` / CI
+- [Discovery checklist](DISCOVERY.md) — registries and ecosystem lists
+- [Roadmap](ROADMAP.md) — directions (Issues for delivery)
+- [Security pillars & bastion.yaml mapping](PILLARS.md) — `bastion.yaml` mapping and dashboard health rows
+- [Supply chain & releases](SUPPLY_CHAIN.md) — CI merge gates, automated releases, npm provenance, PyPI OIDC
+- [Integration models](INTEGRATION_MODELS.md) — middleware vs URL-swap gateways; how each stack gets Bastion in front of MCP
 - [Detailed Tutorial](DETAILED_TUTORIAL.md)
 - [Policy as Code](POLICY_AS_CODE.md)
 - [CLI Reference](CLI.md)
 - [LLM Integration](LLM_INTEGRATION.md)
 - [Metrics and Dashboard](METRICS.md)
-- [Security, OWASP MCP Top 10, and observability integrations](SECURITY_OBSERVABILITY.md)
+- [Security, OWASP MCP Top 10, observability, fleet rollout, SIEM audit](SECURITY_OBSERVABILITY.md)
 - [Security Guidance](SECURITY.md)
 - [GitHub Pages Setup](GITHUB_PAGES.md)
 
@@ -91,3 +114,7 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 See the complete flow in [Detailed Tutorial](DETAILED_TUTORIAL.md).
 
 For repository-level overview and install details, start at [README](../README.md).
+
+## Community and feedback
+
+Questions, integration notes, and bug reports help everyone adopting MCP-Bastion. Use **GitHub Issues** for defects and feature ideas, and **GitHub Discussions** (if enabled on the repository) for Q&A and deployment patterns. **Pull requests** for docs and examples are especially welcome.

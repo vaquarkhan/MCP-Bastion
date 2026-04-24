@@ -18,6 +18,10 @@
 
 > Releases are published to npm and PyPI via GitHub Actions on tag push.
 
+**Documentation:** structured paths for **policy** and **LLM integration** live in [docs/README.md](docs/README.md) and [docs/index.md](docs/index.md). **Community:** open a GitHub **Issue** for bugs or gaps, a **Discussion** for integration questions (if enabled on the repo), or a **PR** for docs and examples—those help every adopter.
+
+**Hello world (minimal Bastion on code):** see **[docs/QUICK_START.md](docs/QUICK_START.md)** — FastMCP one-liner `secure_fastmcp(mcp)`, or two-line `build_middleware_from_config()`, plus a **CI validate** snippet for pipeline-driven installs.
+
 The Model Context Protocol (MCP) has rapidly become the universally accepted standard for connecting AI agents to enterprise databases and APIs. However, this connectivity introduces a massive new attack surface: unpredictable, non-deterministic agentic behavior.
 
 MCP-Bastion is a lightweight, drop-in security middleware designed to wrap around any existing Python or TypeScript MCP server. Instead of relying on passive logging, human-in-the-loop approvals, or third-party APIs, MCP-Bastion provides an active, 100% local defense layer. It intercepts standard JSON-RPC traffic to stop threats before they cross the enterprise boundary.
@@ -59,6 +63,8 @@ Drop-in middleware, under 5ms overhead.
 Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No business logic changes.
 
 ### Complete feature catalog
+
+**Pillar definitions:** Security controls, `bastion.yaml` sections, and how they relate to dashboard health rows are documented in [docs/PILLARS.md](docs/PILLARS.md) (canonical reference; avoids ambiguous “total pillar” counts).
 
 > **Deeper context:** [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) — **OWASP MCP Top 10** alignment, attack scenarios, and SIEM/log integrations. **Framework add-ons** (LangChain, OpenAI, Bedrock, …) are listed under [Framework Integrations](#framework-integrations) below.
 
@@ -102,7 +108,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 | Feature | What you get |
 |--------|----------------|
-| **Policy-as-code** | Single **`bastion.yaml`**: toggles and knobs for every pillar; load via `load_config` / `build_middleware_from_config`. |
+| **Policy-as-code** | Single **`bastion.yaml`**: toggles for all request-path controls plus audit, alerts, and hot reload ([docs/PILLARS.md](docs/PILLARS.md)); load via `load_config` / `build_middleware_from_config`. |
 | **Hot reload** | Optional **reload `bastion.yaml` on change** without restarting the MCP server ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)). |
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
 | **CLI** | **`mcp-bastion validate`**, **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** for UI dev) — [docs/CLI.md](docs/CLI.md). |
@@ -113,17 +119,15 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
 
-**Demo (screen recording):**
+**🎥 Demo (screen recording):** the walkthrough is hosted on **Vimeo** (full **video** — GitHub’s README cannot play inline players, so use the link below or run the dashboard locally to see the embedded player). The live dashboard also shows the same tour at the top of the UI.
 
-<!-- GitHub README does not treat relative paths inside <video> like <img>; use raw.githubusercontent.com so the player loads. -->
 <p align="center">
-  <video width="920" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.25)" controls playsinline preload="metadata" poster="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/4eb2e02030c5740995f4647a352da49ec53a5323/images/mcp-bastian.png">
-    <source src="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/4eb2e02030c5740995f4647a352da49ec53a5323/images/mcp-bastian-mp.mp4" type="video/mp4" />
-    Your browser does not support embedded video — use the link below, or run the command under this section to start the live dashboard.
-  </video>
+  <strong><a href="https://vimeo.com/1186084574">🎥 Watch the screen recording on Vimeo</a></strong>
+  <br />
+  <sub>Opens the Vimeo page with the video player (not a static screenshot).</sub>
+  <br />
+  <sub><strong>Or:</strong> run <code>mcp-bastion dashboard</code> — the <strong>Dashboard tour</strong> block embeds the same Vimeo player on <code>localhost</code>.</sub>
 </p>
-<p align="center"><a href="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/4eb2e02030c5740995f4647a352da49ec53a5323/images/mcp-bastian-mp.mp4"><strong>Open / download the demo (MP4)</strong></a> · in-repo: <code>images/mcp-bastian-mp.mp4</code></p>
-<p align="center"><sub>Record shows live KPIs, charts, and theme. If the player is blank, open the link above (GitHub’s README view can be strict about media).</sub></p>
 
 ```bash
 mcp-bastion dashboard --port 7000
@@ -143,17 +147,39 @@ mcp-bastion dashboard --port 7000
 
 ### Documentation: Use Cases, Attacks, Metrics, Tutorials
 
+**Adoption paths (start-to-finish):**
+
+| Goal | Read in order |
+|------|----------------|
+| **Policy-as-code (`bastion.yaml`)** | [docs/PILLARS.md](docs/PILLARS.md) → [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) → `bastion.yaml.example` → [docs/CLI.md](docs/CLI.md) (`validate`) |
+| **LLM clients (OpenAI, Claude, Gemini, …)** | [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) → [docs/INTEGRATION_MODELS.md](docs/INTEGRATION_MODELS.md) → [examples/](examples/) (`llm_*.py`) |
+| **FastMCP / TypeScript / third-party MCP** | [docs/TUTORIALS.md](docs/TUTORIALS.md) → [docs/DETAILED_TUTORIAL.md](docs/DETAILED_TUTORIAL.md) |
+| **Fleet rollout of `bastion.yaml` + SIEM / SOC audit** | [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) → [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) |
+| **Minimal “hello world” + CI / registries** | [docs/QUICK_START.md](docs/QUICK_START.md) → [examples/ci/README.md](examples/ci/README.md) → [docs/DISCOVERY.md](docs/DISCOVERY.md) |
+
+Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site entry: **[docs/index.md](docs/index.md)** · quick wrap: **[docs/QUICK_START.md](docs/QUICK_START.md)** · discovery: **[docs/DISCOVERY.md](docs/DISCOVERY.md)** · contribute: **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+
 | Doc | Description |
 |-----|-------------|
 | [docs/index.md](docs/index.md) | GitHub Pages-ready docs home |
+| [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) | **`bastion.yaml` reference**: keys, examples, hot reload, alerts |
+| [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) | **LLM integration**: OpenAI, Claude, Gemini, Mistral, Grok (stdio + HTTP configs) |
 | [docs/DETAILED_TUTORIAL.md](docs/DETAILED_TUTORIAL.md) | Step-by-step implementation tutorial for new teams |
 | [docs/USE_CASES.md](docs/USE_CASES.md) | Real use cases: enterprise gateway, LLM products, internal tools, SaaS, compliance |
 | [docs/ATTACK_PREVENTION.md](docs/ATTACK_PREVENTION.md) | Examples showing how MCP-Bastion prevents real attacks (injection, PII leak, rate exhaustion, path traversal, RBAC, replay) |
-| [docs/REDTEAM.md](docs/REDTEAM.md) | Interpreting harness / red-team scores; which `bastion.yaml` pillars to enable; Node vs Python parity |
-| [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) | **OWASP MCP Top 10** mapping, feature highlights, attack classes, Slack/webhook/Prometheus/OTEL/log integrations |
+| [docs/PILLARS.md](docs/PILLARS.md) | Canonical pillar list: 10 request-path controls, 13 `bastion.yaml` sections, 11 dashboard health rows |
+| [docs/SUPPLY_CHAIN.md](docs/SUPPLY_CHAIN.md) | CI merge gates, releases, npm provenance, PyPI Trusted Publishing |
+| [docs/INTEGRATION_MODELS.md](docs/INTEGRATION_MODELS.md) | Middleware + `bastion.yaml` vs “change base URL”; bridge for Python, TS, Desktop, HTTP, integrations |
+| [examples/ci/README.md](examples/ci/README.md) | Copy-paste GitHub Actions snippet to run `mcp-bastion validate` on your policy file |
+| [docs/REDTEAM.md](docs/REDTEAM.md) | Interpreting harness / red-team scores; which `bastion.yaml` pillars to enable; Node vs Python **scope** (`packages/core/README.md`) |
+| [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) | **OWASP MCP Top 10**, integration hooks, **fleet-scale `bastion.yaml` rollout**, **SIEM / SOC audit** patterns |
 | [docs/METRICS.md](docs/METRICS.md) | Performance overhead (&lt;5ms) and effectiveness metrics (dashboard, Prometheus, OTEL) |
 | [docs/TUTORIALS.md](docs/TUTORIALS.md) | Tutorials: integrating with FastMCP, TypeScript, GitHub MCP, and open-source MCP servers |
 | [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md) | Publish docs as a GitHub Pages website from this same repo |
+| [docs/QUICK_START.md](docs/QUICK_START.md) | Minimal FastMCP / `bastion.yaml` / CI snippets (time-to-value) |
+| [docs/DISCOVERY.md](docs/DISCOVERY.md) | Registry and ecosystem discovery checklist |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | High-level directions; execution tracked in GitHub Issues |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contributor guide and **`good first issue`** ideas |
 
 ### One-Line Docker
 
@@ -166,7 +192,7 @@ MCP endpoint: `http://localhost:8080/mcp`. Use `docker-compose up -d` for proxy;
 
 ### Policy-as-Code (bastion.yaml)
 
-Single config file controls all pillars. Copy `bastion.yaml.example` to `bastion.yaml`, then:
+Single config file controls policy (see [docs/PILLARS.md](docs/PILLARS.md) for pillar definitions). Copy `bastion.yaml.example` to `bastion.yaml`, then:
 
 ```python
 from mcp_bastion import build_middleware_from_config
@@ -187,6 +213,17 @@ mcp-bastion dashboard --port 7000 # run metrics dashboard
 
 See [docs/CLI.md](docs/CLI.md).
 
+### Continuous integration (this repository)
+
+On every pull request and push to `main`, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs:
+
+1. `pip install -e ".[dev,policy,dashboard]"` — install the Python package with tests, YAML policy loading, and FastAPI for dashboard tests.
+2. `mcp-bastion validate --config bastion.yaml.example` — ensure the example policy file loads.
+3. `pytest --cov=mcp_bastion --cov-fail-under=99` — full Python test suite with **≥99%** line coverage on `src/mcp_bastion` (see `[tool.coverage.run]` in `pyproject.toml` for measured paths).
+4. `npm ci` and `npm test` — TypeScript workspace tests.
+
+To validate **your** repo’s `bastion.yaml` in CI without cloning MCP-Bastion, see [examples/ci/README.md](examples/ci/README.md).
+
 ### OpenTelemetry
 
 Set `OTEL_EXPORTER_OTLP_ENDPOINT` to export tool-call spans to OTLP. Install optional deps: `pip install mcp-bastion-python[otel]`. See [docs/OTEL.md](docs/OTEL.md).
@@ -201,33 +238,21 @@ See **[docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md)** for the
 
 ---
 
-## Why MCP-Bastion (Competitive Comparison)
+<p align="center">
+  <img
+    src="images/mcp-bastian-features.png"
+    alt="MCP-Bastion features at a glance — pillars, dashboard, and integrations"
+    width="920"
+    style="max-width:100%; height:auto; border-radius:12px;"
+  />
+</p>
 
-Early security packages (mcp-guardian, mcp-shield) focus on logging or static scanning. MCP-Bastion adds an active defense layer.
+## Why MCP-Bastion
 
-### 1. Active Defense vs. Passive Logging
-
-| The Competition | MCP-Bastion |
-|-----------------|-------------|
-| Tools like mcp-guardian focus on tracing, logging, human-in-the-loop approvals. | Automated interception. MCP-Bastion scrubs PII before it leaves the server. |
-
-### 2. Local Inference vs. Third-Party APIs
-
-| The Competition | MCP-Bastion |
-|-----------------|-------------|
-| Many guardrail proxies send prompts to external APIs to check for malice. | PromptGuard-86M and Presidio run locally. Data stays on your network. |
-
-### 3. Stateful Denial of Wallet Protection
-
-| The Competition | MCP-Bastion |
-|-----------------|-------------|
-| Most tools focus on static vulns or basic rate limits. | Tracks tool call history per session. Stops runaway loops before they burn API budget. |
-
-### 4. Drop-in Middleware vs. Standalone Gateway
-
-| The Competition | MCP-Bastion |
-|-----------------|-------------|
-| Some solutions need standalone proxy servers. | Library hooks into `server.setRequestHandler` (TS) or middleware (Python). No extra infra. |
+- **Active enforcement** — Intercepts MCP tool traffic so policies (prompt injection checks, PII handling, content rules, RBAC, and more) run before tools execute and before sensitive results propagate.
+- **Local-first classification** — PromptGuard and Presidio run in your environment; you are not required to send prompts to a third-party API for guardrail scoring.
+- **Stateful guardrails** — Per-session rate limits, iteration caps, token budgets, and cost tracking to reduce runaway loops and unexpected spend.
+- **Composable integration** — Use `bastion.yaml` with `build_middleware_from_config()` or wire `MCPBastionMiddleware` / `wrapWithMcpBastion` in Python or TypeScript. For a separate process in front of an upstream MCP server, use a wrapper or proxy you control; see [docs/INTEGRATION_MODELS.md](docs/INTEGRATION_MODELS.md).
 
 ---
 
@@ -268,7 +293,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pinned latest
-pip install mcp-bastion-python==1.0.15
+pip install mcp-bastion-python==1.0.16
 ```
 
 **Prerequisites (recommended)**

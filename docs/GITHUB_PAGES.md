@@ -27,8 +27,14 @@ After a few minutes, your site is available at:
 
 ## Suggested docs navigation structure
 
+- `docs/QUICK_START.md` (minimal code + CI)
+- `docs/DISCOVERY.md` (registry checklist)
+- `docs/ROADMAP.md` (high-level directions)
 - `docs/index.md` (home)
 - `docs/DETAILED_TUTORIAL.md` (full walkthrough)
+- `docs/PILLARS.md` (pillar definitions and `bastion.yaml` mapping)
+- `docs/SUPPLY_CHAIN.md` (CI, releases, npm provenance, PyPI OIDC)
+- `docs/INTEGRATION_MODELS.md` (middleware vs URL-swap adoption; stack bridges)
 - `docs/POLICY_AS_CODE.md` (configuration)
 - `docs/CLI.md` (commands)
 - `docs/LLM_INTEGRATION.md` (provider integration)

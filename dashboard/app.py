@@ -1242,6 +1242,36 @@ DASHBOARD_HTML = """
     @media (prefers-reduced-motion: reduce) {
       .back-top { transition: none; }
     }
+    .video-embed-shell {
+      position: relative;
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto 12px auto;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: #020617;
+    }
+    .video-embed-shell iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    .demo-video-foot {
+      text-align: center;
+      margin: 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .demo-video-foot a {
+      color: var(--accent);
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -1292,6 +1322,7 @@ DASHBOARD_HTML = """
 
   <nav class="dash-jump" aria-label="Jump to sections">
     <span class="jump-label">Jump</span>
+    <a href="#dash-demo-video">Demo video</a>
     <a href="#dash-alerts-insights">Alerts &amp; insights</a>
     <a href="#dash-forensics">Forensics</a>
     <a href="#dash-traffic">Traffic</a>
@@ -1300,6 +1331,26 @@ DASHBOARD_HTML = """
       <button type="button" class="btn-export" id="btnExportMetrics" title="Download last /api/metrics snapshot">Export JSON snapshot</button>
     </span>
   </nav>
+
+  <div class="card demo-video-card" id="dash-demo-video">
+    <div class="card-head">
+      <h2>Dashboard tour</h2>
+      <p class="card-desc">Screen overview of the live UI (Vimeo).</p>
+    </div>
+    <div class="video-embed-shell">
+      <iframe
+        title="MCP-Bastion dashboard demo"
+        src="https://player.vimeo.com/video/1186084574"
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowfullscreen
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </div>
+    <p class="demo-video-foot">
+      <a href="https://vimeo.com/1186084574" target="_blank" rel="noopener noreferrer">Open on Vimeo</a>
+      if the embed is blocked by your network.
+    </p>
+  </div>
 
   <div class="insight-row">
     <div class="insight-card">

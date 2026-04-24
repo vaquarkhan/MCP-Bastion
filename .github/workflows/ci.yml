@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (validate + pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install package (editable) + dev + policy + dashboard
+        run: pip install -e ".[dev,policy,dashboard]"
+
+      - name: Validate example policy file
+        run: mcp-bastion validate --config bastion.yaml.example
+
+      - name: Run pytest with coverage (fail under 99%)
+        run: pytest --cov=mcp_bastion --cov-report=term --cov-fail-under=99
+
+  typescript:
+    name: TypeScript (npm test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install and test workspaces
+        run: |
+          npm ci
+          npm test

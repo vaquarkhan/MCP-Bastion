@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-llamaindex"
-version = "0.1.1"
+version = "0.1.2"
 description = "MCP-Bastion security middleware for LlamaIndex — prompt injection, PII, and rate-limit protection for RAG pipelines"
 readme = "README.md"
 license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp-bastion-python>=1.0.13",
+    "mcp-bastion-python>=1.0.16",
     "llama-index-core>=0.10.0",
 ]
 

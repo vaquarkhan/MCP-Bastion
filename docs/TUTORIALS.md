@@ -2,6 +2,8 @@
 
 This guide shows how to add MCP-Bastion to your MCP server so that tool calls are protected regardless of the client (GitHub Copilot, Cursor, Claude, custom apps). The same pattern applies to open-source MCP servers (e.g. filesystem, database, Slack, GitHub API).
 
+For **how this differs from an LLM API “swap base URL” gateway** and how **each stack** (Python, TypeScript, Desktop, HTTP, integrations) gets Bastion in front of MCP, see [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md).
+
 For a full environment-to-production walkthrough, see [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md).
 
 ---

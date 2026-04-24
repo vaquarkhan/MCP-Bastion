@@ -1,0 +1,20 @@
+name: Documentation improvement
+description: Typos, clarity, missing links, or new examples
+title: "docs: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for improving docs. Small, focused PRs merge fastest.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What should readers get from this change?
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page or path (optional)
+      placeholder: e.g. docs/QUICK_START.md
