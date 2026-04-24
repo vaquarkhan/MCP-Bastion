@@ -8,6 +8,7 @@
     let lastSnapshotAt = 0;
     let lastMetricsSnapshot = null;
     let freshnessTimerStarted = false;
+    let dashboardReadyFired = false;
 
     function initChartDefaults() {
       if (typeof Chart === 'undefined') return false;
@@ -203,6 +204,18 @@
         sel.value = '';
       }
     }
+    function reasonCellHtml(row) {
+      var fullR = String(row.reason || '');
+      if (fullR.length > 100) {
+        return '<td class="reason-cell" title="' + escapeHtmlAttr(fullR) + '">'
+          + '<details class="reason-expand">'
+          + '<summary>' + escapeHtml(fullR.slice(0, 88)) + '…</summary>'
+          + '<div class="reason-full">' + escapeHtml(fullR) + '</div>'
+          + '</details></td>';
+      }
+      return '<td class="reason-cell" title="' + escapeHtmlAttr(fullR) + '">' + escapeHtml(fullR) + '</td>';
+    }
+
     function renderForensicsRows() {
       var tbody = document.getElementById('blockedForensicsBody');
       var hint = document.getElementById('forensicsHint');
@@ -216,7 +229,7 @@
         hint.textContent = rows.length + ' row(s)' + (filter ? ' · tenant ' + filter : ' · all tenants');
       }
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="muted">No blocked requests in memory for this filter.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="muted">No blocks match this filter — try &ldquo;Show all&rdquo; or check that middleware is recording <code>blocked_incidents</code>.</td></tr>';
         return;
       }
       tbody.innerHTML = rows.map(function (row, idx) {
@@ -224,14 +237,16 @@
         try {
           ts = new Date(row.ts).toISOString().replace('T', ' ').slice(0, 19);
         } catch (e1) { ts = String(row.ts || ''); }
-        var reason = (row.reason || '').slice(0, 160);
+        var tr = reasonCellHtml(row);
         return '<tr>'
           + '<td>' + escapeHtml(ts) + '</td>'
           + '<td>' + escapeHtml(row.tenant_id || '') + '</td>'
           + '<td>' + escapeHtml(row.tool || '') + '</td>'
-          + '<td>' + escapeHtml(reason) + '</td>'
-          + '<td style="font-size:0.72rem;">' + escapeHtml(String(row.trace_id || '').slice(0, 40)) + '</td>'
-          + '<td style="font-size:0.72rem;">' + escapeHtml(String(row.request_id || '').slice(0, 32)) + '</td>'
+          + tr
+          + '<td style="font-size:0.72rem;" title="' + escapeHtmlAttr(String(row.trace_id || '')) + '">'
+          + escapeHtml(String(row.trace_id || '').slice(0, 40)) + (String(row.trace_id || '').length > 40 ? '…' : '') + '</td>'
+          + '<td style="font-size:0.72rem;" title="' + escapeHtmlAttr(String(row.request_id || '')) + '">'
+          + escapeHtml(String(row.request_id || '').slice(0, 32)) + (String(row.request_id || '').length > 32 ? '…' : '') + '</td>'
           + '<td><span class="btn-row-act">'
           + '<button type="button" class="btn-mini" data-act="trace" data-i="' + idx + '">View trace</button>'
           + '<button type="button" class="btn-mini" data-act="replay" data-i="' + idx + '">Reproduce</button>'
@@ -521,13 +536,6 @@
         }
       });
 
-      const gradPii = (ctx) => {
-        const c = ctx.chart.ctx;
-        const g = c.createLinearGradient(0, 0, 0, 160);
-        g.addColorStop(0, 'rgba(167, 139, 250, 0.88)');
-        g.addColorStop(1, 'rgba(99, 102, 241, 0.42)');
-        return g;
-      };
       charts.piiEntity = new Chart(document.getElementById('chartPiiEntity'), {
         type: 'bar',
         data: {
@@ -535,7 +543,9 @@
           datasets: [{
             label: 'Detections',
             data: [],
-            backgroundColor: gradPii,
+            backgroundColor: 'rgba(148, 163, 184, 0.35)',
+            borderColor: 'transparent',
+            borderWidth: 0,
             borderRadius: 8,
             borderSkipped: false
           }]
@@ -623,14 +633,36 @@
       charts.cost.update('none');
     }
 
+    function piiBarColorForEntity(label) {
+      var u = String(label || '').toUpperCase();
+      if (u.indexOf('CREDIT') >= 0) return { bg: 'rgba(220, 38, 38, 0.92)', br: 'rgba(127, 29, 29, 0.5)' };
+      if (u.indexOf('IBAN') >= 0 || u.indexOf('BANK') >= 0) return { bg: 'rgba(234, 88, 12, 0.88)', br: 'rgba(154, 52, 18, 0.45)' };
+      if (u.indexOf('SSN') >= 0 || u.indexOf('TAX') >= 0) return { bg: 'rgba(234, 88, 12, 0.78)', br: 'rgba(180, 83, 9, 0.4)' };
+      if (u.indexOf('PASSPORT') >= 0 || u.indexOf('LICENSE') >= 0) return { bg: 'rgba(245, 158, 11, 0.85)', br: 'rgba(180, 83, 9, 0.4)' };
+      if (u.indexOf('EMAIL') >= 0) return { bg: 'rgba(59, 130, 246, 0.65)', br: 'rgba(30, 64, 175, 0.35)' };
+      if (u.indexOf('PHONE') >= 0) return { bg: 'rgba(14, 165, 233, 0.6)', br: 'rgba(3, 105, 161, 0.35)' };
+      if (u.indexOf('PERSON') >= 0) return { bg: 'rgba(100, 116, 139, 0.55)', br: 'rgba(71, 85, 105, 0.3)' };
+      return { bg: 'rgba(167, 139, 250, 0.8)', br: 'rgba(109, 40, 217, 0.25)' };
+    }
+
     function updatePiiEntity(obj) {
       const entries = Object.entries(obj || {}).slice(0, 12);
+      const ds = charts.piiEntity.data.datasets[0];
       if (!entries.length) {
         charts.piiEntity.data.labels = ['(none yet)'];
-        charts.piiEntity.data.datasets[0].data = [0];
+        ds.data = [0];
+        ds.backgroundColor = 'rgba(148, 163, 184, 0.35)';
+        ds.borderColor = 'transparent';
+        ds.borderWidth = 0;
       } else {
         charts.piiEntity.data.labels = entries.map((e) => e[0]);
-        charts.piiEntity.data.datasets[0].data = entries.map((e) => e[1]);
+        ds.data = entries.map((e) => e[1]);
+        const colors = entries.map((e) => piiBarColorForEntity(e[0]).bg);
+        const borders = entries.map((e) => piiBarColorForEntity(e[0]).br);
+        ds.backgroundColor = colors;
+        ds.borderColor = borders;
+        ds.borderWidth = 1;
+        ds.borderSkipped = false;
       }
       charts.piiEntity.update('none');
     }
@@ -658,6 +690,69 @@
       var blk = d.blocked_total || 0;
       var inv = req + blk;
       return inv > 0 ? (100 * blk / inv) : 0;
+    }
+
+    function topThreatFromMetrics(d) {
+      var kinds = d.blocked_by_kind || {};
+      var entries = Object.entries(kinds).filter(function (x) { return (x[1] || 0) > 0; });
+      if (!entries.length) {
+        return { text: '—', title: 'No categorized blocks yet — traffic will appear as policies trigger.' };
+      }
+      entries.sort(function (a, b) { return b[1] - a[1]; });
+      return {
+        text: entries[0][0] + ' (' + entries[0][1] + ')',
+        title: 'Dominant block kind: ' + entries[0][0] + ' — hover charts below for the full mix.',
+      };
+    }
+
+    function activeUsersOrTenants(d) {
+      var t = d.tenants;
+      if (t && typeof t === 'object' && !Array.isArray(t)) {
+        var k = Object.keys(t);
+        if (k.length) return String(k.length);
+      }
+      var c = d.cost_by_user;
+      if (c && typeof c === 'object') {
+        return String(Object.keys(c).length);
+      }
+      return '0';
+    }
+
+    function updateSummaryBar(d) {
+      var tr = document.getElementById('sumTotalReq');
+      var tb = document.getElementById('sumBlockPct');
+      var tt = document.getElementById('sumTopThreat');
+      var ta = document.getElementById('sumActiveUsers');
+      if (!tr || !tb || !tt || !ta) return;
+      tr.classList.remove('skeleton-text');
+      tb.classList.remove('skeleton-text');
+      tt.classList.remove('skeleton-text');
+      ta.classList.remove('skeleton-text');
+      var req = d.requests_total || 0;
+      var bPct = d.blocked_pct != null ? Number(d.blocked_pct).toFixed(1) : (function () {
+        var blk = d.blocked_total || 0;
+        var inv = req + blk;
+        return inv > 0 ? (100 * blk / inv).toFixed(1) : '0.0';
+      }());
+      tr.textContent = req.toLocaleString();
+      tr.setAttribute('title', 'Allowed tool invocations recorded in this process (MetricsStore).');
+      tb.textContent = bPct + '% of invocations';
+      tb.setAttribute('title', 'Blocked share of (allowed + blocked) invocations in this window.');
+      var th = topThreatFromMetrics(d);
+      tt.textContent = th.text;
+      tt.setAttribute('title', th.title);
+      ta.textContent = activeUsersOrTenants(d);
+      ta.setAttribute('title', 'Distinct tenants in metrics, or cost-by-user keys if tenant map is empty.');
+    }
+
+    function markDashboardReady() {
+      if (dashboardReadyFired) return;
+      dashboardReadyFired = true;
+      try {
+        document.body.classList.add('dashboard-ready');
+      } catch (e) {}
+      var lo = document.getElementById('dashboardLoading');
+      if (lo) lo.setAttribute('aria-busy', 'false');
     }
 
     function toolSignal(s, globalBp) {
@@ -756,7 +851,7 @@
       if (!node) return;
       var list = insights || [];
       if (!list.length) {
-        node.innerHTML = '<p class="insights-empty">No anomalies flagged yet — need more traffic or stronger signals (blocks, latency spread, cost burn).</p>';
+        node.innerHTML = '<p class="insights-empty">No heuristics yet. As traffic accrues, we surface things like high block share, latency tails, and cost run-rate. <strong>Keep this tab open</strong> while MCP calls flow through Bastion.</p>';
         return;
       }
       node.innerHTML = list.map(function (x) {
@@ -787,6 +882,7 @@
         }).join(', ');
         var sig = toolSignal(s, gbp);
         var tbp = Number(s.blocked_pct || 0);
+        var reasonsFull = reasons || '—';
         return '<tr>'
           + '<td>' + escapeHtml(tool) + '</td>'
           + '<td><span class="signal-badge ' + sig.cls + '">' + escapeHtml(sig.label) + '</span></td>'
@@ -797,7 +893,7 @@
           + '<td>' + formatDeltaPct(tbp, gbp) + '</td>'
           + '<td>' + Number(s.latency_ms_p95 || 0).toFixed(2) + '</td>'
           + '<td>' + Number(s.latency_ms_avg || 0).toFixed(2) + '</td>'
-          + '<td>' + escapeHtml(reasons || '—') + '</td>'
+          + '<td class="tool-reasons-cell" title="' + escapeHtmlAttr(reasonsFull) + '">' + escapeHtml(reasonsFull) + '</td>'
           + '</tr>';
       }).join('');
     }
@@ -826,6 +922,10 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+    }
+
+    function escapeHtmlAttr(s) {
+      return escapeHtml(s).replace(/"/g, '&quot;');
     }
 
     function formatAlertTs(iso) {
@@ -859,6 +959,8 @@
 
     function render(d) {
       try {
+      markDashboardReady();
+      updateSummaryBar(d);
       const n = (d.alerts && d.alerts.length) || 0;
       var countEl = document.getElementById('alertCountLabel');
       if (countEl) countEl.textContent = n + (n === 1 ? ' Alert' : ' Alerts');

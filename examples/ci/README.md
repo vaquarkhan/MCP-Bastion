@@ -2,7 +2,7 @@
 
 ## This repository
 
-Pull requests and pushes to `main` run [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml): `mcp-bastion validate` on `bastion.yaml.example`, **`pytest` with ≥99% coverage** on `src/mcp_bastion`, and `npm test` for the monorepo.
+Pull requests and pushes to `main` run [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml): `mcp-bastion validate` on `bastion.yaml.example`, **`pytest` with ≥92% coverage** on `src/mcp_bastion`, and `npm test` for the monorepo.
 
 ## Your project (copy-paste)
 

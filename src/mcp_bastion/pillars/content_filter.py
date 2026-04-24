@@ -35,6 +35,17 @@ DEFAULT_PATH_PATTERNS = [
 
 DEFAULT_URL_PATTERN = r"https?://[^\s]+"
 
+# High-confidence credential / key material (MCP01). Enable via block_secrets=True.
+DEFAULT_SECRET_PATTERNS = [
+    r"AKIA[0-9A-Z]{16}",  # AWS access key id
+    r"ASIA[0-9A-Z]{16}",  # AWS STS temporary key id
+    r"sk-(?:live|proj|ant|test)-[A-Za-z0-9]{20,}",  # common LLM / API key prefixes
+    r"AIza[0-9A-Za-z\-_]{35}",  # Google API key shape
+    r"xox[baprs]-[0-9A-Za-z\-]+",  # Slack tokens
+    r"gh[pousr]_[A-Za-z0-9_]{36,}",  # GitHub PAT
+    r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
+]
+
 
 from mcp_bastion.errors import ContentFilterError
 
@@ -52,6 +63,7 @@ class ContentFilter:
         block_code_execution: bool = True,
         block_file_paths: bool = True,
         block_urls: bool = False,
+        block_secrets: bool = False,
         allowlist_patterns: list[str] | None = None,
         denylist_patterns: list[str] | None = None,
         custom_patterns: list[str] | None = None,
@@ -59,6 +71,7 @@ class ContentFilter:
         self.block_code_execution = block_code_execution
         self.block_file_paths = block_file_paths
         self.block_urls = block_urls
+        self.block_secrets = block_secrets
         self.allowlist_patterns = allowlist_patterns or []
         self.denylist_patterns = denylist_patterns or custom_patterns or []
         # Backward compatible alias retained for callers that still use custom_patterns.
@@ -67,6 +80,7 @@ class ContentFilter:
         self._code_regexes = [re.compile(p, re.IGNORECASE) for p in DEFAULT_CODE_PATTERNS]
         self._path_regexes = [re.compile(p) for p in DEFAULT_PATH_PATTERNS]
         self._url_regex = re.compile(DEFAULT_URL_PATTERN)
+        self._secret_regexes = [re.compile(p) for p in DEFAULT_SECRET_PATTERNS]
 
         def _compile_patterns(patterns: list[str], label: str) -> list[re.Pattern[str]]:
             compiled: list[re.Pattern[str]] = []
@@ -113,6 +127,15 @@ class ContentFilter:
             if rx.search(text):
                 logger.debug("content_filter allowlisted pattern=%s", rx.pattern)
                 return
+
+        if self.block_secrets:
+            for rx in self._secret_regexes:
+                if rx.search(text):
+                    logger.warning("content_filter blocked secret-like material pattern=%s", rx.pattern)
+                    raise ContentFilterError(
+                        "Content blocked: possible credential or API key material in payload",
+                        matched_pattern=rx.pattern,
+                    )
 
         for rx in self._denylist_regexes:
             if rx.search(text):

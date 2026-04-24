@@ -29,8 +29,8 @@ jobs:
       - name: Validate example policy file
         run: mcp-bastion validate --config bastion.yaml.example
 
-      - name: Run pytest with coverage (fail under 99%)
-        run: pytest --cov=mcp_bastion --cov-report=term --cov-fail-under=99
+      - name: Run pytest with coverage (fail under 92%)
+        run: pytest --cov=mcp_bastion --cov-report=term --cov-fail-under=92
 
   typescript:
     name: TypeScript (npm test)

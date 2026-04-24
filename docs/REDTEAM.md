@@ -1,5 +1,14 @@
 # Interpreting red-team / harness scores
 
+## Built-in CLI harness
+
+```bash
+mcp-bastion redteam
+mcp-bastion redteam --config path/to/bastion.yaml
+```
+
+The command runs the in-repo **OWASP + MCP Top 10** case suite in-process and prints a JSON report (blocked %, per-case reasons, `mcp_top10_summary`, etc.). Use the same `bastion.yaml` you deploy with so the score matches your real toggles.
+
 External red-team harnesses often **disable** capabilities that need a local ML model or extra integration (for example prompt guard when the model is gated, RBAC when roles are not wired, or edge auth in a lab). A **low block rate** (e.g. ~27%) usually means **most pillars were off for that run**, not that MCP-Bastion “failed.”
 
 ## What to enable to raise the score

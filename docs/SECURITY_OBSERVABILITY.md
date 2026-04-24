@@ -24,6 +24,9 @@ This page ties together **what MCP-Bastion does**, how it maps to the **industry
 | **Alerts** | Slack + generic webhooks with retry/backoff. | Real-time notification into chat or ticketing pipelines. |
 | **Dashboard + metrics API** | Live UI, JSON `/api/metrics`, Prometheus `/metrics`. | Operator and SOC visibility without extra agents. |
 | **OpenTelemetry (optional)** | OTLP export for traces when enabled. | Drop into existing APM (Datadog, Honeycomb, Jaeger, AWS ADOT, etc.). |
+| **Semantic firewall / sensitive classifier / external policy** | Tool-sequence rules, optional business-content scoring, OPA/Cedar delegation. | Deeper policy and content governance; see [PILLARS.md](PILLARS.md#extended-request-path-and-policy-features-1016). |
+| **Multi-tenant, edge auth, allowlist, session scope, metadata guard** | Per-tenant configs, gateway token check, fixed tool lists, session tool caps, poisoned metadata handling. | Enterprise boundary hardening; JSON-RPC codes **-32010..-32016** for related denies. |
+| **Red team + doctor CLIs** | `mcp-bastion redteam`, `mcp-bastion doctor` | Repeatable harness score and preflight checks. |
 
 For step-by-step attack demos, see [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md).
 

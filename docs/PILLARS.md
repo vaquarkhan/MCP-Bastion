@@ -30,6 +30,28 @@ These are enforced (when enabled) on the MCP tool-call path inside `MCPBastionMi
 
 **Programmatic access:** `from mcp_bastion import load_config, BastionConfig, build_middleware_from_config` — policy flows through **`BastionConfig`** and **`build_middleware_from_config()`**, which returns composed middleware for your MCP server.
 
+## Extended request-path and policy features (1.0.16+)
+
+The base **10** toggles in the first table are the historical “inner” controls. The following are **additionally** wired in `bastion.yaml` and `BastionConfig` (and reflected in JSON-RPC error codes **-32010** through **-32016** for deny outcomes where applicable — see `mcp_bastion/errors.py`).
+
+| Area | `bastion.yaml` sections (typical) | What it does |
+|------|----------------------------------|----------------|
+| Semantic firewall | `semantic_firewall` | Blocks unsafe tool/argument **sequences** and injection-style patterns before execution. |
+| Sensitive business classifier | `sensitive_classifier` | Weighted and optional local classifier to flag M&A / insider-style content. |
+| External policy (OPA / Cedar) | `policy_engine` | Delegates allow/deny to **OPA** or **Cedar** when `type` is set. |
+| Edge authentication | `edge_auth` | Optional shared-secret check on request **metadata** (e.g. gateway-issued token). |
+| Tool allowlist | `tool_allowlist` | Enforce a fixed list of tool names. |
+| Session scope / privilege creep | `session_limits` | Cap **distinct tools per session** to limit scope creep. |
+| Tool metadata guard | `tool_metadata_guard` | Sanitize or drop poisoned `tools/list` metadata (content filter and/or prompt guard assist). |
+| **Shadow mode** | `MCPBastionMiddleware(..., shadow_mode=True)` (programmatic) | Log-only / alternate handling for some block paths; does not remove other pillars. |
+| Multi-tenant | `multi_tenant` | Per-tenant `bastion.yaml` resolution and `tenant_id` in audit context. |
+| Audit hash chain | `audit_hash_chain` | Chained **hash** over audit records for tamper evidence; optional **anchor** webhook. |
+| Pricing (FinOps) | (see `pillars/pricing` + `cost_attribution` in config) | **Usage** pricing signal hooks alongside cost caps. |
+| Telemetry sinks | `telemetry` | Pluggable **HTTP/OTLP**-style export hooks for events/metrics. |
+| Supply-chain / ops | `mcp_bastion doctor` CLI | **doctor** preflight; **governance** beacon optional under `governance` — see [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md), [CLI.md](CLI.md). |
+
+Supporting modules in `src/mcp_bastion/` and `pillars/`: e.g. `policy_simulator.py`, `redteam.py`, `tenant.py`, `governance_beacon.py`, `doctor.py`.
+
 ## Policy sections outside the inner middleware (3)
 
 | # | Area | `bastion.yaml` section | Role |
@@ -49,6 +71,6 @@ The metrics layer builds **11** named rows in `MetricsStore._build_pillar_health
 
 ## Summary
 
-- For **engineering and red-team tuning**, use the **10** request-path toggles plus **audit** / **alerts** / **hot_reload** as in `bastion.yaml.example` and [POLICY_AS_CODE.md](POLICY_AS_CODE.md).
+- For **engineering and red-team tuning**, use the **10** request-path toggles, the **extended** features in the table above as needed, plus **audit** / **alerts** / **hot_reload** as in `bastion.yaml.example` and [POLICY_AS_CODE.md](POLICY_AS_CODE.md).
 - The dashboard **`pillar_health`** list has **11** rows (the ten request-path controls plus audit). **Alerts** and **hot reload** are configured in **`bastion.yaml`** and related docs; their status is reflected through audit and operations tooling rather than extra `pillar_health` rows.
 - When stating a single “total pillar” number in README or release notes, **point here** or spell the scope (policy-only vs product stack).

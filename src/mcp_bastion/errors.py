@@ -83,3 +83,52 @@ class CostBudgetExceededError(MCPBastionError):
 
     def __init__(self, message: str = "Request blocked: cost budget exceeded") -> None:
         super().__init__(message, code=-32009)
+
+
+class SemanticFirewallError(MCPBastionError):
+    """Raised when semantic firewall detects suspicious tool intent or chain."""
+
+    def __init__(self, message: str = "Request blocked: semantic firewall policy violation") -> None:
+        super().__init__(message, code=-32010)
+
+
+class ExternalPolicyDeniedError(MCPBastionError):
+    """Raised when OPA/Cedar external policy engine denies the request."""
+
+    def __init__(self, message: str = "Request blocked: external policy denied") -> None:
+        super().__init__(message, code=-32011)
+
+
+class SensitiveContentError(MCPBastionError):
+    """Raised when model-based sensitive content classifier flags a request."""
+
+    def __init__(self, message: str = "Request blocked: sensitive business content detected") -> None:
+        super().__init__(message, code=-32012)
+
+
+class AuthenticationError(MCPBastionError):
+    """Raised when optional edge authentication (metadata token) is missing or invalid."""
+
+    def __init__(self, message: str = "Request blocked: authentication required") -> None:
+        super().__init__(message, code=-32013)
+
+
+class ToolNotAllowedError(MCPBastionError):
+    """Raised when tool name is not on the configured allowlist (tool inventory / poisoning guard)."""
+
+    def __init__(self, message: str = "Request blocked: tool not on allowlist") -> None:
+        super().__init__(message, code=-32014)
+
+
+class SessionScopeExceededError(MCPBastionError):
+    """Raised when a session exceeds distinct-tool limits (scope creep / agent sprawl)."""
+
+    def __init__(self, message: str = "Request blocked: session tool scope exceeded") -> None:
+        super().__init__(message, code=-32015)
+
+
+class ToolMetadataPoisoningError(MCPBastionError):
+    """Raised when tools/list (or equivalent) exposes tool metadata that fails safety checks."""
+
+    def __init__(self, message: str = "Response blocked: suspicious tool metadata (possible tool poisoning)") -> None:
+        super().__init__(message, code=-32016)

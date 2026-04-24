@@ -62,7 +62,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 ### Complete feature catalog
 
-**Pillar definitions:** Security controls, `bastion.yaml` sections, and how they relate to dashboard health rows are documented in [docs/PILLARS.md](docs/PILLARS.md) (canonical reference; avoids ambiguous “total pillar” counts).
+**Pillar definitions:** Security controls, `bastion.yaml` sections, and how they relate to dashboard health rows are documented in [docs/PILLARS.md](docs/PILLARS.md) (canonical reference; avoids ambiguous “total pillar” counts). The same page lists **extended** features restored in 1.0.16+ (semantic firewall, sensitive classifier, external policy, edge auth, tool allowlist, session scope, tool metadata guard, multi-tenant, audit hash chain, pricing hooks, telemetry sinks, **red team** and **doctor** CLIs, etc.).
 
 > **Deeper context:** [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) — **OWASP MCP Top 10** alignment, attack scenarios, and SIEM/log integrations. **Framework add-ons** (LangChain, OpenAI, Bedrock, …) are listed under [Framework Integrations](#framework-integrations) below.
 
@@ -99,7 +99,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Audit logging** | Structured **allow/deny** decisions with **reason**, **tool**, **tenant_id**, **trace_id**, **request_id**—feed SOC / compliance. |
 | **Alert sinks** | **Slack** incoming webhook; **generic HTTP** webhooks (PagerDuty, Teams, custom APIs); **multiple URLs**; **retry**, **backoff**, **timeout** in `bastion.yaml`. |
 | **In-memory metrics** | **Global MetricsStore**: requests, blocks, PII counts, cost, per-tool stats, latency samples, rolling **time series** buckets. |
-| **Real-time dashboard** | **Web UI** with KPIs, **traffic & block charts**, **blocked-by-reason/kind**, **top tools**, **cost by user**, **PII by entity**, **latency P50/P95/P99**, **forensics table** (tenant filter, trace/replay helpers), **recent alerts**, **insights & anomalies** (heuristic signals), **dark/light theme**, **Prometheus** `/metrics`, **JSON** `/api/metrics`. |
+| **Real-time dashboard** | **Web UI** with a top **KPI summary** (totals, block %, top threat, active users/tenants), **traffic & block charts**, **blocked-by-reason/kind** (with readable reasons / tooltips), **PII by entity** (severity-style coloring, e.g. high-risk types emphasized), **top tools**, **cost by user**, **latency P50/P95/P99**, **forensics table** (tenant filter, trace/replay helpers), **recent alerts**, **insights & anomalies** (heuristic signals), **dark/light theme**, **Prometheus** `/metrics`, **JSON** `/api/metrics`, loading/empty guidance instead of a blank first paint. |
 | **OpenTelemetry** | Optional **OTLP** span export — `pip install mcp-bastion-python[otel]` — [docs/OTEL.md](docs/OTEL.md). |
 
 #### Policy, packaging & developer experience
@@ -109,23 +109,15 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Policy-as-code** | Single **`bastion.yaml`**: toggles for all request-path controls plus audit, alerts, and hot reload ([docs/PILLARS.md](docs/PILLARS.md)); load via `load_config` / `build_middleware_from_config`. |
 | **Hot reload** | Optional **reload `bastion.yaml` on change** without restarting the MCP server ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)). |
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
-| **CLI** | **`mcp-bastion validate`**, **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** for UI dev) — [docs/CLI.md](docs/CLI.md). |
+| **CLI** | **`mcp-bastion validate`**, **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** / **`--demo`**), **`redteam`**, **`doctor`** — [docs/CLI.md](docs/CLI.md). |
 | **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
 | **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard) — [DOCKER.md](DOCKER.md). |
 
 ### Real-Time Dashboard and Alerts
 
+**🎥 Demo (screen recording):** [Watch on Vimeo](https://vimeo.com/1186084574) — overview of the dashboard and metrics (link opens the player on Vimeo).
+
 Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
-
-**🎥 Demo (screen recording):** the walkthrough is hosted on **Vimeo** (full **video** — GitHub’s README cannot play inline players, so use the link below or run the dashboard locally to see the embedded player). The live dashboard also shows the same tour at the top of the UI.
-
-<p align="center">
-  <strong><a href="https://vimeo.com/1186084574">🎥 Watch the screen recording on Vimeo</a></strong>
-  <br />
-  <sub>Opens the Vimeo page with the video player (not a static screenshot).</sub>
-  <br />
-  <sub><strong>Or:</strong> run <code>mcp-bastion dashboard</code> — the <strong>Dashboard tour</strong> block embeds the same Vimeo player on <code>localhost</code>.</sub>
-</p>
 
 ```bash
 mcp-bastion dashboard --port 7000
@@ -217,7 +209,7 @@ On every pull request and push to `main`, [`.github/workflows/ci.yml`](.github/w
 
 1. `pip install -e ".[dev,policy,dashboard]"` — install the Python package with tests, YAML policy loading, and FastAPI for dashboard tests.
 2. `mcp-bastion validate --config bastion.yaml.example` — ensure the example policy file loads.
-3. `pytest --cov=mcp_bastion --cov-fail-under=99` — full Python test suite with **≥99%** line coverage on `src/mcp_bastion` (see `[tool.coverage.run]` in `pyproject.toml` for measured paths).
+3. `pytest --cov=mcp_bastion --cov-fail-under=92` — full Python test suite with **≥92%** line coverage on `src/mcp_bastion` (see `[tool.coverage.*]` in `pyproject.toml` for measured paths and gates).
 4. `npm ci` and `npm test` — TypeScript workspace tests.
 
 To validate **your** repo’s `bastion.yaml` in CI without cloning MCP-Bastion, see [examples/ci/README.md](examples/ci/README.md).

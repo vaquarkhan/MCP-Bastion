@@ -10,6 +10,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -121,8 +122,6 @@ def cmd_dashboard(
 ) -> int:
     _configure_cli_logging()
     _ensure_src_on_path()
-    # Default: seed examples/dashboard_demo.py so local graphs are populated without a running MCP server.
-    # Opt out: --no-demo or MCP_BASTION_DEMO=0 / false / no
     if no_demo:
         os.environ["MCP_BASTION_DEMO"] = "0"
     elif demo:
@@ -149,7 +148,6 @@ def cmd_dashboard(
             "dashboard/app.py not found. cd into the MCP-Bastion repo root (folder that contains dashboard/) and retry."
         )
         return 1
-    # cwd first in path so `import dashboard` always loads this repo, not another package
     sys.path.insert(0, str(repo))
     sys.path.insert(0, str(repo / "src"))
     dash_py = repo / "dashboard" / "app.py"
@@ -179,6 +177,49 @@ def cmd_dashboard(
         reload_dirs=[str(repo / "dashboard")] if do_reload else None,
     )
     return 0
+
+
+def cmd_doctor(config_path: str | None, repo_root: str | None) -> int:
+    _configure_cli_logging()
+    _ensure_src_on_path()
+    try:
+        from mcp_bastion.doctor import run_doctor
+    except ImportError as e:
+        logger.error("Error: %s", e)
+        return 1
+    root = Path(repo_root).resolve() if repo_root else Path.cwd()
+    report = run_doctor(config_path=config_path, repo_root=root)
+    logger.info(json.dumps(report, indent=2))
+    return 0 if report.get("ok") else 1
+
+
+def cmd_redteam(config_path: str | None, output_path: str | None = None) -> int:
+    _configure_cli_logging()
+    _ensure_src_on_path()
+    try:
+        from mcp_bastion.redteam import run_redteam_sync
+    except ImportError as e:
+        logger.error("Error: %s", e)
+        return 1
+    try:
+        report = run_redteam_sync(config_path)
+        logger.info("Redteam score (blocked%%): %.2f", float(report.get("score_blocked_pct", 0.0)))
+        logger.info(
+            "Attempts=%s blocked=%s allowed=%s",
+            report.get("totals", {}).get("attempts"),
+            report.get("totals", {}).get("blocked"),
+            report.get("totals", {}).get("allowed"),
+        )
+        if output_path:
+            p = Path(output_path)
+            p.write_text(json.dumps(report, indent=2), encoding="utf-8")
+            logger.info("Report: %s", p)
+        else:
+            logger.info(json.dumps(report))
+        return 0
+    except Exception as e:
+        logger.error("Redteam failed: %s", e)
+        return 1
 
 
 def main() -> int:
@@ -237,6 +278,16 @@ def main() -> int:
             live=bool(kw.get("live")),
         )
     )
+
+    redteam_parser = sub.add_parser("redteam", help="Run integrated red-team security suite")
+    redteam_parser.add_argument("--config", "-c", help="Path to bastion.yaml", default="bastion.yaml")
+    redteam_parser.add_argument("--output", "-o", help="Write JSON report to file", default=None)
+    redteam_parser.set_defaults(func=lambda **kw: cmd_redteam(kw.get("config"), kw.get("output")))
+
+    doctor_parser = sub.add_parser("doctor", help="Config + optional supply-chain checks (MCP04)")
+    doctor_parser.add_argument("--config", "-c", help="Path to bastion.yaml", default=None)
+    doctor_parser.add_argument("--repo-root", help="Directory for manifest discovery", default=None)
+    doctor_parser.set_defaults(func=lambda **kw: cmd_doctor(kw.get("config"), kw.get("repo_root")))
 
     args = parser.parse_args()
     ns = vars(args)

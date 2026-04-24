@@ -41,6 +41,8 @@ Run `mcp-bastion dashboard --port 7000` and open http://localhost:7000/. You get
 
 | Metric | Meaning |
 |--------|--------|
+| **Summary bar (KPI strip)** | At a glance: **total requests**, **block rate** (% of invocations), **top threat** (most common block class), and **active users** / tenant count when attribution data exists. Replaces a blank first paint with skeleton placeholders, then live values. |
+| **Load state** | Until metrics connect, a short “connecting to metrics” style message and busy state instead of an empty page. |
 | **Requests** | Total tool (and optionally resource) requests seen. |
 | **Blocked** | Number of requests blocked (injection, rate limit, RBAC, content filter, etc.). |
 | **Blocked %** | Percentage of requests blocked; useful for tuning thresholds and understanding abuse. |

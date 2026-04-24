@@ -9,6 +9,8 @@ import time
 import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
+
+from mcp_bastion.pillars.audit_hash_chain import AuditHashChain
 from datetime import datetime, timezone
 from typing import Any
 
@@ -16,7 +18,8 @@ from typing import Any
 TIME_BUCKET_SECONDS = 30
 TIME_BUCKET_COUNT = 20
 LATENCY_SAMPLE_CAP = 2000
-# Recent blocked calls with ids for dashboard forensics (newest appended; maxlen enforced)
+FORENSIC_EVENT_CAP = 500
+ANOMALY_EVENT_CAP = 200
 BLOCKED_INCIDENT_CAP = 48
 
 
@@ -73,7 +76,50 @@ class MetricsStore:
         self._tool_latency_ms: dict[str, deque[float]] = defaultdict(
             lambda: deque(maxlen=LATENCY_SAMPLE_CAP // 4)
         )
+        self._forensic_events: deque[dict[str, Any]] = deque(maxlen=FORENSIC_EVENT_CAP)
+        self._anomalies: deque[dict[str, Any]] = deque(maxlen=ANOMALY_EVENT_CAP)
+        self._tool_rate_window: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=500))
+        self._tool_rate_baseline: dict[str, float] = defaultdict(float)
+        self._tool_latency_baseline: dict[str, float] = defaultdict(float)
+        self._last_anomaly_key_ts: dict[str, float] = {}
+        self._cost_by_provider: dict[str, float] = defaultdict(float)
+        self._cost_by_model: dict[str, float] = defaultdict(float)
+        self._cost_by_tool_dim: dict[str, float] = defaultdict(float)
+        self._cost_by_dataset: dict[str, float] = defaultdict(float)
+        self._tenant_requests: dict[str, int] = defaultdict(int)
+        self._tenant_blocked: dict[str, int] = defaultdict(int)
+        self._tenant_cost: dict[str, float] = defaultdict(float)
+        self._session_sequences: dict[str, deque[str]] = defaultdict(lambda: deque(maxlen=24))
+        self._session_frozen_baseline: dict[str, set[str]] = {}
+        self._session_calls: dict[str, int] = defaultdict(int)
         self._blocked_incidents: deque[dict[str, Any]] = deque(maxlen=BLOCKED_INCIDENT_CAP)
+
+    def _record_anomaly(self, *, kind: str, tool: str, message: str, value: float, baseline: float) -> None:
+        now = time.time()
+        key = f"{kind}:{tool}"
+        last = self._last_anomaly_key_ts.get(key, 0.0)
+        if now - last < 30.0:
+            return
+        self._last_anomaly_key_ts[key] = now
+        event = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "kind": kind,
+            "tool": tool,
+            "message": message,
+            "value": round(value, 4),
+            "baseline": round(baseline, 4),
+        }
+        self._anomalies.append(event)
+        self._metrics.alerts.append(
+            {
+                "ts": event["ts"],
+                "kind": "auto_tune_anomaly",
+                "message": message,
+                "severity": "warning",
+            }
+        )
+        if len(self._metrics.alerts) > 100:
+            self._metrics.alerts = self._metrics.alerts[-100:]
 
     @staticmethod
     def _normalize_reason_kind(reason: str | None) -> str:
@@ -96,6 +142,12 @@ class MetricsStore:
             return "replay"
         if "schema" in lower or "validation" in lower:
             return "schema_validation"
+        if "semantic firewall" in lower or "intent mismatch" in lower or "dangerous tool chain" in lower:
+            return "semantic_firewall"
+        if "external policy" in lower or "opa denied" in lower or "cedar denied" in lower:
+            return "external_policy"
+        if "sensitive content" in lower or "classifier" in lower:
+            return "sensitive_classifier"
         return "other"
 
     @staticmethod
@@ -164,11 +216,56 @@ class MetricsStore:
                     cls._instance = MetricsStore()
         return cls._instance
 
-    def record_request(self, tool: str, user: str | None = None) -> None:
+    def record_session_tool(self, session_id: str | None, tool: str) -> None:
+        """Track per-session tool sequence for behavior fingerprinting."""
+        sid = session_id or "default"
+        with self._lock:
+            self._session_calls[sid] += 1
+            self._session_sequences[sid].append(tool)
+            n = self._session_calls[sid]
+            if sid not in self._session_frozen_baseline and n >= 18:
+                self._session_frozen_baseline[sid] = set(self._session_sequences[sid])
+            baseline = self._session_frozen_baseline.get(sid)
+            if baseline and n >= 28 and len(self._session_sequences[sid]) >= 10:
+                window = list(self._session_sequences[sid])[-10:]
+                uniq = set(window)
+                overlap = len(uniq & baseline) / max(1, len(uniq))
+                if overlap < 0.25:
+                    self._record_anomaly(
+                        kind="behavior_drift",
+                        tool=tool,
+                        message=f"session {sid} recent tools diverge from established baseline (overlap={overlap:.2f})",
+                        value=float(overlap),
+                        baseline=1.0,
+                    )
+
+    def record_request(self, tool: str, user: str | None = None, tenant: str | None = None) -> None:
         with self._lock:
             self._metrics.requests_total += 1
             self._metrics.top_tools[tool] += 1
             self._tool_allowed[tool] += 1
+            if tenant:
+                self._tenant_requests[str(tenant)] += 1
+            now = time.time()
+            win = self._tool_rate_window[tool]
+            win.append(now)
+            cutoff = now - 60.0
+            while win and win[0] < cutoff:
+                win.popleft()
+            current_rate = float(len(win))
+            baseline = self._tool_rate_baseline.get(tool, 0.0)
+            if baseline <= 0:
+                self._tool_rate_baseline[tool] = max(1.0, current_rate)
+            else:
+                self._tool_rate_baseline[tool] = baseline * 0.95 + current_rate * 0.05
+                if baseline >= 2.0 and current_rate >= baseline * 10.0:
+                    self._record_anomaly(
+                        kind="call_rate_spike",
+                        tool=tool,
+                        message=f"tool {tool} call rate is {current_rate:.1f}/min vs baseline {baseline:.1f}/min",
+                        value=current_rate,
+                        baseline=baseline,
+                    )
             self._bump_time_bucket(allowed=1)
             if user:
                 pass  # cost_by_user updated by record_cost
@@ -178,10 +275,12 @@ class MetricsStore:
         reason: str,
         tool: str = "unknown",
         *,
+        tenant: str | None = None,
         tenant_id: str | None = None,
         trace_id: str | None = None,
         request_id: str | None = None,
     ) -> None:
+        tnt = tenant_id or tenant
         with self._lock:
             kind = self._normalize_reason_kind(reason)
             self._metrics.blocked_total += 1
@@ -190,11 +289,13 @@ class MetricsStore:
             self._metrics.top_tools[tool] += 1
             self._tool_blocked[tool] += 1
             self._tool_reason_counts[tool][kind] += 1
+            if tnt:
+                self._tenant_blocked[str(tnt)] += 1
             self._bump_time_bucket(blocked=1)
             self._blocked_incidents.append(
                 {
                     "ts": datetime.now(timezone.utc).isoformat(),
-                    "tenant_id": tenant_id or "default",
+                    "tenant_id": tnt or "default",
                     "tool": tool,
                     "reason": (reason or "")[:2000],
                     "trace_id": trace_id or f"trc-{uuid.uuid4().hex[:20]}",
@@ -230,6 +331,19 @@ class MetricsStore:
             return
         with self._lock:
             self._tool_latency_ms[tool].append(float(ms))
+            baseline = self._tool_latency_baseline.get(tool, 0.0)
+            if baseline <= 0:
+                self._tool_latency_baseline[tool] = float(ms)
+            else:
+                self._tool_latency_baseline[tool] = baseline * 0.95 + float(ms) * 0.05
+                if baseline >= 5.0 and float(ms) >= baseline * 10.0:
+                    self._record_anomaly(
+                        kind="latency_spike",
+                        tool=tool,
+                        message=f"tool {tool} latency is {float(ms):.2f}ms vs baseline {baseline:.2f}ms",
+                        value=float(ms),
+                        baseline=baseline,
+                    )
 
     def _build_tool_stats(self) -> dict[str, dict[str, Any]]:
         tools = set(self._tool_allowed) | set(self._tool_blocked) | set(self._tool_latency_ms)
@@ -290,6 +404,9 @@ class MetricsStore:
             blocker_pillar("Content Filter", "content_filter"),
             blocker_pillar("RBAC", "rbac"),
             blocker_pillar("Schema Validation", "schema_validation"),
+            blocker_pillar("Semantic Firewall", "semantic_firewall"),
+            blocker_pillar("Sensitive Classifier", "sensitive_classifier"),
+            blocker_pillar("External Policy", "external_policy"),
             blocker_pillar("Replay Guard", "replay"),
             self._pillar_item(
                 "Cost Tracker",
@@ -430,11 +547,32 @@ class MetricsStore:
 
         return out[:12]
 
-    def record_cost(self, amount: float, user: str | None = None) -> None:
+    def record_cost(
+        self,
+        amount: float,
+        user: str | None = None,
+        dimensions: dict[str, Any] | None = None,
+        tenant: str | None = None,
+    ) -> None:
         with self._lock:
             self._metrics.cost_total += amount
             if user:
                 self._metrics.cost_by_user[user] += amount
+            if tenant:
+                self._tenant_cost[str(tenant)] += amount
+            if dimensions and amount > 0:
+                p = dimensions.get("llm_provider")
+                m = dimensions.get("llm_model")
+                t = dimensions.get("tool")
+                d = dimensions.get("dataset")
+                if p:
+                    self._cost_by_provider[str(p)] += amount
+                if m:
+                    self._cost_by_model[str(m)] += amount
+                if t:
+                    self._cost_by_tool_dim[str(t)] += amount
+                if d:
+                    self._cost_by_dataset[str(d)] += amount
 
     def add_alert(self, kind: str, message: str, severity: str = "warning") -> None:
         with self._lock:
@@ -446,6 +584,71 @@ class MetricsStore:
             })
             if len(self._metrics.alerts) > 100:
                 self._metrics.alerts = self._metrics.alerts[-100:]
+
+    def record_forensic_event(self, event: dict[str, Any]) -> None:
+        """Store a forensic event for dashboard drill-down and replay payload export."""
+        if not isinstance(event, dict):
+            return
+        with self._lock:
+            self._forensic_events.append(dict(event))
+
+    def list_forensic_events(
+        self,
+        *,
+        limit: int = 20,
+        blocked_only: bool = False,
+        include_full: bool = False,
+    ) -> list[dict[str, Any]]:
+        """List latest forensic events; optionally summaries only."""
+        with self._lock:
+            events = list(self._forensic_events)
+        return self._build_forensic_list(
+            events,
+            limit=limit,
+            blocked_only=blocked_only,
+            include_full=include_full,
+        )
+
+    @staticmethod
+    def _build_forensic_list(
+        events: list[dict[str, Any]],
+        *,
+        limit: int,
+        blocked_only: bool,
+        include_full: bool,
+    ) -> list[dict[str, Any]]:
+        max_items = max(1, int(limit))
+        events = list(reversed(events))
+        out: list[dict[str, Any]] = []
+        for event in events:
+            if blocked_only and event.get("action") != "BLOCKED":
+                continue
+            if include_full:
+                out.append(dict(event))
+            else:
+                out.append(
+                    {
+                        "event_id": event.get("event_id"),
+                        "timestamp": event.get("timestamp"),
+                        "tool": event.get("tool"),
+                        "action": event.get("action"),
+                        "reason": event.get("reason"),
+                        "request_id": event.get("request_id"),
+                        "session_id": event.get("session_id"),
+                        "tenant_id": event.get("tenant_id"),
+                        "latency_ms": event.get("latency_ms"),
+                    }
+                )
+            if len(out) >= max_items:
+                break
+        return out
+
+    def get_forensic_event(self, event_id: str) -> dict[str, Any] | None:
+        with self._lock:
+            for event in reversed(self._forensic_events):
+                if event.get("event_id") == event_id:
+                    return dict(event)
+        return None
 
     def get_metrics(self) -> dict[str, Any]:
         with self._lock:
@@ -472,6 +675,47 @@ class MetricsStore:
             d["pillar_health"] = self._build_pillar_health()
             d["blocked_incidents"] = list(reversed(self._blocked_incidents))
             d["dashboard_insights"] = self._build_dashboard_insights()
+            d["forensic_recent_blocked"] = self._build_forensic_list(
+                list(self._forensic_events),
+                limit=20,
+                blocked_only=True,
+                include_full=False,
+            )
+            d["auto_tune"] = {
+                "latency_baseline_ms": dict(
+                    sorted(((k, round(v, 2)) for k, v in self._tool_latency_baseline.items()), key=lambda x: -x[1])[:20]
+                ),
+                "call_rate_baseline_per_min": dict(
+                    sorted(((k, round(v, 2)) for k, v in self._tool_rate_baseline.items()), key=lambda x: -x[1])[:20]
+                ),
+                "recent_anomalies": list(self._anomalies)[-20:],
+            }
+            d["cost_attribution"] = {
+                "by_provider": dict(sorted(self._cost_by_provider.items(), key=lambda x: -x[1])[:15]),
+                "by_model": dict(sorted(self._cost_by_model.items(), key=lambda x: -x[1])[:15]),
+                "by_tool": dict(sorted(self._cost_by_tool_dim.items(), key=lambda x: -x[1])[:15]),
+                "by_dataset": dict(sorted(self._cost_by_dataset.items(), key=lambda x: -x[1])[:15]),
+            }
+            tenants = set(self._tenant_requests) | set(self._tenant_blocked) | set(self._tenant_cost)
+            d["tenants"] = {
+                t: {
+                    "requests_total": int(self._tenant_requests.get(t, 0)),
+                    "blocked_total": int(self._tenant_blocked.get(t, 0)),
+                    "cost_total": round(float(self._tenant_cost.get(t, 0.0)), 4),
+                }
+                for t in sorted(
+                    tenants,
+                    key=lambda x: -(
+                        self._tenant_requests.get(x, 0)
+                        + self._tenant_blocked.get(x, 0)
+                    ),
+                )[:50]
+            }
+            d["audit_chain"] = {
+                **AuditHashChain.get().head(),
+                "recent_links": AuditHashChain.get().recent_links(12),
+                "anchors": AuditHashChain.get().anchors()[-5:],
+            }
             return d
 
     def reset(self) -> None:
@@ -483,4 +727,21 @@ class MetricsStore:
             self._tool_blocked = defaultdict(int)
             self._tool_reason_counts = defaultdict(lambda: defaultdict(int))
             self._tool_latency_ms = defaultdict(lambda: deque(maxlen=LATENCY_SAMPLE_CAP // 4))
+            self._forensic_events = deque(maxlen=FORENSIC_EVENT_CAP)
+            self._anomalies = deque(maxlen=ANOMALY_EVENT_CAP)
+            self._tool_rate_window = defaultdict(lambda: deque(maxlen=500))
+            self._tool_rate_baseline = defaultdict(float)
+            self._tool_latency_baseline = defaultdict(float)
+            self._last_anomaly_key_ts = {}
+            self._cost_by_provider = defaultdict(float)
+            self._cost_by_model = defaultdict(float)
+            self._cost_by_tool_dim = defaultdict(float)
+            self._cost_by_dataset = defaultdict(float)
+            self._tenant_requests = defaultdict(int)
+            self._tenant_blocked = defaultdict(int)
+            self._tenant_cost = defaultdict(float)
+            self._session_sequences = defaultdict(lambda: deque(maxlen=24))
+            self._session_frozen_baseline = {}
+            self._session_calls = defaultdict(int)
             self._blocked_incidents.clear()
+            AuditHashChain.get().reset()

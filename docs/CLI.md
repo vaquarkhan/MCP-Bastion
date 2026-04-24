@@ -44,6 +44,28 @@ mcp-bastion dashboard --port 7000
 
 Requires: `pip install fastapi uvicorn` (or `pip install mcp-bastion-python[dashboard]`).
 
+### redteam
+
+Run the **integrated red-team** harness (OWASP + MCP Top 10 style cases) against your effective policy. Uses `load_config` / `build_middleware_from_config` the same as production.
+
+```bash
+mcp-bastion redteam
+mcp-bastion redteam --config bastion.yaml
+# Optional JSON report path:
+mcp-bastion redteam --output report.json
+```
+
+See [REDTEAM.md](REDTEAM.md) for interpreting the score.
+
+### doctor
+
+**Preflight** checks: config validation, optional paths, and supply-chain style hints (MCP04-related).
+
+```bash
+mcp-bastion doctor
+mcp-bastion doctor --config bastion.yaml
+```
+
 ## Environment
 
 - `BASTION_CONFIG` – path to config file (default `bastion.yaml`)
