@@ -18,7 +18,7 @@
 
 **Documentation:** structured paths for **policy** and **LLM integration** live in [docs/README.md](docs/README.md) and [docs/index.md](docs/index.md). **Community:** open a GitHub **Issue** for bugs or gaps, a **Discussion** for integration questions (if enabled on the repo), or a **PR** for docs and examples—those help every adopter.
 
-**Hello world (minimal Bastion on code):** see **[docs/QUICK_START.md](docs/QUICK_START.md)** — FastMCP one-liner `secure_fastmcp(mcp)`, or two-line `build_middleware_from_config()`, plus a **CI validate** snippet for pipeline-driven installs.
+**Hello world (minimal Bastion on code):** see **[docs/QUICK_START.md](docs/QUICK_START.md)** — FastMCP helper `secure_fastmcp(mcp)` (wires `MCPBastionMiddleware` into tool dispatch), or two-line `build_middleware_from_config()` for full `bastion.yaml` policy, plus a **CI validate** snippet for pipeline-driven installs.
 
 The Model Context Protocol (MCP) has rapidly become the universally accepted standard for connecting AI agents to enterprise databases and APIs. However, this connectivity introduces a massive new attack surface: unpredictable, non-deterministic agentic behavior.
 
@@ -265,7 +265,7 @@ See **[docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md)** for the
 | File | Purpose |
 |------|---------|
 | `examples/python_server_example.py` | Minimal middleware chain |
-| `examples/full_demo.py` | All 11 features (rate limit, PII, RBAC, etc.) |
+| `examples/full_demo.py` | Multi-pillar stack (core toggles: rate limit, PII, RBAC, … — see **docs/PILLARS.md**) |
 | `examples/llm_server.py` | Shared MCP server for LLM clients |
 | `examples/llm_openai_example.py` | OpenAI |
 | `examples/llm_claude_example.py` | Claude |
@@ -388,7 +388,7 @@ middleware = compose_middleware(bastion)
 | Example | Description |
 |---------|-------------|
 | `examples/python_server_example.py` | Basic middleware chain |
-| `examples/full_demo.py` | All features: add, PII, rate limit, prompt injection |
+| `examples/full_demo.py` | Full middleware stack: add, PII, rate limit, prompt injection, etc. |
 | `examples/llm_openai_example.py` | MCP server for OpenAI |
 | `examples/llm_claude_example.py` | MCP server for Claude |
 | `examples/llm_gemini_example.py` | MCP server for Gemini |
@@ -672,6 +672,13 @@ When MCP-Bastion blocks a request, it returns standard MCP/JSON-RPC errors:
 | -32007 | `SchemaValidationError` | Tool arguments failed schema validation |
 | -32008 | `ReplayAttackError` | Duplicate nonce / replay detected |
 | -32009 | `CostBudgetExceededError` | Session cost budget exceeded |
+| -32010 | `SemanticFirewallError` | Tool sequence / argument pattern failed semantic firewall |
+| -32011 | `ExternalPolicyDeniedError` | OPA/Cedar (or other external) policy denied the request |
+| -32012 | `SensitiveContentError` | Sensitive-business classifier above threshold |
+| -32013 | `AuthenticationError` | Edge / gateway authentication (metadata token) failed |
+| -32014 | `ToolNotAllowedError` | Tool not on allowlist |
+| -32015 | `SessionScopeExceededError` | Too many distinct tools per session (scope creep) |
+| -32016 | `ToolMetadataPoisoningError` | Tool list / metadata failed safety checks |
 
 ```python
 # Python: exceptions
@@ -685,6 +692,13 @@ from mcp_bastion.errors import (
     SchemaValidationError,
     ReplayAttackError,
     CostBudgetExceededError,
+    SemanticFirewallError,
+    ExternalPolicyDeniedError,
+    SensitiveContentError,
+    AuthenticationError,
+    ToolNotAllowedError,
+    SessionScopeExceededError,
+    ToolMetadataPoisoningError,
 )
 import logging
 logger = logging.getLogger(__name__)
@@ -701,6 +715,13 @@ except (
     SchemaValidationError,
     ReplayAttackError,
     CostBudgetExceededError,
+    SemanticFirewallError,
+    ExternalPolicyDeniedError,
+    SensitiveContentError,
+    AuthenticationError,
+    ToolNotAllowedError,
+    SessionScopeExceededError,
+    ToolMetadataPoisoningError,
 ) as e:
     logger.warning("blocked: %s", e.to_mcp_error())
 ```

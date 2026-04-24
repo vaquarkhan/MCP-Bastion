@@ -235,7 +235,7 @@ All files in `examples/`:
 | File | Purpose |
 |------|---------|
 | `examples/python_server_example.py` | Minimal middleware chain |
-| `examples/full_demo.py` | All 11 features (rate limit, PII, RBAC, circuit breaker, etc.) |
+| `examples/full_demo.py` | Multi-pillar demo (core toggles: rate limit, PII, RBAC, circuit breaker, …; see **docs/PILLARS.md**) |
 | `examples/llm_server.py` | Shared MCP server for LLM clients |
 | `examples/llm_openai_example.py` | OpenAI (ChatGPT, API, Agents SDK) |
 | `examples/llm_claude_example.py` | Claude (Desktop, Code, API) |

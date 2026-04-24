@@ -1,7 +1,9 @@
 """
-Full demo: all MCP-Bastion features from SETUP_GUIDE.
+Full demo: layered MCP-Bastion middleware (core + v2 features from SETUP_GUIDE).
 
-Demonstrates:
+Demonstrates multiple **request-path** controls in one process (the **10** core toggles
+plus the composed stack below — see **docs/PILLARS.md** for how counts are defined):
+
 - Custom rate limits (5 iterations, 30s for quick demo)
 - Prompt injection blocking
 - PII redaction

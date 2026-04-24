@@ -9,10 +9,14 @@ Time-to-value matters. Pick **one** path; each keeps Bastion-specific code to **
 After `pip install mcp-bastion-fastmcp` and your usual `mcp` / FastMCP install:
 
 ```python
+from mcp.server.fastmcp import FastMCP
 from mcp_bastion_fastmcp import secure_fastmcp
 
-secure_fastmcp(mcp)  # add after you create your FastMCP() instance
+mcp = FastMCP("My Server")
+secure_fastmcp(mcp)  # must run right after FastMCP(); wires Bastion into tool dispatch
 ```
+
+`secure_fastmcp` patches FastMCP’s internal tool dispatcher so each `tools/call` runs through `MCPBastionMiddleware` (defaults: prompt guard, PII redaction, rate limit). It does **not** load arbitrary `bastion.yaml` by itself. For **full** policy (semantic firewall, OPA/Cedar, allowlists, session limits, etc.) use **Path B** or compose middleware on the low-level MCP server.
 
 Full runnable pattern: [integrations/mcp-bastion-fastmcp/README.md](../integrations/mcp-bastion-fastmcp/README.md).
 

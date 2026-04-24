@@ -126,6 +126,13 @@ class MetricsStore:
         if not reason:
             return "unknown"
         lower = reason.lower()
+        # Before "injection": phrases like "injection-like arguments" in tool intent messages
+        if (
+            "tool intent mismatch" in lower
+            or "semantic firewall" in lower
+            or "dangerous tool chain" in lower
+        ):
+            return "semantic_firewall"
         if "injection" in lower or "prompt" in lower:
             return "injection"
         if "rate" in lower or "iteration" in lower:
@@ -134,7 +141,14 @@ class MetricsStore:
             return "rbac"
         if "cost" in lower or "budget" in lower:
             return "cost"
-        if "content" in lower or "blocked" in lower:
+        # Order matters: "Request blocked: sensitive content classifier" must not match content_filter
+        if "external policy" in lower or "opa denied" in lower or "cedar denied" in lower:
+            return "external_policy"
+        if "sensitive content classifier" in lower or (
+            "sensitive" in lower and "classifier" in lower
+        ):
+            return "sensitive_classifier"
+        if "content filter" in lower or lower.startswith("content blocked:"):
             return "content_filter"
         if "circuit" in lower:
             return "circuit_breaker"
@@ -142,12 +156,6 @@ class MetricsStore:
             return "replay"
         if "schema" in lower or "validation" in lower:
             return "schema_validation"
-        if "semantic firewall" in lower or "intent mismatch" in lower or "dangerous tool chain" in lower:
-            return "semantic_firewall"
-        if "external policy" in lower or "opa denied" in lower or "cedar denied" in lower:
-            return "external_policy"
-        if "sensitive content" in lower or "classifier" in lower:
-            return "sensitive_classifier"
         return "other"
 
     @staticmethod
@@ -330,13 +338,21 @@ class MetricsStore:
         if ms < 0 or ms > 600_000:
             return
         with self._lock:
-            self._tool_latency_ms[tool].append(float(ms))
+            dq = self._tool_latency_ms[tool]
+            dq.append(float(ms))
+            n = len(dq)
             baseline = self._tool_latency_baseline.get(tool, 0.0)
             if baseline <= 0:
                 self._tool_latency_baseline[tool] = float(ms)
             else:
                 self._tool_latency_baseline[tool] = baseline * 0.95 + float(ms) * 0.05
-                if baseline >= 5.0 and float(ms) >= baseline * 10.0:
+                # Require warmup samples so cold-starts (e.g. first Presidio load) do not
+                # fire false-positive latency_spike auto-tune alerts.
+                if (
+                    n >= 5
+                    and baseline >= 5.0
+                    and float(ms) >= baseline * 10.0
+                ):
                     self._record_anomaly(
                         kind="latency_spike",
                         tool=tool,
@@ -690,11 +706,14 @@ class MetricsStore:
                 ),
                 "recent_anomalies": list(self._anomalies)[-20:],
             }
+            by_p = float(sum(self._cost_by_provider.values()))
+            ctot = float(self._metrics.cost_total)
             d["cost_attribution"] = {
                 "by_provider": dict(sorted(self._cost_by_provider.items(), key=lambda x: -x[1])[:15]),
                 "by_model": dict(sorted(self._cost_by_model.items(), key=lambda x: -x[1])[:15]),
                 "by_tool": dict(sorted(self._cost_by_tool_dim.items(), key=lambda x: -x[1])[:15]),
                 "by_dataset": dict(sorted(self._cost_by_dataset.items(), key=lambda x: -x[1])[:15]),
+                "unattributed_usd": round(max(0.0, ctot - by_p), 4),
             }
             tenants = set(self._tenant_requests) | set(self._tenant_blocked) | set(self._tenant_cost)
             d["tenants"] = {

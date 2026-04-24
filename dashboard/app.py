@@ -48,6 +48,19 @@ except ImportError:
 from mcp_bastion.pillars.metrics import MetricsStore
 
 _demo_seed_applied = False
+
+
+def _load_demo_bastion_config() -> object:
+    """Policy snapshot for demo seeding (same file as a real Bastion process: BASTION_CONFIG / bastion.yaml)."""
+    try:
+        from mcp_bastion.config import load_config
+
+        return load_config()
+    except Exception as e:
+        logger.debug("load_config for demo failed (%s); using defaults", e)
+        from mcp_bastion.config import BastionConfig
+
+        return BastionConfig()
 _demo_live_stop: threading.Event | None = None
 _demo_live_thread: threading.Thread | None = None
 
@@ -93,7 +106,7 @@ def _maybe_start_demo_live_traffic() -> None:
     _demo_live_stop = threading.Event()
     _demo_live_thread = threading.Thread(
         target=live_simulator,
-        args=(_demo_live_stop, random.Random(42)),
+        args=(_demo_live_stop, random.Random(42), _load_demo_bastion_config()),
         name="mcp-bastion-demo-live",
         daemon=True,
     )
@@ -133,11 +146,9 @@ def _maybe_seed_demo_metrics() -> None:
     if not _demo_metrics_enabled():
         return
     try:
-        import random
-
         from mcp_bastion.demo_dashboard_metrics import seed_metrics
 
-        seed_metrics(random.Random(42))
+        seed_metrics(random.Random(42), config=_load_demo_bastion_config())
         _demo_seed_applied = True
         logger.info("Demo metrics seeded (MCP_BASTION_DEMO=1). Open /api/metrics to verify non-zero data.")
     except Exception:
