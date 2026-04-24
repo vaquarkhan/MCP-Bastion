@@ -1,0 +1,5 @@
+# Default owners for all files. Used when "Require review from Code Owners" is enabled
+# on a branch ruleset. Adjust teams/usernames to match this repository.
+# See REPOSITORY_RULES.md for how to turn that on in GitHub Settings.
+
+* @vaquarkhan
