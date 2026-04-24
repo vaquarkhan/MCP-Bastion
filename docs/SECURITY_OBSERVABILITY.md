@@ -6,7 +6,7 @@ This page ties together **what MCP-Bastion does**, how it maps to the **industry
 
 ---
 
-## 1. Feature highlights (full stack)
+## 1. Feature highlights (MCP-Bastion)
 
 | **Capability** | **What it does** | **Why it matters** |
 |----------------|------------------|--------------------|
@@ -79,6 +79,26 @@ Use these paths to feed **Splunk, Datadog, Grafana, Elastic, CloudWatch, Microso
 | **Custom audit pipeline** | `AuditLogMiddleware(export_callback=...)` + `make_audit_export_callback` | **Amazon Kinesis**, **Kafka**, **S3**-bound lambdas, proprietary SIEM bulk APIs |
 
 **Wiring example (alerts + metrics):** see [dashboard/README.md](../dashboard/README.md) and [POLICY_AS_CODE.md](POLICY_AS_CODE.md) for `bastion.yaml` alert fields (`retry_attempts`, `timeout_seconds`, etc.).
+
+### Large-scale deployments: policy distribution and fleet visibility
+
+MCP-Bastion enforces policy **on each MCP server process** using **`bastion.yaml`** (and optional **hot reload** when loaded via `build_middleware_from_config()`). For **many nodes or regions**, teams typically pair that with the **same mechanisms they already use for fleet software**:
+
+- **GitOps** (for example Argo CD or Flux) to render and roll out `bastion.yaml` from a trusted repository.
+- **Kubernetes** ConfigMaps or Secrets mounted into pods, plus your standard rollout strategy.
+- **Configuration management** (Ansible, Chef, Puppet, Salt) or **image baking** when MCP servers are VM- or AMI-based.
+
+**Central visibility** comes from shipping metrics and traces to your **existing** observability plane: **Prometheus** remote write, **OpenTelemetry** collectors, or polling **`/api/metrics`** into Datadog, Grafana Cloud, or similar—so operators see blocks, latency, and cost **across** instances without a separate Bastion-hosted control plane.
+
+### SOC, SIEM, and compliance-oriented audit trails
+
+Structured **audit events** (allow/deny, tool, reason, tenant, trace identifiers) flow through **`AuditLogMiddleware`** and optional **`make_audit_export_callback`** wiring. From there you forward JSON to destinations your security team already operates:
+
+- **HTTP collectors** and **generic webhooks** (rows above) for near-real-time SIEM ingestion.
+- **Fluent Bit / Vector / CloudWatch** paths for log pipelines into **Splunk**, **Elastic**, **Microsoft Sentinel**, or regional equivalents.
+- **Custom export callbacks** for **Kafka**, **Amazon Kinesis**, **S3**-triggered processors, or vendor bulk APIs.
+
+For **regulatory retention and immutability**, rely on your **SIEM or log archive** (WORM storage, legal hold, signed journals) as the system of record; MCP-Bastion supplies **consistent, parseable events** at the MCP boundary so those platforms can index, correlate, and retain them under your existing compliance program.
 
 ---
 

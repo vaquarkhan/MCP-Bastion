@@ -20,6 +20,7 @@ All Python files in this folder:
 | `examples/llm_mistral_example.py` | Mistral (Agents SDK) |
 | `examples/llm_grok_example.py` | Grok (xAI, HTTP only) |
 | `examples/server_with_config.py` | Policy-as-code (bastion.yaml) |
+| `examples/ci/README.md` | CI: copy-paste workflow to validate `bastion.yaml` in your repository |
 
 ---
 

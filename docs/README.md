@@ -2,18 +2,27 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: `mcp-bastion-python==1.0.15`.
+Current Python package release: `mcp-bastion-python==1.0.16`.
 
 ## Start here
 
 | Doc | Description |
 |-----|-------------|
+| [QUICK_START.md](QUICK_START.md) | **Minimal code** to wrap FastMCP or load `bastion.yaml`; CI snippet for pipelines |
 | [index.md](index.md) | Landing page for docs website (GitHub Pages home) |
 | [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) | End-to-end tutorial from install to production checks |
 | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) | Full `bastion.yaml` schema and examples |
+| [PILLARS.md](PILLARS.md) | Canonical mapping: controls ↔ `bastion.yaml` ↔ dashboard |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI reference |
 | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) | OpenAI/Claude/Gemini/Mistral/Grok integration patterns |
+| [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) | How Bastion fits stdio, HTTP, Python, TypeScript, and frameworks |
 | [TUTORIALS.md](TUTORIALS.md) | Popular MCP integration approaches |
+
+### Reading paths
+
+1. **Policy-as-code only:** [PILLARS.md](PILLARS.md) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) → [CLI.md](CLI.md) (`validate`).
+2. **LLM desktop or API clients:** [LLM_INTEGRATION.md](LLM_INTEGRATION.md) → [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) → [../examples/README.md](../examples/README.md).
+3. **Production hardening:** [SECURITY.md](SECURITY.md) → [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) (includes **fleet-scale policy** and **SIEM / SOC audit** patterns) → [METRICS.md](METRICS.md).
 
 ## Security and operations
 
@@ -24,6 +33,14 @@ Current Python package release: `mcp-bastion-python==1.0.15`.
 | [METRICS.md](METRICS.md) | Metrics, dashboard, Prometheus and effectiveness guidance |
 | [OTEL.md](OTEL.md) | OpenTelemetry setup and spans |
 | [USE_CASES.md](USE_CASES.md) | Architecture and deployment use cases |
+
+## Growth & contribution
+
+| Doc | Description |
+|-----|-------------|
+| [DISCOVERY.md](DISCOVERY.md) | Checklist: registries, awesome lists, PyPI/npm metadata for discovery |
+| [ROADMAP.md](ROADMAP.md) | High-level directions (use GitHub Issues for execution) |
+| [../CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute; **`good first issue`** suggestions |
 
 ## Repo-level docs
 

@@ -49,9 +49,9 @@ await server.connect(transport);
 | enablePromptGuard | false | Needs sidecar (sidecarUrl or MCP_BASTION_URL) |
 | enablePiiRedaction | false | Needs sidecar |
 
-### Parity with Python (`mcp-bastion-python`)
+### Scope vs Python (`mcp-bastion-python`)
 
-The **npm** package is intentionally smaller: in-process **rate limiting** plus optional **sidecar** for prompt guard and PII. It does **not** embed the full Python pillar set (semantic firewall, tool-metadata guard, sensitive-term classifier, edge auth, tool allowlist, content filter, replay guard, schema validation, etc.). For those controls, use **`mcp-bastion-python`** middleware or a sidecar that runs the same checks. Version **1.0.15** on npm reflects this scope; feature parity is **Python-first**.
+The **npm** package is **smaller by design**: in-process **rate limiting** plus optional **sidecar** for prompt guard and PII only. It does **not** implement the full Python control set (for example content filter, replay guard, schema validation, RBAC, circuit breaker, and others listed in the main repo’s [docs/PILLARS.md](../../docs/PILLARS.md)). For those controls, use **`mcp-bastion-python`** or a sidecar you run that performs the same checks. Compare the two packages explicitly when you design your deployment—**npm** and **PyPI** are complementary, not interchangeable.
 
 ## Full docs
 

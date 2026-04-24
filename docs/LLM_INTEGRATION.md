@@ -1,6 +1,8 @@
 # MCP-Bastion LLM Integration Guide
 
-Configure MCP-Bastion with major LLM providers. Each example uses the same secure MCP server; only the client config differs. Each example uses the same secure MCP server; only the client config differs.
+Configure MCP-Bastion with major LLM providers. Each example uses the same secure MCP server; only the client config differs.
+
+**Mental model:** Bastion is **middleware + `bastion.yaml`** on **your** MCP server. Clients use **your** stdio command or **your** HTTP **`/mcp`** entrypoint where tools run behind Bastion. See [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) for stack-by-stack wiring.
 
 ## LLM Example Files
 
