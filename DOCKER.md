@@ -2,6 +2,8 @@
 
 ## Prebuilt images (GitHub Container Registry)
 
+**Registry:** `ghcr.io` **·** **Tags:** `latest` is updated on each successful publish from a **`v*`** version tag; image digests and tag history are on each package’s **Versions** page.
+
 Images are built by [`.github/workflows/publish-docker.yml`](.github/workflows/publish-docker.yml) on each **`v*`** tag (and can be run manually with **Actions → Publish Docker**). For upstream releases:
 
 | Image | Use |

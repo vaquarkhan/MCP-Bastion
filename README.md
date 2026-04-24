@@ -6,17 +6,17 @@
 
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
 
-[![Total Downloads](https://img.shields.io/badge/total%20downloads-3.4K-brightgreen)](https://pepy.tech/projects/mcp-bastion-python)
-
-[![PyPI Version](https://img.shields.io/pypi/v/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
-[![PyPI downloads](https://img.shields.io/pepy/dt/mcp-bastion-python)](https://pepy.tech/projects/mcp-bastion-python)
+[![PyPI: mcp-bastion-python 1.0.16](https://img.shields.io/pypi/v/mcp-bastion-python?logo=python)](https://pypi.org/project/mcp-bastion-python/1.0.16/)
+[![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
+[![Docker: GHCR mcp-bastion-proxy (port 8080)](https://img.shields.io/badge/docker%20%28ghcr%29-mcp--bastion--proxy%20%7C%208080-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+[![Docker: GHCR mcp-bastion-dashboard (port 7000)](https://img.shields.io/badge/docker%20%28ghcr%29-mcp--bastion--dashboard%20%7C%207000-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 
 **Enterprise-Grade Security Middleware for the Model Context Protocol**
 
-> Releases are published to npm and PyPI via GitHub Actions on tag push.
+> Releases are published to npm, PyPI, and prebuilt **Docker** images on **GitHub Container Registry** (`ghcr.io/vaquarkhan/mcp-bastion-proxy`, `ghcr.io/vaquarkhan/mcp-bastion-dashboard`) — pull/run details in [DOCKER.md](DOCKER.md) — via GitHub Actions on tag push.
 
 **Documentation:** structured paths for **policy** and **LLM integration** live in [docs/README.md](docs/README.md) and [docs/index.md](docs/index.md). **Community:** open a GitHub **Issue** for bugs or gaps, a **Discussion** for integration questions (if enabled on the repo), or a **PR** for docs and examples—those help every adopter.
 
