@@ -13,6 +13,7 @@
 [![Docker: GHCR mcp-bastion-proxy (port 8080)](https://img.shields.io/badge/docker%20%28ghcr%29-mcp--bastion--proxy%20%7C%208080-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 [![Docker: GHCR mcp-bastion-dashboard (port 7000)](https://img.shields.io/badge/docker%20%28ghcr%29-mcp--bastion--dashboard%20%7C%207000-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
+[![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
 **Enterprise-Grade Security Middleware for the Model Context Protocol**
 
