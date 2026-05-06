@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP-Bastion | Enterprise Security for LLM Agents</title>
+<meta name="description" content="Drop-in security middleware for MCP servers. Block prompt injection, PII leakage, and resource exhaustion. Under 5ms overhead. 100% local execution.">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MCP-Bastion">
+<meta property="og:title" content="MCP-Bastion | Enterprise Security for LLM Agents">
+<meta property="og:description" content="Block prompt injection, PII leakage, and resource exhaustion. Under 5ms overhead. 100% local.">
+<meta property="og:url" content="https://vaquarkhan.github.io/MCP-Bastion/">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MCP-Bastion | Security Middleware for MCP Servers">
+<meta name="twitter:description" content="Block prompt injection, PII leakage, and resource exhaustion. Under 5ms. 100% local.">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "MCP-Bastion",
+  "description": "Enterprise security middleware for Model Context Protocol servers.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, Windows, macOS",
+  "softwareVersion": "1.0.12",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "url": "https://vaquarkhan.github.io/MCP-Bastion/",
+  "downloadUrl": "https://pypi.org/project/mcp-bastion-python/",
+  "sameAs": ["https://github.com/vaquarkhan/MCP-Bastion", "https://pypi.org/project/mcp-bastion-python/"]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'gradient': 'gradient 8s ease infinite',
+      },
+      keyframes: {
+        float: { '0%, 100%': { transform: 'translateY(0px)' }, '50%': { transform: 'translateY(-20px)' } },
+        gradient: { '0%, 100%': { backgroundPosition: '0% 50%' }, '50%': { backgroundPosition: '100% 50%' } },
+      }
+    }
+  }
+}
+</script>
+<style>
+  .hero-bg {
+    background: radial-gradient(ellipse at 30% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 100%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
+  }
+  .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+  .glow-indigo { box-shadow: 0 0 60px rgba(99, 102, 241, 0.3); }
+  .glow-text { text-shadow: 0 0 40px rgba(99, 102, 241, 0.5); }
+  .card-hover { transition: all 0.3s ease; }
+  .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+  .gradient-text { background: linear-gradient(135deg, #6366f1, #ec4899, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% 200%; animation: gradient 4s ease infinite; }
+  .code-glow { box-shadow: 0 0 30px rgba(99, 102, 241, 0.2), inset 0 1px 0 rgba(255,255,255,0.05); }
+  .feature-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .shimmer { position: relative; overflow: hidden; }
+  .shimmer::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); animation: shimmer 3s infinite; }
+  @keyframes shimmer { 0% { left: -100%; } 100% { left: 100%; } }
+</style>
+</head>
+<body class="bg-slate-950 text-white font-sans antialiased">
+
+<!-- NAV -->
+<nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/5">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/30">B</div>
+      <span class="font-bold text-lg text-white">MCP-Bastion</span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="index.html" class="text-sm text-white/90 hover:text-white transition-colors">Home</a>
+      <a href="integrations.html" class="text-sm text-white/60 hover:text-white transition-colors">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion" class="text-sm text-white/60 hover:text-white transition-colors">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/" class="text-sm font-medium px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-all">pip install</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero-bg min-h-screen flex items-center relative overflow-hidden">
+  <!-- Floating orbs -->
+  <div class="absolute top-20 left-10 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl animate-float"></div>
+  <div class="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-float" style="animation-delay: -3s;"></div>
+  <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse-slow"></div>
+
+  <div class="max-w-7xl mx-auto px-6 pt-32 pb-20 relative z-10">
+    <div class="text-center max-w-4xl mx-auto">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-indigo-300 mb-8">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Open Source | MIT License | 100% Local
+      </div>
+
+      <h1 class="text-5xl md:text-7xl font-black leading-tight mb-6">
+        Security Middleware<br>
+        <span class="gradient-text">for LLM Agents</span>
+      </h1>
+
+      <p class="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Block prompt injection, PII leakage, and resource exhaustion.
+        Drop-in protection for any MCP server. Under 5ms overhead.
+      </p>
+
+      <!-- CTA -->
+      <div class="flex flex-wrap justify-center gap-4 mb-16">
+        <a href="https://pypi.org/project/mcp-bastion-python/" class="group inline-flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold px-8 py-4 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          pip install mcp-bastion-python
+        </a>
+        <a href="https://github.com/vaquarkhan/MCP-Bastion" class="inline-flex items-center gap-3 bg-white/5 border border-white/10 text-white font-medium px-8 py-4 rounded-xl hover:bg-white/10 hover:border-white/20 transition-all hover:-translate-y-0.5">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+        <div class="glass rounded-xl p-5 text-center">
+          <div class="text-3xl font-bold text-white glow-text">&lt;5ms</div>
+          <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Overhead</div>
+        </div>
+        <div class="glass rounded-xl p-5 text-center">
+          <div class="text-3xl font-bold text-white glow-text">18</div>
+          <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Security Pillars</div>
+        </div>
+        <div class="glass rounded-xl p-5 text-center">
+          <div class="text-3xl font-bold text-white glow-text">100%</div>
+          <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Test Coverage</div>
+        </div>
+        <div class="glass rounded-xl p-5 text-center">
+          <div class="text-3xl font-bold text-white glow-text">17+</div>
+          <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Integrations</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CODE EXAMPLE -->
+<section class="py-24 relative">
+  <div class="max-w-4xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold mb-3">Three Lines to Secure Your Server</h2>
+      <p class="text-slate-400">Add enterprise-grade security without changing business logic</p>
+    </div>
+    <div class="rounded-2xl overflow-hidden code-glow bg-slate-900/80 border border-white/10">
+      <div class="flex items-center gap-2 px-5 py-3 border-b border-white/5">
+        <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+        <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+        <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+        <span class="ml-3 text-xs text-slate-500 font-mono">server.py</span>
+      </div>
+      <pre class="p-6 text-sm font-mono leading-relaxed overflow-x-auto"><code><span class="text-purple-400">from</span> <span class="text-blue-300">mcp_bastion</span> <span class="text-purple-400">import</span> MCPBastionMiddleware, compose_middleware
+
+<span class="text-slate-500"># One object. All 14 security pillars.</span>
+bastion = <span class="text-yellow-300">MCPBastionMiddleware</span>(
+    enable_prompt_guard=<span class="text-emerald-400">True</span>,    <span class="text-slate-500"># Block jailbreaks</span>
+    enable_pii_redaction=<span class="text-emerald-400">True</span>,   <span class="text-slate-500"># Mask SSN, email, phone</span>
+    enable_rate_limit=<span class="text-emerald-400">True</span>,      <span class="text-slate-500"># Stop runaway agents</span>
+)
+
+middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="py-24 bg-slate-900/50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl font-bold mb-3">18 Security Pillars</h2>
+      <p class="text-slate-400 max-w-xl mx-auto">Defense-in-depth for every MCP server. Each pillar runs independently.</p>
+    </div>
+    <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div class="glass rounded-xl p-5 card-hover shimmer">
+        <div class="feature-icon bg-red-500/10 text-red-400 mb-3">&#x1F6E1;</div>
+        <h3 class="font-semibold mb-1">Prompt Injection</h3>
+        <p class="text-sm text-slate-400">Meta PromptGuard blocks jailbreaks locally</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-blue-500/10 text-blue-400 mb-3">&#x1F510;</div>
+        <h3 class="font-semibold mb-1">PII Redaction</h3>
+        <p class="text-sm text-slate-400">Presidio masks SSN, email, phone</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-amber-500/10 text-amber-400 mb-3">&#x23F1;</div>
+        <h3 class="font-semibold mb-1">Rate Limiting</h3>
+        <p class="text-sm text-slate-400">Token bucket per session</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-emerald-500/10 text-emerald-400 mb-3">&#x26A1;</div>
+        <h3 class="font-semibold mb-1">Circuit Breaker</h3>
+        <p class="text-sm text-slate-400">Auto-disable failing tools</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-purple-500/10 text-purple-400 mb-3">&#x1F512;</div>
+        <h3 class="font-semibold mb-1">RBAC</h3>
+        <p class="text-sm text-slate-400">Tool-level permissions by role</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-pink-500/10 text-pink-400 mb-3">&#x1F6AB;</div>
+        <h3 class="font-semibold mb-1">Content Filter</h3>
+        <p class="text-sm text-slate-400">Block code injection, path traversal</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-green-500/10 text-green-400 mb-3">&#x1F4B0;</div>
+        <h3 class="font-semibold mb-1">Cost Tracker</h3>
+        <p class="text-sm text-slate-400">Per-session budget enforcement</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-cyan-500/10 text-cyan-400 mb-3">&#x1F504;</div>
+        <h3 class="font-semibold mb-1">Replay Guard</h3>
+        <p class="text-sm text-slate-400">Nonce-based replay prevention</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-indigo-500/10 text-indigo-400 mb-3">&#x1F9E0;</div>
+        <h3 class="font-semibold mb-1">Semantic Cache</h3>
+        <p class="text-sm text-slate-400">Deduplicate similar queries</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-orange-500/10 text-orange-400 mb-3">&#x2705;</div>
+        <h3 class="font-semibold mb-1">Schema Validation</h3>
+        <p class="text-sm text-slate-400">Validate tool input types</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-teal-500/10 text-teal-400 mb-3">&#x1F4DD;</div>
+        <h3 class="font-semibold mb-1">Audit Logging</h3>
+        <p class="text-sm text-slate-400">Structured JSON audit trail</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-violet-500/10 text-violet-400 mb-3">&#x1F4E1;</div>
+        <h3 class="font-semibold mb-1">OpenTelemetry</h3>
+        <p class="text-sm text-slate-400">OTLP spans for Grafana, Datadog</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-rose-500/10 text-rose-400 mb-3">&#x1F514;</div>
+        <h3 class="font-semibold mb-1">Alerts</h3>
+        <p class="text-sm text-slate-400">Slack, webhook, cost anomaly alerts</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-sky-500/10 text-sky-400 mb-3">&#x1F4CA;</div>
+        <h3 class="font-semibold mb-1">Metrics Dashboard</h3>
+        <p class="text-sm text-slate-400">Real-time requests, cost, blocked stats</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-lime-500/10 text-lime-400 mb-3">&#x1F517;</div>
+        <h3 class="font-semibold mb-1">Audit Hash Chain</h3>
+        <p class="text-sm text-slate-400">Tamper-proof forensic audit trail</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-fuchsia-500/10 text-fuchsia-400 mb-3">&#x1F3DB;</div>
+        <h3 class="font-semibold mb-1">External Policy (OPA/Cedar)</h3>
+        <p class="text-sm text-slate-400">Plug in OPA or Cedar policy engines</p>
+      </div>
+      <div class="glass rounded-xl p-5 card-hover">
+        <div class="feature-icon bg-yellow-500/10 text-yellow-400 mb-3">&#x1F525;</div>
+        <h3 class="font-semibold mb-1">Semantic Firewall</h3>
+        <p class="text-sm text-slate-400">Heuristic semantic policy checks</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRATIONS PREVIEW -->
+<section class="py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold mb-3">Works With Everything</h2>
+      <p class="text-slate-400">One-line install for every major LLM framework</p>
+    </div>
+    <div class="grid grid-cols-3 md:grid-cols-6 gap-3 max-w-4xl mx-auto mb-8">
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">LangChain</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">OpenAI</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Claude</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Bedrock</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Gemini</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">CrewAI</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">LlamaIndex</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Groq</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Mistral</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Azure</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">DeepSeek</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">+6 more</div></div>
+    </div>
+    <div class="text-center">
+      <a href="integrations.html" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors">View all integrations &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="py-24 bg-slate-900/50">
+  <div class="max-w-4xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold mb-3">Why MCP-Bastion</h2>
+    </div>
+    <div class="glass rounded-2xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-white/10">
+            <th class="text-left py-4 px-6 text-slate-400 font-medium">Feature</th>
+            <th class="text-center py-4 px-6 text-indigo-400 font-semibold">MCP-Bastion</th>
+            <th class="text-center py-4 px-6 text-slate-500 font-medium">Others</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-white/5"><td class="py-4 px-6">Active defense</td><td class="text-center py-4 px-6 text-emerald-400">Auto-block</td><td class="text-center py-4 px-6 text-slate-500">Logging only</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6">Data privacy</td><td class="text-center py-4 px-6 text-emerald-400">100% local</td><td class="text-center py-4 px-6 text-slate-500">External APIs</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6">Cost protection</td><td class="text-center py-4 px-6 text-emerald-400">FinOps budgets</td><td class="text-center py-4 px-6 text-slate-500">Basic limits</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6">Architecture</td><td class="text-center py-4 px-6 text-emerald-400">Drop-in middleware</td><td class="text-center py-4 px-6 text-slate-500">Standalone proxy</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6">Latency</td><td class="text-center py-4 px-6 text-emerald-400">&lt;5ms</td><td class="text-center py-4 px-6 text-slate-500">50-200ms</td></tr>
+          <tr><td class="py-4 px-6">Test coverage</td><td class="text-center py-4 px-6 text-emerald-400">100%</td><td class="text-center py-4 px-6 text-slate-500">Unknown</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<!-- DASHBOARD -->
+<section class="py-24">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold mb-3">Real-Time Security Dashboard</h2>
+      <p class="text-slate-400 max-w-xl mx-auto">Monitor requests, blocked attacks, PII redacted, cost tracking, and alerts in real time</p>
+    </div>
+    <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-indigo-900/20 glow-indigo">
+      <img src="assets/dashboard.png" alt="MCP-Bastion Dashboard showing real-time security metrics" class="w-full" loading="lazy">
+    </div>
+    <div class="grid md:grid-cols-3 gap-6 mt-8">
+      <div class="glass rounded-xl p-5 text-center">
+        <div class="text-lg font-semibold text-emerald-400">Live Metrics</div>
+        <p class="text-sm text-slate-400 mt-1">Requests, blocked %, PII redacted, cost per user</p>
+      </div>
+      <div class="glass rounded-xl p-5 text-center">
+        <div class="text-lg font-semibold text-amber-400">Prometheus Export</div>
+        <p class="text-sm text-slate-400 mt-1">Scrape /metrics for Grafana and Datadog</p>
+      </div>
+      <div class="glass rounded-xl p-5 text-center">
+        <div class="text-lg font-semibold text-pink-400">Slack Alerts</div>
+        <p class="text-sm text-slate-400 mt-1">Instant notifications on injection, cost spikes</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPETITOR COMPARISON -->
+<section class="py-24 bg-slate-900/50">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold mb-3">How MCP-Bastion Compares</h2>
+      <p class="text-slate-400 max-w-2xl mx-auto">Most MCP security tools focus on logging or require external APIs. MCP-Bastion provides active, local defense.</p>
+    </div>
+    <div class="glass rounded-2xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-white/10 bg-white/5">
+            <th class="text-left py-4 px-6 text-slate-300 font-medium">Capability</th>
+            <th class="text-center py-4 px-6 text-indigo-400 font-bold">MCP-Bastion</th>
+            <th class="text-center py-4 px-6 text-slate-500 font-medium">MCP Guardian</th>
+            <th class="text-center py-4 px-6 text-slate-500 font-medium">MCP Gateways</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Prompt injection blocking</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">Local ML model</td><td class="text-center py-4 px-6 text-slate-500">WAF rules only</td><td class="text-center py-4 px-6 text-slate-500">External API</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">PII redaction</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">Presidio (local)</td><td class="text-center py-4 px-6 text-slate-500">No</td><td class="text-center py-4 px-6 text-slate-500">Some (cloud)</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Data leaves your network</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">Never</td><td class="text-center py-4 px-6 text-slate-500">No</td><td class="text-center py-4 px-6 text-red-400">Yes</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Denial-of-wallet protection</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">FinOps budgets</td><td class="text-center py-4 px-6 text-slate-500">Rate limit only</td><td class="text-center py-4 px-6 text-slate-500">Rate limit only</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Architecture</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">Drop-in middleware</td><td class="text-center py-4 px-6 text-slate-500">Standalone proxy</td><td class="text-center py-4 px-6 text-slate-500">Hosted gateway</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Latency overhead</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">&lt;5ms</td><td class="text-center py-4 px-6 text-slate-500">10-50ms</td><td class="text-center py-4 px-6 text-slate-500">50-200ms</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Policy-as-code</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">YAML + OPA + Cedar</td><td class="text-center py-4 px-6 text-slate-500">Config file</td><td class="text-center py-4 px-6 text-slate-500">Dashboard UI</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Framework integrations</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">17+ packages</td><td class="text-center py-4 px-6 text-slate-500">Generic only</td><td class="text-center py-4 px-6 text-slate-500">Varies</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Cost</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">Free (MIT)</td><td class="text-center py-4 px-6 text-slate-500">Free</td><td class="text-center py-4 px-6 text-red-400">$$$</td></tr>
+          <tr><td class="py-4 px-6 text-slate-300">Test coverage</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">100%</td><td class="text-center py-4 px-6 text-slate-500">Unknown</td><td class="text-center py-4 px-6 text-slate-500">Unknown</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- WHY NEEDED -->
+<section class="py-24">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold mb-3">Why Your MCP Server Needs This</h2>
+    </div>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="glass rounded-xl p-6 card-hover border-l-4 border-red-500/50">
+        <h3 class="font-semibold text-lg mb-2 text-red-400">Prompt Injection is Real</h3>
+        <p class="text-sm text-slate-400">Attackers embed "ignore previous instructions" in tool arguments. Without active defense, your agent executes malicious commands on your infrastructure.</p>
+      </div>
+      <div class="glass rounded-xl p-6 card-hover border-l-4 border-amber-500/50">
+        <h3 class="font-semibold text-lg mb-2 text-amber-400">PII Leaks to LLMs</h3>
+        <p class="text-sm text-slate-400">Tool results containing SSN, emails, and phone numbers flow directly into LLM context windows. One leaked prompt and your customer data is exposed.</p>
+      </div>
+      <div class="glass rounded-xl p-6 card-hover border-l-4 border-purple-500/50">
+        <h3 class="font-semibold text-lg mb-2 text-purple-400">Runaway Agents Burn Budget</h3>
+        <p class="text-sm text-slate-400">An infinite loop calling a paid API can rack up thousands in minutes. Token budgets and session timeouts stop this before it starts.</p>
+      </div>
+      <div class="glass rounded-xl p-6 card-hover border-l-4 border-blue-500/50">
+        <h3 class="font-semibold text-lg mb-2 text-blue-400">Compliance Requires Audit</h3>
+        <p class="text-sm text-slate-400">SOC2, HIPAA, and GDPR require audit trails for data access. MCP-Bastion logs every tool call with structured, tamper-proof entries.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="py-24 text-center">
+  <div class="max-w-3xl mx-auto px-6">
+    <h2 class="text-4xl font-bold mb-4">Ready to Secure Your Agents?</h2>
+    <p class="text-slate-400 mb-8">Get started in under 60 seconds. No config needed.</p>
+    <div class="rounded-xl bg-slate-900/80 border border-white/10 p-4 font-mono text-lg text-indigo-300 mb-8 code-glow inline-block">
+      $ pip install mcp-bastion-python
+    </div>
+    <div class="flex justify-center gap-4">
+      <a href="https://github.com/vaquarkhan/MCP-Bastion" class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold px-8 py-4 rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-xl shadow-indigo-500/25">
+        Get Started
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="py-12 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs">B</div>
+        <span class="text-sm text-slate-400">MCP-Bastion | MIT License</span>
+      </div>
+      <div class="flex gap-6 text-sm text-slate-500">
+        <a href="https://github.com/vaquarkhan/MCP-Bastion" class="hover:text-white transition-colors">GitHub</a>
+        <a href="https://pypi.org/project/mcp-bastion-python/" class="hover:text-white transition-colors">PyPI</a>
+        <a href="https://www.npmjs.com/package/@mcp-bastion/core" class="hover:text-white transition-colors">npm</a>
+        <a href="integrations.html" class="hover:text-white transition-colors">Integrations</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
