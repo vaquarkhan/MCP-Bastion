@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrations | MCP-Bastion</title>
+<meta name="description" content="MCP-Bastion integrations for LangChain, OpenAI, Anthropic, AWS Bedrock, Google Gemini, CrewAI, and more.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] } } }
+}
+</script>
+<style>
+  .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+  .card-hover { transition: all 0.3s ease; }
+  .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3); }
+  .gradient-border { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(236,72,153,0.2)); }
+</style>
+</head>
+<body class="bg-slate-950 text-white font-sans antialiased">
+
+<!-- NAV -->
+<nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-md">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/30">B</div>
+      <span class="font-bold text-lg text-white">MCP-Bastion</span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="index.html" class="text-sm text-white/60 hover:text-white transition-colors">Home</a>
+      <a href="integrations.html" class="text-sm text-white/90 hover:text-white transition-colors">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion" class="text-sm text-white/60 hover:text-white transition-colors">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/" class="text-sm font-medium px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-all">pip install</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HEADER -->
+<section class="pt-32 pb-16 text-center relative overflow-hidden">
+  <div class="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
+  <div class="absolute bottom-0 right-1/4 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl"></div>
+  <div class="max-w-4xl mx-auto px-6 relative z-10">
+    <h1 class="text-5xl font-black mb-4">Framework Integrations</h1>
+    <p class="text-xl text-slate-400 max-w-2xl mx-auto">One-line install. Each package auto-installs MCP-Bastion security. Works with every major LLM framework.</p>
+    <div class="mt-8 inline-block rounded-xl bg-slate-900/80 border border-white/10 px-6 py-3 font-mono text-indigo-300">
+      pip install mcp-bastion-<span class="text-pink-400">{framework}</span>
+    </div>
+  </div>
+</section>
+
+<!-- LLM PROVIDERS -->
+<section class="py-16">
+  <div class="max-w-6xl mx-auto px-6">
+    <h2 class="text-2xl font-bold mb-2">LLM Providers</h2>
+    <p class="text-slate-500 mb-8">Secure wrappers for direct LLM API calls</p>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <a href="https://pypi.org/project/mcp-bastion-openai/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold text-sm">AI</div>
+          <div>
+            <div class="font-semibold">OpenAI</div>
+            <div class="text-xs text-slate-500">mcp-bastion-openai</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for GPT-4o, GPT-4, GPT-3.5 chat completions</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-openai</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-anthropic/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 font-bold text-sm">C</div>
+          <div>
+            <div class="font-semibold">Anthropic Claude</div>
+            <div class="text-xs text-slate-500">mcp-bastion-anthropic</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for Claude Sonnet, Opus, Haiku messages API</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-anthropic</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-gemini/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-sm">G</div>
+          <div>
+            <div class="font-semibold">Google Gemini</div>
+            <div class="text-xs text-slate-500">mcp-bastion-gemini</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for Gemini Pro and Ultra generative AI</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-gemini</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-mistral/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 font-bold text-sm">M</div>
+          <div>
+            <div class="font-semibold">Mistral AI</div>
+            <div class="text-xs text-slate-500">mcp-bastion-mistral</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for Mistral Large, Medium, Small</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-mistral</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-groq/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 font-bold text-sm">GQ</div>
+          <div>
+            <div class="font-semibold">Groq</div>
+            <div class="text-xs text-slate-500">mcp-bastion-groq</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for ultra-fast Groq LPU inference</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-groq</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-deepseek/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 font-bold text-sm">DS</div>
+          <div>
+            <div class="font-semibold">DeepSeek</div>
+            <div class="text-xs text-slate-500">mcp-bastion-deepseek</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for DeepSeek Chat and Coder</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-deepseek</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-cohere/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400 font-bold text-sm">Co</div>
+          <div>
+            <div class="font-semibold">Cohere</div>
+            <div class="text-xs text-slate-500">mcp-bastion-cohere</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for Command R+ and Embed</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-cohere</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-huggingface/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-400 font-bold text-sm">HF</div>
+          <div>
+            <div class="font-semibold">Hugging Face</div>
+            <div class="text-xs text-slate-500">mcp-bastion-huggingface</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for HF Inference API</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-huggingface</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-together/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400 font-bold text-sm">TG</div>
+          <div>
+            <div class="font-semibold">Together AI</div>
+            <div class="text-xs text-slate-500">mcp-bastion-together</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for Together inference platform</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-together</div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- CLOUD PROVIDERS -->
+<section class="py-16 bg-slate-900/30">
+  <div class="max-w-6xl mx-auto px-6">
+    <h2 class="text-2xl font-bold mb-2">Cloud Providers</h2>
+    <p class="text-slate-500 mb-8">Enterprise cloud AI services with security built in</p>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <a href="https://pypi.org/project/mcp-bastion-bedrock/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 font-bold text-sm">AWS</div>
+          <div>
+            <div class="font-semibold">AWS Bedrock</div>
+            <div class="text-xs text-slate-500">mcp-bastion-bedrock</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for Bedrock invoke model runtime</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-bedrock</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-azure/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400 font-bold text-sm">Az</div>
+          <div>
+            <div class="font-semibold">Azure OpenAI</div>
+            <div class="text-xs text-slate-500">mcp-bastion-azure</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for Azure OpenAI Service endpoints</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-azure</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-vertexai/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 font-bold text-sm">GCP</div>
+          <div>
+            <div class="font-semibold">Vertex AI</div>
+            <div class="text-xs text-slate-500">mcp-bastion-vertexai</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for Google Cloud Vertex AI platform</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-vertexai</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-fireworks/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 font-bold text-sm">FW</div>
+          <div>
+            <div class="font-semibold">Fireworks AI</div>
+            <div class="text-xs text-slate-500">mcp-bastion-fireworks</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for Fireworks inference platform</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-fireworks</div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- FRAMEWORKS -->
+<section class="py-16">
+  <div class="max-w-6xl mx-auto px-6">
+    <h2 class="text-2xl font-bold mb-2">Agent Frameworks</h2>
+    <p class="text-slate-500 mb-8">Security for multi-agent orchestration and RAG pipelines</p>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <a href="https://pypi.org/project/mcp-bastion-langchain/" class="glass rounded-xl p-6 card-hover block border border-indigo-500/20">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-sm">LC</div>
+          <div>
+            <div class="font-semibold">LangChain</div>
+            <div class="text-xs text-slate-500">mcp-bastion-langchain</div>
+          </div>
+          <span class="ml-auto text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">Popular</span>
+        </div>
+        <p class="text-sm text-slate-400">Security callbacks and tool wrappers for LangChain agents</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-langchain</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-crewai/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-400 font-bold text-sm">CA</div>
+          <div>
+            <div class="font-semibold">CrewAI</div>
+            <div class="text-xs text-slate-500">mcp-bastion-crewai</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Security scanning for multi-agent crew tasks and outputs</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-crewai</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-llamaindex/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400 font-bold text-sm">LI</div>
+          <div>
+            <div class="font-semibold">LlamaIndex</div>
+            <div class="text-xs text-slate-500">mcp-bastion-llamaindex</div>
+          </div>
+        </div>
+        <p class="text-sm text-slate-400">Security for RAG queries, tool calls, and index responses</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-llamaindex</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-fastmcp/" class="glass rounded-xl p-6 card-hover block border border-emerald-500/20">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold text-sm">FM</div>
+          <div>
+            <div class="font-semibold">FastMCP</div>
+            <div class="text-xs text-slate-500">mcp-bastion-fastmcp</div>
+          </div>
+          <span class="ml-auto text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">MCP Native</span>
+        </div>
+        <p class="text-sm text-slate-400">One-line security for any FastMCP server instance</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-fastmcp</div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="py-16 bg-slate-900/30">
+  <div class="max-w-4xl mx-auto px-6 text-center">
+    <h2 class="text-2xl font-bold mb-8">How It Works</h2>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div>
+        <div class="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-lg mx-auto mb-4">1</div>
+        <h3 class="font-semibold mb-2">Install</h3>
+        <p class="text-sm text-slate-400">pip install any integration package. MCP-Bastion core installs automatically as a dependency.</p>
+      </div>
+      <div>
+        <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold text-lg mx-auto mb-4">2</div>
+        <h3 class="font-semibold mb-2">Import</h3>
+        <p class="text-sm text-slate-400">Import the secure wrapper. It replaces your existing client with zero code changes.</p>
+      </div>
+      <div>
+        <div class="w-12 h-12 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400 font-bold text-lg mx-auto mb-4">3</div>
+        <h3 class="font-semibold mb-2">Protected</h3>
+        <p class="text-sm text-slate-400">Every call is scanned for injection, rate limited, and PII-filtered automatically.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="py-12 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs">B</div>
+        <span class="text-sm text-slate-400">MCP-Bastion | MIT License</span>
+      </div>
+      <div class="flex gap-6 text-sm text-slate-500">
+        <a href="https://github.com/vaquarkhan/MCP-Bastion" class="hover:text-white transition-colors">GitHub</a>
+        <a href="https://pypi.org/project/mcp-bastion-python/" class="hover:text-white transition-colors">PyPI</a>
+        <a href="index.html" class="hover:text-white transition-colors">Home</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

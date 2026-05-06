@@ -1,0 +1,45 @@
+.hero-gradient {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4338ca 60%, #6366f1 100%);
+}
+
+.nav-link {
+  @apply text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors;
+}
+.nav-link.active {
+  @apply text-indigo-600 font-semibold;
+}
+
+.btn-primary {
+  @apply inline-flex items-center gap-2 bg-indigo-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25;
+}
+.btn-outline {
+  @apply inline-flex items-center gap-2 border border-slate-300 text-slate-700 font-medium px-4 py-2 rounded-lg hover:border-indigo-400 hover:text-indigo-600 transition-all;
+}
+
+.badge {
+  @apply inline-block px-2 py-0.5 rounded-full text-xs font-semibold;
+}
+.badge-primary {
+  @apply bg-indigo-100 text-indigo-700;
+}
+.badge-green {
+  @apply bg-emerald-100 text-emerald-700;
+}
+
+.feature-card {
+  @apply bg-white rounded-xl p-6 border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all;
+}
+
+.code-block {
+  @apply bg-slate-900 text-slate-100 rounded-lg p-4 font-mono text-sm overflow-x-auto;
+}
+
+.stat-card {
+  @apply text-center p-6;
+}
+.stat-number {
+  @apply text-4xl font-bold text-indigo-600;
+}
+.stat-label {
+  @apply text-sm text-slate-500 mt-1;
+}
