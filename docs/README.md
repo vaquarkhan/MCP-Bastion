@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: `mcp-bastion-python==2.0.0` (Major release: runtime governance hardening, serve/schema fixes, FinOps/RBAC benchmarks, dashboard governance panel, npm audit clean; builds on FinOps 1.0.17+ and runtime governance 1.0.18+ features).
+Current Python package release: **`mcp-bastion-python==2.0.0`** ([PyPI](https://pypi.org/project/mcp-bastion-python/2.0.0/)) — major release with runtime governance hardening, audit fixes, FinOps/RBAC benchmarks, and dashboard governance panel.
 
 ## Start here
 

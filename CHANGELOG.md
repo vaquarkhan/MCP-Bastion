@@ -1,5 +1,7 @@
 # Changelog
 
+**Current release:** **2.0.0** (2026-07-05) — [PyPI](https://pypi.org/project/mcp-bastion-python/2.0.0/) · [Docker `v2.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
@@ -30,10 +32,17 @@ Major release consolidating runtime governance hardening, critical bug fixes, be
 - **Red-team reporting:** separate `score_intended_blocked_pct` vs guard-unavailable; honest interpretation in reports.
 - **npm audit:** dev dependencies updated (vite, vitest); **0 vulnerabilities** in workspace.
 - **doctor pip-audit:** fallback to `python -m pip_audit` when binary missing.
+- **Denial-of-wallet bypass:** cost/rate caps aggregate by authenticated `principal_id` and tenant-global daily budget (not client-supplied `session_id` rotation).
+- **RBAC self-asserted role:** `require_authenticated_identity` defaults to true; role trusted only after Agent IAM or edge auth marks the context.
+- **OTEL audit latency:** negative cache on observability probe so unconfigured OTEL does not block ~420 ms per request.
+- **content_filter obfuscation:** URL-decode, unicode-normalize, and shell-pattern expansion (`rm -rf`, pipe-to-sh, base64 piped shell) before matching.
+- **external_policy fail-open:** `fail_closed` defaults to true when OPA/Cedar is enabled; config validation requires policy dirs when fail-closed.
+- **PromptGuard ML load:** negative cache (`_ml_load_failed`) skips repeated Hugging Face downloads after auth failure.
+- **tool_metadata_guard no-op:** startup fails when enabled without content_filter or prompt_guard; doctor reports misconfiguration.
 
 ### Changed
 
-- Docker proxy and dashboard images pin `mcp-bastion-python==2.0.0` at build time (`ARG BASTION_VERSION`).
+- Docker proxy image installs `mcp-bastion-python==2.0.0` from PyPI at build time (tag publish runs after PyPI is green).
 - npm `@mcp-bastion/core` **2.0.0** (semver major aligned with Python).
 - Integration packages depend on `mcp-bastion-python>=2.0.0`.
 - Author attribution corrected to **Vaquar Khan** across LICENSE, CITATION.cff, and package metadata.

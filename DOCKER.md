@@ -13,9 +13,13 @@ Images are built by [`.github/workflows/publish-docker.yml`](.github/workflows/p
 | [`ghcr.io/vaquarkhan/mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy) | HTTP MCP entrypoint (see [Dockerfile](Dockerfile)) — port `8080` |
 | [`ghcr.io/vaquarkhan/mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard) | Metrics dashboard — port `7000` |
 
+**Current release:** **2.0.0** (2026-07-05) — `pip install mcp-bastion-python==2.0.0`
+
 ```bash
-docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
-docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.0
+docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.0
+# :latest tracks the most recent v* tag publish
+# docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
 ```
 
 **Forks:** replace `vaquarkhan` in the path with your GitHub user or org (lowercase). If a package is private, sign in: `echo "$GITHUB_TOKEN" | docker login ghcr.io -u USER --password-stdin` (use a personal access token with `read:packages`).

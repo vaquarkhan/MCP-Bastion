@@ -4,7 +4,7 @@ MCP-Bastion is security middleware for Model Context Protocol (MCP) servers. We 
 
 ## Supported versions
 
-Security fixes are applied to the **latest release** on [PyPI](https://pypi.org/project/mcp-bastion-python/) and [npm](https://www.npmjs.com/package/@mcp-bastion/core). Upgrade to the current tag (see [CHANGELOG.md](CHANGELOG.md)) when a fix is announced.
+Security fixes are applied to the **latest release** (**2.0.0** on [PyPI](https://pypi.org/project/mcp-bastion-python/2.0.0/) and [GHCR Docker `v2.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy); npm `@mcp-bastion/core` when published). Upgrade to the current tag (see [CHANGELOG.md](CHANGELOG.md)) when a fix is announced.
 
 | Version | Supported |
 |---------|-----------|

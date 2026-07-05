@@ -17,7 +17,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   mcp-upstream:
-    image: ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
+    image: ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.0
     network_mode: host
     environment:
       BASTION_CONFIG: /config/bastion.yaml
