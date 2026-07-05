@@ -6,16 +6,15 @@ FROM python:3.11-slim
 WORKDIR /app
 
 ARG BASTION_VERSION=2.0.0
-# Install deps (minimal for stdio/HTTP server; add torch/presidio for full features)
-RUN pip install --no-cache-dir mcp "mcp-bastion-python==${BASTION_VERSION}"
-
 LABEL org.opencontainers.image.version="${BASTION_VERSION}"
 
-# Copy server entrypoint
-COPY examples/llm_server.py /app/llm_server.py
-COPY src /app/src
+# Install from checkout so tag builds do not race the PyPI publish job.
+COPY pyproject.toml README.md LICENSE ./
+COPY src ./src
+RUN pip install --no-cache-dir .
 
-ENV PYTHONPATH=/app/src
+COPY examples/llm_server.py /app/llm_server.py
+
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8080
