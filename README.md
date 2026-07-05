@@ -11,19 +11,35 @@
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**Enterprise-grade local security firewall for the Model Context Protocol (MCP).** Block prompt injections, redact PII locally, and stop runaway agents — **under 5ms overhead** on the tool path. No third-party safety APIs; everything runs in your process.
+**The security layer MCP servers are missing.** Your agent can call databases, APIs, and shell tools — one bad prompt or runaway loop can leak PII, burn your API budget, or execute something you never intended. MCP-Bastion wraps your existing Python or TypeScript MCP server with **local** guardrails: prompt injection blocking, PII redaction, and rate limits — **under 5ms overhead**, no third-party safety API required.
+
+### Why developers adopt it
+
+| You need… | MCP-Bastion gives you… |
+|-----------|-------------------------|
+| **Guardrails without a rewrite** | Drop-in middleware — keep your tools and business logic; add `secure_fastmcp(mcp)` or one `bastion.yaml` |
+| **Privacy your legal team accepts** | PromptGuard + Presidio run **in your process** — sensitive data never ships to an external guardrail vendor |
+| **Protection from runaway agents** | Token buckets, iteration caps, and cost tracking stop infinite loops and denial-of-wallet |
+| **Something that ships today** | PyPI, npm, Docker on GHCR, FastMCP helper, TypeScript wrapper, CI `validate`, and a live metrics dashboard |
+| **Policy your team can review** | `bastion.yaml` in Git, hot reload, OWASP-aligned controls — see [docs/PILLARS.md](docs/PILLARS.md) |
+
+**Bottom line:** MCP turned every server into an agent gateway overnight. Bastion is the firewall that makes that gateway safe to run in production — in **three lines of code** or one config file.
 
 ### Secure your MCP server in 3 lines (FastMCP)
+
+```bash
+pip install mcp mcp-bastion-fastmcp
+```
 
 ```python
 from mcp.server.fastmcp import FastMCP
 from mcp_bastion_fastmcp import secure_fastmcp
 
 mcp = FastMCP("My Server")
-secure_fastmcp(mcp)  # prompt guard + PII redaction + rate limits
+secure_fastmcp(mcp)  # wires prompt guard, PII redaction, rate limits into tools/call
 ```
 
-**Policy-as-code instead?** After `pip install mcp-bastion-python[policy]`:
+**Policy-as-code instead?** Copy `bastion.yaml.example` → `bastion.yaml`, then `pip install mcp-bastion-python[policy]`:
 
 ```python
 from mcp_bastion import build_middleware_from_config
@@ -41,9 +57,39 @@ More paths (TypeScript, CI validate, Docker): **[docs/QUICK_START.md](docs/QUICK
 - **PII redaction** — Microsoft Presidio masks SSN, email, phone, and more before data reaches the LLM.
 - **Denial-of-wallet protection** — Token buckets and cycle detection stop runaway agents from burning API budget.
 
-The Model Context Protocol (MCP) connects AI agents to enterprise databases and APIs — and introduces a new attack surface: unpredictable, non-deterministic agentic behavior. MCP-Bastion is drop-in middleware for Python and TypeScript MCP servers. It intercepts JSON-RPC on the tool path and stops threats **before** they cross your boundary, without changing your business logic.
+### How it works
 
-> **Releases:** npm, PyPI, and prebuilt **Docker** on GHCR (`ghcr.io/vaquarkhan/mcp-bastion-proxy`, `ghcr.io/vaquarkhan/mcp-bastion-dashboard`) — see [DOCKER.md](DOCKER.md). **Community:** GitHub **Issues** for bugs, **Discussions** for integration questions, **PRs** for docs and examples. **Security:** report vulnerabilities privately via [SECURITY.md](SECURITY.md).
+MCP-Bastion sits **in-process** on your MCP server and inspects every `tools/call` before it reaches databases, APIs, or shell tools — then redacts sensitive data on the way back.
+
+```mermaid
+flowchart LR
+  Agent["AI agent / LLM client"]
+  Server["Your MCP server"]
+  Bastion["MCP-Bastion<br/>middleware"]
+  Tools["Tools & upstream APIs"]
+
+  Agent -->|"JSON-RPC"| Server
+  Server --> Bastion
+  Bastion -->|"✓ allow / ✗ block"| Tools
+  Tools -->|"raw result"| Bastion
+  Bastion -->|"PII masked · audited"| Server
+  Server --> Agent
+```
+
+### Three ways to adopt
+
+```mermaid
+flowchart TB
+  Start(["Protect my MCP server"])
+  Start --> FastMCP["FastMCP · Python<br/><code>secure_fastmcp(mcp)</code>"]
+  Start --> Policy["Policy-as-code<br/><code>build_middleware_from_config()</code>"]
+  Start --> TS["TypeScript<br/><code>wrapWithMcpBastion(server)</code>"]
+  FastMCP --> Docs["docs/QUICK_START.md · path A"]
+  Policy --> Yaml["bastion.yaml + CI validate"]
+  TS --> Sidecar["Rate limit in-process · ML via sidecar"]
+```
+
+> **Releases:** npm, PyPI, and prebuilt **Docker** on GHCR — see [DOCKER.md](DOCKER.md). **Community:** GitHub **Issues**, **Discussions**, **PRs**. **Security:** [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -130,6 +176,18 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 **🎥 Demo (screen recording):** [Watch on Vimeo](https://vimeo.com/1186084574) — overview of the dashboard and metrics (link opens the player on Vimeo).
 
+<p align="center">
+  <a href="https://vimeo.com/1186084574" title="Watch MCP-Bastion dashboard demo on Vimeo">
+    <img
+      src="docs/images/dashboard.png"
+      alt="MCP-Bastion dashboard — request KPIs, block rate, PII redacted, cost, top tools, and forensics"
+      width="920"
+      style="max-width:100%; height:auto; border-radius:12px; border:1px solid #e2e8f0;"
+    />
+  </a>
+</p>
+<p align="center"><sub>Click the screenshot for the video demo · Seed demo data: <code>mcp-bastion dashboard --demo</code></sub></p>
+
 Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
 
 ```bash
@@ -143,6 +201,16 @@ mcp-bastion dashboard --port 7000
 | [http://localhost:7000/api/metrics](http://localhost:7000/api/metrics) | JSON: `requests_total`, `blocked_total`, `blocked_pct`, `pii_redacted_total`, `cost_total`, `blocked_by_reason`, `blocked_by_kind`, `top_tools`, `tool_stats`, `cost_by_user`, `time_series`, `latency_ms`, `dashboard_insights`, `blocked_incidents`, `alerts`, … |
 | [http://localhost:7000/api/health](http://localhost:7000/api/health) | `{"status": "ok"}` |
 | [http://localhost:7000/metrics](http://localhost:7000/metrics) | Prometheus text format for Grafana/Datadog |
+
+<p align="center">
+  <img
+    src="docs/images/api-metrics.png"
+    alt="Example /api/metrics JSON — requests_total, blocked_total, pii_redacted_total, cost_total, top_tools"
+    width="720"
+    style="max-width:100%; height:auto; border-radius:8px; border:1px solid #e2e8f0;"
+  />
+</p>
+<p align="center"><sub><code>/api/metrics</code> JSON for Grafana, Datadog, or custom pollers</sub></p>
 
 *Dashboard: total requests, blocked count and %, PII redacted, cost; blocked-by-reason bars; top tools; cost by user; recent alerts — open [http://localhost:7000/](http://localhost:7000/) while `mcp-bastion dashboard` is running.*
 
@@ -439,45 +507,27 @@ See `VALIDATION_CHECKLIST.md` and `SETUP_GUIDE.md`.
 
 ### Python Tutorial: FastMCP Server
 
-FastMCP server with MCP-Bastion.
+FastMCP server with MCP-Bastion via `secure_fastmcp` (patches tool dispatch — see [integrations/mcp-bastion-fastmcp/README.md](integrations/mcp-bastion-fastmcp/README.md)).
 
 **Step 1: Install dependencies**
 
 ```bash
-pip install mcp mcp-bastion-python
+pip install mcp mcp-bastion-fastmcp
 ```
 
 **Step 2: Create your server file** (`server.py`)
 
 ```python
 from mcp.server.fastmcp import FastMCP
-from mcp_bastion import MCPBastionMiddleware, compose_middleware
+from mcp_bastion_fastmcp import secure_fastmcp
 
-# Create the MCP server
 mcp = FastMCP("My Secure Server")
+secure_fastmcp(mcp)  # call right after FastMCP(), before mcp.run()
 
-# Create MCP-Bastion middleware
-# It intercepts tool calls and resource reads before they execute
-bastion = MCPBastionMiddleware(
-    enable_prompt_guard=True,   # Block malicious prompts via PromptGuard
-    enable_pii_redaction=True,  # Mask PII in outgoing content
-    enable_rate_limit=True,     # Cap at 15 iterations, 60s timeout
-)
-
-# Compose middleware chain (pass to your server's middleware config if supported)
-middleware = compose_middleware(bastion)
-
-# Register a tool (protected when middleware is wired into your server)
 @mcp.tool()
 def get_weather(city: str) -> str:
     """Get weather for a city."""
     return f"Weather in {city}: 22C, sunny"
-
-# Resource (PII redacted)
-@mcp.resource("user://profile/{user_id}")
-def get_profile(user_id: str) -> str:
-    """Get user profile. PII redacted."""
-    return f"User {user_id}: John Doe, SSN 123-45-6789, john@example.com"
 
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")
@@ -489,10 +539,12 @@ if __name__ == "__main__":
 python server.py
 ```
 
-MCP-Bastion:
-- Scans tool args for prompt injection
-- Redacts PII from resource responses
-- Blocks sessions over 15 calls or 60s
+MCP-Bastion (via `secure_fastmcp`):
+- Scans **tool arguments** for prompt injection before execution
+- Redacts PII in **tool results** on the way out
+- Enforces default rate limits (**15** calls per session, **60s** timeout — see `TokenBucketRateLimiter`)
+
+For **full** `bastion.yaml` policy or **resource** (`resources/read`) PII redaction, use the low-level MCP `Server` with `build_middleware_from_config()` — see [docs/QUICK_START.md](docs/QUICK_START.md) path B.
 
 **Alternative: Policy-as-Code**
 
@@ -545,6 +597,7 @@ bastion_no_pii = MCPBastionMiddleware(enable_pii_redaction=False)
 Extend `Middleware` to add logging, metrics, or custom logic:
 
 ```python
+from mcp_bastion import MCPBastionMiddleware
 from mcp_bastion.base import Middleware, MiddlewareContext, compose_middleware
 
 class LoggingMiddleware(Middleware):
@@ -553,6 +606,7 @@ class LoggingMiddleware(Middleware):
         # log method, elapsed, etc.
         return result
 
+bastion = MCPBastionMiddleware()  # or use the configured instance from above
 middleware = compose_middleware(bastion, LoggingMiddleware())
 ```
 
@@ -575,7 +629,6 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   wrapWithMcpBastion,
-  wrapCallToolHandler,
 } from "@mcp-bastion/core";
 
 const server = new Server({ name: "my-mcp-server", version: "1.0.0" });
@@ -622,7 +675,7 @@ npx tsx server.ts
 For prompt injection and PII redaction, run a Python HTTP service that exposes `/prompt-guard` and `/pii-redact` endpoints (see the Python package for sidecar implementation). Then:
 
 ```bash
-# Start the Python sidecar, then the TypeScript server
+# Start the Python sidecar, then the TypeScript server (sidecarUrl or MCP_BASTION_URL)
 MCP_BASTION_SIDECAR=http://localhost:8000 npx tsx server.ts
 ```
 
