@@ -155,6 +155,37 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
         checks.append({"id": "schema_validation", "ok": False, "detail": str(e)})
 
     try:
+        from mcp_bastion.config import load_config as _load_cfg_tmg
+
+        cfg_tmg = _load_cfg_tmg(config_path)
+        if cfg_tmg.tool_metadata_guard_enabled:
+            if not cfg_tmg.content_filter and not cfg_tmg.prompt_guard:
+                checks.append(
+                    {
+                        "id": "tool_metadata_guard",
+                        "ok": False,
+                        "detail": (
+                            "tool_metadata_guard enabled but content_filter and prompt_guard are both "
+                            "disabled; enable at least one for metadata scanning to run"
+                        ),
+                    }
+                )
+            else:
+                checks.append(
+                    {
+                        "id": "tool_metadata_guard",
+                        "ok": True,
+                        "detail": f"on_poison={cfg_tmg.tool_metadata_guard_on_poison}",
+                    }
+                )
+        else:
+            checks.append(
+                {"id": "tool_metadata_guard", "ok": True, "skipped": True, "detail": "tool_metadata_guard disabled"}
+            )
+    except Exception as e:
+        checks.append({"id": "tool_metadata_guard", "ok": False, "detail": str(e)})
+
+    try:
         from mcp_bastion.config import load_config as _load_cfg_sb
         from mcp_bastion.pillars.state_backend import RedisStateBackend, build_state_backend
 

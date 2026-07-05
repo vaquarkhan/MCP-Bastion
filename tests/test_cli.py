@@ -316,6 +316,8 @@ def test_cmd_manifest_writes_json(tmp_path, caplog):
     data = json.loads(out.read_text(encoding="utf-8"))
     assert "server.py" in data["files"]
     assert len(data["files"]["server.py"]) == 64
+    assert data["algorithm"] == "sha256"
+    assert "signature" not in data
 
 
 def test_cmd_manifest_missing_file_returns_one(tmp_path):

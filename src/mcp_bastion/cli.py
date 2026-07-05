@@ -246,12 +246,13 @@ def cmd_manifest(files: list[str], base_path: str, output: str | None, sign: boo
     except Exception as e:
         logger.error("manifest failed: %s", e)
         return 1
-    payload: dict = {"files": manifest, "algorithm": "hmac-sha256"}
+    payload: dict = {"files": manifest, "algorithm": "sha256"}
     if sign:
         key = os.environ.get("BASTION_MANIFEST_SIGNING_KEY", "")
         if not key:
             logger.error("Set BASTION_MANIFEST_SIGNING_KEY to sign manifest")
             return 1
+        payload["algorithm"] = "hmac-sha256"
         payload["signature"] = sign_manifest(manifest, key)
     text = json.dumps(payload, indent=2)
     if output:

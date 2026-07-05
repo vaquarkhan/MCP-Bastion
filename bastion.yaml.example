@@ -181,6 +181,23 @@ tool_metadata_guard:
   enabled: false
   on_poison: remove_tool   # remove_tool | block_all
   use_content_filter: true
+  # Requires content_filter or prompt_guard enabled; otherwise this pillar no-ops.
+
+# Cap distinct tools per session (opt-in denial-of-wallet / tool sprawl control).
+session_limits:
+  max_unique_tools_per_session: 0   # e.g. 5 to limit tool sprawl per session
+
+# External policy: OPA or Cedar CLI (not HTTP). Missing binary/policy dir fails open.
+policy_engine:
+  type: none   # none | opa | cedar
+  opa:
+    binary: opa
+    policy_dir: ./policies/opa   # directory passed to `opa eval -d`
+    query: data.bastion.allow
+  cedar:
+    binary: cedar
+    policies_dir: ./policies/cedar
+    schema: ./policies/cedar/schema.cedarschema
 
 # Horizontal scaling: share rate limits, replay nonces, cost budgets, and session scope
 # across workers/replicas (requires pip install mcp-bastion-python[redis]).
