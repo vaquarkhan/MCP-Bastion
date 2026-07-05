@@ -6,6 +6,7 @@ from mcp_bastion.errors import (
     CircuitBreakerOpenError,
     ContentFilterError,
     CostBudgetExceededError,
+    GroundingViolationError,
     MCPBastionError,
     PromptInjectionError,
     RBACError,
@@ -36,6 +37,11 @@ def test_content_filter_error_matched_pattern():
     assert err.matched_pattern == "password"
 
 
+def test_grounding_violation_error_default():
+    err = GroundingViolationError()
+    assert err.code == -32017
+
+
 def test_all_errors_to_mcp_error():
     """All error types produce valid MCP error structure."""
     errors = [
@@ -49,6 +55,7 @@ def test_all_errors_to_mcp_error():
         SchemaValidationError("schema"),
         ReplayAttackError("replay"),
         CostBudgetExceededError("cost"),
+        GroundingViolationError("grounding"),
     ]
     for err in errors:
         obj = err.to_mcp_error()

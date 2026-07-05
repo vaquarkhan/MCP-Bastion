@@ -132,3 +132,10 @@ class ToolMetadataPoisoningError(MCPBastionError):
 
     def __init__(self, message: str = "Response blocked: suspicious tool metadata (possible tool poisoning)") -> None:
         super().__init__(message, code=-32016)
+
+
+class GroundingViolationError(MCPBastionError):
+    """Raised when outbound text references paths/symbols not grounded in the workspace."""
+
+    def __init__(self, message: str = "Response blocked: ungrounded file reference in tool output") -> None:
+        super().__init__(message, code=-32017)

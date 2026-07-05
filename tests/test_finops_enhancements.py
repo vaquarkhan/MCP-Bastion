@@ -1,10 +1,13 @@
 """Tests for token budget wiring, response scan, and discovery filter."""
 
+from unittest import mock
+
 import pytest
 
 from mcp_bastion.base import MiddlewareContext
 from mcp_bastion.errors import PromptInjectionError, RateLimitExceededError, TokenBudgetExceededError
 from mcp_bastion.middleware import MCPBastionMiddleware
+from mcp_bastion.pillars import tokens as tokens_mod
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
 from mcp_bastion.pillars.rate_limit import TokenBucketRateLimiter
 from mcp_bastion.pillars.response_scanner import ResponseInjectionScanner
@@ -12,9 +15,10 @@ from mcp_bastion.pillars.tokens import estimate_text_tokens
 
 
 def test_estimate_text_tokens():
-    assert estimate_text_tokens("") == 0
-    assert estimate_text_tokens("abcd") == 1
-    assert estimate_text_tokens("a" * 100) == 25
+    with mock.patch.object(tokens_mod, "_get_tiktoken_encoder", return_value=None):
+        assert estimate_text_tokens("") == 0
+        assert estimate_text_tokens("abcd") == 1
+        assert estimate_text_tokens("a" * 100) == 25
 
 
 def test_response_scanner_blocks_injection():
@@ -36,6 +40,7 @@ async def test_middleware_token_budget_uses_result_text():
         message={"method": "tools/call", "params": {"name": "echo", "arguments": {"x": "a" * 40}}},
         request_id="r1",
         session_id="budget-sess",
+        metadata={"llm_input_tokens": 10, "llm_output_tokens": 10},
     )
 
     async def handler(c):

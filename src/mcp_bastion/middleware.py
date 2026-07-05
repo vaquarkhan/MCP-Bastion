@@ -19,6 +19,7 @@ from mcp_bastion.base import CallNext, Middleware, MiddlewareContext
 from mcp_bastion.errors import (
     AuthenticationError,
     ExternalPolicyDeniedError,
+    GroundingViolationError,
     PromptInjectionError,
     RateLimitExceededError,
     SensitiveContentError,
@@ -34,6 +35,8 @@ from mcp_bastion.pillars.pii_redaction import PIIRedactor
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
 from mcp_bastion.pillars.rate_limit import RateLimitCheckResult, TokenBucketRateLimiter
 from mcp_bastion.pillars.response_scanner import ResponseInjectionScanner
+from mcp_bastion.pillars.output_budget import OutputBudget
+from mcp_bastion.pillars.grounding_guard import GroundingGuard
 from mcp_bastion.pillars.tokens import estimate_text_tokens
 from mcp_bastion.pillars.rbac import RBAC
 from mcp_bastion.pillars.replay_guard import ReplayGuard
@@ -343,6 +346,10 @@ class MCPBastionMiddleware(Middleware[Any]):
         response_scan_extra_patterns: list[str] | None = None,
         enable_discovery_filter: bool = False,
         response_scanner: ResponseInjectionScanner | None = None,
+        enable_output_budget: bool = False,
+        output_budget: OutputBudget | None = None,
+        enable_grounding_guard: bool = False,
+        grounding_guard: GroundingGuard | None = None,
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -396,6 +403,106 @@ class MCPBastionMiddleware(Middleware[Any]):
             extra_patterns=response_scan_extra_patterns or []
         )
         self.enable_discovery_filter = enable_discovery_filter
+
+        self.output_budget = output_budget or OutputBudget()
+        self.enable_output_budget = enable_output_budget
+        self.grounding_guard = grounding_guard or GroundingGuard()
+        self.enable_grounding_guard = enable_grounding_guard
+
+    @staticmethod
+    def _offload_key_from_params(params: dict | None) -> str | None:
+        if not params or not isinstance(params, dict):
+            return None
+        arguments = params.get("arguments") or params
+        if isinstance(arguments, str):
+            try:
+                arguments = json.loads(arguments)
+            except json.JSONDecodeError:
+                return None
+        if isinstance(arguments, dict):
+            key = arguments.get("key")
+            return str(key).strip() if key else None
+        return None
+
+    def _record_finops(self, context: MiddlewareContext[Any], section: str, data: dict[str, Any]) -> None:
+        context.metadata.setdefault("finops", {}).setdefault(section, {}).update(data)
+
+    def _apply_output_budget_to_result(
+        self,
+        context: MiddlewareContext[Any],
+        result: Any,
+        *,
+        tool_name: str | None = None,
+    ) -> Any:
+        if not self.enable_output_budget or result is None:
+            return result
+        content = _get_content_from_result(result)
+        if not content:
+            return result
+        new_content, summary = self.output_budget.process_content_items(
+            content,
+            session_id=context.session_id,
+            tool_name=tool_name,
+        )
+        if summary.applied:
+            self._record_finops(
+                context,
+                "output_budget",
+                {
+                    "original_tokens": summary.original_tokens,
+                    "output_tokens": summary.output_tokens,
+                    "tokens_saved": summary.tokens_saved,
+                    "offloaded": summary.offloaded,
+                    "offload_key": summary.offload_key,
+                    "truncated_items": summary.truncated_items,
+                },
+            )
+            _set_content_in_result(result, new_content)
+        return result
+
+    def _apply_grounding_to_result(
+        self,
+        context: MiddlewareContext[Any],
+        result: Any,
+        *,
+        trace: list[dict[str, Any]] | None = None,
+    ) -> Any:
+        if not self.enable_grounding_guard or result is None:
+            return result
+        content = _get_content_from_result(result)
+        if not content:
+            return result
+        started = time.perf_counter()
+        try:
+            new_content, check = self.grounding_guard.process_content_items(content)
+            if check.violations:
+                self._record_finops(
+                    context,
+                    "grounding_guard",
+                    {"violations": check.violations[:20], "count": len(check.violations)},
+                )
+                if self.grounding_guard.on_violation == "warn":
+                    if trace is not None:
+                        _trace_append(
+                            trace,
+                            pillar="grounding_guard",
+                            status="warn",
+                            started=started,
+                            detail=f"{len(check.violations)} ungrounded paths",
+                        )
+                else:
+                    _set_content_in_result(result, new_content)
+                    if trace is not None:
+                        _trace_append(trace, pillar="grounding_guard", status="stripped", started=started)
+            elif trace is not None:
+                _trace_append(trace, pillar="grounding_guard", status="ok", started=started)
+        except GroundingViolationError as e:
+            if trace is not None:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="grounding_guard", started=started, error=e
+                )
+            raise
+        return result
 
     @staticmethod
     def _rate_limit_error(check: RateLimitCheckResult) -> Exception:
@@ -587,7 +694,9 @@ class MCPBastionMiddleware(Middleware[Any]):
             result = await call_next(context)
             if result is not None and _is_read_resource_result(result):
                 result = self._redact_result_content(result)
+                result = self._apply_output_budget_to_result(context, result)
                 self._scan_result_for_injection(result)
+                result = self._apply_grounding_to_result(context, result)
             if result is not None:
                 result = self._apply_discovery_filter(context, result)
                 result = self._apply_tool_metadata_guard(context, result)
@@ -627,6 +736,43 @@ class MCPBastionMiddleware(Middleware[Any]):
             "session_id": session_id,
             "tenant_id": tenant_id,
         }
+
+        if (
+            self.enable_output_budget
+            and self.output_budget.retrieve_tool
+            and tool_name == self.output_budget.retrieve_tool
+        ):
+            started = time.perf_counter()
+            key = self._offload_key_from_params(params)
+            if not key:
+                payload = {
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": 'Missing offload key. Pass arguments: {"key": "<offload-key>"}',
+                            }
+                        ]
+                    }
+                }
+            else:
+                text = self.output_budget.offload_store.get(key, session_id=session_id)
+                if text is None:
+                    payload = {
+                        "result": {
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": f"Offload key not found or expired: {key}",
+                                }
+                            ]
+                        }
+                    }
+                else:
+                    payload = {"result": {"content": [{"type": "text", "text": text}]}}
+            _trace_append(trace, pillar="output_budget_retrieve", status="ok", started=started)
+            context.metadata["forensic_response"] = _safe_forensic_value(payload)
+            return payload
 
         if self.enable_replay_guard:
             started = time.perf_counter()
@@ -903,6 +1049,15 @@ class MCPBastionMiddleware(Middleware[Any]):
             started = time.perf_counter()
             result = self._redact_result_content(result)
             _trace_append(trace, pillar="pii_redaction", status="ok", started=started)
+
+        if result is not None:
+            started = time.perf_counter()
+            result = self._apply_output_budget_to_result(context, result, tool_name=tool_name)
+            if self.enable_output_budget:
+                _trace_append(trace, pillar="output_budget", status="ok", started=started)
+
+        if result is not None:
+            result = self._apply_grounding_to_result(context, result, trace=trace)
 
         if result is not None:
             started = time.perf_counter()

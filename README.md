@@ -25,6 +25,34 @@
 
 **Bottom line:** MCP turned every server into an agent gateway overnight. Bastion is the firewall that makes that gateway safe to run in production — in **three lines of code** or one config file.
 
+### OWASP MCP Top 10
+
+Maps to the [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/). **Primary** = built-in control. **Partial** = pair with your SDLC and identity practices.
+
+<p align="center">
+  <img
+    src="images/mcp-bastion-owasp-coverage.png"
+    alt="MCP-Bastion OWASP MCP Top 10 coverage and security pillars"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+
+| ID | Risk | Coverage | Controls |
+|----|------|----------|----------|
+| MCP01 | Token / secret exposure | Partial | PII redaction, audit |
+| MCP02 | Privilege escalation | Primary | RBAC, rate limits, cost caps |
+| MCP03 | Tool poisoning | Primary | Prompt guard, content filter, response scan, grounding guard |
+| MCP04 | Supply chain | Partial | Circuit breaker, doctor CLI |
+| MCP05 | Command injection | Primary | Prompt guard, content filter, schema validation |
+| MCP06 | Intent subversion | Primary | Rate limits, replay guard, per-tool caps |
+| MCP07 | Weak authentication | Primary | RBAC, edge auth |
+| MCP08 | Audit & telemetry | Primary | Audit log, dashboard, Prometheus, OTEL |
+| MCP09 | Shadow MCP servers | Partial | Policy + metrics (plus inventory) |
+| MCP10 | Context injection | Primary | PII redaction, response scan, output budget, discovery filter |
+
+Details: [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) · [docs/PILLARS.md](docs/PILLARS.md)
+
 ### Secure your MCP server in 3 lines (FastMCP)
 
 ```bash
@@ -53,9 +81,11 @@ More paths (TypeScript, CI validate, Docker): **[docs/QUICK_START.md](docs/QUICK
   <img src="images/mcp-bastian.png" alt="MCP-Bastion" width="520" />
 </p>
 
-- **Prompt injection defense** — Meta PromptGuard blocks adversarial payloads and jailbreaks locally.
-- **PII redaction** — Microsoft Presidio masks SSN, email, phone, and more before data reaches the LLM.
-- **Denial-of-wallet protection** — Token buckets and cycle detection stop runaway agents from burning API budget.
+- **Prompt injection defense:** Meta PromptGuard blocks adversarial payloads locally.
+- **PII redaction:** Presidio masks SSN, email, phone in outbound content.
+- **Denial-of-wallet protection:** Token buckets, iteration caps, token budget, cost tracking.
+- **Response scan:** Blocks jailbreak patterns in outbound tool/resource text.
+- **Output budget & grounding guard:** Optional response truncation and path verification (opt-in).
 
 ### How it works
 
@@ -324,7 +354,7 @@ See **[docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md)** for the
 <p align="center">
   <img
     src="images/mcp-bastian-features.png"
-    alt="MCP-Bastion features at a glance — pillars, dashboard, and integrations"
+    alt="MCP-Bastion features at a glance"
     width="920"
     style="max-width:100%; height:auto; border-radius:12px;"
   />
@@ -757,6 +787,7 @@ When MCP-Bastion blocks a request, it returns standard MCP/JSON-RPC errors:
 | -32014 | `ToolNotAllowedError` | Tool not on allowlist |
 | -32015 | `SessionScopeExceededError` | Too many distinct tools per session (scope creep) |
 | -32016 | `ToolMetadataPoisoningError` | Tool list / metadata failed safety checks |
+| -32017 | `GroundingViolationError` | Ungrounded file reference in tool output |
 
 ```python
 # Python: exceptions
@@ -777,6 +808,7 @@ from mcp_bastion.errors import (
     ToolNotAllowedError,
     SessionScopeExceededError,
     ToolMetadataPoisoningError,
+    GroundingViolationError,
 )
 import logging
 logger = logging.getLogger(__name__)
@@ -800,6 +832,7 @@ except (
     ToolNotAllowedError,
     SessionScopeExceededError,
     ToolMetadataPoisoningError,
+    GroundingViolationError,
 ) as e:
     logger.warning("blocked: %s", e.to_mcp_error())
 ```

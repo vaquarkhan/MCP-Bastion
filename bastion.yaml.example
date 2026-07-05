@@ -24,6 +24,20 @@ response_scan:
 discovery_filter:
   enabled: false    # strip non-allowlisted tools from tools/list (requires tool_allowlist)
 
+# FinOps: truncate/offload large tool outputs (opt-in).
+output_budget:
+  enabled: false
+  max_output_tokens: 4000
+  min_tokens: 500
+  offload: true
+  retrieve_tool: bastion_get_offloaded
+
+# Security: verify file paths in tool output (opt-in).
+grounding_guard:
+  enabled: false
+  workspace_root: .
+  on_violation: warn   # warn | block | strip
+
 # Safer defaults: block risky patterns in tool arguments (paths, code-ish payloads).
 circuit_breaker:
   enabled: true
