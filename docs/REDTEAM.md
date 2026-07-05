@@ -1,4 +1,4 @@
-# Interpreting red-team / harness scores
+﻿# Interpreting red-team / harness scores
 
 ## Built-in CLI harness
 
@@ -12,11 +12,11 @@ The command runs the in-repo **OWASP + MCP Top 10** case suite in-process and pr
 | Field | Meaning |
 |-------|---------|
 | `score_blocked_pct` | All denials (includes guard-unavailable) |
-| **`score_intended_blocked_pct`** | **Policy effectiveness** — blocks from enabled controls only |
+| **`score_intended_blocked_pct`** | **Policy effectiveness**  -  blocks from enabled controls only |
 | `score_guard_unavailable_pct` | Blocks because PromptGuard ML was unavailable (fail-closed) |
 | `interpretation` | Human notes when scores are misleading |
 
-**Use `score_intended_blocked_pct` for OWASP/control coverage.** With default fail-closed PromptGuard and no ML model, `score_blocked_pct` can hit 100% even when most pillars (PII, RBAC, schema, etc.) are off — those blocks are **not** evidence those controls work.
+**Use `score_intended_blocked_pct` for OWASP/control coverage.** With default fail-closed PromptGuard and no ML model, `score_blocked_pct` can hit 100% even when most pillars (PII, RBAC, schema, etc.) are off  -  those blocks are **not** evidence those controls work.
 
 With `prompt_guard.fail_open: true` (dev only), a typical default-config run blocks roughly **prompt injection (heuristic)**, **path traversal (content filter)**, and **rate limit** cases (~32% intended block rate); PII, schema, credential, unknown-tool, edge-auth, and session-scope cases require enabling the corresponding pillars in `bastion.yaml`.
 

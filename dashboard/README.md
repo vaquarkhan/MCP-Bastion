@@ -1,4 +1,4 @@
-# MCP-Bastion Dashboard
+﻿# MCP-Bastion Dashboard
 
 Real-time dashboard and metrics API for MCP-Bastion.
 
@@ -23,11 +23,11 @@ mcp-bastion dashboard --reload --demo
 
 Richer scripted demo (same seed + optional live background traffic): `PYTHONPATH=src python examples/dashboard_demo.py`
 
-Open [http://localhost:7000/](http://localhost:7000/) — the UI shows a **KPI summary strip** (totals, block %, top threat, active users) and loading guidance while metrics connect; **PII** charts use **severity-style** colors for entity types, and long **block reasons** are readable via tooltips / expand-in-place where applicable.
+Open [http://localhost:7000/](http://localhost:7000/)  -  the UI shows a **KPI summary strip** (totals, block %, top threat, active users) and loading guidance while metrics connect; **PII** charts use **severity-style** colors for entity types, and long **block reasons** are readable via tooltips / expand-in-place where applicable.
 
-**If you see `{"detail":"Not Found"}`** on some URL, that response is from *a* FastAPI app, but not our route — wrong path, wrong port, or another process. Try [http://localhost:7000/api/health](http://localhost:7000/api/health) first: it must include `"service":"mcp-bastion-dashboard"` and `"ui_revision"`. Short diagnostic: [http://localhost:7000/meta](http://localhost:7000/meta).
+**If you see `{"detail":"Not Found"}`** on some URL, that response is from *a* FastAPI app, but not our route  -  wrong path, wrong port, or another process. Try [http://localhost:7000/api/health](http://localhost:7000/api/health) first: it must include `"service":"mcp-bastion-dashboard"` and `"ui_revision"`. Short diagnostic: [http://localhost:7000/meta](http://localhost:7000/meta).
 
-**If the UI looks unchanged after editing `dashboard/app.py`:** the server only loads HTML at startup. Stop the process and start again, **or** run `mcp-bastion dashboard --reload` so `dashboard/` is watched. Always run from the **repository root** (the folder that contains `dashboard/`). Check `/meta` — `dashboard_app_py` must point at this repo’s `dashboard/app.py`, and `ui_revision` should match the current code (for example `v9-demo-seed-theme`).
+**If the UI looks unchanged after editing `dashboard/app.py`:** the server only loads HTML at startup. Stop the process and start again, **or** run `mcp-bastion dashboard --reload` so `dashboard/` is watched. Always run from the **repository root** (the folder that contains `dashboard/`). Check `/meta`  -  `dashboard_app_py` must point at this repo’s `dashboard/app.py`, and `ui_revision` should match the current code (for example `v9-demo-seed-theme`).
 
 **If charts show all zeros:** the in-memory store is empty until middleware records traffic. Use **`mcp-bastion dashboard --demo`** or **`MCP_BASTION_DEMO=1`** to load the same rich seed as `examples/dashboard_demo.py`, or run the full `examples/dashboard_demo.py` process.
 

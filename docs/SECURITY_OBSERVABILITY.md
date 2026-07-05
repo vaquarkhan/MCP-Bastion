@@ -1,8 +1,8 @@
-# Security coverage, OWASP MCP Top 10 alignment, and observability hooks
+﻿# Security coverage, OWASP MCP Top 10 alignment, and observability hooks
 
 This page ties together **what MCP-Bastion does**, how it maps to the **industry MCP risk catalog (OWASP MCP Top 10)**, **classes of attacks** you mitigate in practice, and **where to plug in external logging and monitoring tools**.
 
-> **Note on “AWS Top 10 MCP”:** AWS does not publish a separate “Top 10 MCP vulnerabilities” list. The widely referenced catalog is the **[OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/)** (Model Context Protocol risks). The same MCP threats apply when you run agents on **AWS** (ECS, EKS, Lambda, EC2), other clouds, or on-prem—MCP-Bastion sits at the **MCP boundary**, independent of where the server runs.
+> **Note on “AWS Top 10 MCP”:** AWS does not publish a separate “Top 10 MCP vulnerabilities” list. The widely referenced catalog is the **[OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/)** (Model Context Protocol risks). The same MCP threats apply when you run agents on **AWS** (ECS, EKS, Lambda, EC2), other clouds, or on-prem - MCP-Bastion sits at the **MCP boundary**, independent of where the server runs.
 
 ---
 
@@ -36,9 +36,9 @@ For step-by-step attack demos, see [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md).
 
 ---
 
-## 2. OWASP MCP Top 10 — how MCP-Bastion maps
+## 2. OWASP MCP Top 10  -  how MCP-Bastion maps
 
-The [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/) lists the highest-impact MCP risks. No product “fixes” every item alone—some require **organizational** controls (inventory, SDLC, identity). Below is an honest mapping: **Primary** = direct technical control in MCP-Bastion; **Partial** = meaningful mitigation or prerequisite to pair with other practices; **Process** = governance / engineering outside this middleware.
+The [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/) lists the highest-impact MCP risks. No product “fixes” every item alone - some require **organizational** controls (inventory, SDLC, identity). Below is an honest mapping: **Primary** = direct technical control in MCP-Bastion; **Partial** = meaningful mitigation or prerequisite to pair with other practices; **Process** = governance / engineering outside this middleware.
 
 | **ID** | **Risk (summary)** | **MCP-Bastion role** |
 |--------|--------------------|----------------------|
@@ -78,7 +78,7 @@ Use these paths to feed **Splunk, Datadog, Grafana, Elastic, CloudWatch, Microso
 | **Integration** | **How** | **Typical destination** |
 |-------------------|---------|-------------------------|
 | **Slack** | `SlackAlertSink` via `alerts.slack_webhook` or `SLACK_WEBHOOK_URL` in `bastion.yaml` | Chat ops, on-call |
-| **Generic webhook** | `WebhookAlertSink` via `webhook_url` / `BASTION_WEBHOOK_URL` / `alerts.webhooks[]` — JSON POST with retries | **PagerDuty Events**, **Microsoft Teams** incoming webhooks, custom APIs, small **SIEM** HTTP collectors |
+| **Generic webhook** | `WebhookAlertSink` via `webhook_url` / `BASTION_WEBHOOK_URL` / `alerts.webhooks[]`  -  JSON POST with retries | **PagerDuty Events**, **Microsoft Teams** incoming webhooks, custom APIs, small **SIEM** HTTP collectors |
 | **Python logging** | `LoggingAlertSink` (alerts to std logging) | **Fluent Bit**, **Fluentd**, **Vector** → Splunk HEC, Elastic, Loki, **Amazon CloudWatch Logs** |
 | **Prometheus** | Dashboard `GET /metrics` (when dashboard process runs) | **Grafana**, **Datadog** Agent (Prometheus check), **Amazon Managed Prometheus** |
 | **JSON metrics** | `GET /api/metrics` | Custom pollers, **Datadog** custom metrics via agent, cron jobs |
@@ -95,7 +95,7 @@ MCP-Bastion enforces policy **on each MCP server process** using **`bastion.yaml
 - **Kubernetes** ConfigMaps or Secrets mounted into pods, plus your standard rollout strategy.
 - **Configuration management** (Ansible, Chef, Puppet, Salt) or **image baking** when MCP servers are VM- or AMI-based.
 
-**Central visibility** comes from shipping metrics and traces to your **existing** observability plane: **Prometheus** remote write, **OpenTelemetry** collectors, or polling **`/api/metrics`** into Datadog, Grafana Cloud, or similar—so operators see blocks, latency, and cost **across** instances without a separate Bastion-hosted control plane.
+**Central visibility** comes from shipping metrics and traces to your **existing** observability plane: **Prometheus** remote write, **OpenTelemetry** collectors, or polling **`/api/metrics`** into Datadog, Grafana Cloud, or similar - so operators see blocks, latency, and cost **across** instances without a separate Bastion-hosted control plane.
 
 ### SOC, SIEM, and compliance-oriented audit trails
 
@@ -111,9 +111,9 @@ For **regulatory retention and immutability**, rely on your **SIEM or log archiv
 
 ## 5. Related docs
 
-- [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) — concrete scenarios and outcomes  
-- [METRICS.md](METRICS.md) — dashboard, Prometheus, overhead  
-- [OTEL.md](OTEL.md) — OpenTelemetry setup  
-- [POLICY_AS_CODE.md](POLICY_AS_CODE.md) — `bastion.yaml` alerts and pillars  
+- [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md)  -  concrete scenarios and outcomes  
+- [METRICS.md](METRICS.md)  -  dashboard, Prometheus, overhead  
+- [OTEL.md](OTEL.md)  -  OpenTelemetry setup  
+- [POLICY_AS_CODE.md](POLICY_AS_CODE.md)  -  `bastion.yaml` alerts and pillars  
 
 External reference: [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/)

@@ -1,8 +1,8 @@
-# Engineering roadmap: weak dimensions → 10/10
+﻿# Engineering roadmap: weak dimensions → 10/10
 
 This document turns independent review findings into **concrete, testable milestones** tied to the current codebase. It complements the release checklist in [ROADMAP.md](ROADMAP.md).
 
-**Flagship lens:** [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) — cost-aware runtime governance for AI agents. The four ranked moats:
+**Flagship lens:** [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md)  -  cost-aware runtime governance for AI agents. The four ranked moats:
 
 1. Compliance-grade attestation  
 2. Un-bypassable boundary mode  
@@ -17,7 +17,7 @@ This document turns independent review findings into **concrete, testable milest
 |----|-------|-----|
 | **A** | `mcp-bastion serve` crash (`FastMCP.run(host=…)`) | `serve.run_streamable_http()` sets `mcp.settings.host/port`; regression in `tests/test_serve.py` |
 | **B** | `schema_validation.enabled` with no YAML schemas | `schema_validation.schemas` → `SchemaValidator`; doctor warns on empty schemas |
-| — | Red-team 100% when ML gated | `score_intended_blocked_pct` vs `score_guard_unavailable_pct` in `redteam.py` |
+|  -  | Red-team 100% when ML gated | `score_intended_blocked_pct` vs `score_guard_unavailable_pct` in `redteam.py` |
 
 ---
 
@@ -72,7 +72,7 @@ This document turns independent review findings into **concrete, testable milest
 | Real identity | OAuth 2.1 / OIDC JWT validation (issuer, audience, expiry, **scopes**). Map scopes → tool permissions (unify with RBAC / Agent IAM). |
 | Secrets vaulting | Vault / AWS Secrets Manager / env-injection adapters so upstream API keys never enter LLM context. |
 | Per-user audit | Verified `sub` (or equivalent) on every `tools/call` in audit + forensics (today: `tenant_id`, `trace_id`, optional self-asserted `role`). |
-| Standalone proxy mode | Hardened `mcp-bastion serve` (TLS, body size limits, documented Docker gateway). **Bug A fix is prerequisite** — shipped via `run_streamable_http`. |
+| Standalone proxy mode | Hardened `mcp-bastion serve` (TLS, body size limits, documented Docker gateway). **Bug A fix is prerequisite**  -  shipped via `run_streamable_http`. |
 
 **10/10 acceptance test:**
 
@@ -80,11 +80,11 @@ This document turns independent review findings into **concrete, testable milest
 
 ---
 
-## 4. Context / FinOps depth (Good → 10/10) — **flagship pillar**
+## 4. Context / FinOps depth (Good → 10/10)  -  **flagship pillar**
 
 **Gap today:** Output budget and discovery filter work but savings are **input-dependent**; “semantic cache” is lexical Jaccard; caps **hard-block** instead of **degrading** under budget pressure.
 
-**Bet:** Own [cost-aware runtime governance](COST_AWARE_GOVERNANCE.md) — live spend drives allow/deny/route, not only pattern match.
+**Bet:** Own [cost-aware runtime governance](COST_AWARE_GOVERNANCE.md)  -  live spend drives allow/deny/route, not only pattern match.
 
 **Code anchors:** `pillars/cost_tracker.py`, `pillars/budget_principal.py`, `pillars/output_budget.py`, `middleware.py` (`discovery_filter`), `pillars/semantic_cache.py`, [BENCHMARKS.md](BENCHMARKS.md).
 
@@ -113,7 +113,7 @@ This document turns independent review findings into **concrete, testable milest
 | Milestone | Work |
 |-----------|------|
 | Third-party validation | External security audit or academic collaboration; coordinated disclosure track record beyond [SECURITY.md](../SECURITY.md). |
-| Governance | CODEOWNERS, multiple reviewers, published release cadence, signed releases (Sigstore, PyPI Trusted Publishing, npm provenance — partially started in [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md)). |
+| Governance | CODEOWNERS, multiple reviewers, published release cadence, signed releases (Sigstore, PyPI Trusted Publishing, npm provenance  -  partially started in [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md)). |
 | Adoption signals | Production user stories, integration matrix (Claude Desktop, Cursor, Windsurf). |
 | Clean supply chain | SBOM, SLSA provenance, pinned deps, **green** `pip-audit` / `npm audit` (runtime + dev). |
 
@@ -125,8 +125,8 @@ This document turns independent review findings into **concrete, testable milest
 
 ## What reviewers correctly retraced (not bugs)
 
-- **Cost tracker** — works with `llm_provider` / `llm_model` / `llm_*_tokens` or `cost` metadata (wrong keys in manual test).
-- **`fail_open`** — duplicate YAML key in test config caused false “not honored” report; parser is correct.
+- **Cost tracker**  -  works with `llm_provider` / `llm_model` / `llm_*_tokens` or `cost` metadata (wrong keys in manual test).
+- **`fail_open`**  -  duplicate YAML key in test config caused false “not honored” report; parser is correct.
 
 ## Not yet E2E-validated (unit tests only)
 
@@ -136,10 +136,10 @@ Requires external services or alternate MCP paths: OPA/Cedar, OTEL collector, li
 
 ## Suggested priority order
 
-1. **Cost-aware policy + attestation** — flagship moat; builds on 2.0.0 FinOps (highest enterprise ROI).
+1. **Cost-aware policy + attestation**  -  flagship moat; builds on 2.0.0 FinOps (highest enterprise ROI).
 2. **Prompt-injection** non-gated default + benchmark table (closes honest security caveat).
-3. **Un-bypassable boundary** — hardened proxy Helm + e2e (kills in-process critique).
+3. **Un-bypassable boundary**  -  hardened proxy Helm + e2e (kills in-process critique).
 4. **`mcp-bastion scan`** static tool scanner (competitive parity with mcp-scan).
-5. **Behavioral fingerprinting** — adaptive defense tied to spend telemetry.
+5. **Behavioral fingerprinting**  -  adaptive defense tied to spend telemetry.
 6. **JWT/OIDC gateway** path (unify with Agent IAM).
-7. **Maturity** — audit, npm/pip audit green, Sigstore.
+7. **Maturity**  -  audit, npm/pip audit green, Sigstore.

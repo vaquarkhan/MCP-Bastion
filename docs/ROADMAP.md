@@ -1,10 +1,10 @@
-# Product roadmap — cost-aware runtime governance
+﻿# Product roadmap  -  cost-aware runtime governance
 
-**Guiding rule:** [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) — stay a **zero-infra, drop-in library**; be the **guardrail brain** that composes with any gateway.
+**Guiding rule:** [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md)  -  stay a **zero-infra, drop-in library**; be the **guardrail brain** that composes with any gateway.
 
 Status as of **main** post-3.0 governance merge (2026-07-05).
 
-**Flagship bet:** [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) — own *cost-aware runtime governance for AI agents* (policy + live spend + attestation). Deep engineering milestones: [ENGINEERING_10_10.md](ENGINEERING_10_10.md). Competitive positioning: [COMPARISON.md](COMPARISON.md).
+**Flagship bet:** [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md)  -  own *cost-aware runtime governance for AI agents* (policy + live spend + attestation). Deep engineering milestones: [ENGINEERING_10_10.md](ENGINEERING_10_10.md). Competitive positioning: [COMPARISON.md](COMPARISON.md).
 
 **Current release:** [2.0.0](https://pypi.org/project/mcp-bastion-python/2.0.0/) · Docker `v2.0.0` · integration packages **2.0.0**
 
@@ -19,7 +19,7 @@ Status as of **main** post-3.0 governance merge (2026-07-05).
 | **3** | **Behavioral fingerprinting** | Per-agent baselines (tools, args, rates, spend) in shadow mode | **3.2** | [COST_AWARE_GOVERNANCE.md §3](COST_AWARE_GOVERNANCE.md#3-behavioral-fingerprinting--adaptive-defense-research-credible) |
 | **4** | **Real semantic layer + bundled model** | Embedding cache + non-gated classifier; offline not regex-only | **3.0 / 3.2** | [ENGINEERING_10_10.md §1, §4](ENGINEERING_10_10.md) |
 
-**Cost-aware policy** (budget-driven degradation, expensive-chain prevention, chargeback/forecast) ships across **3.0–3.2** — see [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md).
+**Cost-aware policy** (budget-driven degradation, expensive-chain prevention, chargeback/forecast) ships across **3.0–3.2**  -  see [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md).
 
 ---
 
@@ -65,7 +65,7 @@ Status as of **main** post-3.0 governance merge (2026-07-05).
 
 Prioritized by **security ROI**, **production adoption**, and **discoverability**. Effort: **S** (days–1 week), **M** (2–4 weeks), **L** (1–2 months), **XL** (quarter+).
 
-### P0 — Cost-aware policy (target: 3.0–3.2) **flagship**
+### P0  -  Cost-aware policy (target: 3.0–3.2) **flagship**
 
 | Feature | Effort | Why implement | Acceptance |
 |---------|--------|---------------|------------|
@@ -79,7 +79,7 @@ See [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md).
 
 ---
 
-### P1 — Security depth (target: 3.0)
+### P1  -  Security depth (target: 3.0)
 
 Highest value; closes audit gaps and matches mcp-scan / Invariant class tooling.
 
@@ -97,7 +97,7 @@ See [ENGINEERING_10_10.md §1–2](ENGINEERING_10_10.md).
 
 ---
 
-### P2 — Identity, proxy UX, and MCP client compatibility (target: 3.1–3.2)
+### P2  -  Identity, proxy UX, and MCP client compatibility (target: 3.1–3.2)
 
 Closes the biggest *gateway* gap vs products like ThinkWatch **without** building a full AI API proxy.
 
@@ -117,7 +117,7 @@ See [ENGINEERING_10_10.md §3](ENGINEERING_10_10.md).
 
 ---
 
-### P3 — FinOps, rate limits, and scale (target: 3.2–3.3)
+### P3  -  FinOps, rate limits, and scale (target: 3.2–3.3)
 
 | Feature | Effort | Why implement | Acceptance |
 |---------|--------|---------------|------------|
@@ -133,7 +133,7 @@ See [ENGINEERING_10_10.md §4](ENGINEERING_10_10.md).
 
 ---
 
-### P4 — Discoverability, docs, and adoption (ongoing)
+### P4  -  Discoverability, docs, and adoption (ongoing)
 
 Low engineering cost; improves GitHub search and time-to-first-demo (learned from high-star MCP gateway repos).
 
@@ -151,7 +151,7 @@ Low engineering cost; improves GitHub search and time-to-first-demo (learned fro
 
 ---
 
-### P5 — Maturity, supply chain, and enterprise (target: 3.3+)
+### P5  -  Maturity, supply chain, and enterprise (target: 3.3+)
 
 | Feature | Effort | Why implement | Acceptance |
 |---------|--------|---------------|------------|

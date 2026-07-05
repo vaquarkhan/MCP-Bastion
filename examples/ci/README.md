@@ -1,4 +1,4 @@
-# CI examples for MCP-Bastion
+﻿# CI examples for MCP-Bastion
 
 ## This repository
 
@@ -6,7 +6,7 @@ Pull requests and pushes to `main` run [`.github/workflows/ci.yml`](../../.githu
 
 ## Your project (copy-paste)
 
-`mcp-bastion validate` confirms your **`bastion.yaml` loads cleanly** (syntax and known keys)—a fast gate to catch typos and invalid policy before deploy.
+`mcp-bastion validate` confirms your **`bastion.yaml` loads cleanly** (syntax and known keys) - a fast gate to catch typos and invalid policy before deploy.
 
 Add this to your repo to run validation on every pull request (install policy extras; use PyPI `mcp-bastion-python`):
 

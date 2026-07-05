@@ -1,8 +1,8 @@
-# Integration models: middleware vs “change the URL”
+﻿# Integration models: middleware vs “change the URL”
 
 **MCP-Bastion** ships as **security middleware and `bastion.yaml`** on the **Model Context Protocol** tool path: you embed it in (or in front of) the MCP server **you** run.
 
-Many **LLM HTTP API** products adopt with a **single base-URL swap**—clients point at a proxy host. MCP-Bastion instead gives you **policy on the MCP tool path**: embed it in **your** stdio-based or **your** HTTPS **`/mcp`** server.
+Many **LLM HTTP API** products adopt with a **single base-URL swap** - clients point at a proxy host. MCP-Bastion instead gives you **policy on the MCP tool path**: embed it in **your** stdio-based or **your** HTTPS **`/mcp`** server.
 
 This page maps common stacks so **“drop-in middleware”** is easy to adopt on **your** infrastructure.
 
@@ -31,7 +31,7 @@ Use the row that matches **who runs the MCP server** and **what you can change**
 | **LangChain, LlamaIndex, OpenAI Agents, …** | Use the **`mcp-bastion-*` integration** packages where they wrap the provider path, **or** run an MCP server with Bastion and point the agent at that server. | Per **integration** `README` under `integrations/`; each stack has its own connection settings. |
 | **Third-party / vendor MCP you cannot fork** | **Proxy boundary:** clients reach only the Bastion proxy; upstream MCP binds to loopback. See [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md). | [deploy/docker-compose.proxy.yml](../deploy/docker-compose.proxy.yml) + `edge_auth`; see [TUTORIALS.md](TUTORIALS.md) (Tutorial 3, Option B). |
 
-**LangChain / LlamaIndex / Claude Desktop** are **clients or frameworks**; they connect to the MCP server **you** run—wire Bastion into that server, then point the client at it (stdio or **your** HTTPS URL).
+**LangChain / LlamaIndex / Claude Desktop** are **clients or frameworks**; they connect to the MCP server **you** run - wire Bastion into that server, then point the client at it (stdio or **your** HTTPS URL).
 
 ---
 
@@ -43,8 +43,8 @@ If clients use a **single MCP HTTPS URL**, that endpoint should be **your** depl
 
 ## See also
 
-- [LLM_INTEGRATION.md](LLM_INTEGRATION.md) — concrete MCP client configs (OpenAI, Claude, Gemini, …)  
-- [TUTORIALS.md](TUTORIALS.md) — FastMCP, TypeScript, third-party / proxy patterns  
-- [POLICY_AS_CODE.md](POLICY_AS_CODE.md) — `bastion.yaml`  
-- [PILLARS.md](PILLARS.md) — what the runtime implements  
-- [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) — mandatory proxy hop vs in-process middleware  
+- [LLM_INTEGRATION.md](LLM_INTEGRATION.md)  -  concrete MCP client configs (OpenAI, Claude, Gemini, …)  
+- [TUTORIALS.md](TUTORIALS.md)  -  FastMCP, TypeScript, third-party / proxy patterns  
+- [POLICY_AS_CODE.md](POLICY_AS_CODE.md)  -  `bastion.yaml`  
+- [PILLARS.md](PILLARS.md)  -  what the runtime implements  
+- [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md)  -  mandatory proxy hop vs in-process middleware  

@@ -2,23 +2,26 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: **`mcp-bastion-python==2.0.0`** ([PyPI](https://pypi.org/project/mcp-bastion-python/2.0.0/)) — major release with runtime governance hardening, audit fixes, FinOps/RBAC benchmarks, and dashboard governance panel.
+Current Python package release: **`mcp-bastion-python==2.0.1`** ([PyPI](https://pypi.org/project/mcp-bastion-python/2.0.1/)) - patch with developer docs, community files, and CI coverage fixes.
 
 ## Start here
 
 | Doc | Description |
 |-----|-------------|
+| [FEATURES.md](FEATURES.md) | **How-to for all 18 pillars** - enable, configure, error codes |
+| [RBAC.md](RBAC.md) | **RBAC deep dive** - roles, fnmatch globs, Agent IAM pairing |
+| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | **Developer help** - repo layout, local dev, tests, release |
 | [QUICK_START.md](QUICK_START.md) | **Minimal code** to wrap FastMCP or load `bastion.yaml`; CI snippet for pipelines |
 | [index.md](index.md) | Landing page for docs website (GitHub Pages home) |
 | [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) | End-to-end tutorial from install to production checks |
 | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) | Full `bastion.yaml` schema and examples |
 | [PILLARS.md](PILLARS.md) | Canonical mapping: base controls, **extended** policy features (1.0.16+), FinOps/context pillars (1.0.17+), runtime governance (1.0.18+, shipped in **2.0.0**), `bastion.yaml` ↔ dashboard |
-| [BENCHMARKS.md](BENCHMARKS.md) | **Measured** RBAC matrix, output-budget reduction, discovery filter, lexical cache — pytest + `scripts/generate_benchmark_report.py` |
+| [BENCHMARKS.md](BENCHMARKS.md) | **Measured** RBAC matrix, output-budget reduction, discovery filter, lexical cache - pytest + `scripts/generate_benchmark_report.py` |
 | [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) | **2.0.0:** full MCP method guards + Redis `state_backend` for multi-replica deploys |
 | [REDTEAM.md](REDTEAM.md) | Interpreting harness scores; **`mcp-bastion redteam`** |
 | [Advanced_Tutorials.md](Advanced_Tutorials.md) | Index of deeper docs (points to **DETAILED_TUTORIAL**, **TUTORIALS**, **PILLARS**, …) |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI (`validate`, `serve`, `serve --proxy`, `attest export`, …) |
-| [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) | **Guiding rule:** zero-infra guardrail brain; Tier 1–4 vs gateway products |
+| [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) | **Guiding rule:** zero-infra guardrail brain; Tier 1-4 vs gateway products |
 | [../FUNDING.md](../FUNDING.md) | Sponsorship, commercial licensing, sustainability |
 | [../SUPPORT.md](../SUPPORT.md) | Where to get help; issue expectations |
 | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) | OpenAI/Claude/Gemini/Mistral/Grok integration patterns |
@@ -27,9 +30,10 @@ Current Python package release: **`mcp-bastion-python==2.0.0`** ([PyPI](https://
 
 ### Reading paths
 
-1. **Policy-as-code only:** [PILLARS.md](PILLARS.md) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) → [CLI.md](CLI.md) (`validate`).
-2. **LLM desktop or API clients:** [LLM_INTEGRATION.md](LLM_INTEGRATION.md) → [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) → [../examples/README.md](../examples/README.md).
-3. **Production hardening:** [SECURITY.md](SECURITY.md) → [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) → [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) (includes **fleet-scale policy** and **SIEM / SOC audit** patterns) → [METRICS.md](METRICS.md).
+1. **Policy-as-code only:** [FEATURES.md](FEATURES.md) → [RBAC.md](RBAC.md) → [PILLARS.md](PILLARS.md) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) → [CLI.md](CLI.md) (`validate`).
+2. **Contributors:** [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) → [CONTRIBUTING.md](../CONTRIBUTING.md).
+3. **LLM desktop or API clients:** [LLM_INTEGRATION.md](LLM_INTEGRATION.md) → [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) → [../examples/README.md](../examples/README.md).
+4. **Production hardening:** [SECURITY.md](SECURITY.md) → [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) → [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) (includes **fleet-scale policy** and **SIEM / SOC audit** patterns) → [METRICS.md](METRICS.md).
 
 ## Security and operations
 
@@ -38,10 +42,10 @@ Current Python package release: **`mcp-bastion-python==2.0.0`** ([PyPI](https://
 | [SECURITY.md](SECURITY.md) | OWASP mapping, mitigations, vulnerability reporting |
 | [BEYOND_OWASP.md](BEYOND_OWASP.md) | Threats outside OWASP Top 10 (localhost CSRF, context flooding, schema drift) |
 | [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md) | HTTP / localhost binding and edge_auth guidance |
-| [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) | **2.0.0+:** mandatory proxy boundary — loopback upstream, edge_auth, NetworkPolicy checklist |
+| [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) | **2.0.0+:** mandatory proxy boundary - loopback upstream, edge_auth, NetworkPolicy checklist |
 | [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) | Agent IAM (Confused Deputy) and server checksum verification |
-| [ROADMAP.md](ROADMAP.md) | **Future roadmap (3.0+):** P0 cost-aware policy, P1–P5 priorities, release sequencing |
-| [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) | **Flagship bet:** cost-aware runtime governance — category positioning, four moats, messaging |
+| [ROADMAP.md](ROADMAP.md) | **Future roadmap (3.0+):** P0 cost-aware policy, P1-P5 priorities, release sequencing |
+| [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) | **Flagship bet:** cost-aware runtime governance - category positioning, four moats, messaging |
 | [COMPARISON.md](COMPARISON.md) | MCP-Bastion vs scanners, gateways, unguarded MCP |
 | [ENGINEERING_10_10.md](ENGINEERING_10_10.md) | Strategic 10/10 plan: injection depth, tool scan, OAuth gateway, maturity |
 | [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) | Attack scenarios and prevention walkthroughs |

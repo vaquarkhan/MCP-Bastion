@@ -1,4 +1,4 @@
-# mcp-bastion-fastmcp
+﻿# mcp-bastion-fastmcp
 
 Security middleware for FastMCP servers powered by [MCP-Bastion](https://pypi.org/project/mcp-bastion-python/).
 
@@ -32,7 +32,7 @@ if __name__ == "__main__":
 ## What it protects
 
 - Scans all tool arguments through the same `MCPBastionMiddleware` path as the core Python package (see defaults on the three toggles above)
-- For **full** `bastion.yaml` features (semantic firewall, OPA/Cedar, allowlists, session limits, etc.), use `build_middleware_from_config()` with the low-level MCP `Server` — FastMCP does not expose a native hook for the entire policy surface
+- For **full** `bastion.yaml` features (semantic firewall, OPA/Cedar, allowlists, session limits, etc.), use `build_middleware_from_config()` with the low-level MCP `Server`  -  FastMCP does not expose a native hook for the entire policy surface
 
 **Implementation note:** `secure_fastmcp` patches `FastMCP._tool_manager.call_tool` so every tool invocation flows through Bastion. Call it right after `FastMCP(...)` and before `run()`.
 

@@ -1,9 +1,9 @@
-# MCP surface coverage & distributed state (2.0.0)
+﻿# MCP surface coverage & distributed state (2.0.0)
 
 MCP-Bastion **2.0.0** closes two production gaps that affected every deployment:
 
-1. **Security pillars ran only on `tools/call`** — other MCP methods bypassed injection, PII, and rate controls.
-2. **All counters were in-process memory** — horizontal scale (multiple workers/pods) broke rate limits, replay protection, cost caps, and session scope.
+1. **Security pillars ran only on `tools/call`**  -  other MCP methods bypassed injection, PII, and rate controls.
+2. **All counters were in-process memory**  -  horizontal scale (multiple workers/pods) broke rate limits, replay protection, cost caps, and session scope.
 
 <p align="center">
   <img
@@ -80,9 +80,9 @@ When `type: redis`, doctor runs a **Redis ping** check (`state_backend_redis`).
 | Feature | Config | CLI / install |
 |---------|--------|---------------|
 | JSONPath argument guards | `argument_guards` | `pip install mcp-bastion-python[policy]` |
-| RBAC fnmatch globs | `rbac.permissions` | — |
+| RBAC fnmatch globs | `rbac.permissions` |  -  |
 | Audit JSONL | `audit.jsonl_path` | `mcp-bastion tail -p audit.jsonl` |
-| Cost checkpoint | `cost_tracker.checkpoint_path` | — |
+| Cost checkpoint | `cost_tracker.checkpoint_path` |  -  |
 
 ## Tests
 
@@ -101,7 +101,7 @@ PYTHONPATH=src python -m pytest tests/test_config.py tests/test_doctor.py -k "st
 
 ## Related docs
 
-- [PILLARS.md](PILLARS.md) — pillar ↔ `bastion.yaml` mapping
-- [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) — Agent IAM & server verification
-- [ROADMAP.md](ROADMAP.md) — shipped vs pending
-- [BENCHMARKS.md](BENCHMARKS.md) — measured FinOps/RBAC numbers
+- [PILLARS.md](PILLARS.md)  -  pillar ↔ `bastion.yaml` mapping
+- [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md)  -  Agent IAM & server verification
+- [ROADMAP.md](ROADMAP.md)  -  shipped vs pending
+- [BENCHMARKS.md](BENCHMARKS.md)  -  measured FinOps/RBAC numbers

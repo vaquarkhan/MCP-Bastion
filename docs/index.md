@@ -1,4 +1,4 @@
----
+﻿---
 layout: default
 title: MCP-Bastion Docs
 ---
@@ -43,9 +43,9 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 
 ## Fast path
 
-- **[Quick start (minimal code + CI)](QUICK_START.md)** — wrap FastMCP or load `bastion.yaml` in two lines; validate in pipelines  
-- **[Discovery checklist](DISCOVERY.md)** — registries and lists for ecosystem visibility  
-- **[Contributing](../CONTRIBUTING.md)** — **`good first issue`**-friendly tasks  
+- **[Quick start (minimal code + CI)](QUICK_START.md)**  -  wrap FastMCP or load `bastion.yaml` in two lines; validate in pipelines  
+- **[Discovery checklist](DISCOVERY.md)**  -  registries and lists for ecosystem visibility  
+- **[Contributing](../CONTRIBUTING.md)**  -  **`good first issue`**-friendly tasks  
 
 ## Documentation map
 
@@ -54,18 +54,18 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 | **Configure `bastion.yaml`** | [PILLARS.md](PILLARS.md) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) → repo `bastion.yaml.example` |
 | **Connect Claude, ChatGPT, OpenAI, Gemini, …** | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) → [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) |
 | **FastMCP, npm server, or proxy patterns** | [TUTORIALS.md](TUTORIALS.md) → [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) |
-| **Prove RBAC & token savings with numbers** | [BENCHMARKS.md](BENCHMARKS.md) — pytest suite + reproducible RBAC / output-budget / discovery / cache metrics |
+| **Prove RBAC & token savings with numbers** | [BENCHMARKS.md](BENCHMARKS.md)  -  pytest suite + reproducible RBAC / output-budget / discovery / cache metrics |
 
 Hub with all files: [Docs README](README.md).
 
 ## Documentation
 
-- [Quick start](QUICK_START.md) — minimal FastMCP / `bastion.yaml` / CI
-- [Discovery checklist](DISCOVERY.md) — registries and ecosystem lists
-- [Roadmap](ROADMAP.md) — directions (Issues for delivery)
-- [Benchmarks (RBAC & context reduction)](BENCHMARKS.md) — measured output-budget, discovery, cache, RBAC matrix
-- [Supply chain & releases](SUPPLY_CHAIN.md) — CI merge gates, automated releases, npm provenance, PyPI OIDC
-- [Integration models](INTEGRATION_MODELS.md) — middleware vs URL-swap gateways; how each stack gets Bastion in front of MCP
+- [Quick start](QUICK_START.md)  -  minimal FastMCP / `bastion.yaml` / CI
+- [Discovery checklist](DISCOVERY.md)  -  registries and ecosystem lists
+- [Roadmap](ROADMAP.md)  -  directions (Issues for delivery)
+- [Benchmarks (RBAC & context reduction)](BENCHMARKS.md)  -  measured output-budget, discovery, cache, RBAC matrix
+- [Supply chain & releases](SUPPLY_CHAIN.md)  -  CI merge gates, automated releases, npm provenance, PyPI OIDC
+- [Integration models](INTEGRATION_MODELS.md)  -  middleware vs URL-swap gateways; how each stack gets Bastion in front of MCP
 - [Detailed Tutorial](DETAILED_TUTORIAL.md)
 - [Policy as Code](POLICY_AS_CODE.md)
 - [CLI Reference](CLI.md)

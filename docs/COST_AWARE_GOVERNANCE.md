@@ -1,8 +1,8 @@
-# Cost-Aware Runtime Governance
+﻿# Cost-Aware Runtime Governance
 
 **The flagship bet for MCP-Bastion.**
 
-> *Nobody owns the phrase "cost-aware runtime governance for AI agents." We plant that flag with code we already ship — and extend it with policies that treat **live spend** as a first-class security signal, not an afterthought metric.*
+> *Nobody owns the phrase "cost-aware runtime governance for AI agents." We plant that flag with code we already ship  -  and extend it with policies that treat **live spend** as a first-class security signal, not an afterthought metric.*
 
 ---
 
@@ -12,26 +12,26 @@
 |------------------|----------|------------------------|
 | **Scanners** | mcp-scan, Invariant | Static tool definitions, poisoned descriptions, pre-deploy checks |
 | **Gateways** | Arcade, Enkrypt, Zuplo, ThinkWatch | Identity, routing, OAuth, API keys, upstream credential vault |
-| **MCP-Bastion** | *(this product)* | **Runtime governance on the MCP path** — allow/deny/route using **policy + live cost + attestation** |
+| **MCP-Bastion** | *(this product)* | **Runtime governance on the MCP path**  -  allow/deny/route using **policy + live cost + attestation** |
 
-Scanners do not see spend. Gateways treat cost as billing, not as a **control plane**. Bastion already has the only credible **denial-of-wallet** story in OSS MCP (principal-keyed caps, output budget, discovery filter, benchmarks). The bet is to make **cost-aware policy** the whole product identity — not one pillar among eighteen.
+Scanners do not see spend. Gateways treat cost as billing, not as a **control plane**. Bastion already has the only credible **denial-of-wallet** story in OSS MCP (principal-keyed caps, output budget, discovery filter, benchmarks). The bet is to make **cost-aware policy** the whole product identity  -  not one pillar among eighteen.
 
 ---
 
 ## What we already ship (2.0.0)
 
-Honest foundation — not vapor:
+Honest foundation  -  not vapor:
 
 | Capability | Where |
 |------------|--------|
 | Principal-keyed session + daily caps | `cost_tracker`, `budget_principal`, Redis `state_backend` |
-| Denial-of-wallet benchmarks | [BENCHMARKS.md](BENCHMARKS.md) — output budget, discovery filter, RBAC |
+| Denial-of-wallet benchmarks | [BENCHMARKS.md](BENCHMARKS.md)  -  output budget, discovery filter, RBAC |
 | Per-call cost attribution | `metadata["cost"]`, `cost_attribution`, dashboard spend tiles |
 | Agent / tenant identity | `agent_iam`, `multi_tenant`, edge auth |
-| Hash-chained audit | `audit_hash_chain` — tamper-evident event stream |
+| Hash-chained audit | `audit_hash_chain`  -  tamper-evident event stream |
 | Full MCP surface guards | tools, resources, prompts, sampling, elicitation |
 
-**Gap today:** caps mostly **hard-block** at threshold. The next step is **budget-driven degradation** and **expensive-chain prevention** — policy that *routes* or *downgrades* instead of only denying.
+**Gap today:** caps mostly **hard-block** at threshold. The next step is **budget-driven degradation** and **expensive-chain prevention**  -  policy that *routes* or *downgrades* instead of only denying.
 
 ---
 
@@ -92,9 +92,9 @@ Turn hash-chained audit into a **signed, exportable governance attestation** per
 - Blocked vs allowed actions
 - **Total cost** and attribution
 
-**Why:** Makes Bastion the **system of record** for agent governance — what enterprises buy and cannot rip out. No OSS MCP competitor ships exportable attestation tied to spend.
+**Why:** Makes Bastion the **system of record** for agent governance  -  what enterprises buy and cannot rip out. No OSS MCP competitor ships exportable attestation tied to spend.
 
-**Ship target:** 3.0 · `mcp-bastion attest export --session …` · optional HMAC with `BASTION_MANIFEST_SIGNING_KEY` — **shipped in [Unreleased]**
+**Ship target:** 3.0 · `mcp-bastion attest export --session …` · optional HMAC with `BASTION_MANIFEST_SIGNING_KEY`  -  **shipped in [Unreleased]**
 
 ### 2. Un-bypassable boundary mode *(kills the #1 criticism)*
 
@@ -140,23 +140,23 @@ Learn **per-agent baselines** in shadow mode; flag deviations:
 | **3.2** | Adaptive + semantic | Behavioral fingerprinting, embedding cache, chargeback forecast dashboard |
 | **3.3** | Enterprise maturity | Sigstore, SBOM, OLAP audit sink, external security audit |
 
-Security depth (scan, tool drift) stays in the train — it supports governance attestation, not a separate product story.
+Security depth (scan, tool drift) stays in the train  -  it supports governance attestation, not a separate product story.
 
 ---
 
 ## Messaging (use verbatim if helpful)
 
 - **One-liner:** *Cost-aware runtime governance for AI agents.*
-- **Elevator:** *MCP-Bastion is the policy and attestation layer on the MCP path — it stops abuse, proves what ran, and governs spend before the wallet drains.*
+- **Elevator:** *MCP-Bastion is the policy and attestation layer on the MCP path  -  it stops abuse, proves what ran, and governs spend before the wallet drains.*
 - **vs scanner:** *We govern at runtime with live cost, not only at deploy time.*
-- **vs gateway:** *We secure MCP deeply — injection, poisoning, FinOps — and embed anywhere; gateway mode when you need an un-bypassable hop.*
+- **vs gateway:** *We secure MCP deeply  -  injection, poisoning, FinOps  -  and embed anywhere; gateway mode when you need an un-bypassable hop.*
 
 ---
 
 ## Related docs
 
-- [ROADMAP.md](ROADMAP.md) — prioritized backlog
-- [BENCHMARKS.md](BENCHMARKS.md) — measured FinOps + injection efficacy
-- [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) — boundary mode checklist (2.0.0)
-- [COMPARISON.md](COMPARISON.md) — vs scanners and gateways
-- [ENGINEERING_10_10.md](ENGINEERING_10_10.md) — engineering milestones
+- [ROADMAP.md](ROADMAP.md)  -  prioritized backlog
+- [BENCHMARKS.md](BENCHMARKS.md)  -  measured FinOps + injection efficacy
+- [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md)  -  boundary mode checklist (2.0.0)
+- [COMPARISON.md](COMPARISON.md)  -  vs scanners and gateways
+- [ENGINEERING_10_10.md](ENGINEERING_10_10.md)  -  engineering milestones

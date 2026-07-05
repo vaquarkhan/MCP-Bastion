@@ -1,8 +1,8 @@
-# Performance Overhead & Effectiveness Metrics
+﻿# Performance Overhead & Effectiveness Metrics
 
 MCP-Bastion is designed for low latency and measurable security effectiveness. This document describes how to interpret and collect these metrics.
 
-For **many nodes** (rolling out `bastion.yaml`, central dashboards, **SIEM / SOC** audit forwarding, compliance retention patterns), see **[SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md)** — sections *Large-scale deployments: policy distribution and fleet visibility* and *SOC, SIEM, and compliance-oriented audit trails*.
+For **many nodes** (rolling out `bastion.yaml`, central dashboards, **SIEM / SOC** audit forwarding, compliance retention patterns), see **[SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md)**  -  sections *Large-scale deployments: policy distribution and fleet visibility* and *SOC, SIEM, and compliance-oriented audit trails*.
 
 ---
 

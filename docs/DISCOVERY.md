@@ -1,6 +1,6 @@
-# Discovery and registries (MCP ecosystem)
+﻿# Discovery and registries (MCP ecosystem)
 
-Many installs come from **CI**, **mirrors**, and **transitive** dependencies—not only manual `pip install`. Listing MCP-Bastion where developers search for MCP tools increases legitimate machine and human traffic.
+Many installs come from **CI**, **mirrors**, and **transitive** dependencies - not only manual `pip install`. Listing MCP-Bastion where developers search for MCP tools increases legitimate machine and human traffic.
 
 Use this as an **internal checklist** when promoting releases (URLs and forms change; verify on each site).
 

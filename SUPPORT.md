@@ -1,4 +1,4 @@
-# Support
+﻿# Support
 
 ## Documentation (start here)
 
@@ -25,7 +25,7 @@ Include when possible:
 - Expected vs actual behavior
 - Minimal reproduction steps
 
-Label **`good first issue`** tasks are suitable for new contributors — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Label **`good first issue`** tasks are suitable for new contributors  -  see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Security vulnerabilities
 

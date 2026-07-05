@@ -1,4 +1,4 @@
-# MCP-Bastion Examples
+﻿# MCP-Bastion Examples
 
 Python examples demonstrating MCP-Bastion middleware integration.
 
@@ -10,7 +10,7 @@ All Python files in this folder:
 
 | File | Purpose |
 |------|---------|
-| `examples/dashboard_demo.py` | Web dashboard with **rich seeded metrics** (KPIs, time series, forensics, alerts, **Insights & anomalies** — run with or without `--no-live`) |
+| `examples/dashboard_demo.py` | Web dashboard with **rich seeded metrics** (KPIs, time series, forensics, alerts, **Insights & anomalies**  -  run with or without `--no-live`) |
 | `examples/python_server_example.py` | Minimal middleware chain |
 | `examples/full_demo.py` | All features demo (11 scenarios) |
 | `examples/llm_server.py` | Shared MCP server for LLM clients |
@@ -41,7 +41,7 @@ Runs the FastAPI dashboard (`dashboard/app.py`) in-process and fills `MetricsSto
 
 **Install:** `pip install fastapi uvicorn` (or `pip install mcp-bastion-python[dashboard]`).
 
-**Run** — repo root:
+**Run**  -  repo root:
 
 ```bash
 # Windows PowerShell
@@ -58,7 +58,7 @@ cd examples
 python dashboard_demo.py
 ```
 
-Open **http://127.0.0.1:7000/** (prefer `127.0.0.1` over `localhost` if metrics fail — IPv6 vs IPv4). The demo binds **127.0.0.1** by default so Windows can open the port reliably; use `--host 0.0.0.0` for LAN. If **7000** is busy, the script **tries 7001…7007** automatically. Use `--no-live` for a static snapshot only.
+Open **http://127.0.0.1:7000/** (prefer `127.0.0.1` over `localhost` if metrics fail  -  IPv6 vs IPv4). The demo binds **127.0.0.1** by default so Windows can open the port reliably; use `--host 0.0.0.0` for LAN. If **7000** is busy, the script **tries 7001…7007** automatically. Use `--no-live` for a static snapshot only.
 
 ---
 

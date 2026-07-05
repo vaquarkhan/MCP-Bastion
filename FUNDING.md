@@ -1,10 +1,10 @@
-# Funding & sustainability
+﻿# Funding & sustainability
 
-MCP-Bastion is **free for non-commercial use** under the [LICENSE](LICENSE) when you [cite and attribute](CITATION.cff) the project. Sustaining security middleware — benchmarks, prompt-injection corpora, CI, docs, and integration packages — takes ongoing maintainer time.
+MCP-Bastion is **free for non-commercial use** under the [LICENSE](LICENSE) when you [cite and attribute](CITATION.cff) the project. Sustaining security middleware  -  benchmarks, prompt-injection corpora, CI, docs, and integration packages  -  takes ongoing maintainer time.
 
 ## Sponsor the project
 
-**[GitHub Sponsors — @vaquarkhan](https://github.com/sponsors/vaquarkhan)**
+**[GitHub Sponsors  -  @vaquarkhan](https://github.com/sponsors/vaquarkhan)**
 
 Sponsorship helps fund:
 
@@ -22,17 +22,17 @@ Enterprise inquiries typically cover deployment scale, support/SLA expectations,
 
 ## Contribute without money
 
-Not everyone can sponsor — these contributions are equally valuable:
+Not everyone can sponsor  -  these contributions are equally valuable:
 
-- **Code & tests** — see [CONTRIBUTING.md](CONTRIBUTING.md) (keep PRs focused; CI must pass at ≥92% coverage)
-- **Docs & examples** — `bastion.yaml` recipes, integration guides, benchmark reports
-- **Issues** — reproducible bugs, feature proposals with acceptance criteria
-- **Adoption** — cite MCP-Bastion in papers, blog posts, and internal architecture docs ([CITATION.cff](CITATION.cff))
-- **Security** — private reports via [SECURITY.md](SECURITY.md) (GitHub Security Advisories preferred)
+- **Code & tests**  -  see [CONTRIBUTING.md](CONTRIBUTING.md) (keep PRs focused; CI must pass at ≥92% coverage)
+- **Docs & examples**  -  `bastion.yaml` recipes, integration guides, benchmark reports
+- **Issues**  -  reproducible bugs, feature proposals with acceptance criteria
+- **Adoption**  -  cite MCP-Bastion in papers, blog posts, and internal architecture docs ([CITATION.cff](CITATION.cff))
+- **Security**  -  private reports via [SECURITY.md](SECURITY.md) (GitHub Security Advisories preferred)
 
 ## What we do not offer as a product
 
-MCP-Bastion is a **zero-infra library**, not a hosted gateway. We do not sell managed MCP proxy SaaS, OAuth login servers, or bundled ClickHouse analytics. Compose Bastion with your existing gateway and SIEM — see [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md).
+MCP-Bastion is a **zero-infra library**, not a hosted gateway. We do not sell managed MCP proxy SaaS, OAuth login servers, or bundled ClickHouse analytics. Compose Bastion with your existing gateway and SIEM  -  see [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md).
 
 ## Questions
 

@@ -1,6 +1,6 @@
-# Zero-infra strategy — the guardrail brain
+﻿# Zero-infra strategy  -  the guardrail brain
 
-**Guiding rule:** Stay a **zero-infra, drop-in library**. Win by being the **guardrail brain** that runs everywhere and **composes with any gateway** — not by becoming a gateway.
+**Guiding rule:** Stay a **zero-infra, drop-in library**. Win by being the **guardrail brain** that runs everywhere and **composes with any gateway**  -  not by becoming a gateway.
 
 MCP-Bastion does **not** run login, store tenant databases, or require ClickHouse. It enforces **policy + live cost + attestation** on the MCP path using `bastion.yaml`, then exports proof to **your** SIEM, vault, and identity stack.
 
@@ -10,7 +10,7 @@ Status key: ✅ shipped · 🟡 partial · 🔜 planned
 
 ---
 
-## Tier 1 — Neutralize gateway advantages (highest priority)
+## Tier 1  -  Neutralize gateway advantages (highest priority)
 
 | Item | Status | Notes |
 |------|--------|-------|
@@ -40,7 +40,7 @@ mcp-bastion serve --proxy http://127.0.0.1:9000/mcp --http 8080 --config bastion
 
 Enable `boundary_mode` + `edge_auth` or `agent_iam` for fail-closed proxy auth.
 
-### BYOI — Bring Your Own Identity
+### BYOI  -  Bring Your Own Identity
 
 **Do not run login.** Consume an already-authenticated principal from your gateway or SSO:
 
@@ -67,7 +67,7 @@ secrets:
   # vault_path_prefix: secret/mcp-bastion/
 ```
 
-Resolve agent tokens and upstream credentials **by reference** — Bastion never stores secrets in git or LLM context.
+Resolve agent tokens and upstream credentials **by reference**  -  Bastion never stores secrets in git or LLM context.
 
 ### SIEM exporters (BYO backend)
 
@@ -84,18 +84,18 @@ No ClickHouse required. See [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.m
 
 ---
 
-## Tier 2 — Offensive wedge (wire-level gateways can't do)
+## Tier 2  -  Offensive wedge (wire-level gateways can't do)
 
 | Item | Status | Why library-only |
 |------|--------|------------------|
-| **Cost-aware policy engine** | ✅ | Live spend → degrade / filter / approve / block chains — [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) |
-| **Signed governance attestation** | ✅ | `mcp-bastion attest export` — hash-chained proof, any file/SIEM |
+| **Cost-aware policy engine** | ✅ | Live spend → degrade / filter / approve / block chains  -  [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) |
+| **Signed governance attestation** | ✅ | `mcp-bastion attest export`  -  hash-chained proof, any file/SIEM |
 | **Data-flow / taint tracking** | 🔜 | Detect secret output → external-write arg; needs in-process call graph |
 | **Behavioral fingerprinting** | 🔜 | Per-agent baselines from spend + tool telemetry |
 
 ---
 
-## Tier 3 — Distribution / network effects
+## Tier 3  -  Distribution / network effects
 
 | Item | Status |
 |------|--------|
@@ -107,7 +107,7 @@ Market explicitly: **no chokepoint, no new attack surface, no ops.**
 
 ---
 
-## Tier 4 — Credibility (honesty gaps)
+## Tier 4  -  Credibility (honesty gaps)
 
 | Item | Status |
 |------|--------|
@@ -119,16 +119,16 @@ Market explicitly: **no chokepoint, no new attack surface, no ops.**
 
 ---
 
-## Compose field — how teams combine stacks
+## Compose field  -  how teams combine stacks
 
 ```mermaid
 flowchart LR
-  subgraph your_infra [Your infra — optional]
+  subgraph your_infra [Your infra  -  optional]
     GW[API/MCP Gateway SSO]
     Vault[Vault / SM]
     SIEM[SIEM / Kafka / Splunk]
   end
-  subgraph bastion [MCP-Bastion — zero infra]
+  subgraph bastion [MCP-Bastion  -  zero infra]
     YAML[bastion.yaml]
     MW[middleware / proxy]
     ATT[attest export]
@@ -141,7 +141,7 @@ flowchart LR
   Client --> MW
 ```
 
-**Maximize compose:** Gateway for SSO and routing; Bastion for MCP-specific governance, cost policy, and attestation — embedded or `--proxy`.
+**Maximize compose:** Gateway for SSO and routing; Bastion for MCP-specific governance, cost policy, and attestation  -  embedded or `--proxy`.
 
 ---
 
@@ -156,7 +156,7 @@ flowchart LR
 
 ## Related docs
 
-- [COMPARISON.md](COMPARISON.md) — vs scanners, gateways, ThinkWatch
-- [ROADMAP.md](ROADMAP.md) — release train
-- [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) — flagship bet
-- [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) — embed vs proxy
+- [COMPARISON.md](COMPARISON.md)  -  vs scanners, gateways, ThinkWatch
+- [ROADMAP.md](ROADMAP.md)  -  release train
+- [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md)  -  flagship bet
+- [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md)  -  embed vs proxy

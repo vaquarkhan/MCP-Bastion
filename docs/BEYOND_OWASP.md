@@ -1,4 +1,4 @@
-# Beyond OWASP MCP Top 10
+﻿# Beyond OWASP MCP Top 10
 
 OWASP MCP Top 10 covers agent-to-server risks at the protocol boundary. MCP-Bastion maps to all ten (see [README](../README.md)). This page covers **additional runtime threats** that OWASP does not list separately and how Bastion addresses them today.
 
@@ -12,7 +12,7 @@ OWASP MCP Top 10 covers agent-to-server risks at the protocol boundary. MCP-Bast
 | **Multi-agent state poisoning** | Primary | `agent_iam.isolate_sessions`, `state_backend: redis`, `response_scan`, audit hash chain, `multi_tenant` (2.0.0) |
 | **MCP surface exfil (non tools/call)** | Primary | Full surface guards on `resources/read`, `prompts/get`, `sampling/createMessage`, `elicitation/create` (2.0.0) |
 | **Semantic schema drift** | Partial | `tool_metadata_fingerprint`, `tool_metadata_guard`, `hot_reload`, `doctor` / `redteam` |
-| **Ransomware via RCE / injection** | Partial | `content_filter`, `prompt_guard`, `schema_validation`, `tool_allowlist`. Not a sandbox — pair with OS controls. |
+| **Ransomware via RCE / injection** | Partial | `content_filter`, `prompt_guard`, `schema_validation`, `tool_allowlist`. Not a sandbox  -  pair with OS controls. |
 | **Rogue MCP servers (supply chain)** | Partial | `doctor`, pip-audit, PyPI/npm provenance. Verify publisher before install. |
 
 ## Honest posture
@@ -21,7 +21,7 @@ Bastion defends **protocol economics and the agent boundary at runtime**. It doe
 
 ## Related docs
 
-- [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) — concrete attack scenarios
-- [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md) — HTTP / localhost guidance
-- [PILLARS.md](PILLARS.md) — full control reference
-- [ROADMAP.md](ROADMAP.md) — shipped vs pending (P1/P2)
+- [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md)  -  concrete attack scenarios
+- [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md)  -  HTTP / localhost guidance
+- [PILLARS.md](PILLARS.md)  -  full control reference
+- [ROADMAP.md](ROADMAP.md)  -  shipped vs pending (P1/P2)

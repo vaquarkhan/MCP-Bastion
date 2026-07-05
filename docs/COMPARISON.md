@@ -1,4 +1,4 @@
-# MCP-Bastion vs other approaches
+﻿# MCP-Bastion vs other approaches
 
 Quick reference for evaluators comparing MCP-Bastion to **static scanners**, **API/MCP gateways**, and **unguarded MCP servers**.
 
@@ -12,13 +12,13 @@ MCP-Bastion is **cost-aware runtime governance** on the MCP path: embed in your 
 |----------|----------|------------------------------|
 | **Scanner** | mcp-scan, Invariant | "Is this tool definition poisoned *before* deploy?" |
 | **Gateway** | Arcade, Enkrypt, Zuplo, ThinkWatch | "Who is the user and how do we route API/MCP traffic?" |
-| **Cost-aware runtime governance** | **MCP-Bastion** | "What ran, what did it cost, what was blocked — and how does **live spend** change allow/deny/route?" |
+| **Cost-aware runtime governance** | **MCP-Bastion** | "What ran, what did it cost, what was blocked  -  and how does **live spend** change allow/deny/route?" |
 
-Scanners do not see spend at runtime. Gateways treat cost as billing, not as a **control plane**. Bastion is the only OSS MCP stack with a credible **denial-of-wallet** story *and* a path to **budget-driven policy** (degrade, filter, approve — not only hard block).
+Scanners do not see spend at runtime. Gateways treat cost as billing, not as a **control plane**. Bastion is the only OSS MCP stack with a credible **denial-of-wallet** story *and* a path to **budget-driven policy** (degrade, filter, approve  -  not only hard block).
 
 ---
 
-## vs ThinkWatch (gateway) — compose, don't compete
+## vs ThinkWatch (gateway)  -  compose, don't compete
 
 ThinkWatch wins on **managed infra**: per-user OAuth, credential vault, ClickHouse analytics, wire-level proxy.
 
@@ -26,10 +26,10 @@ MCP-Bastion wins on **zero-infra governance depth** and **library-only wedges**:
 
 | Dimension | ThinkWatch-style gateway | MCP-Bastion |
 |-----------|--------------------------|-------------|
-| Deployment | Managed service / proxy appliance | `pip install` — embed **or** `serve --proxy` |
-| Identity | Runs login / OAuth | **BYOI** — consume JWT/headers from *your* SSO |
+| Deployment | Managed service / proxy appliance | `pip install`  -  embed **or** `serve --proxy` |
+| Identity | Runs login / OAuth | **BYOI**  -  consume JWT/headers from *your* SSO |
 | SIEM | Bundled ClickHouse | **BYO** webhook, OTEL, syslog, Splunk HEC |
-| Cost control | Billing / metering | **Cost-aware policy** — degrade, block chains, attestation |
+| Cost control | Billing / metering | **Cost-aware policy**  -  degrade, block chains, attestation |
 | Data-flow taint | Sees unrelated JSON-RPC hops | **In-process** call graph (planned) |
 | Serverless / air-gap | Needs chokepoint | Runs on laptop, CI, edge |
 
