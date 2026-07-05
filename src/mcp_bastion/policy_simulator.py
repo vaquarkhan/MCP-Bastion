@@ -64,6 +64,7 @@ def _build_shadow_config(base: BastionConfig | None, overrides: dict[str, Any] |
         cfg.rate_limit_max_iterations = int(rl.get("max_iterations", cfg.rate_limit_max_iterations))
         cfg.rate_limit_timeout_seconds = float(rl.get("timeout_seconds", cfg.rate_limit_timeout_seconds))
         cfg.rate_limit_token_budget = int(rl.get("token_budget", cfg.rate_limit_token_budget))
+        cfg.rate_limit_max_per_tool = int(rl.get("max_per_tool", cfg.rate_limit_max_per_tool))
     if isinstance(data.get("cost_tracker"), dict):
         ct = data["cost_tracker"]
         cfg.cost_max_per_session = float(ct.get("max_cost_per_session", cfg.cost_max_per_session))

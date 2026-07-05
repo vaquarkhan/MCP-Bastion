@@ -29,6 +29,8 @@ from mcp_bastion.pillars.rbac import RBAC
 from mcp_bastion.pillars.replay_guard import ReplayGuard
 from mcp_bastion.pillars.schema_validation import SchemaValidator
 from mcp_bastion.pillars.semantic_cache import SemanticCache
+from mcp_bastion.pillars.output_budget import OutputBudget
+from mcp_bastion.pillars.grounding_guard import GroundingGuard
 from mcp_bastion.base import CallNext, MiddlewareContext, compose_middleware
 from mcp_bastion.governance_beacon import schedule_registry_beacon
 from mcp_bastion.middleware import MCPBastionMiddleware
@@ -56,6 +58,18 @@ class BastionConfig:
     rate_limit_max_iterations: int = 15
     rate_limit_timeout_seconds: float = 60.0
     rate_limit_token_budget: int = 50_000
+    rate_limit_max_per_tool: int = 0
+    response_scan: bool = False
+    response_scan_extra_patterns: list[str] = field(default_factory=list)
+    discovery_filter: bool = False
+    output_budget: bool = False
+    output_budget_max_tokens: int = 4000
+    output_budget_min_tokens: int = 500
+    output_budget_offload: bool = True
+    output_budget_retrieve_tool: str = "bastion_get_offloaded"
+    grounding_guard: bool = False
+    grounding_guard_workspace_root: str = "."
+    grounding_guard_on_violation: str = "warn"
     circuit_breaker: bool = False
     content_filter: bool = False
     content_filter_block_code_execution: bool = True
@@ -165,6 +179,20 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         rate_limit_max_iterations=data.get("rate_limit", {}).get("max_iterations", 15),
         rate_limit_timeout_seconds=float(data.get("rate_limit", {}).get("timeout_seconds", 60)),
         rate_limit_token_budget=data.get("rate_limit", {}).get("token_budget", 50_000),
+        rate_limit_max_per_tool=int(data.get("rate_limit", {}).get("max_per_tool", 0)),
+        response_scan=bool(data.get("response_scan", {}).get("enabled", False)),
+        response_scan_extra_patterns=list(data.get("response_scan", {}).get("extra_patterns", [])),
+        discovery_filter=bool(data.get("discovery_filter", {}).get("enabled", False)),
+        output_budget=bool(data.get("output_budget", {}).get("enabled", False)),
+        output_budget_max_tokens=int(data.get("output_budget", {}).get("max_output_tokens", 4000)),
+        output_budget_min_tokens=int(data.get("output_budget", {}).get("min_tokens", 500)),
+        output_budget_offload=bool(data.get("output_budget", {}).get("offload", True)),
+        output_budget_retrieve_tool=str(
+            data.get("output_budget", {}).get("retrieve_tool", "bastion_get_offloaded")
+        ),
+        grounding_guard=bool(data.get("grounding_guard", {}).get("enabled", False)),
+        grounding_guard_workspace_root=str(data.get("grounding_guard", {}).get("workspace_root", ".")),
+        grounding_guard_on_violation=str(data.get("grounding_guard", {}).get("on_violation", "warn")),
         circuit_breaker=data.get("circuit_breaker", {}).get("enabled", False),
         content_filter=content_filter.get("enabled", False),
         content_filter_block_code_execution=content_filter.get("block_code_execution", True),
@@ -321,6 +349,7 @@ def _build_chain(config: BastionConfig) -> Any:
             max_iterations=config.rate_limit_max_iterations,
             timeout_seconds=config.rate_limit_timeout_seconds,
             token_budget=config.rate_limit_token_budget,
+            max_per_tool=config.rate_limit_max_per_tool,
         ),
         cost_tracker=CostTracker(
             max_cost_per_session=config.cost_max_per_session,
@@ -357,6 +386,21 @@ def _build_chain(config: BastionConfig) -> Any:
         enable_tool_metadata_guard=config.tool_metadata_guard_enabled,
         tool_metadata_guard_on_poison=config.tool_metadata_guard_on_poison,
         tool_metadata_guard_use_content_filter=config.tool_metadata_guard_use_content_filter,
+        enable_response_scan=config.response_scan,
+        response_scan_extra_patterns=config.response_scan_extra_patterns,
+        enable_discovery_filter=config.discovery_filter,
+        enable_output_budget=config.output_budget,
+        output_budget=OutputBudget(
+            max_output_tokens=config.output_budget_max_tokens,
+            min_tokens=config.output_budget_min_tokens,
+            enable_offload=config.output_budget_offload,
+            retrieve_tool=config.output_budget_retrieve_tool,
+        ),
+        enable_grounding_guard=config.grounding_guard,
+        grounding_guard=GroundingGuard(
+            workspace_root=config.grounding_guard_workspace_root,
+            on_violation=config.grounding_guard_on_violation,  # type: ignore[arg-type]
+        ),
     )
     if config.governance_registry_url:
         schedule_registry_beacon(

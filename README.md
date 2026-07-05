@@ -2,7 +2,16 @@
 
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
 
-[![PyPI: mcp-bastion-python 1.0.16](https://img.shields.io/pypi/v/mcp-bastion-python?logo=python)](https://pypi.org/project/mcp-bastion-python/1.0.16/)
+<p align="center">
+  <img
+    src="images/mcp-bastian.png"
+    alt="MCP-Bastion — Fortifying the Model Context Protocol"
+    width="720"
+    style="max-width:100%; height:auto;"
+  />
+</p>
+
+[![PyPI: mcp-bastion-python 1.0.17](https://img.shields.io/pypi/v/mcp-bastion-python?logo=python)](https://pypi.org/project/mcp-bastion-python/1.0.17/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
@@ -11,19 +20,100 @@
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**The security layer MCP servers are missing.** Your agent can call databases, APIs, and shell tools — one bad prompt or runaway loop can leak PII, burn your API budget, or execute something you never intended. MCP-Bastion wraps your existing Python or TypeScript MCP server with **local** guardrails: prompt injection blocking, PII redaction, and rate limits — **under 5ms overhead**, no third-party safety API required.
+**The security layer MCP servers are missing.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes. MCP-Bastion wraps your MCP server with **local** guardrails: injection blocking, PII redaction, and **denial-of-wallet caps** (iteration limits, token budget, optional USD ceilings), under **5ms overhead**, with no third-party safety API.
 
 ### Why developers adopt it
 
 | You need… | MCP-Bastion gives you… |
 |-----------|-------------------------|
-| **Guardrails without a rewrite** | Drop-in middleware — keep your tools and business logic; add `secure_fastmcp(mcp)` or one `bastion.yaml` |
-| **Privacy your legal team accepts** | PromptGuard + Presidio run **in your process** — sensitive data never ships to an external guardrail vendor |
-| **Protection from runaway agents** | Token buckets, iteration caps, and cost tracking stop infinite loops and denial-of-wallet |
-| **Something that ships today** | PyPI, npm, Docker on GHCR, FastMCP helper, TypeScript wrapper, CI `validate`, and a live metrics dashboard |
-| **Policy your team can review** | `bastion.yaml` in Git, hot reload, OWASP-aligned controls — see [docs/PILLARS.md](docs/PILLARS.md) |
+| **Guardrails without a rewrite** | Drop-in middleware: `secure_fastmcp(mcp)` or one `bastion.yaml` |
+| **Privacy your legal team accepts** | PromptGuard + Presidio run **in your process**; data stays on your network |
+| **Stop runaway agents & budget burn** | **On by default:** 15 tool calls/session, 60s timeout, 50k token budget. **Optional:** per-tool caps, USD session/day limits, response offload |
+| **Shrink context & cut token spend** | **Opt-in:** discovery filter (fewer tools in `tools/list`), output budget + session offload, semantic cache — less context in every turn |
+| **Something that ships today** | PyPI, npm, Docker on GHCR, FastMCP, TypeScript wrapper, CI validate, live dashboard |
+| **Policy your team can review** | `bastion.yaml` in Git, hot reload, OWASP-aligned controls ([docs/PILLARS.md](docs/PILLARS.md)) |
+
+### FinOps & abuse protection (denial-of-wallet)
+
+Agents can loop on expensive tools (search, LLM calls, paid APIs) until your bill spikes. Bastion enforces **session-level FinOps at the MCP boundary** before each `tools/call`:
+
+| Attack pattern | What Bastion does | Default |
+|----------------|---------------------|---------|
+| **Infinite tool loop** | Blocks after max iterations per session | **On** (15 calls) |
+| **Long-running session abuse** | Session timeout | **On** (60s) |
+| **Token / context budget burn** | Token budget per session; optional output offload | **On** (50k tokens); offload opt-in |
+| **Same tool hammered** | Per-tool call cap (`max_per_tool`) | Opt-in |
+| **Paid API spend runaway** | USD caps via cost tracker | Opt-in |
+| **Flaky or hostile tool cascade** | Circuit breaker opens after failures | Opt-in in example config |
+| **Tool sprawl in one session** | Cap distinct tools per session | Opt-in |
+
+Blocked calls return standard errors (`RateLimitExceededError` **-32002**, `TokenBudgetExceededError` **-32003**, `CostBudgetExceededError` **-32009**) and show up in the dashboard and audit log. See [docs/ATTACK_PREVENTION.md](docs/ATTACK_PREVENTION.md#3-rate-exhaustion--denial-of-wallet).
+
+### Token reduction & cost saving
+
+Bastion does not only **block** runaway spend — it **reduces** how many tokens reach the model on every turn:
+
+| Savings lever | What it does | Default |
+|---------------|--------------|---------|
+| **Discovery filter** | Hides unused tools from `tools/list` so agents carry a smaller tool catalog in context | Opt-in |
+| **Output budget + offload** | Truncates oversized tool responses; stores the rest in-session for `bastion_get_offloaded` | Opt-in |
+| **Semantic cache** | Skips redundant tool calls when inputs match a prior result | Opt-in |
+| **Token budget caps** | Hard stop before session token burn exceeds your limit | **On** (50k tokens) |
+| **USD session/day limits** | Dollar ceilings via cost tracker | Opt-in |
+
+Less context per turn means lower LLM input cost — without sending prompts to a third-party optimizer API.
 
 **Bottom line:** MCP turned every server into an agent gateway overnight. Bastion is the firewall that makes that gateway safe to run in production — in **three lines of code** or one config file.
+
+### OWASP MCP Top 10 + production attacks
+
+All **10** [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/) risks are mitigated at the MCP boundary (see controls below). Bastion also blocks **FinOps and abuse** patterns that OWASP does not list separately.
+
+<p align="center">
+  <img
+    src="images/mcp-bastion-owasp-coverage.png"
+    alt="MCP-Bastion: OWASP MCP Top 10, FinOps abuse attacks, token reduction and cost saving, 16 security pillars"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+
+**OWASP MCP Top 10** (all addressed)
+
+| ID | Risk | Bastion controls |
+|----|------|------------------|
+| MCP01 | Token / secret exposure | PII redaction, audit trail, outbound response scan |
+| MCP02 | Privilege escalation | RBAC, rate limits, cost caps, session tool scope |
+| MCP03 | Tool poisoning | Prompt guard, content filter, response scan, metadata guard, grounding guard |
+| MCP04 | Supply chain | Circuit breaker, `doctor` CLI, audit, observability |
+| MCP05 | Command injection | Prompt guard, content filter, schema validation |
+| MCP06 | Intent subversion | Rate limits, replay guard, per-tool caps, semantic firewall |
+| MCP07 | Weak authentication | RBAC, edge auth |
+| MCP08 | Audit & telemetry | Audit log, dashboard, Prometheus, OTEL, alerts |
+| MCP09 | Shadow MCP servers | Central `bastion.yaml` policy, metrics, discovery filter |
+| MCP10 | Context injection | PII redaction, response scan, output budget, discovery filter |
+
+**FinOps & abuse attacks (beyond OWASP)**
+
+| Attack | Controls |
+|--------|----------|
+| Denial of wallet | Iteration cap, token budget, cost tracker, output budget |
+| Runaway tool loops | Session timeout, rate limiter, circuit breaker |
+| Per-tool hammering | `max_per_tool` session caps |
+| API spend runaway | USD session/day caps |
+| Session tool sprawl | Distinct-tool limit per session |
+| Replay abuse | Replay guard + nonces |
+
+**Token reduction & cost saving**
+
+| Lever | Controls |
+|-------|----------|
+| Smaller tool catalog in context | Discovery filter on `tools/list` |
+| Less output in every turn | Output budget, session offload, `bastion_get_offloaded` |
+| Fewer redundant calls | Semantic cache |
+| Predictable spend | Token budget caps, USD session/day limits |
+
+Deep-dive mapping and integration hooks: [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) · [docs/ATTACK_PREVENTION.md](docs/ATTACK_PREVENTION.md)
 
 ### Secure your MCP server in 3 lines (FastMCP)
 
@@ -49,13 +139,11 @@ middleware = build_middleware_from_config()  # loads bastion.yaml
 
 More paths (TypeScript, CI validate, Docker): **[docs/QUICK_START.md](docs/QUICK_START.md)** · **[docs/README.md](docs/README.md)** · **[website](https://vaquarkhan.github.io/MCP-Bastion/)**
 
-<p align="center">
-  <img src="images/mcp-bastian.png" alt="MCP-Bastion" width="520" />
-</p>
-
-- **Prompt injection defense** — Meta PromptGuard blocks adversarial payloads and jailbreaks locally.
-- **PII redaction** — Microsoft Presidio masks SSN, email, phone, and more before data reaches the LLM.
-- **Denial-of-wallet protection** — Token buckets and cycle detection stop runaway agents from burning API budget.
+- **Prompt injection defense:** Meta PromptGuard blocks adversarial payloads locally.
+- **PII redaction:** Presidio masks SSN, email, phone in outbound content.
+- **Denial-of-wallet protection:** Token buckets, iteration caps, token budget, cost tracking.
+- **Response scan:** Blocks jailbreak patterns in outbound tool/resource text.
+- **Output budget & grounding guard:** Optional response truncation and path verification (opt-in).
 
 ### How it works
 
@@ -324,7 +412,7 @@ See **[docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md)** for the
 <p align="center">
   <img
     src="images/mcp-bastian-features.png"
-    alt="MCP-Bastion features at a glance — pillars, dashboard, and integrations"
+    alt="MCP-Bastion features at a glance"
     width="920"
     style="max-width:100%; height:auto; border-radius:12px;"
   />
@@ -376,7 +464,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pinned latest
-pip install mcp-bastion-python==1.0.16
+pip install mcp-bastion-python==1.0.17
 ```
 
 **Prerequisites (recommended)**
@@ -757,6 +845,7 @@ When MCP-Bastion blocks a request, it returns standard MCP/JSON-RPC errors:
 | -32014 | `ToolNotAllowedError` | Tool not on allowlist |
 | -32015 | `SessionScopeExceededError` | Too many distinct tools per session (scope creep) |
 | -32016 | `ToolMetadataPoisoningError` | Tool list / metadata failed safety checks |
+| -32017 | `GroundingViolationError` | Ungrounded file reference in tool output |
 
 ```python
 # Python: exceptions
@@ -777,6 +866,7 @@ from mcp_bastion.errors import (
     ToolNotAllowedError,
     SessionScopeExceededError,
     ToolMetadataPoisoningError,
+    GroundingViolationError,
 )
 import logging
 logger = logging.getLogger(__name__)
@@ -800,6 +890,7 @@ except (
     ToolNotAllowedError,
     SessionScopeExceededError,
     ToolMetadataPoisoningError,
+    GroundingViolationError,
 ) as e:
     logger.warning("blocked: %s", e.to_mcp_error())
 ```

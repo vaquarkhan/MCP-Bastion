@@ -13,31 +13,46 @@ def test_rate_limiter_cleanup_expired_session():
     limiter = TokenBucketRateLimiter(max_iterations=2, timeout_seconds=0.05)
     limiter.consume_iteration(session_id="s1")
     limiter.consume_iteration(session_id="s1")
-    allowed, _ = limiter.check_iteration(session_id="s1")
-    assert not allowed
+    check = limiter.check_iteration(session_id="s1")
+    assert not check.allowed
     time.sleep(0.1)
-    allowed, err = limiter.check_iteration(session_id="s1")
-    assert allowed
+    check = limiter.check_iteration(session_id="s1")
+    assert check.allowed
 
 
 def test_rate_limiter_token_budget_exhausted():
-    """Token budget exhausted blocks."""
+    """Token budget exhausted blocks with token_budget violation."""
     limiter = TokenBucketRateLimiter(max_iterations=100, token_budget=10)
     for _ in range(2):
-        allowed, _ = limiter.check_iteration(session_id="s1")
-        assert allowed
+        check = limiter.check_iteration(session_id="s1")
+        assert check.allowed
         limiter.consume_iteration(session_id="s1", tokens=5)
-    allowed, err = limiter.check_iteration(session_id="s1")
-    assert not allowed
-    assert "token" in (err or "").lower()
+    check = limiter.check_iteration(session_id="s1")
+    assert not check.allowed
+    assert check.violation == "token_budget"
+    assert "token" in (check.message or "").lower()
 
 
 def test_rate_limiter_consume_with_tokens():
     """Consume iteration with token count."""
     limiter = TokenBucketRateLimiter(max_iterations=5, token_budget=100)
     limiter.consume_iteration(session_id="s1", tokens=50)
-    allowed, _ = limiter.check_iteration(session_id="s1")
-    assert allowed
+    check = limiter.check_iteration(session_id="s1")
+    assert check.allowed
+
+
+def test_rate_limiter_per_tool_cap():
+    """Per-tool session cap blocks only the saturated tool."""
+    limiter = TokenBucketRateLimiter(max_iterations=100, max_per_tool=2)
+    for _ in range(2):
+        check = limiter.check_iteration(session_id="s1", tool_name="search")
+        assert check.allowed
+        limiter.consume_iteration(session_id="s1", tool_name="search")
+    check = limiter.check_iteration(session_id="s1", tool_name="search")
+    assert not check.allowed
+    assert check.violation == "per_tool"
+    check_other = limiter.check_iteration(session_id="s1", tool_name="read_file")
+    assert check_other.allowed
 
 
 def test_rate_limiter_session_timeout_exceeded():
@@ -47,9 +62,10 @@ def test_rate_limiter_session_timeout_exceeded():
     with patch.object(limiter, "_cleanup_expired"):
         state = limiter._sessions["s1"]
         state.started_at = time.monotonic() - 100
-        allowed, err = limiter.check_iteration(session_id="s1")
-        assert not allowed
-        assert "timeout" in (err or "").lower()
+        check = limiter.check_iteration(session_id="s1")
+        assert not check.allowed
+        assert check.violation == "timeout"
+        assert "timeout" in (check.message or "").lower()
 
 
 def test_rate_limiter_reset_session():
@@ -57,11 +73,11 @@ def test_rate_limiter_reset_session():
     limiter = TokenBucketRateLimiter(max_iterations=2)
     limiter.consume_iteration(session_id="s1")
     limiter.consume_iteration(session_id="s1")
-    allowed, _ = limiter.check_iteration(session_id="s1")
-    assert not allowed
+    check = limiter.check_iteration(session_id="s1")
+    assert not check.allowed
     limiter.reset_session(session_id="s1")
-    allowed, _ = limiter.check_iteration(session_id="s1")
-    assert allowed
+    check = limiter.check_iteration(session_id="s1")
+    assert check.allowed
 
 
 def test_rate_limiter_rejects_negative_tokens():
@@ -69,3 +85,8 @@ def test_rate_limiter_rejects_negative_tokens():
     limiter = TokenBucketRateLimiter(max_iterations=5, token_budget=100)
     with pytest.raises(ValueError, match="tokens"):
         limiter.consume_iteration(session_id="s1", tokens=-1)
+
+
+def test_rate_limiter_rejects_negative_max_per_tool():
+    with pytest.raises(ValueError, match="max_per_tool"):
+        TokenBucketRateLimiter(max_per_tool=-1)

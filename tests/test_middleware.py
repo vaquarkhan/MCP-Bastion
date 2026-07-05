@@ -56,8 +56,8 @@ def test_rate_limiter_allows_within_limit():
     """Rate limiter allows iterations within cap."""
     limiter = TokenBucketRateLimiter(max_iterations=3, timeout_seconds=120)
     for _ in range(3):
-        allowed, err = limiter.check_iteration(request_id="req1")
-        assert allowed, err
+        check = limiter.check_iteration(request_id="req1")
+        assert check.allowed, check.message
         limiter.consume_iteration(request_id="req1")
 
 
@@ -66,9 +66,9 @@ def test_rate_limiter_blocks_over_limit():
     limiter = TokenBucketRateLimiter(max_iterations=2, timeout_seconds=120)
     limiter.consume_iteration(request_id="req2")
     limiter.consume_iteration(request_id="req2")
-    allowed, err = limiter.check_iteration(request_id="req2")
-    assert not allowed
-    assert "Maximum iterations" in (err or "")
+    check = limiter.check_iteration(request_id="req2")
+    assert not check.allowed
+    assert "Maximum iterations" in (check.message or "")
 
 
 def test_mcp_bastion_error_format():

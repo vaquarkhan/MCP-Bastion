@@ -12,7 +12,11 @@ This page ties together **what MCP-Bastion does**, how it maps to the **industry
 |----------------|------------------|--------------------|
 | **Prompt injection defense** | Meta PromptGuard classifies tool arguments; malicious payloads can be blocked before execution. | Stops jailbreak-style instructions from reaching tools or leaking context. |
 | **PII redaction** | Presidio detects and masks entities in outbound tool/resource content. | Reduces accidental PII in model context, logs, and downstream storage. |
-| **Rate limiting** | Max iterations, session timeout, token budget. | Stops runaway agents and **denial-of-wallet** / abuse patterns. |
+| **Rate limiting** | Max iterations, session timeout, token budget, per-tool caps. | Stops runaway agents and **denial-of-wallet** / abuse patterns. |
+| **Response scan** | Regex scan of outbound tool/resource text for jailbreak patterns. | Mitigates compromised MCP servers embedding instructions in results (MCP03/MCP10). |
+| **Output budget** | Truncate/offload oversized responses; session in-memory retrieve via `bastion_get_offloaded`. | FinOps context reduction without external cache DB (opt-in). |
+| **Grounding guard** | Verify file-path references in tool output against `workspace_root`. | Anti-poisoning / hallucinated path refs (opt-in). |
+| **Discovery filter** | Strip non-allowlisted tools from `tools/list`. | Reduces agent context tokens and tool sprawl (opt-in). |
 | **Cost tracker** | Per-session (and optional daily) spend caps. | FinOps guardrails when tools bill APIs. |
 | **Content filter** | Block file paths, code execution patterns, URLs; allowlist/denylist. | Mitigates path traversal-style abuse and risky content. |
 | **Circuit breaker** | Disable tools after repeated failures. | Limits blast radius of flaky or hostile tools. |
@@ -40,14 +44,14 @@ The [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/) lists the high
 |--------|--------------------|----------------------|
 | **MCP01** | Token / secret exposure in memory, logs, or context | **Partial:** PII redaction limits sensitive data in outbound content; audit events reduce blind spots. **Process:** rotate credentials, short-lived tokens, secret hygiene outside MCP. |
 | **MCP02** | Privilege escalation / scope creep | **Primary:** RBAC, rate limits, cost caps. **Process:** periodic permission reviews. |
-| **MCP03** | Tool poisoning (malicious or misleading tools) | **Partial:** PromptGuard + content filter + circuit breaker limit impact; **Process:** trust only signed/trusted server packages and reviews. |
+| **MCP03** | Tool poisoning (malicious or misleading tools) | **Primary:** PromptGuard + content filter + response scan + grounding guard + metadata guard + circuit breaker. **Process:** trust only signed/trusted server packages and reviews. |
 | **MCP04** | Supply chain / dependency tampering | **Partial:** circuit breaker and observability limit blast radius. **Process:** dependency pinning, SBOM, trusted builds. |
 | **MCP05** | Command injection & unsafe execution | **Primary:** content filter + injection defense on arguments; blocks many unsafe patterns before execution. |
 | **MCP06** | Intent / workflow subversion | **Partial:** rate limits, replay guard, schema validation reduce automated abuse. |
 | **MCP07** | Weak authentication & authorization | **Primary:** RBAC at tool boundary. **Process:** strong identity for MCP HTTP/SSE is still your platform’s job. |
 | **MCP08** | Lack of audit & telemetry | **Primary:** audit middleware, metrics, dashboard, Prometheus, optional OTEL. |
 | **MCP09** | Shadow / unknown MCP servers | **Partial:** centralized policy + metrics make sanctioned servers observable. **Process:** inventory and allowlisting of endpoints. |
-| **MCP10** | Context injection & oversharing | **Primary:** PII redaction; injection defense reduces hostile context in tool args. **Process:** session isolation policies at the app layer. |
+| **MCP10** | Context injection & oversharing | **Primary:** PII redaction, injection defense, response scan, output budget, discovery filter. **Process:** session isolation policies at the app layer. |
 
 ---
 
