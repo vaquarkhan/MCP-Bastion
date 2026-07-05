@@ -5,7 +5,11 @@ from unittest import mock
 
 import pytest
 
-pytest_plugins = ["pytest_asyncio.plugin"]
+
+def pytest_configure(config):
+    """Load pytest-asyncio when entry points do not register it (local dev on some platforms)."""
+    if not config.pluginmanager.has_plugin("asyncio"):
+        config.pluginmanager.import_plugin("pytest_asyncio.plugin")
 
 
 @pytest.fixture(autouse=True)
