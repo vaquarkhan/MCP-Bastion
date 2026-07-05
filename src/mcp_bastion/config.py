@@ -32,6 +32,7 @@ from mcp_bastion.pillars.schema_validation import SchemaValidator, parse_tool_sc
 from mcp_bastion.pillars.semantic_cache import SemanticCache
 from mcp_bastion.pillars.output_budget import OutputBudget
 from mcp_bastion.pillars.grounding_guard import GroundingGuard
+from mcp_bastion.pillars.identity_adapters import IdentityAdapter
 from mcp_bastion.pillars.agent_iam import AgentIAM, parse_agent_policies
 from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine, parse_guard_rules
 from mcp_bastion.pillars.server_verification import ServerVerifier
@@ -104,6 +105,9 @@ class BastionConfig:
     prompt_guard_use_ungated_default: bool = False
     boundary_mode_enabled: bool = False
     governance_attestation_enabled: bool = True
+    identity_adapter_enabled: bool = False
+    identity_adapter_config: dict[str, Any] = field(default_factory=dict)
+    secrets_config: dict[str, Any] = field(default_factory=dict)
     argument_guards_enabled: bool = False
     argument_guards_rules: list[dict[str, Any]] = field(default_factory=list)
     semantic_cache: bool = False
@@ -276,6 +280,8 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     pg = data.get("prompt_guard", {}) or {}
     cp = data.get("cost_policy", {}) or {}
     bm = data.get("boundary_mode", {}) or {}
+    ia = data.get("identity_adapter", {}) or {}
+    sec = data.get("secrets", {}) or {}
     boundary_on = bool(bm.get("enabled", False))
     th_require_loopback = bool(th.get("require_loopback", True))
     return BastionConfig(
@@ -332,6 +338,9 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         cost_policy_enabled=bool(cp.get("enabled", False)),
         cost_policy_config=cp if isinstance(cp, dict) else {},
         boundary_mode_enabled=boundary_on,
+        identity_adapter_enabled=bool(ia.get("enabled", False)),
+        identity_adapter_config=ia if isinstance(ia, dict) else {},
+        secrets_config=sec if isinstance(sec, dict) else {},
         argument_guards_enabled=bool(ag.get("enabled", False)),
         argument_guards_rules=list(ag.get("rules", [])) if isinstance(ag.get("rules"), list) else [],
         semantic_cache=data.get("semantic_cache", {}).get("enabled", False),
@@ -693,6 +702,10 @@ def _build_chain(config: BastionConfig) -> Any:
         config_source_path=config.source_path,
         enable_governance_attestation=config.governance_attestation_enabled,
         enable_boundary_mode=config.boundary_mode_enabled,
+        identity_adapter=IdentityAdapter.from_config(config.identity_adapter_config)
+        if config.identity_adapter_enabled
+        else None,
+        enable_identity_adapter=config.identity_adapter_enabled,
     )
     if config.governance_registry_url:
         schedule_registry_beacon(

@@ -100,6 +100,13 @@ def format_telemetry_body(format_name: str, evt: dict[str, Any], *, service: str
         }
         return json.dumps(body, default=str).encode("utf-8")
 
+    if fmt in ("syslog", "syslog_rfc5424"):
+        # RFC 5424 structured data optional; message is JSON audit event
+        pri = 14  # info
+        msg = json.dumps(evt, default=str)
+        line = f"<{pri}>1 {time.strftime('%Y-%m-%dT%H:%M:%S.000Z')} {socket.gethostname()} mcp-bastion - - - {msg}"
+        return line.encode("utf-8")
+
     # Unknown format: send generic wrapper
     logger.warning("telemetry_sinks unknown format=%s; using http_json", format_name)
     return format_telemetry_body("http_json", evt, service=service, ddtags=ddtags)
@@ -151,6 +158,21 @@ def make_http_telemetry_sink(
     return _send
 
 
+def _make_syslog_sink(host: str, port: int, format_name: str) -> Callable[[AuditEntry], None]:
+    """UDP syslog sink (RFC 5424-ish); BYO SIEM collector."""
+
+    def _send(entry: AuditEntry) -> None:
+        evt = audit_entry_to_event_dict(entry)
+        body = format_telemetry_body(format_name, evt, service="mcp-bastion", ddtags="")
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.sendto(body, (host, port))
+        except OSError as e:
+            logger.debug("syslog sink failed host=%s:%s err=%s", host, port, e)
+
+    return _send
+
+
 def build_telemetry_sinks_from_config(config: Any) -> list[Callable[[AuditEntry], None]]:
     """Build POST sinks from ``BastionConfig.telemetry_sinks`` list."""
     specs = getattr(config, "telemetry_sinks", None) or []
@@ -168,6 +190,11 @@ def build_telemetry_sinks_from_config(config: Any) -> list[Callable[[AuditEntry]
             continue
         fmt = str(spec.get("format") or spec.get("type") or "http_json")
         url = _expand(str(spec.get("url") or "")).strip()
+        if fmt in ("syslog", "syslog_rfc5424"):
+            host = _expand(str(spec.get("host") or "127.0.0.1"))
+            port = int(spec.get("port", 514))
+            out.append(_make_syslog_sink(host, port, fmt))
+            continue
         if not url:
             logger.warning("telemetry sink skipped: missing url format=%s", fmt)
             continue

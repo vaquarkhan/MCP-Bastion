@@ -65,7 +65,12 @@ def cmd_validate(config_path: str | None) -> int:
         return 1
 
 
-def cmd_serve(config_path: str | None, http_port: int | None, host: str) -> int:
+def cmd_serve(
+    config_path: str | None,
+    http_port: int | None,
+    host: str,
+    proxy_url: str | None = None,
+) -> int:
     _configure_cli_logging()
     _ensure_src_on_path()
     try:
@@ -75,11 +80,23 @@ def cmd_serve(config_path: str | None, http_port: int | None, host: str) -> int:
         return 1
     if config_path:
         os.environ["BASTION_CONFIG"] = config_path
+    cfg_path = config_path or os.environ.get("BASTION_CONFIG", "bastion.yaml")
     try:
-        load_config(config_path or os.environ.get("BASTION_CONFIG", "bastion.yaml"))
+        load_config(cfg_path)
     except Exception as e:
         logger.error("Config error: %s", e)
         return 1
+
+    port = http_port if http_port is not None else 8080
+    if proxy_url:
+        try:
+            from mcp_bastion.proxy_server import run_proxy_http
+        except ImportError as e:
+            logger.error("Proxy mode requires uvicorn: %s", e)
+            return 1
+        run_proxy_http(proxy_url, host=host, port=port, config_path=cfg_path)
+        return 0
+
     root = Path(__file__).resolve().parent.parent.parent
     llm_server = root / "examples" / "llm_server.py"
     if not llm_server.exists():
@@ -383,7 +400,19 @@ def main() -> int:
     serve_parser.add_argument("--config", "-c", help="Path to bastion.yaml", default="bastion.yaml")
     serve_parser.add_argument("--http", type=int, metavar="PORT", default=8080, help="HTTP port (default 8080)")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Bind host (default loopback)")
-    serve_parser.set_defaults(func=lambda **kw: cmd_serve(kw.get("config"), kw.get("http"), kw.get("host", "127.0.0.1")))
+    serve_parser.add_argument(
+        "--proxy",
+        metavar="UPSTREAM_URL",
+        help="Boundary mode: forward to upstream MCP URL (same bastion.yaml enforcement)",
+    )
+    serve_parser.set_defaults(
+        func=lambda **kw: cmd_serve(
+            kw.get("config"),
+            kw.get("http"),
+            kw.get("host", "127.0.0.1"),
+            kw.get("proxy"),
+        )
+    )
 
     dash_parser = sub.add_parser("dashboard", help="Run metrics dashboard")
     dash_parser.add_argument("--port", "-p", type=int, default=7000, help="Dashboard port (default 7000)")

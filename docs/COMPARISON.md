@@ -18,7 +18,24 @@ Scanners do not see spend at runtime. Gateways treat cost as billing, not as a *
 
 ---
 
-## At a glance
+## vs ThinkWatch (gateway) — compose, don't compete
+
+ThinkWatch wins on **managed infra**: per-user OAuth, credential vault, ClickHouse analytics, wire-level proxy.
+
+MCP-Bastion wins on **zero-infra governance depth** and **library-only wedges**:
+
+| Dimension | ThinkWatch-style gateway | MCP-Bastion |
+|-----------|--------------------------|-------------|
+| Deployment | Managed service / proxy appliance | `pip install` — embed **or** `serve --proxy` |
+| Identity | Runs login / OAuth | **BYOI** — consume JWT/headers from *your* SSO |
+| SIEM | Bundled ClickHouse | **BYO** webhook, OTEL, syslog, Splunk HEC |
+| Cost control | Billing / metering | **Cost-aware policy** — degrade, block chains, attestation |
+| Data-flow taint | Sees unrelated JSON-RPC hops | **In-process** call graph (planned) |
+| Serverless / air-gap | Needs chokepoint | Runs on laptop, CI, edge |
+
+**Recommended stack:** Gateway (SSO + routing) + Bastion (MCP policy + FinOps + attestation). See [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md).
+
+---
 
 | Capability | Unguarded MCP server | Thin MCP reverse proxy | Full AI + MCP gateway | **MCP-Bastion** |
 |------------|----------------------|-------------------------|------------------------|-----------------|

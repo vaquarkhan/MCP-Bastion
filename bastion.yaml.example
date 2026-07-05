@@ -109,6 +109,20 @@ cost_policy:
 boundary_mode:
   enabled: false
 
+# BYOI: consume gateway-stamped identity (no login server). See docs/ZERO_INFRA_STRATEGY.md.
+identity_adapter:
+  enabled: false
+  type: header              # header | jwt_claim
+  header: X-Bastion-Principal
+  role_header: X-Bastion-Role
+  jwt_metadata_key: bastion_jwt
+  principal_claim: sub
+  role_claim: scope
+
+# BYO vault for secret refs (default: env). See pillars/secrets_resolver.py.
+secrets:
+  provider: env
+
 argument_guards:
   enabled: false
   rules:

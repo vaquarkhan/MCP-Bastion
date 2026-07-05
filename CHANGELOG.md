@@ -17,6 +17,11 @@ All notable changes to this project are documented in this file.
 - **Gateway boundary guide:** [docs/GATEWAY_BOUNDARY.md](docs/GATEWAY_BOUNDARY.md) — mandatory proxy mode checklist (loopback upstream, edge_auth, NetworkPolicy).
 - **Injection efficacy benchmark:** `benchmarks/injection_efficacy.py`, `tests/test_injection_efficacy.py`, row in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 - **Integration packages 2.0.0:** all 17 `mcp-bastion-*` PyPI integrations published at **2.0.0** (tag `integration-v2.0.0`).
+- **Zero-infra Tier 1:** [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md) — guardrail-brain positioning vs gateway products.
+- **`mcp-bastion serve --proxy`:** HTTP boundary mode forwarding to upstream MCP with identical `bastion.yaml` enforcement.
+- **BYOI identity adapters:** `identity_adapter` (header / JWT claim) stamps gateway-authenticated principals for RBAC and FinOps caps.
+- **Pluggable secrets resolver:** `secrets.provider` interface (env default; Vault / AWS SM / GCP SM via optional deps).
+- **Syslog SIEM sink:** `telemetry.sinks` format `syslog` (RFC 5424 UDP).
 
 ### Fixed
 

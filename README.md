@@ -22,6 +22,8 @@
 
 **The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
 
+**Guiding rule:** Stay a **zero-infra, drop-in library** — the guardrail brain that composes with any gateway, not a gateway itself. Strategy: [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md).
+
 <p align="center">
   <img
     src="images/mcp-bastion-mcp-surface-scale.png"
