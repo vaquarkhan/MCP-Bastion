@@ -58,8 +58,19 @@ def test_stdio_guard_blocks_invalid_lines(capsys):
     guard.flush()
     out = buf.getvalue()
     assert "NOT JSON" not in out
-    assert is_valid_json_rpc_line('{"a":1}') is True
-    assert is_valid_json_rpc_line("print('x')") is False
+    assert "jsonrpc" in out
+
+
+def test_is_valid_json_rpc_line_edge_cases():
+    assert is_valid_json_rpc_line("") is True
+    assert is_valid_json_rpc_line("plain text") is False
+    assert is_valid_json_rpc_line("{bad json") is False
+    assert is_valid_json_rpc_line("[1, 2]") is True
+
+
+def test_stdio_guard_empty_write_returns_zero():
+    guard = JsonRpcStdoutGuard(io.StringIO())
+    assert guard.write("") == 0
 
 
 def test_manifest_hmac_sign_and_verify():

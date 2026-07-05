@@ -18,6 +18,23 @@ def test_parse_guard_rules_skips_empty_pattern():
     assert rules[0].name == "y"
 
 
+def test_parse_guard_rules_skips_non_dict_entries():
+    rules = parse_guard_rules(["skip-me", {"name": "ok", "pattern": "x", "arg": "$.a"}])
+    assert len(rules) == 1
+    assert rules[0].name == "ok"
+
+
+def test_block_guard_matches_numeric_and_bool_arguments():
+    rules = parse_guard_rules(
+        [{"name": "port", "match": "*", "arg": "$.port", "pattern": "^22$", "action": "block"}]
+    )
+    engine = ArgumentGuardEngine(rules)
+    ok, _ = engine.check_blocking("connect", {"port": 22})
+    assert ok is False
+    ok2, _ = engine.check_blocking("connect", {"port": 443})
+    assert ok2 is True
+
+
 def test_block_guard_matches_tool_glob():
     rules = parse_guard_rules(
         [
