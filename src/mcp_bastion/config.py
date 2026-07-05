@@ -56,6 +56,10 @@ class BastionConfig:
     rate_limit_max_iterations: int = 15
     rate_limit_timeout_seconds: float = 60.0
     rate_limit_token_budget: int = 50_000
+    rate_limit_max_per_tool: int = 0
+    response_scan: bool = False
+    response_scan_extra_patterns: list[str] = field(default_factory=list)
+    discovery_filter: bool = False
     circuit_breaker: bool = False
     content_filter: bool = False
     content_filter_block_code_execution: bool = True
@@ -165,6 +169,10 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         rate_limit_max_iterations=data.get("rate_limit", {}).get("max_iterations", 15),
         rate_limit_timeout_seconds=float(data.get("rate_limit", {}).get("timeout_seconds", 60)),
         rate_limit_token_budget=data.get("rate_limit", {}).get("token_budget", 50_000),
+        rate_limit_max_per_tool=int(data.get("rate_limit", {}).get("max_per_tool", 0)),
+        response_scan=bool(data.get("response_scan", {}).get("enabled", False)),
+        response_scan_extra_patterns=list(data.get("response_scan", {}).get("extra_patterns", [])),
+        discovery_filter=bool(data.get("discovery_filter", {}).get("enabled", False)),
         circuit_breaker=data.get("circuit_breaker", {}).get("enabled", False),
         content_filter=content_filter.get("enabled", False),
         content_filter_block_code_execution=content_filter.get("block_code_execution", True),
@@ -321,6 +329,7 @@ def _build_chain(config: BastionConfig) -> Any:
             max_iterations=config.rate_limit_max_iterations,
             timeout_seconds=config.rate_limit_timeout_seconds,
             token_budget=config.rate_limit_token_budget,
+            max_per_tool=config.rate_limit_max_per_tool,
         ),
         cost_tracker=CostTracker(
             max_cost_per_session=config.cost_max_per_session,
@@ -357,6 +366,9 @@ def _build_chain(config: BastionConfig) -> Any:
         enable_tool_metadata_guard=config.tool_metadata_guard_enabled,
         tool_metadata_guard_on_poison=config.tool_metadata_guard_on_poison,
         tool_metadata_guard_use_content_filter=config.tool_metadata_guard_use_content_filter,
+        enable_response_scan=config.response_scan,
+        response_scan_extra_patterns=config.response_scan_extra_patterns,
+        enable_discovery_filter=config.discovery_filter,
     )
     if config.governance_registry_url:
         schedule_registry_beacon(

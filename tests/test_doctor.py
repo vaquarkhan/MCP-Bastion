@@ -25,7 +25,9 @@ def test_run_doctor_config_ok(tmp_path):
         import yaml  # noqa: F401
     except ImportError:
         pytest.skip("pyyaml not installed")
-    r = run_doctor(config_path=str(p), repo_root=tmp_path)
+    # pip-audit on PATH may report local vulns (returncode != 0); isolate config check.
+    with mock.patch("mcp_bastion.doctor.shutil.which", return_value=None):
+        r = run_doctor(config_path=str(p), repo_root=tmp_path)
     assert r["ok"] is True
     assert any(c["id"] == "config_load" and c["ok"] for c in r["checks"])
     assert any(c["id"] == "manifests" for c in r["checks"])

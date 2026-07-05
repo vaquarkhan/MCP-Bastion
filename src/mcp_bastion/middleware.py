@@ -23,6 +23,7 @@ from mcp_bastion.errors import (
     RateLimitExceededError,
     SensitiveContentError,
     SessionScopeExceededError,
+    TokenBudgetExceededError,
     ToolMetadataPoisoningError,
     ToolNotAllowedError,
 )
@@ -31,7 +32,9 @@ from mcp_bastion.pillars.content_filter import ContentFilter
 from mcp_bastion.pillars.cost_tracker import CostTracker
 from mcp_bastion.pillars.pii_redaction import PIIRedactor
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
-from mcp_bastion.pillars.rate_limit import TokenBucketRateLimiter
+from mcp_bastion.pillars.rate_limit import RateLimitCheckResult, TokenBucketRateLimiter
+from mcp_bastion.pillars.response_scanner import ResponseInjectionScanner
+from mcp_bastion.pillars.tokens import estimate_text_tokens
 from mcp_bastion.pillars.rbac import RBAC
 from mcp_bastion.pillars.replay_guard import ReplayGuard
 from mcp_bastion.pillars.schema_validation import SchemaValidator
@@ -336,6 +339,10 @@ class MCPBastionMiddleware(Middleware[Any]):
         enable_tool_metadata_guard: bool = False,
         tool_metadata_guard_on_poison: str = "remove_tool",
         tool_metadata_guard_use_content_filter: bool = True,
+        enable_response_scan: bool = False,
+        response_scan_extra_patterns: list[str] | None = None,
+        enable_discovery_filter: bool = False,
+        response_scanner: ResponseInjectionScanner | None = None,
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -384,6 +391,74 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.enable_tool_metadata_guard = enable_tool_metadata_guard
         self.tool_metadata_guard_on_poison = (tool_metadata_guard_on_poison or "remove_tool").strip().lower()
         self.tool_metadata_guard_use_content_filter = bool(tool_metadata_guard_use_content_filter)
+        self.enable_response_scan = enable_response_scan
+        self.response_scanner = response_scanner or ResponseInjectionScanner(
+            extra_patterns=response_scan_extra_patterns or []
+        )
+        self.enable_discovery_filter = enable_discovery_filter
+
+    @staticmethod
+    def _rate_limit_error(check: RateLimitCheckResult) -> Exception:
+        if check.violation == "token_budget":
+            return TokenBudgetExceededError(check.message or "Request blocked: token budget exhausted")
+        return RateLimitExceededError(check.message or "Rate limit exceeded")
+
+    def _estimate_tool_call_tokens(
+        self,
+        context: MiddlewareContext[Any],
+        params: dict | None,
+        result: Any,
+    ) -> int:
+        md = context.metadata
+        try:
+            in_tok = int(md.get("llm_input_tokens") or 0)
+        except (TypeError, ValueError):
+            in_tok = 0
+        try:
+            out_tok = int(md.get("llm_output_tokens") or 0)
+        except (TypeError, ValueError):
+            out_tok = 0
+        if in_tok or out_tok:
+            return max(0, in_tok + out_tok)
+        arguments = (params or {}).get("arguments") if isinstance(params, dict) else params
+        arg_text = _extract_text_from_value(arguments)
+        result_text = _extract_text_from_value(result)
+        return estimate_text_tokens(arg_text, result_text)
+
+    def _scan_result_for_injection(self, result: Any) -> None:
+        if not self.enable_response_scan or result is None:
+            return
+        content = _get_content_from_result(result)
+        if content:
+            self.response_scanner.check_content_items(content)
+
+    def _apply_discovery_filter(self, context: MiddlewareContext[Any], result: Any) -> Any:
+        """Strip tools from tools/list that are not on the allowlist (reduces agent context tokens)."""
+        if not self.enable_discovery_filter or not self.enable_tool_allowlist:
+            return result
+        tools = _get_tools_list_from_result(result)
+        if tools is None or not tools:
+            return result
+        kept: list[Any] = []
+        hidden: list[str] = []
+        for entry in tools:
+            td = _tool_entry_to_dict(entry)
+            name = str(td.get("name") or "unknown")
+            if name in self.tool_allowlist:
+                kept.append(entry)
+            else:
+                hidden.append(name)
+        if hidden:
+            context.metadata.setdefault("discovery_filter", {}).update(
+                {
+                    "hidden_tools": hidden,
+                    "original_count": len(tools),
+                    "kept_count": len(kept),
+                }
+            )
+        if len(kept) == len(tools):
+            return result
+        return _set_tools_on_result(result, kept)
 
     def _enforce_session_tool_scope(
         self,
@@ -512,7 +587,9 @@ class MCPBastionMiddleware(Middleware[Any]):
             result = await call_next(context)
             if result is not None and _is_read_resource_result(result):
                 result = self._redact_result_content(result)
+                self._scan_result_for_injection(result)
             if result is not None:
+                result = self._apply_discovery_filter(context, result)
                 result = self._apply_tool_metadata_guard(context, result)
             return result
         finally:
@@ -667,18 +744,25 @@ class MCPBastionMiddleware(Middleware[Any]):
 
         if self.enable_rate_limit:
             started = time.perf_counter()
-            allowed, err = self.rate_limiter.check_iteration(
+            check = self.rate_limiter.check_iteration(
                 request_id=request_id,
                 session_id=session_id,
+                tool_name=tool_name,
             )
-            if not allowed:
-                logger.warning("rate_limit_blocked request_id=%s session_id=%s reason=%s", request_id, session_id, err)
+            if not check.allowed:
+                logger.warning(
+                    "rate_limit_blocked request_id=%s session_id=%s reason=%s violation=%s",
+                    request_id,
+                    session_id,
+                    check.message,
+                    check.violation,
+                )
                 self._handle_violation(
                     context=context,
                     trace=trace,
                     pillar="rate_limit",
                     started=started,
-                    error=RateLimitExceededError(err or "Rate limit exceeded"),
+                    error=self._rate_limit_error(check),
                 )
             else:
                 _trace_append(trace, pillar="rate_limit", status="allowed", started=started)
@@ -766,14 +850,7 @@ class MCPBastionMiddleware(Middleware[Any]):
             context=context, trace=trace, session_id=session_id, tool_name=tool_name
         )
 
-        if self.enable_rate_limit:
-            started = time.perf_counter()
-            self.rate_limiter.consume_iteration(
-                request_id=request_id,
-                session_id=session_id,
-            )
-            _trace_append(trace, pillar="rate_limit_consume", status="ok", started=started)
-
+        result: Any = None
         try:
             started = time.perf_counter()
             result = await call_next(context)
@@ -788,6 +865,19 @@ class MCPBastionMiddleware(Middleware[Any]):
                 self.circuit_breaker.record_failure(tool_name)
                 _trace_append(trace, pillar="circuit_breaker_record", status="failure", started=cb_started)
             raise
+        finally:
+            if self.enable_rate_limit:
+                tokens = self._estimate_tool_call_tokens(context, params, result)
+                if tokens:
+                    context.metadata["tokens_used"] = tokens
+                started = time.perf_counter()
+                self.rate_limiter.consume_iteration(
+                    request_id=request_id,
+                    session_id=session_id,
+                    tokens=tokens,
+                    tool_name=tool_name,
+                )
+                _trace_append(trace, pillar="rate_limit_consume", status="ok", started=started)
 
         if self.enable_semantic_cache and result is not None and params:
             started = time.perf_counter()
@@ -813,6 +903,16 @@ class MCPBastionMiddleware(Middleware[Any]):
             started = time.perf_counter()
             result = self._redact_result_content(result)
             _trace_append(trace, pillar="pii_redaction", status="ok", started=started)
+
+        if result is not None:
+            started = time.perf_counter()
+            try:
+                self._scan_result_for_injection(result)
+                _trace_append(trace, pillar="response_scan", status="ok", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="response_scan", started=started, error=e
+                )
 
         context.metadata["forensic_response"] = _safe_forensic_value(result)
 

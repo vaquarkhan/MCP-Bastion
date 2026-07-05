@@ -15,6 +15,14 @@ rate_limit:
   max_iterations: 15
   timeout_seconds: 60
   token_budget: 50000
+  max_per_tool: 0   # set e.g. 50 for per-tool session caps (denial-of-wallet)
+
+response_scan:
+  enabled: true     # block jailbreak patterns in outbound tool/resource text
+  extra_patterns: []
+
+discovery_filter:
+  enabled: false    # strip non-allowlisted tools from tools/list (requires tool_allowlist)
 
 # Safer defaults: block risky patterns in tool arguments (paths, code-ish payloads).
 circuit_breaker:
