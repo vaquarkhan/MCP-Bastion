@@ -28,7 +28,7 @@ PYTHONPATH=src python scripts/validate_checklist.py          # Linux/Mac
 
 | # | Item | Automated | Notes |
 |---|------|-----------|-------|
-| 1 | **Build and Installation** | Yes | `npm run build`, `pytest tests/` |
+| 1 | **Build and Installation** | Yes | `npm run build`, `python -m pytest tests/` |
 | 2 | **Protocol Interception (MCP Inspector)** | Manual | See below |
 | 3 | **Security Pillar 1: Prompt Injection** | Yes | Benign passes; adversarial blocked (needs torch) |
 | 4 | **Security Pillar 2: PII Redaction** | Yes | SSN, email, card masked (needs presidio) |
@@ -41,7 +41,7 @@ Python: run with coverage (fail_under set in pyproject.toml):
 
 ```bash
 cd MCP-Bastion
-$env:PYTHONPATH="src"; pytest tests/ -v --cov=src/mcp_bastion --cov-report=term-missing --cov-fail-under=92
+$env:PYTHONPATH="src"; python -m pytest tests/ -v --cov=src/mcp_bastion --cov-report=term-missing --cov-fail-under=92
 ```
 
 Omitted from coverage: optional paths in pii_redaction and prompt_guard. TypeScript (from repo root, run `npm install` once so Vitest is available):
@@ -82,7 +82,7 @@ Use the official MCP Inspector to validate JSON-RPC 2.0 and CallTool/ReadResourc
 # Python
 pip install mcp-bastion-python torch transformers presidio-analyzer presidio-anonymizer spacy
 # Optional: pin latest tested release
-pip install mcp-bastion-python==1.0.18
+pip install mcp-bastion-python==2.0.0
 python -m spacy download en_core_web_sm
 
 # Dev (for pytest async)

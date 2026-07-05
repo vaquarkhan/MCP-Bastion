@@ -8,6 +8,7 @@ before Bastion allows tool traffic.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -25,6 +26,27 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: f.read(65536), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def canonical_manifest_bytes(files: dict[str, str]) -> bytes:
+    import json
+
+    normalized = {str(k).replace("\\", "/"): normalize_hash(v) for k, v in sorted(files.items())}
+    return json.dumps(normalized, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def sign_manifest(files: dict[str, str], signing_key: str | bytes) -> str:
+    """HMAC-SHA256 signature over canonical manifest (Sigstore-style trust anchor optional)."""
+    key = signing_key.encode("utf-8") if isinstance(signing_key, str) else signing_key
+    return hmac.new(key, canonical_manifest_bytes(files), hashlib.sha256).hexdigest()
+
+
+def verify_manifest_signature(files: dict[str, str], signature: str, signing_key: str | bytes) -> bool:
+    if not signature or not signing_key:
+        return False
+    expected = sign_manifest(files, signing_key)
+    sig = str(signature).strip().lower()
+    return hmac.compare_digest(expected.encode("utf-8"), sig.encode("utf-8"))
 
 
 def normalize_hash(value: str) -> str:
@@ -66,12 +88,16 @@ class ServerVerifier:
         *,
         base_path: str | Path = ".",
         on_mismatch: OnMismatch = "block",
+        manifest_signature: str | None = None,
+        signing_key: str | None = None,
     ) -> None:
         if on_mismatch not in ("block", "warn"):
             raise ValueError("on_mismatch must be block or warn")
         self.manifest = {str(k).replace("\\", "/"): normalize_hash(v) for k, v in (manifest or {}).items()}
         self.base_path = Path(base_path).resolve()
         self.on_mismatch = on_mismatch
+        self.manifest_signature = manifest_signature
+        self.signing_key = signing_key
         self._verified = False
         self._last_result: VerificationResult | None = None
 
@@ -128,6 +154,15 @@ class ServerVerifier:
     def ensure_ok(self, *, force: bool = False) -> None:
         """Verify and raise ServerVerificationError when on_mismatch=block and check fails."""
         from mcp_bastion.errors import ServerVerificationError
+
+        if self.manifest_signature and self.signing_key:
+            if not verify_manifest_signature(self.manifest, self.manifest_signature, self.signing_key):
+                if self.on_mismatch == "warn":
+                    logger.warning("server_verification manifest HMAC signature mismatch")
+                else:
+                    raise ServerVerificationError(
+                        "Request blocked: MCP server manifest signature verification failed"
+                    )
 
         result = self.verify(force=force)
         if result.ok:

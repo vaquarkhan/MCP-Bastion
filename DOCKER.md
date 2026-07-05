@@ -4,7 +4,7 @@
 
 **Registry:** `ghcr.io` **·** **Tags:** `latest` is updated on each successful publish from a **`v*`** version tag; image digests and tag history are on each package’s **Versions** page.
 
-**Current release pin:** Dockerfiles use `ARG BASTION_VERSION=1.0.18`, which installs `mcp-bastion-python==1.0.18` inside proxy and dashboard images at build time.
+**Current release pin:** Dockerfiles use `ARG BASTION_VERSION=2.0.0`, which installs `mcp-bastion-python==2.0.0` inside proxy and dashboard images at build time.
 
 Images are built by [`.github/workflows/publish-docker.yml`](.github/workflows/publish-docker.yml) on each **`v*`** tag (and can be run manually with **Actions → Publish Docker**). For upstream releases:
 

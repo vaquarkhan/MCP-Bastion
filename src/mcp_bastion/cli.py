@@ -4,7 +4,7 @@ CLI for MCP-Bastion developers.
 Usage:
   mcp-bastion validate [--config PATH]
   mcp-bastion serve [--config PATH] [--http PORT] [--host HOST]
-  mcp-bastion dashboard [--port PORT] [--reload] [--demo | --no-demo] [--live] [--no-live]
+  mcp-bastion tail [--path PATH] [--lines N] [--config PATH]
 """
 
 from __future__ import annotations
@@ -203,7 +203,18 @@ def cmd_redteam(config_path: str | None, output_path: str | None = None) -> int:
         return 1
     try:
         report = run_redteam_sync(config_path)
-        logger.info("Redteam score (blocked%%): %.2f", float(report.get("score_blocked_pct", 0.0)))
+        logger.info("Redteam score (all blocks): %.2f%%", float(report.get("score_blocked_pct", 0.0)))
+        logger.info(
+            "Redteam intended-control block rate: %.2f%%",
+            float(report.get("score_intended_blocked_pct", 0.0)),
+        )
+        if float(report.get("score_guard_unavailable_pct", 0.0)) > 0:
+            logger.info(
+                "Redteam guard-unavailable block rate: %.2f%% (not policy effectiveness)",
+                float(report.get("score_guard_unavailable_pct", 0.0)),
+            )
+        for line in report.get("interpretation") or []:
+            logger.info("Note: %s", line)
         logger.info(
             "Attempts=%s blocked=%s allowed=%s",
             report.get("totals", {}).get("attempts"),
@@ -222,23 +233,78 @@ def cmd_redteam(config_path: str | None, output_path: str | None = None) -> int:
         return 1
 
 
-def cmd_manifest(files: list[str], base_path: str, output: str | None) -> int:
+def cmd_manifest(files: list[str], base_path: str, output: str | None, sign: bool = False) -> int:
     """Generate SHA-256 manifest for server_verification."""
     _ensure_src_on_path()
     import json
+    import os
 
-    from mcp_bastion.pillars.server_verification import build_manifest
+    from mcp_bastion.pillars.server_verification import build_manifest, sign_manifest
 
     try:
         manifest = build_manifest(files, base_path=base_path)
     except Exception as e:
         logger.error("manifest failed: %s", e)
         return 1
-    payload = {"files": manifest}
+    payload: dict = {"files": manifest, "algorithm": "hmac-sha256"}
+    if sign:
+        key = os.environ.get("BASTION_MANIFEST_SIGNING_KEY", "")
+        if not key:
+            logger.error("Set BASTION_MANIFEST_SIGNING_KEY to sign manifest")
+            return 1
+        payload["signature"] = sign_manifest(manifest, key)
     text = json.dumps(payload, indent=2)
     if output:
         Path(output).write_text(text + "\n", encoding="utf-8")
         logger.info("Wrote manifest: %s", output)
+    else:
+        logger.info(text)
+    return 0
+
+
+def cmd_tail(path: str | None, lines: int, config_path: str | None) -> int:
+    """Tail append-only JSONL audit log."""
+    _configure_cli_logging()
+    _ensure_src_on_path()
+    from mcp_bastion.audit_jsonl import AuditJsonlSink
+
+    audit_path = path
+    if not audit_path and config_path:
+        try:
+            from mcp_bastion.config import load_config
+
+            cfg = load_config(config_path)
+            audit_path = cfg.audit_jsonl_path
+        except Exception as e:
+            logger.error("Config error: %s", e)
+            return 1
+    if not audit_path:
+        audit_path = os.environ.get("BASTION_AUDIT_JSONL")
+    if not audit_path:
+        logger.error("Specify --path, --config with audit.jsonl_path, or BASTION_AUDIT_JSONL")
+        return 1
+    entries = AuditJsonlSink.tail(audit_path, lines=max(1, lines))
+    logger.info(json.dumps(entries, indent=2))
+    return 0
+
+
+def cmd_fingerprint(tools_json: str, output: str | None) -> int:
+    """Generate tool metadata fingerprint JSON for schema drift detection."""
+    _ensure_src_on_path()
+    import json
+
+    from mcp_bastion.pillars.tool_metadata_fingerprint import build_fingerprint_document, load_tools_from_json
+
+    try:
+        tools = load_tools_from_json(tools_json)
+        doc = build_fingerprint_document(tools)
+    except Exception as e:
+        logger.error("fingerprint failed: %s", e)
+        return 1
+    text = json.dumps(doc, indent=2)
+    if output:
+        Path(output).write_text(text + "\n", encoding="utf-8")
+        logger.info("Wrote fingerprint: %s", output)
     else:
         logger.info(text)
     return 0
@@ -249,6 +315,11 @@ def main() -> int:
         prog="mcp-bastion",
         description="MCP-Bastion CLI for developers.",
     )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__import__('mcp_bastion').__version__}",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     validate_parser = sub.add_parser("validate", help="Validate bastion.yaml")
@@ -258,8 +329,8 @@ def main() -> int:
     serve_parser = sub.add_parser("serve", help="Run MCP server with config")
     serve_parser.add_argument("--config", "-c", help="Path to bastion.yaml", default="bastion.yaml")
     serve_parser.add_argument("--http", type=int, metavar="PORT", default=8080, help="HTTP port (default 8080)")
-    serve_parser.add_argument("--host", default="0.0.0.0", help="Bind host")
-    serve_parser.set_defaults(func=lambda **kw: cmd_serve(kw.get("config"), kw.get("http"), kw.get("host", "0.0.0.0")))
+    serve_parser.add_argument("--host", default="127.0.0.1", help="Bind host (default loopback)")
+    serve_parser.set_defaults(func=lambda **kw: cmd_serve(kw.get("config"), kw.get("http"), kw.get("host", "127.0.0.1")))
 
     dash_parser = sub.add_parser("dashboard", help="Run metrics dashboard")
     dash_parser.add_argument("--port", "-p", type=int, default=7000, help="Dashboard port (default 7000)")
@@ -315,8 +386,26 @@ def main() -> int:
     manifest_parser.add_argument("files", nargs="+", help="Relative file paths to hash")
     manifest_parser.add_argument("--base-path", default=".", help="Base directory for relative paths")
     manifest_parser.add_argument("--output", "-o", help="Write JSON manifest to file")
+    manifest_parser.add_argument(
+        "--sign",
+        action="store_true",
+        help="Add HMAC-SHA256 signature using BASTION_MANIFEST_SIGNING_KEY",
+    )
     manifest_parser.set_defaults(
-        func=lambda **kw: cmd_manifest(kw.get("files"), kw.get("base_path"), kw.get("output"))
+        func=lambda **kw: cmd_manifest(kw.get("files"), kw.get("base_path"), kw.get("output"), kw.get("sign", False))
+    )
+
+    fp_parser = sub.add_parser("fingerprint", help="Generate tool metadata fingerprint JSON")
+    fp_parser.add_argument("tools_json", help="JSON file with tools list or {tools: [...]}")
+    fp_parser.add_argument("--output", "-o", help="Write fingerprint document to file")
+    fp_parser.set_defaults(func=lambda **kw: cmd_fingerprint(kw.get("tools_json"), kw.get("output")))
+
+    tail_parser = sub.add_parser("tail", help="Tail append-only JSONL audit log")
+    tail_parser.add_argument("--path", "-p", help="Path to audit JSONL file")
+    tail_parser.add_argument("--lines", "-n", type=int, default=20, help="Number of lines (default 20)")
+    tail_parser.add_argument("--config", "-c", help="Read audit.jsonl_path from bastion.yaml")
+    tail_parser.set_defaults(
+        func=lambda **kw: cmd_tail(kw.get("path"), kw.get("lines", 20), kw.get("config"))
     )
 
     args = parser.parse_args()

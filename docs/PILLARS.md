@@ -10,7 +10,7 @@ This page is the **authoritative** reference for what “pillar” means in MCP-
 | **Extended request-path / policy features** | **8** | **Semantic firewall**, **sensitive classifier**, **external policy** (OPA/Cedar), **edge auth**, **tool allowlist**, **session tool-cap** (scope), **tool metadata guard**, and **shadow mode** (constructor flag on the middleware, not a YAML boolean). |
 | **Combined “pillars” (core + extended, request path)** | **18** | **10 + 8** from the two rows above. This is the usual full stack count when you list **all** first-class request-path and policy features together. **Additional** capabilities (multi-tenant, audit hash chain, pricing hooks, telemetry, governance, etc.) are configured separately; see the extended table below. |
 | **JSON-RPC deny codes** | **18** | Errors **-32001** through **-32020** in `mcp_bastion.errors` (includes Agent IAM -32019, server verification -32020). |
-| **Policy file surface (`bastion.yaml`)** | **20+** | Top-level keys read by `load_config()` — core sections, **audit_hash_chain**, **behavior_fingerprint**, **cost_attribution**, **policy_engine**, **multi_tenant**, **governance**, **telemetry**, **tool_metadata_guard**, **edge_auth**, **tool_allowlist**, **session_limits**, **sensitive_classifier**, **semantic_firewall**, plus **audit**, **alerts**, **hot_reload**, etc. Exact set evolves with `BastionConfig`; treat `bastion.yaml.example` + `config.py` as source of truth. |
+| **Policy file surface (`bastion.yaml`)** | **20+** | Top-level keys read by `load_config()` — core sections, **audit_hash_chain**, **behavior_fingerprint**, **cost_attribution**, **policy_engine**, **multi_tenant**, **governance**, **telemetry**, **tool_metadata_guard**, **edge_auth**, **tool_allowlist**, **session_limits**, **state_backend**, **sensitive_classifier**, **semantic_firewall**, plus **audit**, **alerts**, **hot_reload**, etc. Exact set evolves with `BastionConfig`; treat `bastion.yaml.example` + `config.py` as source of truth. |
 | **Dashboard `pillar_health` rows** | **14** | Built in `MetricsStore._build_pillar_health()`: 14 named rows in code (Prompt Guard, PII, Rate Limiter, Circuit Breaker, Content Filter, RBAC, Schema Validation, Semantic Firewall, Sensitive Classifier, External Policy, Replay Guard, Cost Tracker, Semantic Cache, Audit Log). Not every config-only or auxiliary feature (e.g. multi-tenant, edge auth alone) has its own row. |
 
 **Programmatic access:** `from mcp_bastion import load_config, BastionConfig, build_middleware_from_config` — policy flows through **`BastionConfig`** and **`build_middleware_from_config()`**, which returns composed middleware for your MCP server.
@@ -27,10 +27,10 @@ These are enforced (when enabled) on the MCP tool-call path inside `MCPBastionMi
 | 4 | Circuit breaker | `circuit_breaker` | `circuit_breaker` |
 | 5 | Content filter | `content_filter` | `content_filter` (+ pattern / URL flags) |
 | 6 | RBAC | `rbac` | `rbac` (+ `rbac_permissions`) |
-| 7 | Schema validation | `schema_validation` | `schema_validation` |
+| 7 | Schema validation | `schema_validation` | `schema_validation` (+ `schema_validation.schemas` tool→arg type map in YAML) |
 | 8 | Replay guard | `replay_guard` | `replay_guard` (+ `replay_require_nonce`) |
 | 9 | Cost tracker | `cost_tracker` | `cost_tracker` (+ cost caps) |
-| 10 | Semantic cache | `semantic_cache` | `semantic_cache` |
+| 10 | Semantic cache (lexical) | `semantic_cache` | `semantic_cache` — Jaccard word overlap, not embeddings; see [BENCHMARKS.md](BENCHMARKS.md) |
 
 ## Extended request-path and policy features (1.0.16+)
 
@@ -53,6 +53,11 @@ The following are **additionally** wired in `bastion.yaml` and `BastionConfig` (
 | Pricing (FinOps) | (see `pillars/pricing` + `cost_attribution` in config) | **Usage** pricing signal hooks alongside cost caps. |
 | Telemetry sinks | `telemetry` | Pluggable **HTTP/OTLP**-style export hooks for events/metrics. |
 | Supply-chain / ops | `mcp_bastion doctor` CLI | **doctor** preflight; **governance** beacon optional under `governance` — see [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md), [CLI.md](CLI.md). |
+| **Full MCP surface (2.0.0)** | (uses core pillar flags) | Guards **`resources/read`**, **`prompts/get`**, **`sampling/createMessage`**, **`elicitation/create`** — see [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md). |
+| **Distributed state (2.0.0)** | `state_backend` | **`memory`** (default, single process) or **`redis`** for shared rate/replay/cost/session state across replicas. |
+| **Argument guards (2.0.0)** | `argument_guards` | JSONPath + regex **block/redact** on `tools/call` arguments (`pip install mcp-bastion-python[policy]`). Error **-32022**. |
+| **Audit JSONL (2.0.0)** | `audit.jsonl_path` | Append-only compliance log; **`mcp-bastion tail`** CLI. |
+| **Cost checkpoint (2.0.0)** | `cost_tracker.checkpoint_path` | Disk persistence for session totals across restarts (memory backend only). |
 | Red-team / policy dev | `mcp_bastion redteam`, `policy_simulator` module | **redteam** harness; **policy_simulator** for dry-runs. |
 
 Supporting modules in `src/mcp_bastion/` and `pillars/`: e.g. `policy_simulator.py`, `redteam.py`, `tenant.py`, `governance_beacon.py`, `doctor.py`.

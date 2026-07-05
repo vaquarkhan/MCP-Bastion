@@ -1,47 +1,46 @@
 # Product roadmap — runtime governance & beyond
 
-Status as of **1.0.18** (unreleased). See [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) for configuration of shipped features.
+Status as of **2.0.0** (released 2026-07-05). See [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) and the strategic **10/10 plan**: [ENGINEERING_10_10.md](ENGINEERING_10_10.md).
 
-## Shipped in this release (Zero-Trust control plane)
+## Shipped (2.0.0)
 
-| Feature | Status | Config / CLI |
-|---------|--------|--------------|
-| **Agent Identity & RBAC** | ✅ Shipped | `agent_iam` — token → agent identity, allow/block tools, per-agent rate limits |
-| **Server cryptographic verification** | ✅ Shipped | `server_verification` + `mcp-bastion manifest` |
-| **PromptGuard fail-closed + heuristics** | ✅ Shipped | `prompt_guard.fail_open`, heuristic fallback |
-| **Output budget byte cap** | ✅ Shipped | `output_budget.max_response_bytes` |
-| **Beyond-OWASP docs** | ✅ Shipped | [BEYOND_OWASP.md](BEYOND_OWASP.md), [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md) |
-| **Runtime governance guide** | ✅ Shipped | [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) |
+| Feature | Status |
+|---------|--------|
+| Agent Identity & RBAC | ✅ `agent_iam` |
+| Server SHA-256 verification | ✅ `server_verification` + `mcp-bastion manifest` |
+| PromptGuard fail-closed + heuristics | ✅ |
+| Zero-Trust README + infographic | ✅ |
+| **`mcp-bastion serve` FastMCP fix (Bug A)** | ✅ `serve.run_streamable_http()` |
+| **`schema_validation.schemas` in YAML (Bug B)** | ✅ + doctor warning if empty |
+| **Red-team intended vs guard-unavailable scores** | ✅ `score_intended_blocked_pct` |
+| **FinOps/RBAC benchmarks** | ✅ [BENCHMARKS.md](BENCHMARKS.md) |
+| **HTTP transport hardening** | ✅ `transport_hardening` |
+| **stdio stdout JSON guard** | ✅ `stdio_guard` |
+| **Tool metadata fingerprint** | ✅ `mcp-bastion fingerprint` |
+| **Dashboard IAM / verification / governance** | ✅ `pillar_health` + governance panel |
+| **Manifest HMAC signatures** | ✅ `manifest --sign` |
+| **Multi-agent session isolation** | ✅ `agent_iam.isolate_sessions` |
+| **Resource URI IAM (write-path)** | ✅ `allowed_resources` / `blocked_resources` |
+| **Registry publisher doctor check** | ✅ `governance.allowed_registry_names` |
+| **Reverse-proxy recipe** | ✅ [deploy/](../deploy/README.md) |
+| **Red-team IAM / schema drift cases** | ✅ extended suite |
+| **npm audit clean** | ✅ 0 vulnerabilities in dev tree |
+| **Full MCP surface guards** | ✅ `resources/read`, `prompts/get`, `sampling/createMessage`, `elicitation/create` |
+| **Pluggable shared state (Redis)** | ✅ `state_backend` in bastion.yaml |
 
-## OWASP MCP Top 10 + FinOps (prior releases)
+## Pending (P2+) — see [ENGINEERING_10_10.md](ENGINEERING_10_10.md)
 
-All **10** OWASP risks and denial-of-wallet controls are covered at the MCP boundary — see README infographic `images/mcp-bastion-owasp-coverage.png`.
+| Item | Notes |
+|------|-------|
+| **Distributed state (Redis)** | ✅ Shipped in 2.0.0 — enable `state_backend.type: redis` |
+| **Full MCP-surface coverage** | ✅ Shipped in 2.0.0 — see middleware `GUARDED_MCP_METHODS` |
+| **Non-gated PromptGuard default + injection benchmark** | Layered detectors, tool-output scanning |
+| **`mcp-bastion scan` (static tool poisoning)** | Rug-pull / shadow-tool detection |
+| **OAuth 2.1 / OIDC JWT gateway** | Scopes → RBAC; per-user audit `sub` |
+| **Sigstore/cosign** | HMAC today; full cosign integration later |
+| **External security audit** | Linked report + disclosure track record |
+| **OS sandbox** | Out of scope — use containers |
 
-## Pending — recommended next (P1)
+## Non-goals
 
-| Item | Why it matters | Notes |
-|------|----------------|-------|
-| **Dashboard `pillar_health` rows** for Agent IAM & server verification | Ops visibility for new deny codes (-32019, -32020) | Extend `MetricsStore._build_pillar_health()` |
-| **`serve` transport hardening** | Localhost CSRF / DNS rebind on HTTP MCP | CORS, `Origin` check, bind guidance in [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md) |
-| **Tool metadata fingerprint in `doctor`** | Detect poisoned `tools/list` drift between deploys | Hash tool names + descriptions at doctor time |
-| **stdio stdout JSON validator** | Malformed stdout breaks MCP stdio transport | Byte-stream guard for non-JSON lines from server code |
-
-## Pending — hardening & ecosystem (P2)
-
-| Item | Why it matters | Notes |
-|------|----------------|-------|
-| **HTTP CSRF / reverse-proxy recipe** | Production pattern docs + example nginx/Caddy | Docs + optional reference compose |
-| **npm audit remediation** | Supply chain for `@mcp-bastion/core` | Track and bump vulnerable transitive deps |
-| **Signed manifest (Sigstore/cosign)** | Stronger supply chain than SHA-256 alone | Extend `server_verification` with signature keys |
-| **Multi-agent session isolation** | State poisoning across agents on one server | Separate session namespaces per `agent_id` |
-| **Registry publisher verification** | Typosquatting from public MCP registries | Integrate with `doctor` + governance beacon |
-
-## Explicit non-goals (use OS / gateway instead)
-
-- OS-level sandboxing (containers, seccomp, gVisor)
-- Replacing enterprise IAM (OAuth/OIDC) — Bastion complements gateway-issued tokens via `edge_auth` / `agent_iam`
-- LLM provider-side safety APIs — Bastion stays **100% local**
-
-## How to contribute
-
-Pick a **P1** row, open a GitHub issue referencing this doc, and submit a PR with tests. E2E patterns: [tests/test_runtime_governance_e2e.py](../tests/test_runtime_governance_e2e.py).
+OS sandboxing, replacing OAuth/OIDC, third-party LLM safety APIs.

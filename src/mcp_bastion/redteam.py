@@ -3,12 +3,20 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
 from mcp_bastion.base import MiddlewareContext
 from mcp_bastion.config import build_middleware_from_config, load_config
+from mcp_bastion.errors import PromptGuardUnavailableError
+
+
+def _is_guard_unavailable_block(exc: BaseException) -> bool:
+    if isinstance(exc, PromptGuardUnavailableError):
+        return True
+    msg = str(exc).lower()
+    return "promptguard ml model unavailable" in msg or "promptguard ml unavailable" in msg
 
 
 @dataclass(frozen=True)
@@ -20,6 +28,8 @@ class RedTeamCase:
     attempts: int = 1
     mcp_top10: str = ""
     tool_sequence: tuple[str, ...] = ()
+    metadata: dict[str, Any] = field(default_factory=dict)
+    jsonrpc_method: str = "tools/call"
 
 
 _CASES: tuple[RedTeamCase, ...] = (
@@ -88,11 +98,27 @@ _CASES: tuple[RedTeamCase, ...] = (
         arguments={"path": "ok"},
         tool_sequence=("read_file", "search_customer", "exec_sql", "delete_rows", "admin_shell"),
     ),
+    RedTeamCase(
+        id="confused_deputy_support_delete",
+        owasp_tag="Confused Deputy / Agent IAM",
+        mcp_top10="MCP02",
+        tool="delete_user",
+        arguments={"id": 1},
+    ),
+    RedTeamCase(
+        id="schema_drift_poisoned_tool_list",
+        owasp_tag="Semantic schema drift",
+        mcp_top10="MCP03",
+        tool="__list_tools_probe__",
+        arguments={},
+    ),
 )
 
 
 async def _run_case(middleware: Any, case: RedTeamCase, session_id: str) -> dict[str, Any]:
     blocked = 0
+    blocked_intended = 0
+    blocked_guard_unavailable = 0
     reasons: list[str] = []
 
     async def _handler(_ctx: MiddlewareContext[Any]) -> dict[str, Any]:
@@ -105,16 +131,23 @@ async def _run_case(middleware: Any, case: RedTeamCase, session_id: str) -> dict
 
     for i, (tool, args) in enumerate(iterations):
         ctx = MiddlewareContext(
-            message={"method": "tools/call", "params": {"name": tool, "arguments": args}},
+            message={
+                "method": case.jsonrpc_method,
+                "params": {"name": tool, "arguments": args},
+            },
             request_id=f"rt-{case.id}-{i}",
             session_id=session_id,
-            metadata={},
+            metadata=dict(case.metadata),
         )
         try:
             await middleware(ctx, _handler)
         except Exception as exc:
             blocked += 1
             reasons.append(str(exc))
+            if _is_guard_unavailable_block(exc):
+                blocked_guard_unavailable += 1
+            else:
+                blocked_intended += 1
     attempts = len(iterations)
     return {
         "id": case.id,
@@ -122,9 +155,21 @@ async def _run_case(middleware: Any, case: RedTeamCase, session_id: str) -> dict
         "mcp_top10": case.mcp_top10,
         "attempts": attempts,
         "blocked": blocked,
+        "blocked_intended": blocked_intended,
+        "blocked_guard_unavailable": blocked_guard_unavailable,
         "allowed": attempts - blocked,
         "blocked_pct": round(100.0 * blocked / max(1, attempts), 2),
+        "intended_blocked_pct": round(100.0 * blocked_intended / max(1, attempts), 2),
         "sample_reason": reasons[0] if reasons else None,
+        "sample_block_class": (
+            "guard_unavailable"
+            if blocked_guard_unavailable and not blocked_intended
+            else (
+                "intended_control"
+                if blocked_intended and not blocked_guard_unavailable
+                else ("mixed" if blocked else "allowed")
+            )
+        ),
     }
 
 
@@ -136,28 +181,56 @@ async def run_redteam(config_path: str | None = None) -> dict[str, Any]:
         # Isolated session per case so session-scoped limits do not leak across the suite.
         results.append(await _run_case(mw, case, f"tenant:default|rt-{case.id}"))
     blocked_total = sum(int(x["blocked"]) for x in results)
+    intended_total = sum(int(x["blocked_intended"]) for x in results)
+    guard_unavail_total = sum(int(x["blocked_guard_unavailable"]) for x in results)
     attempts_total = sum(int(x["attempts"]) for x in results)
     score = round(100.0 * blocked_total / max(1, attempts_total), 2)
+    score_intended = round(100.0 * intended_total / max(1, attempts_total), 2)
+    score_guard_unavail = round(100.0 * guard_unavail_total / max(1, attempts_total), 2)
     by_tag: dict[str, dict[str, int]] = {}
     for row in results:
         t = row["owasp_tag"]
-        cur = by_tag.setdefault(t, {"attempts": 0, "blocked": 0})
+        cur = by_tag.setdefault(t, {"attempts": 0, "blocked": 0, "blocked_intended": 0})
         cur["attempts"] += int(row["attempts"])
         cur["blocked"] += int(row["blocked"])
+        cur["blocked_intended"] += int(row["blocked_intended"])
     mcp_top10_summary: dict[str, dict[str, int]] = {}
     for row in results:
         m = row.get("mcp_top10") or ""
         if not m:
             continue
-        cur = mcp_top10_summary.setdefault(m, {"attempts": 0, "blocked": 0})
+        cur = mcp_top10_summary.setdefault(
+            m, {"attempts": 0, "blocked": 0, "blocked_intended": 0}
+        )
         cur["attempts"] += int(row["attempts"])
         cur["blocked"] += int(row["blocked"])
+        cur["blocked_intended"] += int(row["blocked_intended"])
+    interpretation: list[str] = []
+    if guard_unavail_total > 0:
+        interpretation.append(
+            f"{guard_unavail_total} block(s) are PromptGuard ML unavailable (fail-closed), "
+            "not policy effectiveness — use score_intended_blocked_pct for control coverage."
+        )
+    if intended_total == 0 and blocked_total > 0 and guard_unavail_total == blocked_total:
+        interpretation.append(
+            "All blocks are guard-unavailable; enable heuristics, install the ML model, "
+            "or set prompt_guard.fail_open: true for dev-only runs."
+        )
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "config_path": config_path or "bastion.yaml",
         "suite": "mcp-bastion-redteam-v2-owasp-mcp-top10",
         "score_blocked_pct": score,
-        "totals": {"attempts": attempts_total, "blocked": blocked_total, "allowed": attempts_total - blocked_total},
+        "score_intended_blocked_pct": score_intended,
+        "score_guard_unavailable_pct": score_guard_unavail,
+        "interpretation": interpretation,
+        "totals": {
+            "attempts": attempts_total,
+            "blocked": blocked_total,
+            "blocked_intended": intended_total,
+            "blocked_guard_unavailable": guard_unavail_total,
+            "allowed": attempts_total - blocked_total,
+        },
         "owasp_summary": by_tag,
         "mcp_top10_summary": mcp_top10_summary,
         "results": results,

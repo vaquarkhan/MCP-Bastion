@@ -270,3 +270,176 @@ async def test_build_middleware_hot_reload_valid_update_logs_reload(tmp_path, ca
     with caplog.at_level(logging.INFO, logger="mcp_bastion.config"):
         await mw(ctx, call_next)
     assert "Reloaded bastion config" in caplog.text
+
+
+def test_load_config_schema_validation_schemas(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+schema_validation:
+  enabled: true
+  schemas:
+    create_report:
+      year: integer
+      amount: number
+prompt_guard:
+  enabled: false
+pii:
+  enabled: false
+rate_limit:
+  enabled: false
+audit:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    cfg = load_config(str(yaml_path))
+    assert cfg.schema_validation is True
+    assert cfg.schema_validation_schemas["create_report"]["year"] is int
+    assert cfg.schema_validation_schemas["create_report"]["amount"] is float
+
+
+@pytest.mark.asyncio
+async def test_build_middleware_enforces_schema_from_yaml(tmp_path):
+    from mcp_bastion.errors import SchemaValidationError
+
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+schema_validation:
+  enabled: true
+  schemas:
+    add:
+      a: integer
+      b: integer
+prompt_guard:
+  enabled: false
+pii:
+  enabled: false
+rate_limit:
+  enabled: false
+audit:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    mw = build_middleware_from_config(load_config(str(yaml_path)))
+    ctx = MiddlewareContext(
+        message={"method": "tools/call", "params": {"name": "add", "arguments": {"a": 1, "b": "x"}}},
+        request_id="r1",
+    )
+
+    async def handler(_ctx):
+        return {"ok": True}
+
+    with pytest.raises(SchemaValidationError, match="expected int"):
+        await mw(ctx, handler)
+
+
+def test_load_config_state_backend(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+state_backend:
+  type: redis
+  redis_url: redis://redis.example:6379/1
+  key_prefix: my-bastion
+prompt_guard:
+  enabled: false
+audit:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    cfg = load_config(str(yaml_path))
+    assert cfg.state_backend == "redis"
+    assert cfg.state_backend_redis_url == "redis://redis.example:6379/1"
+    assert cfg.state_backend_key_prefix == "my-bastion"
+
+
+def test_bastion_config_state_backend_defaults():
+    cfg = BastionConfig()
+    assert cfg.state_backend == "memory"
+    assert "6379" in cfg.state_backend_redis_url
+    assert cfg.state_backend_key_prefix == "mcp-bastion"
+
+
+def test_build_middleware_wires_shared_backend_for_redis(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+state_backend:
+  type: redis
+  redis_url: redis://127.0.0.1:6379/0
+prompt_guard:
+  enabled: false
+pii:
+  enabled: false
+rate_limit:
+  enabled: true
+replay_guard:
+  enabled: true
+cost_tracker:
+  enabled: true
+audit:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    with mock.patch("mcp_bastion.config.build_state_backend") as build_sb:
+        from mcp_bastion.pillars.state_backend import MemoryStateBackend
+
+        fake = MemoryStateBackend()
+        build_sb.return_value = fake
+        mw = build_middleware_from_config(load_config(str(yaml_path)))
+        build_sb.assert_called_once()
+        # Inner bastion middleware is second in compose when audit disabled — unwrap composed chain
+        assert mw is not None
+
+
+def test_load_config_adopted_features(tmp_path):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+argument_guards:
+  enabled: true
+  rules:
+    - name: block_x
+      match: "*"
+      arg: "$.x"
+      pattern: "bad"
+      action: block
+audit:
+  enabled: false
+  jsonl_path: /var/log/bastion.jsonl
+cost_tracker:
+  enabled: true
+  checkpoint_path: /tmp/cost.json
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    cfg = load_config(str(yaml_path))
+    assert cfg.argument_guards_enabled is True
+    assert len(cfg.argument_guards_rules) == 1
+    assert cfg.audit_jsonl_path == "/var/log/bastion.jsonl"
+    assert cfg.cost_checkpoint_path == "/tmp/cost.json"

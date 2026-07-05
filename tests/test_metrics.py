@@ -273,6 +273,23 @@ def test_metrics_store_tool_stats_and_pillar_health():
     pillars = {p["name"]: p for p in m["pillar_health"]}
     assert pillars["Rate Limiter"]["status"] == "active"
     assert pillars["PII Redaction"]["status"] == "active"
+    assert pillars["Rate Limiter"]["category"] == "classic"
+
+
+def test_metrics_governance_summary_and_insight():
+    store = MetricsStore.get()
+    store.reset()
+    store.record_blocked("Agent bot is not permitted to call tool x", "delete_user")
+    store.record_blocked("Agent bot is not permitted to call tool y", "delete_repo")
+    store.record_blocked("checksum verification failed for module", "ping")
+    m = store.get_metrics()
+    assert m["governance"]["blocks"]["agent_iam"] == 2
+    assert m["governance"]["blocks"]["server_verification"] == 1
+    assert m["governance"]["total_blocks"] == 3
+    gov_pillars = [p for p in m["pillar_health"] if p.get("category") == "governance"]
+    assert len(gov_pillars) == 2
+    codes = {i["code"] for i in m["dashboard_insights"]}
+    assert "governance_blocks" in codes
 
 
 def test_metrics_elapsed_window_bad_iso():

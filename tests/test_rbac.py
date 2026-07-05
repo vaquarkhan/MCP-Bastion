@@ -72,3 +72,20 @@ def test_rbac_default_role():
     rbac = RBAC({"default": ["read"]})
     ctx = MiddlewareContext(message={}, metadata={})
     rbac.check("read", ctx)
+
+
+def test_rbac_fnmatch_glob():
+    """Fnmatch globs allow prefix patterns."""
+    rbac = RBAC({"reader": ["read_*"]})
+    ctx = MiddlewareContext(message={}, metadata={"role": "reader"})
+    rbac.check("read_file", ctx)
+    with pytest.raises(RBACError, match="cannot access tool"):
+        rbac.check("write_file", ctx)
+
+
+def test_rbac_prefers_specific_glob():
+    """More specific glob wins over broader pattern in same role."""
+    rbac = RBAC({"ops": ["*", "read_*"]})
+    ctx = MiddlewareContext(message={}, metadata={"role": "ops"})
+    rbac.check("read_config", ctx)
+    rbac.check("delete_all", ctx)

@@ -7,6 +7,7 @@ and optional rate limits — solves the Confused Deputy problem for multi-agent 
 
 from __future__ import annotations
 
+import fnmatch
 import hmac
 import logging
 import os
@@ -16,6 +17,7 @@ from typing import Any
 
 from mcp_bastion.errors import AgentAccessDeniedError, AuthenticationError
 from mcp_bastion.pillars.rate_limit import TokenBucketRateLimiter
+from mcp_bastion.pillars.state_backend import StateBackend
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,9 @@ class AgentPolicy:
     token: str
     allowed_tools: frozenset[str] | None = None
     blocked_tools: frozenset[str] = field(default_factory=frozenset)
+    allowed_resources: frozenset[str] | None = None
+    blocked_resources: frozenset[str] = field(default_factory=frozenset)
+    blocked_methods: frozenset[str] = field(default_factory=frozenset)
     rate_limiter: TokenBucketRateLimiter | None = None
 
 
@@ -53,7 +58,11 @@ def _parse_tool_set(values: Any) -> frozenset[str]:
     return frozenset(str(v).strip() for v in values if str(v).strip())
 
 
-def parse_agent_policies(raw_agents: list[dict[str, Any]]) -> list[AgentPolicy]:
+def parse_agent_policies(
+    raw_agents: list[dict[str, Any]],
+    *,
+    state_backend: StateBackend | None = None,
+) -> list[AgentPolicy]:
     """Build AgentPolicy list from bastion.yaml `agents` entries."""
     policies: list[AgentPolicy] = []
     for entry in raw_agents or []:
@@ -79,6 +88,14 @@ def parse_agent_policies(raw_agents: list[dict[str, Any]]) -> list[AgentPolicy]:
             allowed = _parse_tool_set(allowed_raw)
 
         blocked = _parse_tool_set(entry.get("blocked_tools"))
+        allowed_res_raw = entry.get("allowed_resources")
+        allowed_res: frozenset[str] | None
+        if allowed_res_raw is None:
+            allowed_res = None
+        else:
+            allowed_res = _parse_tool_set(allowed_res_raw)
+        blocked_res = _parse_tool_set(entry.get("blocked_resources"))
+        blocked_methods = _parse_tool_set(entry.get("blocked_methods"))
 
         rate_limiter: TokenBucketRateLimiter | None = None
         rl = entry.get("rate_limit") or {}
@@ -92,6 +109,8 @@ def parse_agent_policies(raw_agents: list[dict[str, Any]]) -> list[AgentPolicy]:
                 timeout_seconds=timeout,
                 token_budget=budget,
                 max_per_tool=per_tool,
+                backend=state_backend,
+                backend_namespace=f"ratelimit:agent:{agent_id}",
             )
 
         policies.append(
@@ -100,6 +119,9 @@ def parse_agent_policies(raw_agents: list[dict[str, Any]]) -> list[AgentPolicy]:
                 token=token,
                 allowed_tools=allowed,
                 blocked_tools=blocked,
+                allowed_resources=allowed_res,
+                blocked_resources=blocked_res,
+                blocked_methods=blocked_methods,
                 rate_limiter=rate_limiter,
             )
         )
@@ -117,9 +139,11 @@ class AgentIAM:
         *,
         token_metadata_key: str = "bastion_agent_token",
         require_token: bool = True,
+        isolate_sessions: bool = False,
     ) -> None:
         self.token_metadata_key = token_metadata_key
         self.require_token = require_token
+        self.isolate_sessions = isolate_sessions
         self._policies = policies
         self._by_id = {p.agent_id: p for p in policies}
 
@@ -156,6 +180,39 @@ class AgentIAM:
                 raise AgentAccessDeniedError(
                     f"Agent {policy.agent_id!r} is not permitted to call tool {tool!r} (not on allow list)"
                 )
+
+    def check_method(self, policy: AgentPolicy, method: str) -> None:
+        """Block JSON-RPC methods for this agent (e.g. resources/write)."""
+        m = str(method or "").strip()
+        if not m or not policy.blocked_methods:
+            return
+        if m in policy.blocked_methods:
+            raise AgentAccessDeniedError(
+                f"Agent {policy.agent_id!r} is not permitted to invoke method {m!r}"
+            )
+
+    def check_resource(self, policy: AgentPolicy, uri: str) -> None:
+        """Enforce resource URI allow/block patterns (fnmatch)."""
+        u = str(uri or "").strip()
+        if not u:
+            return
+        for pattern in policy.blocked_resources:
+            if fnmatch.fnmatch(u, pattern) or fnmatch.fnmatch(u, pattern.replace("://", "://*/")):
+                raise AgentAccessDeniedError(
+                    f"Agent {policy.agent_id!r} is not permitted to access resource {u!r} (blocked)"
+                )
+        if policy.allowed_resources is not None and "*" not in policy.allowed_resources:
+            if not any(fnmatch.fnmatch(u, p) for p in policy.allowed_resources):
+                raise AgentAccessDeniedError(
+                    f"Agent {policy.agent_id!r} is not permitted to access resource {u!r} (not allowed)"
+                )
+
+    def isolated_session_id(self, policy: AgentPolicy | None, session_id: str | None) -> str | None:
+        """Namespace session keys per agent to prevent multi-agent state poisoning."""
+        if not self.isolate_sessions or policy is None:
+            return session_id
+        base = (session_id or "default").strip()
+        return f"agent:{policy.agent_id}::{base}"
 
     def rate_limiter_for(self, policy: AgentPolicy | None) -> TokenBucketRateLimiter | None:
         if policy is None:

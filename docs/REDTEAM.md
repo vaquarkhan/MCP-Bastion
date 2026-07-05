@@ -7,9 +7,20 @@ mcp-bastion redteam
 mcp-bastion redteam --config path/to/bastion.yaml
 ```
 
-The command runs the in-repo **OWASP + MCP Top 10** case suite in-process and prints a JSON report (blocked %, per-case reasons, `mcp_top10_summary`, etc.). Use the same `bastion.yaml` you deploy with so the score matches your real toggles.
+The command runs the in-repo **OWASP + MCP Top 10** case suite in-process and prints a JSON report. The report includes:
 
-External red-team harnesses often **disable** capabilities that need a local ML model or extra integration (for example prompt guard when the model is gated, RBAC when roles are not wired, or edge auth in a lab). A **low block rate** (e.g. ~27%) usually means **most pillars were off for that run**, not that MCP-Bastion “failed.”
+| Field | Meaning |
+|-------|---------|
+| `score_blocked_pct` | All denials (includes guard-unavailable) |
+| **`score_intended_blocked_pct`** | **Policy effectiveness** — blocks from enabled controls only |
+| `score_guard_unavailable_pct` | Blocks because PromptGuard ML was unavailable (fail-closed) |
+| `interpretation` | Human notes when scores are misleading |
+
+**Use `score_intended_blocked_pct` for OWASP/control coverage.** With default fail-closed PromptGuard and no ML model, `score_blocked_pct` can hit 100% even when most pillars (PII, RBAC, schema, etc.) are off — those blocks are **not** evidence those controls work.
+
+With `prompt_guard.fail_open: true` (dev only), a typical default-config run blocks roughly **prompt injection (heuristic)**, **path traversal (content filter)**, and **rate limit** cases (~32% intended block rate); PII, schema, credential, unknown-tool, edge-auth, and session-scope cases require enabling the corresponding pillars in `bastion.yaml`.
+
+Use the same `bastion.yaml` you deploy with so the score matches your real toggles.
 
 ## What to enable to raise the score
 

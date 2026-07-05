@@ -45,11 +45,13 @@ Never expose raw MCP HTTP to the public internet.
 
 ## What Bastion does not do (today)
 
-- CORS / `Origin` validation at the HTTP layer
-- DNS rebinding protection
-- Per-IP rate limits on HTTP listeners
+- CORS / `Origin` validation at the HTTP layer — **partial:** opt-in `transport_hardening` ASGI middleware blocks browser `Origin` → localhost when using `run_hardened_streamable_http` or `examples/llm_server.py` with `transport_hardening.enabled` in `bastion.yaml`
+- DNS rebinding protection — bind `127.0.0.1` + reverse proxy ([deploy/README.md](../deploy/README.md))
+- Per-IP rate limits on HTTP listeners — use gateway
 
-These belong in your proxy, API gateway, or a future Bastion `serve` transport module.
+## Reference deploy
+
+See [deploy/README.md](../deploy/README.md) for Caddy + docker-compose proxy recipe.
 
 ## Related
 

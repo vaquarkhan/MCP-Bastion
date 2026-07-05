@@ -13,6 +13,61 @@ from mcp_bastion.errors import SchemaValidationError
 
 logger = logging.getLogger(__name__)
 
+_SCHEMA_TYPE_ALIASES: dict[str, type] = {
+    "str": str,
+    "string": str,
+    "int": int,
+    "integer": int,
+    "float": float,
+    "number": float,
+    "bool": bool,
+    "boolean": bool,
+    "dict": dict,
+    "object": dict,
+    "list": list,
+    "array": list,
+    "none": type(None),
+    "null": type(None),
+}
+
+
+def parse_tool_schemas(raw: Any) -> dict[str, dict[str, type]]:
+    """
+    Parse ``schema_validation.schemas`` from bastion.yaml.
+
+    Example::
+
+        schemas:
+          add:
+            a: integer
+            b: integer
+    """
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, dict[str, type]] = {}
+    for tool, fields in raw.items():
+        if not isinstance(fields, dict):
+            continue
+        tool_schema: dict[str, type] = {}
+        for arg, type_spec in fields.items():
+            if isinstance(type_spec, type):
+                tool_schema[str(arg)] = type_spec
+            elif isinstance(type_spec, str):
+                key = type_spec.strip().lower()
+                if key not in _SCHEMA_TYPE_ALIASES:
+                    raise ValueError(
+                        f"Unknown schema type {type_spec!r} for tool {tool!r} argument {arg!r}. "
+                        f"Use one of: {', '.join(sorted(_SCHEMA_TYPE_ALIASES))}"
+                    )
+                tool_schema[str(arg)] = _SCHEMA_TYPE_ALIASES[key]
+            else:
+                raise ValueError(
+                    f"Invalid schema type for tool {tool!r} argument {arg!r}: {type_spec!r}"
+                )
+        if tool_schema:
+            out[str(tool)] = tool_schema
+    return out
+
 
 def _check_type(value: Any, expected: type) -> bool:
     """Check value matches expected type."""

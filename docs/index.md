@@ -54,7 +54,7 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 | **Configure `bastion.yaml`** | [PILLARS.md](PILLARS.md) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) → repo `bastion.yaml.example` |
 | **Connect Claude, ChatGPT, OpenAI, Gemini, …** | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) → [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) |
 | **FastMCP, npm server, or proxy patterns** | [TUTORIALS.md](TUTORIALS.md) → [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) |
-| **Fleet policy rollout + SIEM / SOC** | [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) (large-scale deployments + audit trails) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) |
+| **Prove RBAC & token savings with numbers** | [BENCHMARKS.md](BENCHMARKS.md) — pytest suite + reproducible RBAC / output-budget / discovery / cache metrics |
 
 Hub with all files: [Docs README](README.md).
 
@@ -63,7 +63,7 @@ Hub with all files: [Docs README](README.md).
 - [Quick start](QUICK_START.md) — minimal FastMCP / `bastion.yaml` / CI
 - [Discovery checklist](DISCOVERY.md) — registries and ecosystem lists
 - [Roadmap](ROADMAP.md) — directions (Issues for delivery)
-- [Security pillars & bastion.yaml mapping](PILLARS.md) — `bastion.yaml` mapping and dashboard health rows
+- [Benchmarks (RBAC & context reduction)](BENCHMARKS.md) — measured output-budget, discovery, cache, RBAC matrix
 - [Supply chain & releases](SUPPLY_CHAIN.md) — CI merge gates, automated releases, npm provenance, PyPI OIDC
 - [Integration models](INTEGRATION_MODELS.md) — middleware vs URL-swap gateways; how each stack gets Bastion in front of MCP
 - [Detailed Tutorial](DETAILED_TUTORIAL.md)

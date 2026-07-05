@@ -47,7 +47,7 @@ cd my-mcp-server
 # 3. Install MCP and MCP-Bastion
 pip install mcp mcp-bastion-python
 # Optional: pin latest tested release
-pip install mcp mcp-bastion-python==1.0.18
+pip install mcp mcp-bastion-python==2.0.0
 
 # 4. Download spaCy model (required for PII)
 python -m spacy download en_core_web_sm
@@ -530,7 +530,7 @@ Run the same checks as GitHub Actions before pushing:
 # Linux/Mac (install Node deps first: npm ci or npm install)
 npm ci && npm run build && npm test
 uv build  # or: python -m build --no-isolation
-PYTHONPATH=src pytest tests/ -v
+PYTHONPATH=src python -m pytest tests/ -v
 ```
 
 On Windows, from a fresh clone run `npm install` or `npm ci` in the repo root before `npm test`; otherwise `vitest` is not available.
@@ -549,7 +549,7 @@ Covers: build, prompt injection, PII redaction, rate limiting (16 calls), latenc
 
 ```bash
 cd MCP-Bastion
-$env:PYTHONPATH="src"; pytest tests/ -v --tb=short
+$env:PYTHONPATH="src"; python -m pytest tests/ -v --tb=short
 ```
 
 All tests should pass (one test may be skipped depending on optional deps).

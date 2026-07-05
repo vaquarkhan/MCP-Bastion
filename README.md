@@ -11,7 +11,7 @@
   />
 </p>
 
-[![PyPI: mcp-bastion-python 1.0.18](https://img.shields.io/pypi/v/mcp-bastion-python?logo=python)](https://pypi.org/project/mcp-bastion-python/1.0.18/)
+[![PyPI: mcp-bastion-python 2.0.0](https://img.shields.io/pypi/v/mcp-bastion-python?logo=python)](https://pypi.org/project/mcp-bastion-python/2.0.0/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
@@ -21,6 +21,15 @@
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
 **The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
+
+<p align="center">
+  <img
+    src="images/mcp-bastion-mcp-surface-scale.png"
+    alt="MCP-Bastion 2.0.0: full MCP method coverage and Redis shared state for multi-replica deployments"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
 
 ## Why MCP-Bastion? (Solving the 2026 MCP Security Crisis)
 
@@ -59,6 +68,48 @@ Generate a manifest after a trusted build: `mcp-bastion manifest server.py pypro
 
 Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ROADMAP.md](docs/ROADMAP.md)
 
+### Full MCP surface + horizontal scale (2.0.0)
+
+Previously, most pillars ran only on **`tools/call`**. **2.0.0** extends the pipeline to **`resources/read`**, **`prompts/get`**, **`sampling/createMessage`**, and **`elicitation/create`** — closing exfil/injection gaps on the rest of the MCP surface.
+
+For **multi-replica** deployments, enable **`state_backend.type: redis`** so rate limits, replay nonces, cost budgets, and session tool scope are shared across pods (default `memory` is single-process).
+
+```yaml
+state_backend:
+  type: redis
+  redis_url: redis://127.0.0.1:6379/0
+```
+
+`pip install mcp-bastion-python[redis]` · Deep dive: [docs/MCP_SURFACE_AND_SCALE.md](docs/MCP_SURFACE_AND_SCALE.md)
+
+### Production hardening adopted in 2.0.0
+
+Battle-tested patterns from the broader MCP gateway ecosystem, wired into the middleware stack:
+
+| Feature | What you get |
+|--------|----------------|
+| **JSONPath argument guards** | Block or redact tool arguments by **tool glob + JSONPath + regex** before execution (argv-array evasion aware). `pip install mcp-bastion-python[policy]` |
+| **RBAC fnmatch globs** | Role permissions like `read_*` / `files_*` with **specificity-aware** matching |
+| **Audit JSONL + `mcp-bastion tail`** | Append-only compliance log; `audit.jsonl_path` in config or `mcp-bastion tail -p audit.jsonl` |
+| **Cost checkpoint** | Optional disk persistence for session totals across restarts (`cost_tracker.checkpoint_path`, memory backend only) |
+
+```yaml
+argument_guards:
+  enabled: true
+  rules:
+    - name: block_shell
+      match: "run_*"
+      arg: "$.command"
+      pattern: "(rm\\s+-rf|curl\\s+.*\\|.*sh)"
+      action: block
+
+audit:
+  jsonl_path: .bastion/audit.jsonl
+
+cost_tracker:
+  checkpoint_path: .bastion/cost-checkpoint.json
+```
+
 <p align="center">
   <img
     src="images/mcp-bastion-runtime-governance.png"
@@ -75,7 +126,7 @@ Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ROA
 | **Guardrails without a rewrite** | Drop-in middleware: `secure_fastmcp(mcp)` or one `bastion.yaml` |
 | **Privacy your legal team accepts** | PromptGuard + Presidio run **in your process**; data stays on your network |
 | **Stop runaway agents & budget burn** | **On by default:** 15 tool calls/session, 60s timeout, 50k token budget. **Optional:** per-tool caps, USD session/day limits, response offload |
-| **Shrink context & cut token spend** | **Opt-in:** discovery filter (fewer tools in `tools/list`), output budget + session offload, semantic cache — less context in every turn |
+| **Shrink context & cut token spend** | **Opt-in:** discovery filter (fewer tools in `tools/list`), output budget + session offload (**up to ~99% on oversized tool outputs**), lexical similarity cache — [measured benchmarks](docs/BENCHMARKS.md) |
 | **Something that ships today** | PyPI, npm, Docker on GHCR, FastMCP, TypeScript wrapper, CI validate, live dashboard |
 | **Policy your team can review** | `bastion.yaml` in Git, hot reload, OWASP-aligned controls ([docs/PILLARS.md](docs/PILLARS.md)) |
 
@@ -97,17 +148,29 @@ Blocked calls return standard errors (`RateLimitExceededError` **-32002**, `Toke
 
 ### Token reduction & cost saving
 
-Bastion does not only **block** runaway spend — it **reduces** how many tokens reach the model on every turn:
+Bastion does not only **block** runaway spend — it **reduces** how much **tool output and tool-catalog** tokens reach the model on each turn (not the user’s LLM prompt text itself):
 
 | Savings lever | What it does | Default |
 |---------------|--------------|---------|
-| **Discovery filter** | Hides unused tools from `tools/list` so agents carry a smaller tool catalog in context | Opt-in |
-| **Output budget + offload** | Truncates oversized tool responses; stores the rest in-session for `bastion_get_offloaded` | Opt-in |
-| **Semantic cache** | Skips redundant tool calls when inputs match a prior result | Opt-in |
+| **Discovery filter** | Hides unused tools from `tools/list` so agents carry a smaller tool catalog in context (~**85%** fewer catalog tokens in [benchmarks](docs/BENCHMARKS.md) with 20→3 tools) | Opt-in |
+| **Output budget + offload** | Truncates oversized tool responses; stores the rest in-session for `bastion_get_offloaded` (**up to ~99.7%** on 50k-token dumps; **0%** when already under budget) | Opt-in |
+| **Lexical similarity cache** | Skips redundant tool calls when queries are near-identical (Jaccard word overlap — not embedding “semantic” search) | Opt-in |
 | **Token budget caps** | Hard stop before session token burn exceeds your limit | **On** (50k tokens) |
 | **USD session/day limits** | Dollar ceilings via cost tracker | Opt-in |
 
-Less context per turn means lower LLM input cost — without sending prompts to a third-party optimizer API.
+There is **no honest single “X% prompt reduction”** figure — savings are **input-dependent**. See **[docs/BENCHMARKS.md](docs/BENCHMARKS.md)** for reproducible pytest benchmarks and live numbers.
+
+<p align="center">
+  <img
+    src="images/mcp-bastion-finops-benchmarks.png"
+    alt="MCP-Bastion benchmarks: RBAC tool-level matrix, output budget up to 99% on large tool responses, discovery filter catalog savings, lexical cache hit/miss"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+<p align="center"><sub>Reproduce: <code>PYTHONPATH=src python -m pytest tests/test_benchmarks_finops_rbac.py -v</code> · Regenerate report: <code>python scripts/generate_benchmark_report.py</code></sub></p>
+
+Less tool output and catalog noise per turn means lower LLM input cost — without sending prompts to a third-party optimizer API.
 
 **Bottom line:** MCP turned every server into an agent gateway overnight. Bastion is the firewall that makes that gateway safe to run in production — in **three lines of code** or one config file.
 
@@ -152,12 +215,12 @@ All **10** [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/) risks a
 
 **Token reduction & cost saving**
 
-| Lever | Controls |
-|-------|----------|
-| Smaller tool catalog in context | Discovery filter on `tools/list` |
-| Less output in every turn | Output budget, session offload, `bastion_get_offloaded` |
-| Fewer redundant calls | Semantic cache |
-| Predictable spend | Token budget caps, USD session/day limits |
+| Lever | Controls | Benchmark |
+|-------|----------|-----------|
+| Smaller tool catalog in context | Discovery filter on `tools/list` | ~85% catalog tokens (20→3 tools) — [BENCHMARKS.md](docs/BENCHMARKS.md) |
+| Less tool output in every turn | Output budget, session offload, `bastion_get_offloaded` | Up to ~99.7% on oversized dumps; 0% when under budget |
+| Fewer redundant calls | Lexical similarity cache (Jaccard overlap) | Exact repeat hits; paraphrase misses at 0.9 |
+| Predictable spend | Token budget caps, USD session/day limits | Session defaults on |
 
 Deep-dive mapping and integration hooks: [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) · [docs/ATTACK_PREVENTION.md](docs/ATTACK_PREVENTION.md)
 
@@ -255,7 +318,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 ### Complete feature catalog
 
-**Pillar definitions:** Security controls, `bastion.yaml` sections, and how they relate to dashboard health rows are documented in [docs/PILLARS.md](docs/PILLARS.md) (canonical reference; avoids ambiguous “total pillar” counts). The same page lists **extended** features restored in 1.0.16+ (semantic firewall, sensitive classifier, external policy, edge auth, tool allowlist, session scope, tool metadata guard, multi-tenant, audit hash chain, pricing hooks, telemetry sinks, **red team** and **doctor** CLIs, etc.), **FinOps/context** pillars in 1.0.17+ (output budget, discovery filter, response scan, grounding guard), and **runtime governance** in 1.0.18+ (**agent IAM**, **server verification**).
+**Pillar definitions:** Security controls, `bastion.yaml` sections, and how they relate to dashboard health rows are documented in [docs/PILLARS.md](docs/PILLARS.md) (canonical reference; avoids ambiguous “total pillar” counts). The same page lists **extended** features restored in 1.0.16+ (semantic firewall, sensitive classifier, external policy, edge auth, tool allowlist, session scope, tool metadata guard, multi-tenant, audit hash chain, pricing hooks, telemetry sinks, **red team** and **doctor** CLIs, etc.), **FinOps/context** pillars in 1.0.17+ (output budget, discovery filter, response scan, grounding guard), and **runtime governance** (agent IAM, server verification — introduced in 1.0.18+, **shipped in 2.0.0**).
 
 > **Deeper context:** [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) — **OWASP MCP Top 10** alignment, attack scenarios, and SIEM/log integrations. **Framework add-ons** (LangChain, OpenAI, Bedrock, …) are listed under [Framework Integrations](#framework-integrations) below.
 
@@ -271,9 +334,12 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 | Feature | What you get |
 |--------|----------------|
-| **Agent IAM (Confused Deputy)** | Bind **API tokens** to **agent identities**; per-agent `allowed_tools` / `blocked_tools` and optional rate limits — stops a support bot from calling admin tools. See [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md). |
+| **Agent IAM (Confused Deputy)** | Bind **API tokens** to **agent identities**; per-agent `allowed_tools` / `blocked_tools`, **resource URI** allow/block, optional rate limits — stops a support bot from calling admin tools or reading secret resources. See [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md). |
+| **Full MCP surface guards (2.0.0)** | **`resources/read`**, **`prompts/get`**, **`sampling/createMessage`**, **`elicitation/create`** — same inbound/outbound pillars as tool calls (not only `tools/call`). [docs/MCP_SURFACE_AND_SCALE.md](docs/MCP_SURFACE_AND_SCALE.md) |
+| **Distributed state (2.0.0)** | **`state_backend: redis`** — shared rate limits, replay nonces, cost caps, session scope across replicas. `pip install mcp-bastion-python[redis]` |
 | **Server verification (supply chain)** | SHA-256 **manifest checksums** verified at startup and on every `tools/call`; `mcp-bastion manifest` generates trusted manifests after a signed-off build. |
-| **RBAC** | **Tool-level** allow/deny by **role** (from request metadata); map roles to tool names in `bastion.yaml`. |
+| **RBAC** | **Tool-level** allow/deny by **role** (from request metadata); **fnmatch globs** (`read_*`) with specificity-aware matching in `bastion.yaml`. **Pair with Agent IAM or edge auth** — alone, roles are only as trustworthy as whatever sets `metadata["role"]`. [Live matrix →](docs/BENCHMARKS.md#rbac-tool-level-opt-in) |
+| **Argument guards (2.0.0)** | **JSONPath + regex** block/redact on `tools/call` arguments before schema validation — stops shell injection and secret exfil in argv-style payloads. |
 | **Schema validation** | Validate `tools/call` arguments against **JSON Schema** before the tool runs (block malformed or bypass attempts). |
 | **Replay guard** | **Nonce** tracking to reject replayed requests (configurable **require_nonce**). |
 | **Rate limiting** | **Token-bucket** style limits: **max iterations** per session, **timeout**, **token budget**—stops runaway loops and brute-force patterns. |
@@ -283,15 +349,15 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 | Feature | What you get |
 |--------|----------------|
-| **Cost tracker** | Per-**session** and optional per-**day** USD caps; blocks when budget is exceeded. |
-| **Semantic cache** | Optional **similarity-based** caching for tool semantics (reduce duplicate expensive calls). |
+| **Cost tracker** | Per-**session** and optional per-**day** USD caps; blocks when budget is exceeded. Optional **disk checkpoint** for restart-safe totals (memory backend). |
+| **Semantic cache** (lexical) | Optional **Jaccard word-overlap** cache for near-identical tool queries — not embedding-based; see [benchmarks](docs/BENCHMARKS.md#lexical-similarity-cache-opt-in-semantic-cache-in-config). |
 | **Low overhead** | Middleware on the hot path targeting **&lt;5 ms** typical overhead (see [docs/METRICS.md](docs/METRICS.md)). |
 
 #### Audit, metrics & alerting
 
 | Feature | What you get |
 |--------|----------------|
-| **Audit logging** | Structured **allow/deny** decisions with **reason**, **tool**, **tenant_id**, **trace_id**, **request_id**—feed SOC / compliance. |
+| **Audit logging** | Structured **allow/deny** decisions with **reason**, **tool**, **tenant_id**, **trace_id**, **request_id**—feed SOC / compliance. Optional **JSONL file sink** + **`mcp-bastion tail`**. |
 | **Alert sinks** | **Slack** incoming webhook; **generic HTTP** webhooks (PagerDuty, Teams, custom APIs); **multiple URLs**; **retry**, **backoff**, **timeout** in `bastion.yaml`. |
 | **In-memory metrics** | **Global MetricsStore**: requests, blocks, PII counts, cost, per-tool stats, latency samples, rolling **time series** buckets. |
 | **Real-time dashboard** | **Web UI** with a top **KPI summary** (totals, block %, top threat, active users/tenants), **traffic & block charts**, **blocked-by-reason/kind** (with readable reasons / tooltips), **PII by entity** (severity-style coloring, e.g. high-risk types emphasized), **top tools**, **cost by user**, **latency P50/P95/P99**, **forensics table** (tenant filter, trace/replay helpers), **recent alerts**, **insights & anomalies** (heuristic signals), **dark/light theme**, **Prometheus** `/metrics`, **JSON** `/api/metrics`, loading/empty guidance instead of a blank first paint. |
@@ -378,6 +444,7 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 | [docs/SUPPLY_CHAIN.md](docs/SUPPLY_CHAIN.md) | CI merge gates, releases, npm provenance, PyPI Trusted Publishing |
 | [docs/INTEGRATION_MODELS.md](docs/INTEGRATION_MODELS.md) | Middleware + `bastion.yaml` vs “change base URL”; bridge for Python, TS, Desktop, HTTP, integrations |
 | [examples/ci/README.md](examples/ci/README.md) | Copy-paste GitHub Actions snippet to run `mcp-bastion validate` on your policy file |
+| [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | **Measured** RBAC matrix, output-budget reduction (up to ~99% on large tool outputs), discovery filter, lexical cache — pytest + report generator |
 | [docs/REDTEAM.md](docs/REDTEAM.md) | Interpreting harness / red-team scores; which `bastion.yaml` pillars to enable; Node vs Python **scope** (`packages/core/README.md`) |
 | [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) | **OWASP MCP Top 10**, integration hooks, **fleet-scale `bastion.yaml` rollout**, **SIEM / SOC audit** patterns |
 | [docs/METRICS.md](docs/METRICS.md) | Performance overhead (&lt;5ms) and effectiveness metrics (dashboard, Prometheus, OTEL) |
@@ -386,6 +453,7 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 | [docs/QUICK_START.md](docs/QUICK_START.md) | Minimal FastMCP / `bastion.yaml` / CI snippets (time-to-value) |
 | [docs/DISCOVERY.md](docs/DISCOVERY.md) | Registry and ecosystem discovery checklist |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | High-level directions; execution tracked in GitHub Issues |
+| [docs/ENGINEERING_10_10.md](docs/ENGINEERING_10_10.md) | Strategic path to 10/10 on injection depth, tool poisoning, gateway maturity, FinOps metrics, project maturity |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contributor guide and **`good first issue`** ideas |
 
 ### One-Line Docker
@@ -438,7 +506,7 @@ On every pull request and push to `main`, [`.github/workflows/ci.yml`](.github/w
 
 1. `pip install -e ".[dev,policy,dashboard]"` — install the Python package with tests, YAML policy loading, and FastAPI for dashboard tests.
 2. `mcp-bastion validate --config bastion.yaml.example` — ensure the example policy file loads.
-3. `pytest --cov=mcp_bastion --cov-fail-under=92` — full Python test suite with **≥92%** line coverage on `src/mcp_bastion` (see `[tool.coverage.*]` in `pyproject.toml` for measured paths and gates).
+3. `python -m pytest --cov=mcp_bastion --cov-fail-under=92` — full Python test suite with **≥92%** line coverage on `src/mcp_bastion` (see `[tool.coverage.*]` in `pyproject.toml` for measured paths and gates).
 4. `npm ci` and `npm test` — TypeScript workspace tests.
 
 To validate **your** repo’s `bastion.yaml` in CI without cloning MCP-Bastion, see [examples/ci/README.md](examples/ci/README.md).
@@ -512,7 +580,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pinned latest
-pip install mcp-bastion-python==1.0.18
+pip install mcp-bastion-python==2.0.0
 ```
 
 **Prerequisites (recommended)**
@@ -989,7 +1057,7 @@ Connect via HTTP (`http://localhost:8000/mcp`) or stdio, then:
 
 ```bash
 # Python (PYTHONPATH=src on Windows: $env:PYTHONPATH="src")
-pytest tests/ -v
+python -m pytest tests/ -v
 
 # TypeScript
 npm run test --workspace=@mcp-bastion/core

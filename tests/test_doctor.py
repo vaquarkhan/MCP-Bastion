@@ -101,3 +101,56 @@ def test_run_doctor_pip_audit_runs(tmp_path):
                 r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
     pa = next(c for c in r["checks"] if c["id"] == "pip_audit")
     assert pa.get("returncode") == 0
+
+
+def test_run_doctor_schema_validation_warns_when_enabled_without_schemas(tmp_path):
+    (tmp_path / "bastion.yaml").write_text(
+        "schema_validation:\n  enabled: true\naudit:\n  enabled: true\n",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    with mock.patch("mcp_bastion.doctor.shutil.which", return_value=None):
+        with mock.patch("mcp_bastion.pillars.prompt_guard.PromptGuardEngine.score", return_value=0.0):
+            r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
+    sv = next(c for c in r["checks"] if c["id"] == "schema_validation")
+    assert sv["ok"] is False
+    assert "empty" in sv["detail"].lower()
+
+
+def test_run_doctor_state_backend_memory_skipped(tmp_path):
+    (tmp_path / "bastion.yaml").write_text(
+        "state_backend:\n  type: memory\naudit:\n  enabled: true\n",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    with mock.patch("mcp_bastion.doctor.shutil.which", return_value=None):
+        with mock.patch("mcp_bastion.pillars.prompt_guard.PromptGuardEngine.score", return_value=0.0):
+            r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
+    sb = next(c for c in r["checks"] if c["id"] == "state_backend_redis")
+    assert sb.get("skipped") is True
+    assert "memory" in sb["detail"]
+
+
+def test_run_doctor_state_backend_redis_ping(tmp_path):
+    (tmp_path / "bastion.yaml").write_text(
+        "state_backend:\n  type: redis\n  redis_url: redis://127.0.0.1:6379/0\naudit:\n  enabled: true\n",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    fake_client = mock.Mock()
+    fake_client.ping.return_value = True
+    with mock.patch("mcp_bastion.doctor.shutil.which", return_value=None):
+        with mock.patch("mcp_bastion.pillars.prompt_guard.PromptGuardEngine.score", return_value=0.0):
+            with mock.patch("redis.Redis.from_url", return_value=fake_client):
+                r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
+    sb = next(c for c in r["checks"] if c["id"] == "state_backend_redis")
+    assert sb["ok"] is True

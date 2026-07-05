@@ -27,12 +27,14 @@ from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
 from mcp_bastion.pillars.rate_limit import TokenBucketRateLimiter
 from mcp_bastion.pillars.rbac import RBAC
 from mcp_bastion.pillars.replay_guard import ReplayGuard
-from mcp_bastion.pillars.schema_validation import SchemaValidator
+from mcp_bastion.pillars.schema_validation import SchemaValidator, parse_tool_schemas
 from mcp_bastion.pillars.semantic_cache import SemanticCache
 from mcp_bastion.pillars.output_budget import OutputBudget
 from mcp_bastion.pillars.grounding_guard import GroundingGuard
 from mcp_bastion.pillars.agent_iam import AgentIAM, parse_agent_policies
+from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine, parse_guard_rules
 from mcp_bastion.pillars.server_verification import ServerVerifier
+from mcp_bastion.pillars.state_backend import build_state_backend
 from mcp_bastion.base import CallNext, MiddlewareContext, compose_middleware
 from mcp_bastion.governance_beacon import schedule_registry_beacon
 from mcp_bastion.middleware import MCPBastionMiddleware
@@ -88,11 +90,15 @@ class BastionConfig:
     rbac: bool = False
     rbac_permissions: dict[str, list[str]] = field(default_factory=dict)
     schema_validation: bool = False
+    schema_validation_schemas: dict[str, dict[str, type]] = field(default_factory=dict)
     replay_guard: bool = False
     replay_require_nonce: bool = False
     cost_tracker: bool = False
     cost_max_per_session: float = 0.50
     cost_max_per_day: float = 10.0
+    cost_checkpoint_path: str | None = None
+    argument_guards_enabled: bool = False
+    argument_guards_rules: list[dict[str, Any]] = field(default_factory=list)
     semantic_cache: bool = False
     semantic_firewall: bool = False
     sensitive_classifier: bool = False
@@ -101,6 +107,7 @@ class BastionConfig:
     sensitive_classifier_model_name: str = "distilbert-base-uncased-finetuned-sst-2-english"
     sensitive_classifier_block_labels: list[str] = field(default_factory=lambda: ["sensitive_business"])
     audit: bool = True
+    audit_jsonl_path: str | None = None
     alerts_slack_webhook: str | None = None
     alerts_webhook_url: str | None = None
     alerts_webhooks: list[str] = field(default_factory=list)
@@ -148,6 +155,24 @@ class BastionConfig:
     server_verification_base_path: str = "."
     server_verification_manifest: dict[str, str] = field(default_factory=dict)
     server_verification_manifest_path: str | None = None
+    server_verification_manifest_signature: str | None = None
+    server_verification_signature_env: str = "BASTION_MANIFEST_SIGNING_KEY"
+    agent_iam_isolate_sessions: bool = False
+    transport_hardening_enabled: bool = True
+    transport_hardening_allowed_hosts: list[str] = field(
+        default_factory=lambda: ["127.0.0.1", "localhost", "[::1]"]
+    )
+    transport_hardening_block_browser_origin: bool = True
+    transport_hardening_require_loopback: bool = True
+    stdio_guard_enabled: bool = False
+    tool_metadata_fingerprint_enabled: bool = False
+    tool_metadata_fingerprint_path: str | None = None
+    tool_metadata_fingerprint_expected: str | None = None
+    governance_allowed_registry_names: list[str] = field(default_factory=list)
+    governance_allowed_repository_urls: list[str] = field(default_factory=list)
+    state_backend: str = "memory"
+    state_backend_redis_url: str = "redis://127.0.0.1:6379/0"
+    state_backend_key_prefix: str = "mcp-bastion"
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -182,10 +207,17 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     tel = data.get("telemetry", {}) or {}
     tmg = data.get("tool_metadata_guard", {}) or {}
     edge = data.get("edge_auth", {}) or {}
+    schemav = data.get("schema_validation", {}) or {}
     tal = data.get("tool_allowlist", {}) or {}
     iam = data.get("agent_iam", {}) or {}
     sv = data.get("server_verification", {}) or {}
+    th = data.get("transport_hardening", {}) or {}
+    sg = data.get("stdio_guard", {}) or {}
+    tmf = data.get("tool_metadata_fingerprint", {}) or {}
     sess = data.get("session_limits", {}) or {}
+    sb = data.get("state_backend", {}) or {}
+    ag = data.get("argument_guards", {}) or {}
+    audit_cfg = data.get("audit", {}) or {}
     sc = data.get("sensitive_classifier", {}) or {}
     opa_pe = pe.get("opa", {}) or {}
     cedar_pe = pe.get("cedar", {}) or {}
@@ -229,12 +261,17 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         ),
         rbac=data.get("rbac", {}).get("enabled", False),
         rbac_permissions=data.get("rbac", {}).get("permissions", {}),
-        schema_validation=data.get("schema_validation", {}).get("enabled", False),
+        schema_validation=bool(schemav.get("enabled", False)),
+        schema_validation_schemas=parse_tool_schemas(schemav.get("schemas")),
         replay_guard=data.get("replay_guard", {}).get("enabled", False),
         replay_require_nonce=data.get("replay_guard", {}).get("require_nonce", False),
         cost_tracker=data.get("cost_tracker", {}).get("enabled", False),
         cost_max_per_session=float(data.get("cost_tracker", {}).get("max_cost_per_session", 0.50)),
         cost_max_per_day=float(data.get("cost_tracker", {}).get("max_cost_per_day", 10.0)),
+        cost_checkpoint_path=data.get("cost_tracker", {}).get("checkpoint_path")
+        or os.environ.get("BASTION_COST_CHECKPOINT"),
+        argument_guards_enabled=bool(ag.get("enabled", False)),
+        argument_guards_rules=list(ag.get("rules", [])) if isinstance(ag.get("rules"), list) else [],
         semantic_cache=data.get("semantic_cache", {}).get("enabled", False),
         semantic_firewall=data.get("semantic_firewall", {}).get("enabled", False),
         sensitive_classifier=sc.get("enabled", False),
@@ -244,7 +281,8 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
             sc.get("model_name", "distilbert-base-uncased-finetuned-sst-2-english")
         ),
         sensitive_classifier_block_labels=list(sc.get("block_labels", ["sensitive_business"])),
-        audit=data.get("audit", {}).get("enabled", True),
+        audit=bool(audit_cfg.get("enabled", True)),
+        audit_jsonl_path=audit_cfg.get("jsonl_path") or audit_cfg.get("path") or os.environ.get("BASTION_AUDIT_JSONL"),
         alerts_slack_webhook=alerts.get("slack_webhook") or os.environ.get("SLACK_WEBHOOK_URL"),
         alerts_webhook_url=alerts.get("webhook_url") or os.environ.get("BASTION_WEBHOOK_URL"),
         alerts_webhooks=alerts.get("webhooks", []),
@@ -287,6 +325,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         agent_iam_token_metadata_key=str(iam.get("token_metadata_key", "bastion_agent_token")),
         agent_iam_require_token=bool(iam.get("require_token", True)),
         agent_iam_agents=list(iam.get("agents", [])) if isinstance(iam.get("agents"), list) else [],
+        agent_iam_isolate_sessions=bool(iam.get("isolate_sessions", False)),
         server_verification_enabled=bool(sv.get("enabled", False)),
         server_verification_on_mismatch=str(sv.get("on_mismatch", "block")),
         server_verification_base_path=str(sv.get("base_path", ".")),
@@ -294,35 +333,68 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
             str(k): str(v) for k, v in (sv.get("manifest") or {}).items()
         },
         server_verification_manifest_path=sv.get("manifest_path") or sv.get("manifest_file"),
+        server_verification_manifest_signature=sv.get("signature"),
+        server_verification_signature_env=str(sv.get("signature_env", "BASTION_MANIFEST_SIGNING_KEY")),
+        transport_hardening_enabled=bool(th.get("enabled", True)),
+        transport_hardening_allowed_hosts=list(th.get("allowed_hosts", ["127.0.0.1", "localhost", "[::1]"])),
+        transport_hardening_block_browser_origin=bool(th.get("block_browser_origin", True)),
+        transport_hardening_require_loopback=bool(th.get("require_loopback", True)),
+        stdio_guard_enabled=bool(sg.get("enabled", False)),
+        tool_metadata_fingerprint_enabled=bool(tmf.get("enabled", False)),
+        tool_metadata_fingerprint_path=tmf.get("fingerprint_path") or tmf.get("path"),
+        tool_metadata_fingerprint_expected=tmf.get("expected") or tmf.get("expected_sha256"),
+        governance_allowed_registry_names=list(gov.get("allowed_registry_names", []))
+        if isinstance(gov.get("allowed_registry_names"), list)
+        else [],
+        governance_allowed_repository_urls=list(gov.get("allowed_repository_urls", []))
+        if isinstance(gov.get("allowed_repository_urls"), list)
+        else [],
+        state_backend=str(sb.get("type", sb.get("backend", "memory"))),
+        state_backend_redis_url=str(sb.get("redis_url", os.environ.get("BASTION_REDIS_URL", "redis://127.0.0.1:6379/0"))),
+        state_backend_key_prefix=str(sb.get("key_prefix", "mcp-bastion")),
     )
 
 
 def _load_server_manifest(config: BastionConfig) -> dict[str, str]:
-    """Merge inline manifest with optional manifest_path JSON/YAML file."""
+    files, _sig = _load_server_manifest_bundle(config)
+    return files
+
+
+def _load_server_manifest_bundle(config: BastionConfig) -> tuple[dict[str, str], str | None]:
+    """Return (files, optional HMAC signature) from inline config or manifest file."""
     manifest = dict(config.server_verification_manifest)
+    signature = config.server_verification_manifest_signature
     path_raw = config.server_verification_manifest_path
     if not path_raw:
-        return manifest
+        return manifest, signature
     p = Path(path_raw)
     if not p.is_file():
         logger.warning("server_verification manifest_path not found: %s", p)
-        return manifest
+        return manifest, signature
     try:
         if p.suffix.lower() in (".yaml", ".yml"):
             data = _load_yaml(p)
             files = data.get("files", data) if isinstance(data, dict) else {}
+            if isinstance(data, dict) and data.get("signature"):
+                signature = signature or str(data["signature"])
         else:
             import json
 
-            files = json.loads(p.read_text(encoding="utf-8"))
-            if isinstance(files, dict) and "files" in files:
-                files = files["files"]
+            data = json.loads(p.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and "files" in data:
+                files = data["files"]
+                if data.get("signature"):
+                    signature = signature or str(data["signature"])
+            else:
+                files = data
         if isinstance(files, dict):
             for k, v in files.items():
+                if str(k) in ("signature", "algorithm"):
+                    continue
                 manifest[str(k)] = str(v)
     except Exception as e:
         logger.warning("server_verification failed to load manifest_path %s: %s", p, e)
-    return manifest
+    return manifest, signature
 
 
 def _build_chain(config: BastionConfig) -> Any:
@@ -359,6 +431,11 @@ def _build_chain(config: BastionConfig) -> Any:
             )
         )
     anchor_url = config.audit_anchor_webhook_url or os.environ.get("BASTION_ANCHOR_WEBHOOK_URL")
+    audit_jsonl_sink = None
+    if config.audit_jsonl_path:
+        from mcp_bastion.audit_jsonl import AuditJsonlSink
+
+        audit_jsonl_sink = AuditJsonlSink(config.audit_jsonl_path)
     telemetry_callbacks = build_telemetry_sinks_from_config(config)
     export_cb = (
         make_audit_export_callback(
@@ -368,6 +445,7 @@ def _build_chain(config: BastionConfig) -> Any:
             anchor_webhook_url=anchor_url,
             telemetry_sinks=telemetry_callbacks or None,
             telemetry_export_mode=config.telemetry_export_mode,
+            audit_jsonl_sink=audit_jsonl_sink,
         )
         if config.audit
         else None
@@ -407,20 +485,29 @@ def _build_chain(config: BastionConfig) -> Any:
                 config.edge_auth_secret_env,
             )
 
+    state_backend = build_state_backend(
+        backend=config.state_backend,
+        redis_url=config.state_backend_redis_url,
+        key_prefix=config.state_backend_key_prefix,
+    )
+    shared_backend = state_backend if config.state_backend.strip().lower() == "redis" else None
+
     agent_iam: AgentIAM | None = None
     if config.agent_iam_enabled:
-        policies = parse_agent_policies(config.agent_iam_agents)
+        policies = parse_agent_policies(config.agent_iam_agents, state_backend=shared_backend)
         if not policies:
             logger.warning("agent_iam enabled but no agents resolved (check token_env / token)")
         agent_iam = AgentIAM(
             policies,
             token_metadata_key=config.agent_iam_token_metadata_key,
             require_token=config.agent_iam_require_token,
+            isolate_sessions=config.agent_iam_isolate_sessions,
         )
 
     server_verifier: ServerVerifier | None = None
     if config.server_verification_enabled:
-        manifest = _load_server_manifest(config)
+        manifest, manifest_sig = _load_server_manifest_bundle(config)
+        signing_key = os.environ.get(config.server_verification_signature_env)
         if not manifest:
             logger.warning("server_verification enabled but manifest is empty")
         else:
@@ -428,9 +515,31 @@ def _build_chain(config: BastionConfig) -> Any:
                 manifest,
                 base_path=config.server_verification_base_path,
                 on_mismatch=config.server_verification_on_mismatch,  # type: ignore[arg-type]
+                manifest_signature=manifest_sig,
+                signing_key=signing_key,
             )
             if config.server_verification_on_mismatch == "block":
                 server_verifier.ensure_ok()
+
+    if config.stdio_guard_enabled:
+        from mcp_bastion.pillars.stdio_guard import install_stdio_guard
+
+        install_stdio_guard()
+
+    if config.schema_validation and not config.schema_validation_schemas:
+        logger.warning(
+            "schema_validation enabled but schema_validation.schemas is empty in bastion.yaml — "
+            "enforcement is a no-op until tool schemas are configured"
+        )
+    schema_validator = SchemaValidator(config.schema_validation_schemas)
+
+    argument_guards: ArgumentGuardEngine | None = None
+    if config.argument_guards_enabled:
+        rules = parse_guard_rules(config.argument_guards_rules)
+        if rules:
+            argument_guards = ArgumentGuardEngine(rules)
+        else:
+            logger.warning("argument_guards enabled but rules list is empty")
 
     bastion_mw = MCPBastionMiddleware(
         prompt_guard=PromptGuardEngine(
@@ -444,14 +553,18 @@ def _build_chain(config: BastionConfig) -> Any:
             timeout_seconds=config.rate_limit_timeout_seconds,
             token_budget=config.rate_limit_token_budget,
             max_per_tool=config.rate_limit_max_per_tool,
+            backend=shared_backend,
         ),
         cost_tracker=CostTracker(
             max_cost_per_session=config.cost_max_per_session,
             max_cost_per_day=config.cost_max_per_day,
+            backend=shared_backend,
+            checkpoint_path=config.cost_checkpoint_path,
         ),
         content_filter=content_filter,
         rbac=RBAC(config.rbac_permissions),
-        replay_guard=ReplayGuard(require_nonce=config.replay_require_nonce),
+        schema_validator=schema_validator,
+        replay_guard=ReplayGuard(require_nonce=config.replay_require_nonce, backend=shared_backend),
         enable_prompt_guard=config.prompt_guard,
         enable_pii_redaction=config.pii,
         enable_rate_limit=config.rate_limit,
@@ -500,6 +613,9 @@ def _build_chain(config: BastionConfig) -> Any:
         enable_agent_iam=config.agent_iam_enabled and agent_iam is not None,
         server_verifier=server_verifier,
         enable_server_verification=config.server_verification_enabled and server_verifier is not None,
+        state_backend=state_backend,
+        argument_guards=argument_guards,
+        enable_argument_guards=config.argument_guards_enabled and argument_guards is not None,
     )
     if config.governance_registry_url:
         schedule_registry_beacon(

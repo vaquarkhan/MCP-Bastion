@@ -173,3 +173,20 @@ class ServerVerificationError(MCPBastionError):
         message: str = "Request blocked: MCP server failed cryptographic verification",
     ) -> None:
         super().__init__(message, code=-32020)
+
+
+class TransportBlockedError(MCPBastionError):
+    """Raised when HTTP transport hardening blocks a cross-origin or non-loopback request."""
+
+    def __init__(
+        self,
+        message: str = "Request blocked: HTTP transport hardening rejected this request",
+    ) -> None:
+        super().__init__(message, code=-32021)
+
+
+class ArgumentGuardError(MCPBastionError):
+    """Raised when a JSONPath argument guard blocks a tool call."""
+
+    def __init__(self, message: str = "Request blocked: argument guard policy violation") -> None:
+        super().__init__(message, code=-32022)

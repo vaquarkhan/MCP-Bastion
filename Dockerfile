@@ -5,7 +5,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-ARG BASTION_VERSION=1.0.18
+ARG BASTION_VERSION=2.0.0
 # Install deps (minimal for stdio/HTTP server; add torch/presidio for full features)
 RUN pip install --no-cache-dir mcp "mcp-bastion-python==${BASTION_VERSION}"
 
