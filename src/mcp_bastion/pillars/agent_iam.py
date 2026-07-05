@@ -17,6 +17,7 @@ from typing import Any
 
 from mcp_bastion.errors import AgentAccessDeniedError, AuthenticationError
 from mcp_bastion.pillars.rate_limit import TokenBucketRateLimiter
+from mcp_bastion.pillars.state_backend import StateBackend
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,11 @@ def _parse_tool_set(values: Any) -> frozenset[str]:
     return frozenset(str(v).strip() for v in values if str(v).strip())
 
 
-def parse_agent_policies(raw_agents: list[dict[str, Any]]) -> list[AgentPolicy]:
+def parse_agent_policies(
+    raw_agents: list[dict[str, Any]],
+    *,
+    state_backend: StateBackend | None = None,
+) -> list[AgentPolicy]:
     """Build AgentPolicy list from bastion.yaml `agents` entries."""
     policies: list[AgentPolicy] = []
     for entry in raw_agents or []:
@@ -104,6 +109,8 @@ def parse_agent_policies(raw_agents: list[dict[str, Any]]) -> list[AgentPolicy]:
                 timeout_seconds=timeout,
                 token_budget=budget,
                 max_per_tool=per_tool,
+                backend=state_backend,
+                backend_namespace=f"ratelimit:agent:{agent_id}",
             )
 
         policies.append(

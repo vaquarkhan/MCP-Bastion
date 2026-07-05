@@ -52,16 +52,15 @@ def main():
     if args.http:
         try:
             from mcp_bastion.config import load_config
-            from mcp_bastion.serve import run_hardened_streamable_http
+            from mcp_bastion.serve import run_streamable_http
 
             cfg = load_config(os.environ.get("BASTION_CONFIG", "bastion.yaml"))
-            if cfg.transport_hardening_enabled:
-                run_hardened_streamable_http(mcp, host=args.host, port=args.http, config=cfg)
-                return
+            run_streamable_http(mcp, host=args.host, port=args.http, config=cfg)
         except ImportError:
-            pass
-        logger.info("MCP server on http://%s:%s/mcp", args.host, args.http)
-        mcp.run(transport="streamable-http", host=args.host, port=args.http)
+            mcp.settings.host = args.host
+            mcp.settings.port = args.http
+            logger.info("MCP server on http://%s:%s/mcp", args.host, args.http)
+            mcp.run(transport="streamable-http")
     else:
         try:
             from mcp_bastion.config import load_config

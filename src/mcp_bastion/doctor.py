@@ -119,6 +119,73 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
     except Exception as e:
         checks.append({"id": "runtime_governance", "ok": False, "detail": str(e)})
 
+    # Schema validation policy-as-code
+    try:
+        from mcp_bastion.config import load_config as _load_cfg_schema
+
+        cfg_schema = _load_cfg_schema(config_path)
+        if cfg_schema.schema_validation:
+            n = len(cfg_schema.schema_validation_schemas)
+            if n == 0:
+                checks.append(
+                    {
+                        "id": "schema_validation",
+                        "ok": False,
+                        "detail": (
+                            "schema_validation.enabled is true but schema_validation.schemas is empty — "
+                            "no tool arguments will be validated"
+                        ),
+                    }
+                )
+            else:
+                tools = ", ".join(sorted(cfg_schema.schema_validation_schemas.keys())[:8])
+                suffix = "…" if n > 8 else ""
+                checks.append(
+                    {
+                        "id": "schema_validation",
+                        "ok": True,
+                        "detail": f"{n} tool schema(s) loaded: {tools}{suffix}",
+                    }
+                )
+        else:
+            checks.append(
+                {"id": "schema_validation", "ok": True, "skipped": True, "detail": "schema_validation disabled"}
+            )
+    except Exception as e:
+        checks.append({"id": "schema_validation", "ok": False, "detail": str(e)})
+
+    try:
+        from mcp_bastion.config import load_config as _load_cfg_sb
+        from mcp_bastion.pillars.state_backend import RedisStateBackend, build_state_backend
+
+        cfg_sb = _load_cfg_sb(config_path)
+        kind = (cfg_sb.state_backend or "memory").strip().lower()
+        if kind == "redis":
+            backend = build_state_backend(
+                backend=cfg_sb.state_backend,
+                redis_url=cfg_sb.state_backend_redis_url,
+                key_prefix=cfg_sb.state_backend_key_prefix,
+            )
+            ok = isinstance(backend, RedisStateBackend) and backend.ping()
+            checks.append(
+                {
+                    "id": "state_backend_redis",
+                    "ok": ok,
+                    "detail": cfg_sb.state_backend_redis_url if ok else "Redis ping failed or redis package missing",
+                }
+            )
+        else:
+            checks.append(
+                {
+                    "id": "state_backend_redis",
+                    "ok": True,
+                    "skipped": True,
+                    "detail": f"state_backend={kind} (in-process memory)",
+                }
+            )
+    except Exception as e:
+        checks.append({"id": "state_backend_redis", "ok": False, "detail": str(e)})
+
     # Tool metadata fingerprint (semantic schema drift)
     try:
         from mcp_bastion.config import load_config as _load_cfg3
@@ -209,14 +276,31 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
         }
     )
 
-    # pip-audit (optional)
-    pip_audit = shutil.which("pip-audit")
-    if not pip_audit:
-        checks.append({"id": "pip_audit", "ok": True, "skipped": True, "detail": "pip-audit not on PATH"})
+    # pip-audit (optional; try PATH binary then python -m pip_audit)
+    pip_audit_bin = shutil.which("pip-audit")
+    pip_audit_cmd: list[str] | None = None
+    if pip_audit_bin:
+        pip_audit_cmd = [pip_audit_bin, "--format", "json"]
+    else:
+        try:
+            import pip_audit  # noqa: F401
+
+            pip_audit_cmd = [sys.executable, "-m", "pip_audit", "--format", "json"]
+        except ImportError:
+            pip_audit_cmd = None
+    if pip_audit_cmd is None:
+        checks.append(
+            {
+                "id": "pip_audit",
+                "ok": True,
+                "skipped": True,
+                "detail": "pip-audit not on PATH and pip_audit module not installed (pip install pip-audit)",
+            }
+        )
     else:
         try:
             proc = subprocess.run(
-                [pip_audit, "--format", "json"],
+                pip_audit_cmd,
                 capture_output=True,
                 text=True,
                 timeout=120,

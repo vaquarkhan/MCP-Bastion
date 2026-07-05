@@ -12,12 +12,12 @@ import json
 import logging
 import threading
 import time
-from collections import defaultdict
 from typing import Any
 
 from mcp_bastion.base import CallNext, Middleware, MiddlewareContext
 from mcp_bastion.errors import (
     AgentAccessDeniedError,
+    ArgumentGuardError,
     AuthenticationError,
     ExternalPolicyDeniedError,
     GroundingViolationError,
@@ -41,6 +41,7 @@ from mcp_bastion.pillars.response_scanner import ResponseInjectionScanner
 from mcp_bastion.pillars.output_budget import OutputBudget
 from mcp_bastion.pillars.grounding_guard import GroundingGuard
 from mcp_bastion.pillars.agent_iam import AgentIAM
+from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine
 from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.tokens import estimate_text_tokens
 from mcp_bastion.pillars.rbac import RBAC
@@ -51,6 +52,7 @@ from mcp_bastion.pillars.pricing import estimate_llm_usd
 from mcp_bastion.pillars.semantic_cache import SemanticCache
 from mcp_bastion.pillars.sensitive_classifier import SensitiveContentClassifier
 from mcp_bastion.pillars.semantic_firewall import SemanticFirewall
+from mcp_bastion.pillars.state_backend import MemoryStateBackend, StateBackend
 from mcp_bastion.tenant import resolve_tenant_id
 
 logger = logging.getLogger(__name__)
@@ -100,6 +102,76 @@ def _get_jsonrpc_method(message: Any) -> str | None:
 
 def _is_resources_read_request(message: Any) -> bool:
     return _get_jsonrpc_method(message) == "resources/read"
+
+
+GUARDED_MCP_METHODS = frozenset(
+    {
+        "resources/read",
+        "prompts/get",
+        "sampling/createMessage",
+        "elicitation/create",
+    }
+)
+
+_GUARDED_METHOD_ALIASES = {
+    "notifications/elicitation/create": "elicitation/create",
+}
+
+
+def _normalize_guarded_method(method: str | None) -> str | None:
+    if not method:
+        return None
+    m = str(method).strip()
+    return _GUARDED_METHOD_ALIASES.get(m, m)
+
+
+def _is_guarded_mcp_request(message: Any) -> bool:
+    method = _normalize_guarded_method(_get_jsonrpc_method(message))
+    return method in GUARDED_MCP_METHODS if method else False
+
+
+def _extract_inbound_text_for_method(method: str, params: dict | None) -> str:
+    """Flatten request params for prompt/content/PII checks on non-tools/call MCP methods."""
+    if not params or not isinstance(params, dict):
+        return ""
+    if method == "resources/read":
+        return str(params.get("uri") or "")
+    if method == "prompts/get":
+        return _extract_text_from_value(
+            {"name": params.get("name"), "arguments": params.get("arguments")}
+        )
+    if method == "sampling/createMessage":
+        return _extract_text_from_value(params.get("messages") or params)
+    if method in ("elicitation/create",):
+        return _extract_text_from_value(params)
+    return _extract_text_from_value(params)
+
+
+def _messages_to_content_items(messages: list[Any]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for message in messages:
+        if hasattr(message, "model_dump"):
+            try:
+                message = message.model_dump()
+            except Exception:
+                message = {"content": str(message)}
+        if not isinstance(message, dict):
+            items.append({"type": "text", "text": str(message)})
+            continue
+        content = message.get("content")
+        if isinstance(content, str):
+            items.append({"type": "text", "text": content})
+        elif isinstance(content, dict):
+            items.append(content)
+        elif isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict):
+                    items.append(part)
+                else:
+                    items.append({"type": "text", "text": str(part)})
+        elif content is not None:
+            items.append({"type": "text", "text": _extract_text_from_value(content)})
+    return items
 
 
 def _tool_entry_to_dict(entry: Any) -> dict[str, Any]:
@@ -237,19 +309,24 @@ def _get_request_id(message: Any) -> str | None:
 
 
 def _get_content_from_result(result: Any) -> list[dict[str, Any]] | None:
-    """Extract content list from result for PII redaction."""
+    """Extract content list from MCP result (resources, tools, prompts, etc.)."""
     if result is None:
         return None
     payload = result
     if isinstance(result, dict) and "result" in result:
         payload = result["result"]
+    items = None
     if hasattr(payload, "contents"):
         items = payload.contents
     elif isinstance(payload, dict) and "contents" in payload:
         items = payload["contents"]
     elif isinstance(payload, dict) and "content" in payload:
         items = payload["content"]
-    else:
+    elif isinstance(payload, dict) and isinstance(payload.get("messages"), list):
+        return _messages_to_content_items(payload["messages"])
+    elif hasattr(payload, "messages") and isinstance(getattr(payload, "messages", None), list):
+        return _messages_to_content_items(payload.messages)
+    if items is None:
         return None
     if not isinstance(items, list):
         return None
@@ -377,6 +454,9 @@ class MCPBastionMiddleware(Middleware[Any]):
         enable_agent_iam: bool = False,
         server_verifier: ServerVerifier | None = None,
         enable_server_verification: bool = False,
+        state_backend: StateBackend | None = None,
+        argument_guards: ArgumentGuardEngine | None = None,
+        enable_argument_guards: bool = False,
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -420,8 +500,8 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.enable_tool_allowlist = enable_tool_allowlist
         self.tool_allowlist = frozenset(tool_allowlist or ())
         self.session_max_unique_tools = max(0, int(session_max_unique_tools))
+        self._state_backend = state_backend or MemoryStateBackend()
         self._session_tools_lock = threading.Lock()
-        self._session_distinct_tools: dict[str, set[str]] = defaultdict(set)
         self.enable_tool_metadata_guard = enable_tool_metadata_guard
         self.tool_metadata_guard_on_poison = (tool_metadata_guard_on_poison or "remove_tool").strip().lower()
         self.tool_metadata_guard_use_content_filter = bool(tool_metadata_guard_use_content_filter)
@@ -439,6 +519,8 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.enable_agent_iam = enable_agent_iam and agent_iam is not None
         self.server_verifier = server_verifier
         self.enable_server_verification = enable_server_verification and server_verifier is not None
+        self.argument_guards = argument_guards
+        self.enable_argument_guards = enable_argument_guards and argument_guards is not None
 
     @staticmethod
     def _offload_key_from_params(params: dict | None) -> str | None:
@@ -611,12 +693,15 @@ class MCPBastionMiddleware(Middleware[Any]):
         started = time.perf_counter()
         try:
             with self._session_tools_lock:
-                seen = self._session_distinct_tools[session_id]
-                if tool_name not in seen and len(seen) >= self.session_max_unique_tools:
+                allowed = self._state_backend.set_add(
+                    f"session_tools:{session_id}",
+                    tool_name,
+                    max_size=self.session_max_unique_tools,
+                )
+                if not allowed:
                     raise SessionScopeExceededError(
                         f"Request blocked: session exceeded max distinct tools ({self.session_max_unique_tools})"
                     )
-                seen.add(tool_name)
             _trace_append(trace, pillar="session_tool_scope", status="allowed", started=started)
         except Exception as e:
             self._handle_violation(context=context, trace=trace, pillar="session_tool_scope", started=started, error=e)
@@ -741,6 +826,226 @@ class MCPBastionMiddleware(Middleware[Any]):
         context.metadata["_agent_policy"] = agent_policy
         _trace_append(trace, pillar="agent_iam", status="allowed", started=started)
 
+    def _apply_inbound_text_guards(
+        self,
+        *,
+        context: MiddlewareContext[Any],
+        trace: list[dict[str, Any]],
+        text: str,
+        request_id: str | None,
+    ) -> None:
+        """Prompt, content, and sensitive-classifier checks on arbitrary inbound MCP text."""
+        if self.enable_content_filter and text.strip():
+            started = time.perf_counter()
+            try:
+                self.content_filter.check(text)
+                _trace_append(trace, pillar="content_filter", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(context=context, trace=trace, pillar="content_filter", started=started, error=e)
+
+        if self.enable_prompt_guard and text.strip():
+            started = time.perf_counter()
+            try:
+                malicious = self.prompt_guard.is_malicious(text)
+            except PromptGuardUnavailableError as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="prompt_guard", started=started, error=e
+                )
+            if malicious:
+                logger.warning("prompt_injection_blocked request_id=%s (mcp_surface)", request_id)
+                self._handle_violation(
+                    context=context,
+                    trace=trace,
+                    pillar="prompt_guard",
+                    started=started,
+                    error=PromptInjectionError(),
+                )
+            _trace_append(trace, pillar="prompt_guard", status="allowed", started=started)
+
+        if self.enable_sensitive_classifier and text.strip():
+            started = time.perf_counter()
+            pred = self.sensitive_classifier.classify(text)
+            context.metadata["sensitive_content"] = {
+                "label": pred.label,
+                "score": pred.score,
+                "matches": pred.matches,
+                "source": pred.source,
+            }
+            if pred.label.lower() in self.sensitive_classifier_block_labels and pred.score >= self.sensitive_classifier.threshold:
+                self._handle_violation(
+                    context=context,
+                    trace=trace,
+                    pillar="sensitive_classifier",
+                    started=started,
+                    error=SensitiveContentError(
+                        f"Request blocked: sensitive content classifier label={pred.label} score={pred.score:.2f}"
+                    ),
+                )
+            _trace_append(trace, pillar="sensitive_classifier", status="allowed", started=started)
+
+    def _process_guarded_response(
+        self,
+        context: MiddlewareContext[Any],
+        result: Any,
+        *,
+        trace: list[dict[str, Any]],
+        method: str,
+        surface_key: str | None = None,
+    ) -> Any:
+        """Outbound PII redaction, output budget, grounding, and response scan for MCP surface calls."""
+        if result is None:
+            return result
+        if self.enable_pii_redaction:
+            started = time.perf_counter()
+            result = self._redact_result_content(result)
+            _trace_append(trace, pillar="pii_redaction", status="ok", started=started)
+        result = self._apply_output_budget_to_result(context, result, tool_name=surface_key or method)
+        result = self._apply_grounding_to_result(context, result, trace=trace)
+        if self.enable_response_scan:
+            started = time.perf_counter()
+            try:
+                self._scan_result_for_injection(result)
+                _trace_append(trace, pillar="response_scan", status="ok", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="response_scan", started=started, error=e
+                )
+        return result
+
+    async def _handle_guarded_surface(
+        self,
+        context: MiddlewareContext[Any],
+        call_next: CallNext[Any],
+        *,
+        method: str,
+    ) -> Any:
+        """Apply security pillars to resources/read, prompts/get, sampling, and elicitation."""
+        msg = context.message
+        params = _get_params(msg)
+        request_id = _get_request_id(msg) or context.request_id
+        session_id = context.session_id
+        tenant_id = resolve_tenant_id(context, self.default_tenant_id)
+        context.metadata["tenant_id"] = tenant_id
+        trace: list[dict[str, Any]] = context.metadata.setdefault("pillar_trace", [])
+        surface_key = method.replace("/", "_")
+
+        context.metadata["forensic_request"] = {
+            "request_id": request_id,
+            "session_id": session_id,
+            "tenant_id": tenant_id,
+            "method": method,
+            "params": _safe_forensic_value(params or {}),
+        }
+        context.metadata["replay_payload"] = {
+            "method": method,
+            "params": _safe_forensic_value(params or {}),
+            "request_id": request_id,
+            "session_id": session_id,
+            "tenant_id": tenant_id,
+        }
+
+        if self.enable_replay_guard:
+            started = time.perf_counter()
+            try:
+                self.replay_guard.check(msg)
+                _trace_append(trace, pillar="replay_guard", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(context=context, trace=trace, pillar="replay_guard", started=started, error=e)
+
+        resource_uri = None
+        if method == "resources/read" and isinstance(params, dict):
+            resource_uri = str(params.get("uri") or "") or None
+
+        agent_policy = None
+        if self.enable_agent_iam and self.agent_iam is not None:
+            started = time.perf_counter()
+            try:
+                await self._gate_agent_iam_for_request(
+                    context,
+                    method=method,
+                    resource_uri=resource_uri,
+                )
+                agent_policy = context.metadata.get("_agent_policy")
+            except Exception as e:
+                self._handle_violation(context=context, trace=trace, pillar="agent_iam", started=started, error=e)
+
+        if agent_policy is not None and self.agent_iam is not None:
+            isolated = self.agent_iam.isolated_session_id(agent_policy, session_id)
+            if isolated and isolated != session_id:
+                session_id = isolated
+                context.session_id = isolated
+
+        if self.enable_cost_tracker:
+            started = time.perf_counter()
+            try:
+                self.cost_tracker.check(session_id=session_id, request_id=request_id)
+                _trace_append(trace, pillar="cost_tracker_precheck", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="cost_tracker_precheck", started=started, error=e
+                )
+
+        if self.enable_rate_limit:
+            started = time.perf_counter()
+            limiter = self.rate_limiter
+            rate_session = session_id
+            if agent_policy is not None and self.agent_iam is not None:
+                agent_limiter = self.agent_iam.rate_limiter_for(agent_policy)
+                if agent_limiter is not None:
+                    limiter = agent_limiter
+                    rate_session = f"{session_id or request_id or 'default'}::agent::{agent_policy.agent_id}"
+            check = limiter.check_iteration(
+                request_id=request_id,
+                session_id=rate_session,
+                tool_name=surface_key,
+            )
+            if not check.allowed:
+                self._handle_violation(
+                    context=context,
+                    trace=trace,
+                    pillar="rate_limit",
+                    started=started,
+                    error=self._rate_limit_error(check),
+                )
+            _trace_append(trace, pillar="rate_limit", status="allowed", started=started)
+            context.metadata["_rate_limiter"] = limiter
+            context.metadata["_rate_session"] = rate_session
+
+        inbound_text = _extract_inbound_text_for_method(method, params if isinstance(params, dict) else None)
+        self._apply_inbound_text_guards(
+            context=context,
+            trace=trace,
+            text=inbound_text,
+            request_id=request_id,
+        )
+
+        result = await call_next(context)
+
+        if self.enable_rate_limit:
+            tokens = estimate_text_tokens(inbound_text, _extract_text_from_value(result))
+            consume_limiter = context.metadata.get("_rate_limiter") or self.rate_limiter
+            consume_session = context.metadata.get("_rate_session") or session_id
+            consume_limiter.consume_iteration(
+                request_id=request_id,
+                session_id=consume_session,
+                tokens=tokens,
+                tool_name=surface_key,
+            )
+
+        if self.enable_cost_tracker:
+            context.metadata.setdefault("cost", 0.0)
+            self.cost_tracker.record(
+                context.metadata.get("cost", 0.0),
+                session_id=session_id,
+                request_id=request_id,
+            )
+
+        result = self._process_guarded_response(
+            context, result, trace=trace, method=method, surface_key=surface_key
+        )
+        context.metadata["forensic_response"] = _safe_forensic_value(result)
+        return result
+
     async def __call__(
         self,
         context: MiddlewareContext[Any],
@@ -753,27 +1058,19 @@ class MCPBastionMiddleware(Middleware[Any]):
         try:
             if _is_call_tool_request(msg):
                 return await self._handle_call_tool(context, call_next)
-            if _is_resources_read_request(msg) and self.enable_agent_iam and self.agent_iam is not None:
-                params = _get_params(msg)
-                uri = ""
-                if isinstance(params, dict):
-                    uri = str(params.get("uri") or "")
-                trace = context.metadata.setdefault("pillar_trace", [])
-                started = time.perf_counter()
-                try:
-                    await self._gate_agent_iam_for_request(
-                        context, method="resources/read", resource_uri=uri or None
-                    )
-                except Exception as e:
-                    self._handle_violation(
-                        context=context, trace=trace, pillar="agent_iam", started=started, error=e
-                    )
+            guarded_method = _normalize_guarded_method(_get_jsonrpc_method(msg))
+            if guarded_method in GUARDED_MCP_METHODS:
+                return await self._handle_guarded_surface(context, call_next, method=guarded_method)
             result = await call_next(context)
             if result is not None and _is_read_resource_result(result):
-                result = self._redact_result_content(result)
-                result = self._apply_output_budget_to_result(context, result)
-                self._scan_result_for_injection(result)
-                result = self._apply_grounding_to_result(context, result)
+                trace = context.metadata.setdefault("pillar_trace", [])
+                result = self._process_guarded_response(
+                    context,
+                    result,
+                    trace=trace,
+                    method="resources/read",
+                    surface_key="resources_read",
+                )
             if result is not None:
                 result = self._apply_discovery_filter(context, result)
                 result = self._apply_tool_metadata_guard(context, result)
@@ -920,6 +1217,31 @@ class MCPBastionMiddleware(Middleware[Any]):
                 _trace_append(trace, pillar="rbac", status="allowed", started=started)
             except Exception as e:
                 self._handle_violation(context=context, trace=trace, pillar="rbac", started=started, error=e)
+
+        if self.enable_argument_guards and self.argument_guards and params and tool_name:
+            started = time.perf_counter()
+            arguments = params.get("arguments") if isinstance(params, dict) else None
+            if arguments is None:
+                arguments = params if isinstance(params, dict) else {}
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except json.JSONDecodeError:
+                    arguments = {"raw": arguments}
+            if not isinstance(arguments, dict):
+                arguments = {"raw": arguments}
+            try:
+                allowed, reason = self.argument_guards.check_blocking(tool_name, arguments)
+                if not allowed:
+                    raise ArgumentGuardError(reason or "Request blocked: argument guard policy violation")
+                redacted = self.argument_guards.redact(tool_name, arguments)
+                if redacted != arguments and isinstance(params, dict):
+                    params["arguments"] = redacted
+                _trace_append(trace, pillar="argument_guards", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="argument_guards", started=started, error=e
+                )
 
         if self.enable_external_policy and self.external_policy is not None:
             started = time.perf_counter()

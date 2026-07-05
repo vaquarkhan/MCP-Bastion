@@ -378,3 +378,43 @@ def test_make_audit_export_callback_otel_raises():
         cb(entry)
     m = store.get_metrics()
     assert m["requests_total"] == 1
+
+
+def test_make_audit_export_callback_records_agent_id_on_block():
+    store = MetricsStore.get()
+    store.reset()
+    cb = make_audit_export_callback(alert_sinks=[], alert_on=set())
+    entry = AuditEntry(
+        timestamp="2026-01-01T00:00:00Z",
+        session_id="s1",
+        request_id="r1",
+        tool="delete_user",
+        action="BLOCKED",
+        reason="Agent denied",
+        agent_id="support-bot",
+        latency_ms=1.0,
+    )
+    cb(entry)
+    incidents = store.get_metrics()["blocked_incidents"]
+    assert len(incidents) == 1
+    assert incidents[0]["agent_id"] == "support-bot"
+
+
+def test_make_audit_export_callback_records_agent_id_on_block():
+    store = MetricsStore.get()
+    store.reset()
+    cb = make_audit_export_callback(alert_sinks=[], alert_on=set())
+    entry = AuditEntry(
+        timestamp="2026-01-01T00:00:00Z",
+        session_id="s1",
+        request_id="r1",
+        tool="delete_user",
+        action="BLOCKED",
+        reason="Agent denied",
+        agent_id="support-bot",
+        latency_ms=1.0,
+    )
+    cb(entry)
+    incidents = store.get_metrics()["blocked_incidents"]
+    assert len(incidents) == 1
+    assert incidents[0]["agent_id"] == "support-bot"

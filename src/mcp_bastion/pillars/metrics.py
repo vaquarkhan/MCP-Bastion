@@ -291,6 +291,7 @@ class MetricsStore:
         tenant_id: str | None = None,
         trace_id: str | None = None,
         request_id: str | None = None,
+        agent_id: str | None = None,
     ) -> None:
         tnt = tenant_id or tenant
         with self._lock:
@@ -308,6 +309,7 @@ class MetricsStore:
                 {
                     "ts": datetime.now(timezone.utc).isoformat(),
                     "tenant_id": tnt or "default",
+                    "agent_id": agent_id or "",
                     "tool": tool,
                     "reason": (reason or "")[:2000],
                     "trace_id": trace_id or f"trc-{uuid.uuid4().hex[:20]}",
@@ -391,9 +393,12 @@ class MetricsStore:
             }
         return out
 
+    _GOVERNANCE_PILLARS = frozenset({"Agent IAM", "Server Verification"})
+
     @staticmethod
     def _pillar_item(name: str, status: str, detail: str) -> dict[str, str]:
-        return {"name": name, "status": status, "detail": detail}
+        category = "governance" if name in MetricsStore._GOVERNANCE_PILLARS else "classic"
+        return {"name": name, "status": status, "detail": detail, "category": category}
 
     def _build_pillar_health(self) -> list[dict[str, str]]:
         req = self._metrics.requests_total
@@ -516,6 +521,29 @@ class MetricsStore:
                     }
                 )
                 break
+
+        gov_kinds = ("agent_iam", "server_verification")
+        gov_blocks = sum(int(m.blocked_by_kind.get(k, 0)) for k in gov_kinds)
+        if gov_blocks >= 3:
+            iam_n = int(m.blocked_by_kind.get("agent_iam", 0))
+            sv_n = int(m.blocked_by_kind.get("server_verification", 0))
+            parts: list[str] = []
+            if iam_n:
+                parts.append(f"Agent IAM ({iam_n})")
+            if sv_n:
+                parts.append(f"Server verification ({sv_n})")
+            out.append(
+                {
+                    "severity": "warning",
+                    "code": "governance_blocks",
+                    "title": "Runtime governance denials",
+                    "detail": (
+                        f"{gov_blocks} blocks from zero-trust controls — "
+                        + ", ".join(parts)
+                        + ". Review agent policies, manifest checksums, and confused-deputy patterns."
+                    ),
+                }
+            )
 
         elapsed = self._elapsed_seconds_window(m.window_start)
         if m.cost_total > 0 and elapsed > 2 and req > 0:
@@ -695,6 +723,15 @@ class MetricsStore:
             }
             d["tool_stats"] = self._build_tool_stats()
             d["pillar_health"] = self._build_pillar_health()
+            blk_kinds = self._metrics.blocked_by_kind
+            d["governance"] = {
+                "blocks": {
+                    "agent_iam": int(blk_kinds.get("agent_iam", 0)),
+                    "server_verification": int(blk_kinds.get("server_verification", 0)),
+                },
+                "total_blocks": int(blk_kinds.get("agent_iam", 0))
+                + int(blk_kinds.get("server_verification", 0)),
+            }
             d["blocked_incidents"] = list(reversed(self._blocked_incidents))
             d["dashboard_insights"] = self._build_dashboard_insights()
             d["forensic_recent_blocked"] = self._build_forensic_list(

@@ -2,17 +2,18 @@
 Replay attack prevention for MCP-Bastion.
 
 Prevent request replay attacks via nonce and max age.
+Supports pluggable StateBackend (Redis) for multi-replica deployments.
 """
 
 from __future__ import annotations
 
 import logging
 import threading
-from typing import Any
 import time
-from collections import OrderedDict
+from typing import Any
 
 from mcp_bastion.errors import ReplayAttackError
+from mcp_bastion.pillars.state_backend import MemoryStateBackend, StateBackend
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,9 @@ class ReplayGuard:
         require_nonce: bool = True,
         max_request_age_seconds: float = 30.0,
         max_nonce_cache: int = 10_000,
+        *,
+        backend: StateBackend | None = None,
+        backend_namespace: str = "replay",
     ) -> None:
         if max_request_age_seconds < 0:
             raise ValueError("max_request_age_seconds must be >= 0")
@@ -37,9 +41,15 @@ class ReplayGuard:
             raise ValueError("max_nonce_cache must be >= 1")
         self.require_nonce = require_nonce
         self.max_request_age_seconds = max_request_age_seconds
-        self._seen_nonces: OrderedDict[str, float] = OrderedDict()
         self._max_nonce_cache = max_nonce_cache
+        self._backend = backend or MemoryStateBackend()
+        self._backend_namespace = backend_namespace
+        self._uses_shared_backend = backend is not None
+        self._seen_nonces: dict[str, float] = {}
         self._lock = threading.Lock()
+
+    def _nonce_key(self, nonce: str) -> str:
+        return f"{self._backend_namespace}:{nonce}"
 
     def _get_nonce(self, message: Any) -> str | None:
         """Extract nonce from message params or metadata."""
@@ -81,14 +91,20 @@ class ReplayGuard:
                 raise ReplayAttackError("Request must include nonce")
 
             nonce_str = str(nonce)
-            with self._lock:
-                if nonce_str in self._seen_nonces:
+            ttl = max(1.0, self.max_request_age_seconds or 30.0)
+            if self._uses_shared_backend:
+                if not self._backend.set_nx(self._nonce_key(nonce_str), "1", ttl_seconds=ttl):
                     logger.warning("replay_guard blocked duplicate_nonce")
                     raise ReplayAttackError("Duplicate nonce: replay detected")
-
-                while len(self._seen_nonces) >= self._max_nonce_cache:
-                    self._seen_nonces.popitem(last=False)
-                self._seen_nonces[nonce_str] = now
+            else:
+                with self._lock:
+                    if nonce_str in self._seen_nonces:
+                        logger.warning("replay_guard blocked duplicate_nonce")
+                        raise ReplayAttackError("Duplicate nonce: replay detected")
+                    while len(self._seen_nonces) >= self._max_nonce_cache:
+                        oldest = next(iter(self._seen_nonces))
+                        del self._seen_nonces[oldest]
+                    self._seen_nonces[nonce_str] = now
 
         if self.max_request_age_seconds > 0:
             ts = self._get_timestamp(message)

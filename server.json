@@ -7,12 +7,12 @@
     "url": "https://github.com/vaquarkhan/MCP-Bastion",
     "source": "github"
   },
-  "version": "1.0.18",
+  "version": "2.0.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@mcp-bastion/core",
-      "version": "1.0.18",
+      "version": "2.0.0",
       "transport": {
         "type": "stdio"
       }
@@ -20,7 +20,7 @@
     {
       "registryType": "pypi",
       "identifier": "mcp-bastion-python",
-      "version": "1.0.18",
+      "version": "2.0.0",
       "transport": {
         "type": "stdio"
       }

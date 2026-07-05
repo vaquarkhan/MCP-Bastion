@@ -6,7 +6,7 @@ message: >-
 type: software
 authors:
   - family-names: Khan
-    given-names: Viquar
+    given-names: Vaquar
 identifiers:
   - type: url
     description: Source repository
@@ -25,5 +25,5 @@ keywords:
   - middleware
 license: LicenseRef-MCP-Bastion-License
 license-url: https://github.com/vaquarkhan/MCP-Bastion/blob/main/LICENSE
-version: 1.0.18
+version: 2.0.0
 date-released: "2026-04-24"

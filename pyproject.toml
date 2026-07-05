@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-python"
-version = "1.0.18"
+version = "2.0.0"
 description = "Security middleware for MCP servers protecting LLM agents from prompt injection, resource exhaustion, and PII leakage"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -25,7 +25,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp>=1.0.0",
+    "mcp>=1.2.0",
     "torch>=2.0.0",
     "transformers>=4.30.0",
     "presidio-analyzer>=2.2.0",
@@ -41,6 +41,7 @@ dev = [
 ]
 policy = [
     "pyyaml>=6.0",
+    "jsonpath-ng>=1.6.0",
 ]
 dashboard = [
     "fastapi>=0.100.0",
@@ -50,6 +51,9 @@ otel = [
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.20.0",
+]
+redis = [
+    "redis>=5.0.0",
 ]
 
 [project.urls]

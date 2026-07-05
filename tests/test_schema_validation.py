@@ -3,7 +3,7 @@
 import pytest
 
 from mcp_bastion.errors import SchemaValidationError
-from mcp_bastion.pillars.schema_validation import SchemaValidator
+from mcp_bastion.pillars.schema_validation import SchemaValidator, parse_tool_schemas
 
 
 def test_schema_validator_empty_schema_passthrough():
@@ -66,3 +66,19 @@ def test_schema_validator_isinstance_fallback():
     """Custom type uses isinstance fallback."""
     sv = SchemaValidator({"x": {"v": type(None)}})
     sv.validate_input("x", {"v": None})
+
+
+def test_parse_tool_schemas_from_yaml_types():
+    raw = {
+        "create_report": {"year": "integer", "amount": "number"},
+        "greet": {"name": "string"},
+    }
+    parsed = parse_tool_schemas(raw)
+    assert parsed["create_report"]["year"] is int
+    assert parsed["create_report"]["amount"] is float
+    assert parsed["greet"]["name"] is str
+
+
+def test_parse_tool_schemas_unknown_type_raises():
+    with pytest.raises(ValueError, match="Unknown schema type"):
+        parse_tool_schemas({"t": {"x": "not_a_type"}})

@@ -63,9 +63,15 @@ rbac:
     analyst: ["read_data", "query"]
     admin: ["*"]
 
-# Enable when you attach JSON schemas to tools.
+# Enable when you attach JSON schemas to tools (see schema_validation.schemas).
 schema_validation:
   enabled: false
+  schemas:
+    create_report:
+      year: integer
+      amount: number
+    submit_form:
+      email: string
 
 replay_guard:
   enabled: true
@@ -75,12 +81,30 @@ cost_tracker:
   enabled: false
   max_cost_per_session: 0.50
   max_cost_per_day: 10.0
+  # Optional disk checkpoint for session/daily totals (memory backend only).
+  checkpoint_path: .bastion/cost-checkpoint.json
+
+argument_guards:
+  enabled: false
+  rules:
+    - name: block_shell_injection
+      match: "*"
+      arg: "$.command"
+      pattern: "(rm\\s+-rf|curl\\s+.*\\|.*sh)"
+      action: block
+    - name: redact_api_keys
+      match: "*"
+      arg: "$..*"
+      pattern: "(sk-[A-Za-z0-9]{20,})"
+      action: redact
 
 semantic_cache:
   enabled: false
 
 audit:
   enabled: true
+  # Append-only JSONL for compliance; tail with: mcp-bastion tail --path audit.jsonl
+  jsonl_path: .bastion/audit.jsonl
 
 alerts:
   slack_webhook: ${SLACK_WEBHOOK_URL}
@@ -157,3 +181,10 @@ tool_metadata_guard:
   enabled: false
   on_poison: remove_tool   # remove_tool | block_all
   use_content_filter: true
+
+# Horizontal scaling: share rate limits, replay nonces, cost budgets, and session scope
+# across workers/replicas (requires pip install mcp-bastion-python[redis]).
+state_backend:
+  type: memory   # memory | redis
+  redis_url: redis://127.0.0.1:6379/0
+  key_prefix: mcp-bastion

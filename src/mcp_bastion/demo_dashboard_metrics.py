@@ -53,6 +53,10 @@ def _demo_kind_allowed(cfg: BastionConfig, kind: str) -> bool:
         return bool(cfg.sensitive_classifier)
     if kind == "external_policy":
         return (cfg.policy_engine_type or "none") != "none"
+    if kind == "agent_iam":
+        return bool(cfg.agent_iam_enabled)
+    if kind == "server_verification":
+        return bool(cfg.server_verification_enabled)
     return True
 
 
@@ -128,6 +132,8 @@ def seed_metrics(rng: random.Random, config: BastionConfig | None = None) -> Non
         ("replay or nonce reuse detected", "sensitive_action"),
         ("content filter: path traversal attempt", "read_file"),
         ("circuit breaker tripped on upstream", "invoke_model"),
+        ("Agent 'support-bot' is not permitted to call tool 'delete_repo' (blocked by policy)", "delete_repo"),
+        ("checksum verification failed for server module", "read_file"),
     )
     nblk = 0
     for reason, tool in blocks:

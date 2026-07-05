@@ -61,6 +61,51 @@ def _load_demo_bastion_config() -> object:
         from mcp_bastion.config import BastionConfig
 
         return BastionConfig()
+
+
+def _governance_config_snapshot() -> dict:
+    """Runtime governance feature flags from bastion.yaml (for dashboard status panel)."""
+    cfg = _load_demo_bastion_config()
+    agent_count = 0
+    if getattr(cfg, "agent_iam_enabled", False):
+        try:
+            from mcp_bastion.pillars.agent_iam import parse_agent_policies
+
+            agent_count = len(parse_agent_policies(getattr(cfg, "agent_iam_agents", []) or []))
+        except Exception:
+            agent_count = len(getattr(cfg, "agent_iam_agents", []) or [])
+    manifest_entries = len(getattr(cfg, "server_verification_manifest", {}) or {})
+    return {
+        "features": {
+            "agent_iam": {
+                "enabled": bool(getattr(cfg, "agent_iam_enabled", False)),
+                "agent_count": agent_count,
+                "isolate_sessions": bool(getattr(cfg, "agent_iam_isolate_sessions", False)),
+                "require_token": bool(getattr(cfg, "agent_iam_require_token", True)),
+            },
+            "server_verification": {
+                "enabled": bool(getattr(cfg, "server_verification_enabled", False)),
+                "manifest_entries": manifest_entries,
+                "on_mismatch": getattr(cfg, "server_verification_on_mismatch", "block"),
+                "signed": bool(getattr(cfg, "server_verification_manifest_signature", None)),
+            },
+            "transport_hardening": {
+                "enabled": bool(getattr(cfg, "transport_hardening_enabled", True)),
+                "block_browser_origin": bool(
+                    getattr(cfg, "transport_hardening_block_browser_origin", True)
+                ),
+                "require_loopback": bool(getattr(cfg, "transport_hardening_require_loopback", True)),
+            },
+            "stdio_guard": {
+                "enabled": bool(getattr(cfg, "stdio_guard_enabled", False)),
+            },
+            "tool_metadata_fingerprint": {
+                "enabled": bool(getattr(cfg, "tool_metadata_fingerprint_enabled", False)),
+            },
+        },
+    }
+
+
 _demo_live_stop: threading.Event | None = None
 _demo_live_thread: threading.Thread | None = None
 
@@ -247,7 +292,7 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v25-external-dashboard-js",
+        "ui_revision": "v26-governance-panel",
         "hint": "If this is missing, you are not hitting dashboard/app.py - check port and process.",
     }
 
@@ -261,6 +306,19 @@ def health():
         return JSONResponse(
             {"status": "error", "message": str(e)},
             status_code=503,
+        )
+
+
+@app.get("/api/governance")
+def governance_status():
+    """Runtime governance config snapshot (Agent IAM, server verification, transport hardening)."""
+    try:
+        return _governance_config_snapshot()
+    except Exception as e:
+        logger.exception("Failed to get governance config: %s", e)
+        return JSONResponse(
+            {"error": "governance_unavailable", "message": str(e)},
+            status_code=500,
         )
 
 
@@ -298,6 +356,16 @@ def prometheus_metrics():
         "# TYPE mcp_bastion_cost_total gauge",
         f"mcp_bastion_cost_total {m.get('cost_total', 0)}",
     ]
+    gov = m.get("governance") or {}
+    gov_blocks = gov.get("blocks") or {}
+    lines.extend(
+        [
+            "# HELP mcp_bastion_governance_blocks_total Runtime governance blocks by kind",
+            "# TYPE mcp_bastion_governance_blocks_total counter",
+            f'mcp_bastion_governance_blocks_total{{kind="agent_iam"}} {gov_blocks.get("agent_iam", 0)}',
+            f'mcp_bastion_governance_blocks_total{{kind="server_verification"}} {gov_blocks.get("server_verification", 0)}',
+        ]
+    )
     return PlainTextResponse("\n".join(lines) + "\n")
 
 
@@ -1162,6 +1230,56 @@ DASHBOARD_HTML = """
       color: var(--muted);
       line-height: 1.35;
     }
+    .pillar-governance {
+      border-color: rgba(129, 140, 248, 0.35);
+      background: linear-gradient(145deg, rgba(30, 27, 75, 0.45), rgba(15, 23, 42, 0.28));
+    }
+    html[data-theme="light"] .pillar-governance {
+      background: linear-gradient(145deg, rgba(238, 242, 255, 0.95), rgba(241, 245, 249, 0.82));
+      border-color: rgba(99, 102, 241, 0.28);
+    }
+    .pillar-section-label {
+      grid-column: 1 / -1;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 4px 0 0;
+      font-weight: 700;
+    }
+    .governance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .gov-tile {
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(15, 23, 42, 0.22);
+    }
+    html[data-theme="light"] .gov-tile {
+      background: rgba(248, 250, 252, 0.9);
+    }
+    .gov-tile .gov-name {
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .gov-tile .gov-state {
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .gov-tile .gov-state.on { color: #86efac; }
+    .gov-tile .gov-state.off { color: var(--muted); }
+    html[data-theme="light"] .gov-tile .gov-state.on { color: #047857; }
+    .gov-tile .gov-meta {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.35;
+    }
     .tool-table-wrap {
       overflow-x: auto;
       margin-top: 6px;
@@ -1507,6 +1625,7 @@ DASHBOARD_HTML = """
 
   <nav class="dash-jump" aria-label="Jump to sections">
     <span class="jump-label">Jump</span>
+    <a href="#dash-governance">Runtime governance</a>
     <a href="#dash-alerts-insights">Alerts &amp; insights</a>
     <a href="#dash-forensics">Forensics</a>
     <a href="#dash-traffic">Traffic</a>
@@ -1529,12 +1648,23 @@ DASHBOARD_HTML = """
         <a class="link-chip" href="/api/metrics" target="_blank" rel="noopener">JSON metrics</a>
         <a class="link-chip" href="/metrics" target="_blank" rel="noopener">Prometheus</a>
         <a class="link-chip" href="/meta" target="_blank" rel="noopener">Build meta</a>
+        <a class="link-chip" href="/api/governance" target="_blank" rel="noopener">Governance config</a>
         <a class="link-chip" href="/api/health" target="_blank" rel="noopener">Health</a>
       </div>
     </div>
     <div class="insight-card">
       <h3>Top block categories</h3>
       <ul class="kind-list" id="kindPreview"><li class="muted">No blocks yet</li></ul>
+    </div>
+  </div>
+
+  <div class="card" id="dash-governance">
+    <div class="card-head">
+      <h2>Runtime governance</h2>
+      <p class="card-desc">Zero-trust controls from <code>bastion.yaml</code> — Agent IAM, supply-chain verification, and transport hardening. Block counts refresh from live metrics.</p>
+    </div>
+    <div class="governance-grid" id="governanceGrid">
+      <div class="gov-tile"><div class="gov-name">Loading…</div><div class="gov-state off">—</div></div>
     </div>
   </div>
 
@@ -1583,6 +1713,7 @@ DASHBOARD_HTML = """
           <tr>
             <th>Time (UTC)</th>
             <th>Tenant</th>
+            <th>Agent</th>
             <th>Tool</th>
             <th>Reason</th>
             <th>Trace</th>
@@ -1598,7 +1729,7 @@ DASHBOARD_HTML = """
   <div class="card">
     <div class="card-head">
       <h2>Pillar health</h2>
-      <p class="card-desc">Each tile reflects recent activity for that pillar in this in-memory metrics store.</p>
+      <p class="card-desc">Each tile reflects recent activity for that pillar. Indigo tiles are runtime governance (Agent IAM, server verification).</p>
     </div>
     <div id="pillarHealth" class="pillar-grid"></div>
   </div>
@@ -1697,7 +1828,7 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script src="/static/dashboard-app.js?v=25-external" charset="utf-8"></script>
+  <script src="/static/dashboard-app.js?v=26-governance" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>

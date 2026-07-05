@@ -183,3 +183,10 @@ class TransportBlockedError(MCPBastionError):
         message: str = "Request blocked: HTTP transport hardening rejected this request",
     ) -> None:
         super().__init__(message, code=-32021)
+
+
+class ArgumentGuardError(MCPBastionError):
+    """Raised when a JSONPath argument guard blocks a tool call."""
+
+    def __init__(self, message: str = "Request blocked: argument guard policy violation") -> None:
+        super().__init__(message, code=-32022)

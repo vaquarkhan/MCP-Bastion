@@ -7,6 +7,7 @@
     let forensicsTenantFilter = '';
     let lastSnapshotAt = 0;
     let lastMetricsSnapshot = null;
+    let lastGovernanceConfig = null;
     let freshnessTimerStarted = false;
     let dashboardReadyFired = false;
 
@@ -229,7 +230,7 @@
         hint.textContent = rows.length + ' row(s)' + (filter ? ' · tenant ' + filter : ' · all tenants');
       }
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="muted">No blocks match this filter — try &ldquo;Show all&rdquo; or check that middleware is recording <code>blocked_incidents</code>.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="muted">No blocks match this filter — try &ldquo;Show all&rdquo; or check that middleware is recording <code>blocked_incidents</code>.</td></tr>';
         return;
       }
       tbody.innerHTML = rows.map(function (row, idx) {
@@ -241,6 +242,7 @@
         return '<tr>'
           + '<td>' + escapeHtml(ts) + '</td>'
           + '<td>' + escapeHtml(row.tenant_id || '') + '</td>'
+          + '<td>' + escapeHtml(row.agent_id || '—') + '</td>'
           + '<td>' + escapeHtml(row.tool || '') + '</td>'
           + tr
           + '<td style="font-size:0.72rem;" title="' + escapeHtmlAttr(String(row.trace_id || '')) + '">'
@@ -595,6 +597,26 @@
       charts.reasons.update('none');
     }
 
+    function kindLabel(kind) {
+      var map = {
+        agent_iam: 'Agent IAM',
+        server_verification: 'Server verification',
+        injection: 'Prompt injection',
+        rate_limit: 'Rate limit',
+        rbac: 'RBAC',
+        cost: 'Cost budget',
+        schema_validation: 'Schema validation',
+        replay: 'Replay guard',
+        content_filter: 'Content filter',
+        circuit_breaker: 'Circuit breaker',
+        semantic_firewall: 'Semantic firewall',
+        sensitive_classifier: 'Sensitive classifier',
+        external_policy: 'External policy',
+        other: 'Other'
+      };
+      return map[kind] || kind.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+    }
+
     function updateBlockKinds(obj) {
       const entries = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
       if (!entries.length) {
@@ -602,7 +624,7 @@
         charts.blockKinds.data.datasets[0].data = [1];
         charts.blockKinds.data.datasets[0].backgroundColor = ['rgba(148, 163, 184, 0.22)'];
       } else {
-        charts.blockKinds.data.labels = entries.map((e) => e[0]);
+        charts.blockKinds.data.labels = entries.map((e) => kindLabel(e[0]));
         charts.blockKinds.data.datasets[0].data = entries.map((e) => e[1]);
         charts.blockKinds.data.datasets[0].backgroundColor = entries.map((_, i) => PALETTE[i % PALETTE.length]);
       }
@@ -674,15 +696,83 @@
         node.innerHTML = '<div class="pillar"><div class="name">No data</div><div class="detail">No telemetry yet.</div></div>';
         return;
       }
-      node.innerHTML = data.map(function (p) {
+      var classic = data.filter(function (p) { return (p.category || 'classic') !== 'governance'; });
+      var gov = data.filter(function (p) { return p.category === 'governance'; });
+      function tileHtml(p) {
         var st = (p.status || 'idle').toLowerCase();
         var label = st === 'active' ? 'Active' : (st === 'healthy' ? 'Healthy' : 'Idle');
-        return '<div class="pillar">'
-          + '<div class="name">' + (p.name || 'Unknown') + '</div>'
+        var cls = p.category === 'governance' ? ' pillar-governance' : '';
+        return '<div class="pillar' + cls + '">'
+          + '<div class="name">' + escapeHtml(p.name || 'Unknown') + '</div>'
           + '<span class="pill ' + st + '">' + label + '</span>'
-          + '<div class="detail">' + (p.detail || '') + '</div>'
+          + '<div class="detail">' + escapeHtml(p.detail || '') + '</div>'
           + '</div>';
-      }).join('');
+      }
+      var html = '';
+      if (gov.length) {
+        html += '<div class="pillar-section-label">Runtime governance</div>';
+        html += gov.map(tileHtml).join('');
+      }
+      if (classic.length) {
+        html += '<div class="pillar-section-label">Classic pillars</div>';
+        html += classic.map(tileHtml).join('');
+      }
+      node.innerHTML = html;
+    }
+
+    function updateGovernancePanel(cfg, metrics) {
+      var grid = document.getElementById('governanceGrid');
+      if (!grid) return;
+      var features = (cfg && cfg.features) || {};
+      var blocks = (metrics && metrics.governance && metrics.governance.blocks) || {};
+      var govTotal = (metrics && metrics.governance && metrics.governance.total_blocks) || 0;
+      function tile(name, enabled, meta) {
+        return '<div class="gov-tile">'
+          + '<div class="gov-name">' + escapeHtml(name) + '</div>'
+          + '<div class="gov-state ' + (enabled ? 'on' : 'off') + '">' + (enabled ? 'Enabled' : 'Off') + '</div>'
+          + (meta ? '<div class="gov-meta">' + escapeHtml(meta) + '</div>' : '')
+          + '</div>';
+      }
+      var iam = features.agent_iam || {};
+      var sv = features.server_verification || {};
+      var th = features.transport_hardening || {};
+      var sg = features.stdio_guard || {};
+      var tmf = features.tool_metadata_fingerprint || {};
+      var iamMeta = iam.enabled
+        ? (iam.agent_count || 0) + ' agent(s)' + (iam.isolate_sessions ? ' · sessions isolated' : '')
+        : 'Confused-deputy protection disabled';
+      if (iam.enabled && (blocks.agent_iam || 0) > 0) {
+        iamMeta += ' · ' + blocks.agent_iam + ' block(s) this window';
+      }
+      var svMeta = sv.enabled
+        ? (sv.manifest_entries || 0) + ' manifest entry(ies)' + (sv.signed ? ' · HMAC signed' : '')
+        : 'Supply-chain checksum gate off';
+      if (sv.enabled && (blocks.server_verification || 0) > 0) {
+        svMeta += ' · ' + blocks.server_verification + ' mismatch(es)';
+      }
+      var thMeta = th.enabled
+        ? (th.block_browser_origin ? 'blocks browser Origin' : 'Origin check off')
+          + (th.require_loopback ? ' · loopback bind' : '')
+        : 'HTTP hardening disabled';
+      grid.innerHTML = [
+        tile('Agent IAM', !!iam.enabled, iamMeta),
+        tile('Server verification', !!sv.enabled, svMeta),
+        tile('Transport hardening', !!th.enabled, thMeta),
+        tile('stdio guard', !!sg.enabled, sg.enabled ? 'Non-JSON stdout dropped' : 'stdio injection guard off'),
+        tile('Tool fingerprint', !!tmf.enabled, tmf.enabled ? 'Schema drift detection on' : 'Metadata fingerprint off'),
+        tile('Governance blocks', govTotal > 0, govTotal > 0 ? govTotal + ' total IAM + verification denials' : 'No governance blocks yet')
+      ].join('');
+    }
+
+    async function fetchGovernanceConfig() {
+      try {
+        var r = await fetch('/api/governance', { cache: 'no-store' });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch (e) {
+        console.warn('fetchGovernanceConfig', e);
+        return null;
+      }
     }
 
     function globalBlockedPct(d) {
@@ -700,8 +790,8 @@
       }
       entries.sort(function (a, b) { return b[1] - a[1]; });
       return {
-        text: entries[0][0] + ' (' + entries[0][1] + ')',
-        title: 'Dominant block kind: ' + entries[0][0] + ' — hover charts below for the full mix.',
+        text: kindLabel(entries[0][0]) + ' (' + entries[0][1] + ')',
+        title: 'Dominant block kind: ' + kindLabel(entries[0][0]) + ' — hover charts below for the full mix.',
       };
     }
 
@@ -996,7 +1086,7 @@
           kp.innerHTML = '<li class="muted">No categorized blocks yet</li>';
         } else {
           kp.innerHTML = kinds.map(function (kv) {
-            return '<li><span class="k">' + escapeHtml(kv[0]) + '</span><span class="v">' + kv[1] + '</span></li>';
+            return '<li><span class="k">' + escapeHtml(kindLabel(kv[0])) + '</span><span class="v">' + kv[1] + '</span></li>';
           }).join('');
         }
       }
@@ -1045,6 +1135,7 @@
         updateCost(d.cost_by_user);
         updatePiiEntity(d.pii_by_entity);
         updatePillarHealth(d.pillar_health);
+        updateGovernancePanel(lastGovernanceConfig, d);
         updateToolTable(d.tool_stats, d);
       } else if (!chartUnavailableNotified) {
         chartUnavailableNotified = true;
@@ -1075,6 +1166,16 @@
     }
 
     applyServerBootstrapMetrics();
+
+    (async function loadGovernanceOnce() {
+      lastGovernanceConfig = await fetchGovernanceConfig();
+      if (lastMetricsSnapshot) {
+        updateGovernancePanel(lastGovernanceConfig, lastMetricsSnapshot);
+      }
+      setInterval(async function () {
+        lastGovernanceConfig = await fetchGovernanceConfig();
+      }, 30000);
+    })();
 
     (async function poll() {
       try {

@@ -4,6 +4,49 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-05
+
+Major release consolidating runtime governance hardening, critical bug fixes, benchmarks, and dashboard updates.
+
+### Added
+
+- **FinOps/RBAC benchmarks:** [BENCHMARKS.md](docs/BENCHMARKS.md), `scripts/generate_benchmark_report.py`, `tests/test_benchmarks_finops_rbac.py`.
+- **Dashboard governance panel:** `/api/governance`, pillar health for IAM and server verification.
+- **HTTP transport hardening:** `transport_hardening`, hardened streamable HTTP path.
+- **stdio stdout JSON guard:** `stdio_guard` + `install_stdio_guard()`.
+- **Tool metadata fingerprint:** `tool_metadata_fingerprint` + `mcp-bastion fingerprint`.
+- **Manifest HMAC signatures:** `manifest --sign`, `BASTION_MANIFEST_SIGNING_KEY`.
+- **Multi-agent session isolation:** `agent_iam.isolate_sessions`.
+- **Resource URI IAM (write-path):** `allowed_resources` / `blocked_resources`.
+- **Registry publisher doctor check:** `governance.allowed_registry_names`.
+- **Reverse-proxy recipe:** [deploy/](deploy/README.md) Caddy + compose.
+- **Forensics:** `agent_id` on audit entries and dashboard forensics table.
+- **CLI:** `mcp-bastion --version`.
+
+### Fixed
+
+- **`mcp-bastion serve` crash (Bug A):** FastMCP `run()` no longer accepts `host`/`port`; use `run_streamable_http()` / uvicorn hardened path.
+- **`schema_validation.schemas` in YAML (Bug B):** schemas parsed from config; doctor fails when enabled with empty schemas.
+- **Red-team reporting:** separate `score_intended_blocked_pct` vs guard-unavailable; honest interpretation in reports.
+- **npm audit:** dev dependencies updated (vite, vitest); **0 vulnerabilities** in workspace.
+- **doctor pip-audit:** fallback to `python -m pip_audit` when binary missing.
+
+### Changed
+
+- Docker proxy and dashboard images pin `mcp-bastion-python==2.0.0` at build time (`ARG BASTION_VERSION`).
+- npm `@mcp-bastion/core` **2.0.0** (semver major aligned with Python).
+- Integration packages depend on `mcp-bastion-python>=2.0.0`.
+- Author attribution corrected to **Vaquar Khan** across LICENSE, CITATION.cff, and package metadata.
+- **Full MCP surface guards:** `resources/read`, `prompts/get`, `sampling/createMessage`, `elicitation/create` run prompt/content/PII/response-scan pillars (not only `tools/call`).
+- **Pluggable shared state:** `state_backend` (`memory` default, `redis` for multi-replica rate limits, replay nonces, cost budgets, session scope).
+- **Tests:** `tests/test_mcp_surface_guard.py`, `tests/test_state_backend.py`, `tests/test_config.py` (state_backend), `tests/test_doctor.py` (Redis ping).
+- **Docs:** [docs/MCP_SURFACE_AND_SCALE.md](docs/MCP_SURFACE_AND_SCALE.md) · infographic `images/mcp-bastion-mcp-surface-scale.png`.
+- **JSONPath argument guards:** block/redact tool arguments via `argument_guards` (`pip install mcp-bastion-python[policy]`).
+- **RBAC fnmatch globs:** role permissions support `read_*`-style patterns with specificity-aware matching.
+- **Audit JSONL sink:** `audit.jsonl_path` append-only file + `mcp-bastion tail` CLI.
+- **Cost checkpoint:** optional `cost_tracker.checkpoint_path` for restart-safe session totals (memory backend).
+- **Tests:** `tests/test_argument_guards.py`, `tests/test_audit_jsonl.py`, `tests/test_cost_checkpoint.py`, `tests/test_cli_tail.py`.
+
 ## [1.0.18] - 2026-07-05
 
 ### Added

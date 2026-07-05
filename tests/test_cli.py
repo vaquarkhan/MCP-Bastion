@@ -21,6 +21,15 @@ from mcp_bastion.cli import (
 )
 
 
+def test_cli_version_flag(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["mcp-bastion", "--version"])
+    with pytest.raises(SystemExit) as exc:
+        main()
+    assert exc.value.code == 0
+    out, _ = capsys.readouterr()
+    assert "2.0.0" in out
+
+
 def test_cmd_validate_missing_file_returns_one():
     assert cmd_validate("/nonexistent/bastion.yaml") == 1
 

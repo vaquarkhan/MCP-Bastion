@@ -31,6 +31,7 @@ class AuditEntry:
     tool: str
     action: str  # ALLOWED | BLOCKED
     tenant_id: str | None = None
+    agent_id: str | None = None
     reason: str | None = None
     latency_ms: float = 0.0
     tokens_used: int = 0
@@ -135,6 +136,11 @@ class AuditLogMiddleware(Middleware[Any]):
             entry = AuditEntry(
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 tenant_id=context.metadata.get("tenant_id"),
+                agent_id=(
+                    context.metadata.get("agent_id")
+                    or context.metadata.get("role")
+                    or context.metadata.get("agent")
+                ),
                 session_id=context.session_id,
                 request_id=context.request_id,
                 tool=tool,

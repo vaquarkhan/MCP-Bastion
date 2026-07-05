@@ -249,6 +249,7 @@ def make_audit_export_callback(
     anchor_webhook_url: str | None = None,
     telemetry_sinks: list[Any] | None = None,
     telemetry_export_mode: str = "all",
+    audit_jsonl_sink: Any | None = None,
 ):
     """Return a callback for AuditLogMiddleware that updates MetricsStore and optionally sends alerts."""
     from mcp_bastion.pillars.audit_log import AuditEntry
@@ -259,6 +260,11 @@ def make_audit_export_callback(
     tel_mode = (telemetry_export_mode or "all").strip().lower()
 
     def _callback(entry: AuditEntry) -> None:
+        if audit_jsonl_sink is not None:
+            try:
+                audit_jsonl_sink.write(entry)
+            except Exception as ex:
+                logger.debug("audit jsonl sink error: %s", ex)
         store = MetricsStore.get()
         tool = entry.tool
         user = entry.session_id
@@ -267,6 +273,7 @@ def make_audit_export_callback(
             "event_id": getattr(entry, "forensic_event_id", None),
             "timestamp": getattr(entry, "timestamp", None),
             "tenant_id": tenant,
+            "agent_id": getattr(entry, "agent_id", None),
             "request_id": getattr(entry, "request_id", None),
             "session_id": getattr(entry, "session_id", None),
             "tool": getattr(entry, "tool", "unknown"),
@@ -312,7 +319,12 @@ def make_audit_export_callback(
                 store.record_session_tool(entry.session_id, tool)
         else:
             reason = entry.reason or "unknown"
-            store.record_blocked(reason, tool, tenant=tenant)
+            store.record_blocked(
+                reason,
+                tool,
+                tenant=tenant,
+                agent_id=getattr(entry, "agent_id", None),
+            )
             notify_audit_entry(entry.action, tool, reason, sinks, on_events)
 
     return _callback

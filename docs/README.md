@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: `mcp-bastion-python==1.0.18` (Runtime governance: agent IAM, server verification, PromptGuard fail-closed; FinOps from 1.0.17: token budget, output offload, discovery filter, response scan, grounding guard).
+Current Python package release: `mcp-bastion-python==2.0.0` (Major release: runtime governance hardening, serve/schema fixes, FinOps/RBAC benchmarks, dashboard governance panel, npm audit clean; builds on FinOps 1.0.17+ and runtime governance 1.0.18+ features).
 
 ## Start here
 
@@ -12,7 +12,9 @@ Current Python package release: `mcp-bastion-python==1.0.18` (Runtime governance
 | [index.md](index.md) | Landing page for docs website (GitHub Pages home) |
 | [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) | End-to-end tutorial from install to production checks |
 | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) | Full `bastion.yaml` schema and examples |
-| [PILLARS.md](PILLARS.md) | Canonical mapping: base controls, **extended** policy features (1.0.16+), FinOps/context pillars (1.0.17+), runtime governance (1.0.18+), `bastion.yaml` ↔ dashboard |
+| [PILLARS.md](PILLARS.md) | Canonical mapping: base controls, **extended** policy features (1.0.16+), FinOps/context pillars (1.0.17+), runtime governance (1.0.18+, shipped in **2.0.0**), `bastion.yaml` ↔ dashboard |
+| [BENCHMARKS.md](BENCHMARKS.md) | **Measured** RBAC matrix, output-budget reduction, discovery filter, lexical cache — pytest + `scripts/generate_benchmark_report.py` |
+| [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) | **2.0.0:** full MCP method guards + Redis `state_backend` for multi-replica deploys |
 | [REDTEAM.md](REDTEAM.md) | Interpreting harness scores; **`mcp-bastion redteam`** |
 | [Advanced_Tutorials.md](Advanced_Tutorials.md) | Index of deeper docs (points to **DETAILED_TUTORIAL**, **TUTORIALS**, **PILLARS**, …) |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI (`validate`, `serve`, `dashboard`, `redteam`, `doctor`, …) |
@@ -35,6 +37,7 @@ Current Python package release: `mcp-bastion-python==1.0.18` (Runtime governance
 | [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md) | HTTP / localhost binding and edge_auth guidance |
 | [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) | Agent IAM (Confused Deputy) and server checksum verification |
 | [ROADMAP.md](ROADMAP.md) | Shipped vs pending features (P1/P2) |
+| [ENGINEERING_10_10.md](ENGINEERING_10_10.md) | Strategic 10/10 plan: injection depth, tool scan, OAuth gateway, maturity |
 | [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) | Attack scenarios and prevention walkthroughs |
 | [METRICS.md](METRICS.md) | Metrics, dashboard, Prometheus and effectiveness guidance |
 | [OTEL.md](OTEL.md) | OpenTelemetry setup and spans |

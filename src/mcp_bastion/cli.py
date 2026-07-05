@@ -4,7 +4,7 @@ CLI for MCP-Bastion developers.
 Usage:
   mcp-bastion validate [--config PATH]
   mcp-bastion serve [--config PATH] [--http PORT] [--host HOST]
-  mcp-bastion dashboard [--port PORT] [--reload] [--demo | --no-demo] [--live] [--no-live]
+  mcp-bastion tail [--path PATH] [--lines N] [--config PATH]
 """
 
 from __future__ import annotations
@@ -203,7 +203,18 @@ def cmd_redteam(config_path: str | None, output_path: str | None = None) -> int:
         return 1
     try:
         report = run_redteam_sync(config_path)
-        logger.info("Redteam score (blocked%%): %.2f", float(report.get("score_blocked_pct", 0.0)))
+        logger.info("Redteam score (all blocks): %.2f%%", float(report.get("score_blocked_pct", 0.0)))
+        logger.info(
+            "Redteam intended-control block rate: %.2f%%",
+            float(report.get("score_intended_blocked_pct", 0.0)),
+        )
+        if float(report.get("score_guard_unavailable_pct", 0.0)) > 0:
+            logger.info(
+                "Redteam guard-unavailable block rate: %.2f%% (not policy effectiveness)",
+                float(report.get("score_guard_unavailable_pct", 0.0)),
+            )
+        for line in report.get("interpretation") or []:
+            logger.info("Note: %s", line)
         logger.info(
             "Attempts=%s blocked=%s allowed=%s",
             report.get("totals", {}).get("attempts"),
@@ -251,6 +262,32 @@ def cmd_manifest(files: list[str], base_path: str, output: str | None, sign: boo
     return 0
 
 
+def cmd_tail(path: str | None, lines: int, config_path: str | None) -> int:
+    """Tail append-only JSONL audit log."""
+    _configure_cli_logging()
+    _ensure_src_on_path()
+    from mcp_bastion.audit_jsonl import AuditJsonlSink
+
+    audit_path = path
+    if not audit_path and config_path:
+        try:
+            from mcp_bastion.config import load_config
+
+            cfg = load_config(config_path)
+            audit_path = cfg.audit_jsonl_path
+        except Exception as e:
+            logger.error("Config error: %s", e)
+            return 1
+    if not audit_path:
+        audit_path = os.environ.get("BASTION_AUDIT_JSONL")
+    if not audit_path:
+        logger.error("Specify --path, --config with audit.jsonl_path, or BASTION_AUDIT_JSONL")
+        return 1
+    entries = AuditJsonlSink.tail(audit_path, lines=max(1, lines))
+    logger.info(json.dumps(entries, indent=2))
+    return 0
+
+
 def cmd_fingerprint(tools_json: str, output: str | None) -> int:
     """Generate tool metadata fingerprint JSON for schema drift detection."""
     _ensure_src_on_path()
@@ -277,6 +314,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         prog="mcp-bastion",
         description="MCP-Bastion CLI for developers.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__import__('mcp_bastion').__version__}",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -357,6 +399,14 @@ def main() -> int:
     fp_parser.add_argument("tools_json", help="JSON file with tools list or {tools: [...]}")
     fp_parser.add_argument("--output", "-o", help="Write fingerprint document to file")
     fp_parser.set_defaults(func=lambda **kw: cmd_fingerprint(kw.get("tools_json"), kw.get("output")))
+
+    tail_parser = sub.add_parser("tail", help="Tail append-only JSONL audit log")
+    tail_parser.add_argument("--path", "-p", help="Path to audit JSONL file")
+    tail_parser.add_argument("--lines", "-n", type=int, default=20, help="Number of lines (default 20)")
+    tail_parser.add_argument("--config", "-c", help="Read audit.jsonl_path from bastion.yaml")
+    tail_parser.set_defaults(
+        func=lambda **kw: cmd_tail(kw.get("path"), kw.get("lines", 20), kw.get("config"))
+    )
 
     args = parser.parse_args()
     ns = vars(args)

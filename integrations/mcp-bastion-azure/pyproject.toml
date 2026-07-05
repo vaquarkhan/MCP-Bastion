@@ -9,7 +9,7 @@ description = "MCP-Bastion security middleware for Azure OpenAI Service. Prompt 
 readme = "README.md"
 license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
 requires-python = ">=3.10"
-authors = [{ name = "Viquar Khan" }]
+authors = [{ name = "Vaquar Khan" }]
 keywords = ["mcp", "bastion", "azure", "openai", "security", "llm", "prompt-injection", "pii"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp-bastion-python>=1.0.18",
+    "mcp-bastion-python>=2.0.0",
     "openai>=1.0.0",
 ]
 
