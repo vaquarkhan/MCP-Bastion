@@ -522,6 +522,12 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.argument_guards = argument_guards
         self.enable_argument_guards = enable_argument_guards and argument_guards is not None
 
+        if self.enable_tool_metadata_guard and not self.enable_content_filter and not self.enable_prompt_guard:
+            logger.warning(
+                "tool_metadata_guard is enabled but both content_filter and prompt_guard are disabled; "
+                "metadata scanning will not run until at least one is enabled"
+            )
+
     @staticmethod
     def _offload_key_from_params(params: dict | None) -> str | None:
         if not params or not isinstance(params, dict):

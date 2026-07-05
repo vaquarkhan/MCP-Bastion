@@ -42,3 +42,34 @@ def test_model_status_reports_unavailable_reason():
     assert status["heuristic_fallback"] is True
     assert status["fail_open"] is False
     assert status["ml_unavailable_reason"]
+
+
+def test_ensure_loaded_negative_cache_skips_retry():
+    engine = PromptGuardEngine()
+    engine._ml_load_failed = True
+    engine._ml_unavailable_reason = "HTTP 401 Unauthorized"
+    with pytest.raises(RuntimeError, match="401"):
+        engine._ensure_loaded()
+    assert engine._model is None
+
+
+def test_ensure_loaded_sets_negative_cache_on_import_failure():
+    engine = PromptGuardEngine()
+    import builtins
+
+    real_import = builtins.__import__
+    import_calls = {"n": 0}
+
+    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name in ("torch", "transformers") or (fromlist and "transformers" in str(fromlist)):
+            import_calls["n"] += 1
+            raise ImportError("simulated ML deps unavailable")
+        return real_import(name, globals, locals, fromlist, level)
+
+    with mock.patch("builtins.__import__", side_effect=fake_import):
+        with pytest.raises(ImportError):
+            engine._ensure_loaded()
+        with pytest.raises(RuntimeError, match="simulated ML deps unavailable"):
+            engine._ensure_loaded()
+    assert engine._ml_load_failed is True
+    assert import_calls["n"] == 1

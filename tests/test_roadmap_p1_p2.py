@@ -265,6 +265,7 @@ def test_manifest_cli_sign(tmp_path, monkeypatch):
     monkeypatch.setenv("BASTION_MANIFEST_SIGNING_KEY", "secret-key")
     assert cmd_manifest(["a.py"], base_path=str(tmp_path), output=str(out), sign=True) == 0
     data = json.loads(out.read_text(encoding="utf-8"))
+    assert data["algorithm"] == "hmac-sha256"
     assert verify_manifest_signature(data["files"], data["signature"], "secret-key")
 
 

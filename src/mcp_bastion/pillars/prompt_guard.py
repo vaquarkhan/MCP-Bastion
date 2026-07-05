@@ -49,6 +49,7 @@ class PromptGuardEngine:
         self._tokenizer = None
         self._device = device
         self._ml_loaded = False
+        self._ml_load_failed = False
         self._ml_unavailable_reason: str | None = None
 
     def heuristic_match(self, text: str) -> str | None:
@@ -61,6 +62,7 @@ class PromptGuardEngine:
         """Report ML model load state for doctor / validation scripts."""
         return {
             "ml_loaded": self._ml_loaded,
+            "ml_load_failed": self._ml_load_failed,
             "ml_unavailable_reason": self._ml_unavailable_reason,
             "heuristic_fallback": self.heuristic_fallback,
             "fail_open": self.fail_open,
@@ -69,9 +71,11 @@ class PromptGuardEngine:
         }
 
     def _ensure_loaded(self) -> None:
-        """Lazy-load model and tokenizer."""
+        """Lazy-load model and tokenizer. Failed loads are cached (no repeated HF calls)."""
         if self._model is not None:
             return
+        if self._ml_load_failed:
+            raise RuntimeError(self._ml_unavailable_reason or "PromptGuard ML model unavailable")
         try:
             import torch
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -88,9 +92,11 @@ class PromptGuardEngine:
             logger.info("PromptGuard loaded model=%s device=%s", self.model_id, self._device)
         except Exception as e:
             self._ml_unavailable_reason = str(e)
+            self._ml_load_failed = True
             logger.warning(
                 "PromptGuard ML model unavailable (%s). "
-                "Heuristic fallback=%s; accept gated repo access at %s and run `huggingface-cli login`.",
+                "Heuristic fallback=%s; accept gated repo access at %s and run `huggingface-cli login`. "
+                "Further ML load attempts skipped for this engine instance.",
                 e,
                 self.heuristic_fallback,
                 HF_ACCESS_URL,
