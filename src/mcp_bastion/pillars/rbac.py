@@ -30,19 +30,34 @@ class RBAC:
     globs such as ``read_*`` / ``files_read_*``.
     """
 
-    def __init__(self, permissions: dict[str, list[str]]) -> None:
+    def __init__(self, permissions: dict[str, list[str]], *, require_authenticated_identity: bool = True) -> None:
         """
         permissions: { "role_name": ["tool1", "read_*", "*"] }
         """
         self.permissions = permissions
         self._default_role = "default"
+        self.require_authenticated_identity = require_authenticated_identity
 
     def _get_role(self, context: Any) -> str:
-        """Extract role from context. Override for custom resolution."""
+        """Extract role from context. Only trusts server-verified identities by default."""
+        from mcp_bastion.pillars.budget_principal import AUTHENTICATED_ROLE_KEY
+
         if hasattr(context, "metadata") and isinstance(context.metadata, dict):
-            return str(context.metadata.get("role", context.metadata.get("agent", self._default_role)))
+            md = context.metadata
+            if md.get(AUTHENTICATED_ROLE_KEY):
+                return str(md.get("role", md.get("agent", self._default_role)))
+            if self.require_authenticated_identity:
+                raise RBACError(
+                    "RBAC blocked: role is not from an authenticated identity. "
+                    "Enable agent_iam or edge_auth, or set rbac.require_authenticated_identity: false for dev."
+                )
+            return str(md.get("role", md.get("agent", self._default_role)))
         if hasattr(context, "role"):
+            if self.require_authenticated_identity:
+                raise RBACError("RBAC blocked: no authenticated identity on context")
             return str(context.role)
+        if self.require_authenticated_identity:
+            raise RBACError("RBAC blocked: no authenticated identity on context")
         return self._default_role
 
     def _tool_allowed(self, tool: str, allowed: list[str]) -> bool:

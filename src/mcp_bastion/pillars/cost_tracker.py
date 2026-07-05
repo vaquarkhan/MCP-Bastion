@@ -110,6 +110,19 @@ class CostTracker:
     def _get_key(self, session_id: str | None, request_id: str | None) -> str:
         return session_id or request_id or "default"
 
+    def _session_budget_key(
+        self,
+        session_id: str | None,
+        request_id: str | None,
+        principal_id: str | None,
+    ) -> str:
+        if principal_id:
+            return f"principal:{principal_id}"
+        return self._get_key(session_id, request_id)
+
+    def _daily_budget_key(self, tenant_id: str | None) -> str:
+        return f"daily:tenant:{tenant_id or 'default'}"
+
     def _load_session(self, key: str) -> CostState:
         if not self._uses_shared_backend:
             return self._sessions[key]
@@ -155,53 +168,76 @@ class CostTracker:
             self._save_daily(key, kept)
         return kept
 
-    def check(self, session_id: str | None = None, request_id: str | None = None) -> None:
+    def check(
+        self,
+        session_id: str | None = None,
+        request_id: str | None = None,
+        *,
+        principal_id: str | None = None,
+        tenant_id: str | None = None,
+    ) -> None:
         """
         Check if session can proceed. Raises CostBudgetExceededError if over budget.
         """
-        key = self._get_key(session_id, request_id)
+        key = self._session_budget_key(session_id, request_id, principal_id)
+        daily_key = self._daily_budget_key(tenant_id)
         with self._lock:
             state = self._load_session(key)
-            daily = self._cleanup_old_daily(key)
+            daily = self._cleanup_old_daily(daily_key)
 
-            if state.cost >= self.max_cost_per_session:
+            if round(state.cost, 2) >= self.max_cost_per_session:
                 raise CostBudgetExceededError(
                     f"Session cost ${state.cost:.2f} exceeds limit ${self.max_cost_per_session:.2f}"
                 )
 
-            daily_total = sum(c for _, c in daily)
+            daily_total = round(sum(c for _, c in daily), 2)
             if daily_total >= self.max_cost_per_day:
                 raise CostBudgetExceededError(
                     f"Daily cost ${daily_total:.2f} exceeds limit ${self.max_cost_per_day:.2f}"
                 )
 
-    def record(self, cost: float, session_id: str | None = None, request_id: str | None = None) -> None:
-        """Record cost for session."""
+    def record(
+        self,
+        cost: float,
+        session_id: str | None = None,
+        request_id: str | None = None,
+        *,
+        principal_id: str | None = None,
+        tenant_id: str | None = None,
+    ) -> None:
+        """Record cost for principal/session and tenant-global daily aggregate."""
         if cost < 0:
             raise ValueError("cost must be >= 0")
-        key = self._get_key(session_id, request_id)
+        key = self._session_budget_key(session_id, request_id, principal_id)
+        daily_key = self._daily_budget_key(tenant_id)
         now = time.monotonic()
         with self._lock:
             state = self._load_session(key)
             state.cost += cost
             self._save_session(key, state)
 
-            daily = self._cleanup_old_daily(key)
+            daily = self._cleanup_old_daily(daily_key)
             daily.append((now, cost))
-            self._save_daily(key, daily)
+            self._save_daily(daily_key, daily)
 
             if state.cost >= self.max_cost_per_session * self.alert_threshold:
                 logger.warning(
-                    "cost_tracker alert session=%s cost=%.2f threshold=%.0f%%",
+                    "cost_tracker alert principal=%s cost=%.2f threshold=%.0f%%",
                     key,
                     state.cost,
                     self.alert_threshold * 100,
                 )
             self._save_checkpoint()
 
-    def reset_session(self, session_id: str | None = None, request_id: str | None = None) -> None:
-        """Reset session cost."""
-        key = self._get_key(session_id, request_id)
+    def reset_session(
+        self,
+        session_id: str | None = None,
+        request_id: str | None = None,
+        *,
+        principal_id: str | None = None,
+    ) -> None:
+        """Reset session/principal cost."""
+        key = self._session_budget_key(session_id, request_id, principal_id)
         with self._lock:
             if self._uses_shared_backend:
                 self._backend.delete(self._session_key(key))

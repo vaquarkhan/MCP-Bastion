@@ -58,7 +58,7 @@ def run_rbac_matrix(
     )
     rows: list[dict[str, Any]] = []
     for role, tool, expect_allowed in cases:
-        ctx = MiddlewareContext(message={}, metadata={"role": role})
+        ctx = MiddlewareContext(message={}, metadata={"role": role, "bastion_authenticated_role": True})
         allowed = True
         error: str | None = None
         try:

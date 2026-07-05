@@ -20,6 +20,9 @@ DEFAULT_INJECTION_PATTERNS = [
     r"(?i)do\s+not\s+tell\s+the\s+user",
     r"(?i)reveal\s+(?:your\s+)?system\s+prompt",
     r"(?i)output\s+(?:your\s+)?system\s+prompt",
+    r"(?i)\bDAN\b",
+    r"(?i)jailbreak",
+    r"(?i)act\s+as\s+(?:if\s+you\s+have\s+)?no\s+(?:restrictions|rules|limits)",
 ]
 
 
@@ -35,7 +38,10 @@ def find_injection_match(text: str, regexes: list[re.Pattern[str]]) -> str | Non
     """Return matched pattern source if text looks like an injection attempt."""
     if not text or not isinstance(text, str):
         return None
+    from mcp_bastion.pillars.content_normalize import normalize_for_scan
+
+    normalized = normalize_for_scan(text)
     for rx in regexes:
-        if rx.search(text):
+        if rx.search(normalized):
             return rx.pattern
     return None

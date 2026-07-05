@@ -43,6 +43,7 @@ from mcp_bastion.pillars.output_budget import OutputBudget
 from mcp_bastion.pillars.grounding_guard import GroundingGuard
 from mcp_bastion.pillars.agent_iam import AgentIAM
 from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine
+from mcp_bastion.pillars.budget_principal import mark_authenticated_role, resolve_budget_principal
 from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.tokens import estimate_text_tokens
 from mcp_bastion.pillars.rbac import RBAC
@@ -547,6 +548,12 @@ class MCPBastionMiddleware(Middleware[Any]):
     def _record_finops(self, context: MiddlewareContext[Any], section: str, data: dict[str, Any]) -> None:
         context.metadata.setdefault("finops", {}).setdefault(section, {}).update(data)
 
+    def _finops_keys(self, context: MiddlewareContext[Any]) -> tuple[str, str]:
+        principal_id, tenant_id = resolve_budget_principal(context, default_tenant_id=self.default_tenant_id)
+        context.metadata["_budget_principal"] = principal_id
+        context.metadata["_budget_tenant"] = tenant_id
+        return principal_id, tenant_id
+
     def _apply_output_budget_to_result(
         self,
         context: MiddlewareContext[Any],
@@ -984,7 +991,13 @@ class MCPBastionMiddleware(Middleware[Any]):
         if self.enable_cost_tracker:
             started = time.perf_counter()
             try:
-                self.cost_tracker.check(session_id=session_id, request_id=request_id)
+                budget_principal, budget_tenant = self._finops_keys(context)
+                self.cost_tracker.check(
+                    session_id=session_id,
+                    request_id=request_id,
+                    principal_id=budget_principal,
+                    tenant_id=budget_tenant,
+                )
                 _trace_append(trace, pillar="cost_tracker_precheck", status="allowed", started=started)
             except Exception as e:
                 self._handle_violation(
@@ -994,12 +1007,12 @@ class MCPBastionMiddleware(Middleware[Any]):
         if self.enable_rate_limit:
             started = time.perf_counter()
             limiter = self.rate_limiter
-            rate_session = session_id
+            rate_session = context.metadata.get("_budget_principal") or session_id
             if agent_policy is not None and self.agent_iam is not None:
                 agent_limiter = self.agent_iam.rate_limiter_for(agent_policy)
                 if agent_limiter is not None:
                     limiter = agent_limiter
-                    rate_session = f"{session_id or request_id or 'default'}::agent::{agent_policy.agent_id}"
+                rate_session = f"principal:agent:{agent_policy.agent_id}"
             check = limiter.check_iteration(
                 request_id=request_id,
                 session_id=rate_session,
@@ -1040,10 +1053,16 @@ class MCPBastionMiddleware(Middleware[Any]):
 
         if self.enable_cost_tracker:
             context.metadata.setdefault("cost", 0.0)
+            budget_principal = context.metadata.get("_budget_principal")
+            budget_tenant = context.metadata.get("_budget_tenant")
+            if budget_principal is None or budget_tenant is None:
+                budget_principal, budget_tenant = self._finops_keys(context)
             self.cost_tracker.record(
                 context.metadata.get("cost", 0.0),
                 session_id=session_id,
                 request_id=request_id,
+                principal_id=budget_principal,
+                tenant_id=budget_tenant,
             )
 
         result = self._process_guarded_response(
@@ -1201,6 +1220,7 @@ class MCPBastionMiddleware(Middleware[Any]):
                 a, b = token.encode("utf-8"), self.edge_auth_secret.encode("utf-8")
                 if len(a) != len(b) or not hmac.compare_digest(a, b):
                     raise AuthenticationError("Request blocked: invalid edge authentication token")
+                mark_authenticated_role(context, role=str(context.metadata.get("role") or "edge"))
                 _trace_append(trace, pillar="edge_auth", status="allowed", started=started)
             except Exception as e:
                 self._handle_violation(context=context, trace=trace, pillar="edge_auth", started=started, error=e)
@@ -1271,7 +1291,13 @@ class MCPBastionMiddleware(Middleware[Any]):
         if self.enable_cost_tracker:
             started = time.perf_counter()
             try:
-                self.cost_tracker.check(session_id=session_id, request_id=request_id)
+                budget_principal, budget_tenant = self._finops_keys(context)
+                self.cost_tracker.check(
+                    session_id=session_id,
+                    request_id=request_id,
+                    principal_id=budget_principal,
+                    tenant_id=budget_tenant,
+                )
                 _trace_append(trace, pillar="cost_tracker_precheck", status="allowed", started=started)
             except Exception as e:
                 self._handle_violation(
@@ -1327,12 +1353,12 @@ class MCPBastionMiddleware(Middleware[Any]):
         if self.enable_rate_limit:
             started = time.perf_counter()
             limiter = self.rate_limiter
-            rate_session = session_id
+            rate_session = context.metadata.get("_budget_principal") or session_id
             if agent_policy is not None and self.agent_iam is not None:
                 agent_limiter = self.agent_iam.rate_limiter_for(agent_policy)
                 if agent_limiter is not None:
                     limiter = agent_limiter
-                    rate_session = f"{session_id or request_id or 'default'}::agent::{agent_policy.agent_id}"
+                rate_session = f"principal:agent:{agent_policy.agent_id}"
             check = limiter.check_iteration(
                 request_id=request_id,
                 session_id=rate_session,

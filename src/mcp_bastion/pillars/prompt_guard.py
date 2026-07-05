@@ -2,7 +2,8 @@
 Prompt injection detection via Llama Prompt Guard 2 + regex heuristics.
 
 Primary: meta-llama/Llama-Prompt-Guard-2-86M (gated — requires Hugging Face access).
-Fallback: local regex heuristics block obvious jailbreaks when ML is unavailable.
+Fallback: regex heuristics catch obvious jailbreak strings only (not novel injection).
+Heuristic mode is not a substitute for ML scoring or argument_guards.
 Default posture: fail-closed on ML errors (blocks request unless fail_open=True).
 """
 

@@ -89,6 +89,7 @@ class BastionConfig:
     content_filter_denylist_patterns: list[str] = field(default_factory=list)
     rbac: bool = False
     rbac_permissions: dict[str, list[str]] = field(default_factory=dict)
+    rbac_require_authenticated_identity: bool = True
     schema_validation: bool = False
     schema_validation_schemas: dict[str, dict[str, type]] = field(default_factory=dict)
     replay_guard: bool = False
@@ -123,7 +124,7 @@ class BastionConfig:
     behavior_fingerprint: bool = True
     cost_attribution: bool = True
     policy_engine_type: str = "none"
-    policy_engine_fail_closed: bool = False
+    policy_engine_fail_closed: bool = True
     opa_binary: str = "opa"
     opa_policy_dir: str | None = None
     opa_query: str = "data.bastion.allow"
@@ -185,6 +186,13 @@ def validate_bastion_config(config: BastionConfig) -> None:
             "tool_metadata_guard.enabled requires content_filter.enabled or prompt_guard.enabled — "
             "enable at least one metadata scanner or disable tool_metadata_guard"
         )
+
+    if config.rbac and config.rbac_require_authenticated_identity:
+        if not config.agent_iam_enabled and not config.edge_auth_enabled:
+            raise BastionConfigError(
+                "rbac.enabled with require_authenticated_identity requires agent_iam or edge_auth — "
+                "otherwise callers can self-assert metadata.role"
+            )
 
     engine = normalize_engine(config.policy_engine_type)
     if engine != "none" and config.policy_engine_fail_closed:
@@ -290,6 +298,9 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         ),
         rbac=data.get("rbac", {}).get("enabled", False),
         rbac_permissions=data.get("rbac", {}).get("permissions", {}),
+        rbac_require_authenticated_identity=bool(
+            data.get("rbac", {}).get("require_authenticated_identity", True)
+        ),
         schema_validation=bool(schemav.get("enabled", False)),
         schema_validation_schemas=parse_tool_schemas(schemav.get("schemas")),
         replay_guard=data.get("replay_guard", {}).get("enabled", False),
@@ -327,7 +338,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         behavior_fingerprint=bool(bf.get("enabled", True)),
         cost_attribution=bool(ca.get("enabled", True)),
         policy_engine_type=engine,
-        policy_engine_fail_closed=bool(pe.get("fail_closed", False)),
+        policy_engine_fail_closed=bool(pe.get("fail_closed", True)),
         opa_binary=str(opa_pe.get("binary") or os.environ.get("BASTION_OPA_BINARY", "opa")),
         opa_policy_dir=opa_pe.get("policy_dir") or os.environ.get("BASTION_OPA_POLICY_DIR"),
         opa_query=str(opa_pe.get("query") or os.environ.get("BASTION_OPA_QUERY", "data.bastion.allow")),
@@ -594,7 +605,10 @@ def _build_chain(config: BastionConfig) -> Any:
             checkpoint_path=config.cost_checkpoint_path,
         ),
         content_filter=content_filter,
-        rbac=RBAC(config.rbac_permissions),
+        rbac=RBAC(
+            config.rbac_permissions,
+            require_authenticated_identity=config.rbac_require_authenticated_identity,
+        ),
         schema_validator=schema_validator,
         replay_guard=ReplayGuard(require_nonce=config.replay_require_nonce, backend=shared_backend),
         enable_prompt_guard=config.prompt_guard,

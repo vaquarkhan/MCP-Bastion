@@ -58,6 +58,7 @@ content_filter:
 # Tighten further when you define roles and tool lists (off until you wire identities).
 rbac:
   enabled: false
+  require_authenticated_identity: true   # default; pair with agent_iam or edge_auth
   permissions:
     default: ["*"]
     analyst: ["read_data", "query"]
@@ -190,7 +191,7 @@ session_limits:
 # External policy: OPA or Cedar CLI (not HTTP). fail_closed: true denies when engine unavailable.
 policy_engine:
   type: none   # none | opa | cedar
-  fail_closed: false   # true → deny if binary/policy dir missing or eval fails
+  fail_closed: true   # default for type != none; deny when OPA/Cedar unavailable
   opa:
     binary: opa
     policy_dir: ./policies/opa   # directory passed to `opa eval -d`

@@ -499,6 +499,15 @@ def test_validate_bastion_config_policy_fail_closed_requires_opa_dir(tmp_path):
         validate_bastion_config(cfg)
 
 
+def test_validate_bastion_config_rbac_requires_identity_provider():
+    from mcp_bastion.config import BastionConfig, validate_bastion_config
+    from mcp_bastion.errors import BastionConfigError
+
+    cfg = BastionConfig(rbac=True, rbac_require_authenticated_identity=True)
+    with pytest.raises(BastionConfigError, match="agent_iam or edge_auth"):
+        validate_bastion_config(cfg)
+
+
 def test_build_middleware_rejects_misconfigured_tool_metadata_guard(tmp_path):
     from mcp_bastion.config import build_middleware_from_config, load_config
     from mcp_bastion.errors import BastionConfigError

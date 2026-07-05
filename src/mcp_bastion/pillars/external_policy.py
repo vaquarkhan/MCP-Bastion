@@ -1,8 +1,8 @@
 """
 Optional external policy engines: Open Policy Agent (Rego) or AWS Cedar (CLI).
 
-When fail_closed is false (default), missing binaries or policy paths fail open (ALLOW).
-When fail_closed is true, any engine error or misconfiguration returns DENY.
+When fail_closed is true (default), missing binaries or policy paths return DENY.
+When fail_closed is false, engine errors or misconfiguration fail open (ALLOW).
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ class ExternalPolicyConfig:
     cedar_binary: str = "cedar"
     cedar_policies_dir: str | None = None
     cedar_schema_path: str | None = None
-    fail_closed: bool = False
+    fail_closed: bool = True
 
 
 class ExternalPolicyEvaluator:
