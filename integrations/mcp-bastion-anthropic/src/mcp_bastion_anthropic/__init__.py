@@ -1,6 +1,6 @@
 """MCP-Bastion security integration for Anthropic Claude."""
 
-__version__ = "0.1.2"
+__version__ = "2.0.0"
 
 from mcp_bastion_anthropic.middleware import SecureClaude
 
