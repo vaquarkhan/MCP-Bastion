@@ -1,4 +1,4 @@
 """MCP-Bastion security integration for Cohere."""
-__version__ = "0.1.2"
+__version__ = "2.0.0"
 from mcp_bastion_cohere.middleware import SecureCohere
 __all__ = ["SecureCohere"]
