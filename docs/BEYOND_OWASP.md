@@ -4,10 +4,10 @@ OWASP MCP Top 10 covers agent-to-server risks at the protocol boundary. MCP-Bast
 
 | Threat | Bastion coverage | Config / notes |
 |--------|------------------|----------------|
-| **Browser → localhost MCP (CSRF / DNS rebind)** | Partial | Middleware cannot fix transport. Use `127.0.0.1` bind, `edge_auth`, reverse proxy. See [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md). |
-| **Confused Deputy (multi-agent IAM)** | Primary | `agent_iam`: token → agent identity, per-tool allow/block, per-agent rate limits. See [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md). |
-| **Registry typosquatting / tampered server** | Primary | `server_verification`: SHA-256 manifest checksums at startup and per request. |
-| **stdio stdout JSON injection** | Gap | No byte-stream validator. Avoid `print()` in servers; pin deps; run `mcp-bastion doctor`. |
+| **Browser → localhost MCP (CSRF / DNS rebind)** | Primary (with proxy) | `transport_hardening` ASGI middleware + [deploy/](../deploy/) Caddy recipe + bind `127.0.0.1` |
+| **Confused Deputy (multi-agent IAM)** | Primary | `agent_iam`: token → identity, per-tool allow/block, per-agent rate limits, `isolate_sessions`. See [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md). |
+| **Registry typosquatting / tampered server** | Primary | `server_verification` + HMAC manifest signatures + `doctor` registry publisher check |
+| **stdio stdout JSON injection** | Partial | `stdio_guard` drops non-JSON stdout lines when enabled |
 | **Context flooding (denial-of-wallet)** | Primary | `token_budget`, `output_budget`, `max_response_bytes`, `cost_tracker`. See [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md#8-context-flooding-denial-of-wallet). |
 | **Multi-agent state poisoning** | Partial | `response_scan`, `prompt_guard`, RBAC, audit hash chain, `multi_tenant`. Separate trust zones per agent class. |
 | **Semantic schema drift** | Partial | `tool_metadata_guard`, `hot_reload`, `doctor` / `redteam`. Enable metadata guard in production. |

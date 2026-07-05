@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
@@ -20,6 +20,8 @@ class RedTeamCase:
     attempts: int = 1
     mcp_top10: str = ""
     tool_sequence: tuple[str, ...] = ()
+    metadata: dict[str, Any] = field(default_factory=dict)
+    jsonrpc_method: str = "tools/call"
 
 
 _CASES: tuple[RedTeamCase, ...] = (
@@ -88,6 +90,20 @@ _CASES: tuple[RedTeamCase, ...] = (
         arguments={"path": "ok"},
         tool_sequence=("read_file", "search_customer", "exec_sql", "delete_rows", "admin_shell"),
     ),
+    RedTeamCase(
+        id="confused_deputy_support_delete",
+        owasp_tag="Confused Deputy / Agent IAM",
+        mcp_top10="MCP02",
+        tool="delete_user",
+        arguments={"id": 1},
+    ),
+    RedTeamCase(
+        id="schema_drift_poisoned_tool_list",
+        owasp_tag="Semantic schema drift",
+        mcp_top10="MCP03",
+        tool="__list_tools_probe__",
+        arguments={},
+    ),
 )
 
 
@@ -105,10 +121,13 @@ async def _run_case(middleware: Any, case: RedTeamCase, session_id: str) -> dict
 
     for i, (tool, args) in enumerate(iterations):
         ctx = MiddlewareContext(
-            message={"method": "tools/call", "params": {"name": tool, "arguments": args}},
+            message={
+                "method": case.jsonrpc_method,
+                "params": {"name": tool, "arguments": args},
+            },
             request_id=f"rt-{case.id}-{i}",
             session_id=session_id,
-            metadata={},
+            metadata=dict(case.metadata),
         )
         try:
             await middleware(ctx, _handler)

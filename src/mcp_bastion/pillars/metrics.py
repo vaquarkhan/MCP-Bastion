@@ -156,6 +156,10 @@ class MetricsStore:
             return "replay"
         if "schema" in lower or "validation" in lower:
             return "schema_validation"
+        if "agent" in lower and ("not permitted" in lower or "identity" in lower):
+            return "agent_iam"
+        if "checksum verification" in lower or "manifest signature" in lower:
+            return "server_verification"
         return "other"
 
     @staticmethod
@@ -424,6 +428,8 @@ class MetricsStore:
             blocker_pillar("Sensitive Classifier", "sensitive_classifier"),
             blocker_pillar("External Policy", "external_policy"),
             blocker_pillar("Replay Guard", "replay"),
+            blocker_pillar("Agent IAM", "agent_iam"),
+            blocker_pillar("Server Verification", "server_verification"),
             self._pillar_item(
                 "Cost Tracker",
                 "active" if self._metrics.cost_total > 0 else ("healthy" if total_traffic > 0 else "idle"),

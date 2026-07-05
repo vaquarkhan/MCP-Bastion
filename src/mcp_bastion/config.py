@@ -148,6 +148,21 @@ class BastionConfig:
     server_verification_base_path: str = "."
     server_verification_manifest: dict[str, str] = field(default_factory=dict)
     server_verification_manifest_path: str | None = None
+    server_verification_manifest_signature: str | None = None
+    server_verification_signature_env: str = "BASTION_MANIFEST_SIGNING_KEY"
+    agent_iam_isolate_sessions: bool = False
+    transport_hardening_enabled: bool = True
+    transport_hardening_allowed_hosts: list[str] = field(
+        default_factory=lambda: ["127.0.0.1", "localhost", "[::1]"]
+    )
+    transport_hardening_block_browser_origin: bool = True
+    transport_hardening_require_loopback: bool = True
+    stdio_guard_enabled: bool = False
+    tool_metadata_fingerprint_enabled: bool = False
+    tool_metadata_fingerprint_path: str | None = None
+    tool_metadata_fingerprint_expected: str | None = None
+    governance_allowed_registry_names: list[str] = field(default_factory=list)
+    governance_allowed_repository_urls: list[str] = field(default_factory=list)
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -185,6 +200,9 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     tal = data.get("tool_allowlist", {}) or {}
     iam = data.get("agent_iam", {}) or {}
     sv = data.get("server_verification", {}) or {}
+    th = data.get("transport_hardening", {}) or {}
+    sg = data.get("stdio_guard", {}) or {}
+    tmf = data.get("tool_metadata_fingerprint", {}) or {}
     sess = data.get("session_limits", {}) or {}
     sc = data.get("sensitive_classifier", {}) or {}
     opa_pe = pe.get("opa", {}) or {}
@@ -287,6 +305,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         agent_iam_token_metadata_key=str(iam.get("token_metadata_key", "bastion_agent_token")),
         agent_iam_require_token=bool(iam.get("require_token", True)),
         agent_iam_agents=list(iam.get("agents", [])) if isinstance(iam.get("agents"), list) else [],
+        agent_iam_isolate_sessions=bool(iam.get("isolate_sessions", False)),
         server_verification_enabled=bool(sv.get("enabled", False)),
         server_verification_on_mismatch=str(sv.get("on_mismatch", "block")),
         server_verification_base_path=str(sv.get("base_path", ".")),
@@ -294,35 +313,65 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
             str(k): str(v) for k, v in (sv.get("manifest") or {}).items()
         },
         server_verification_manifest_path=sv.get("manifest_path") or sv.get("manifest_file"),
+        server_verification_manifest_signature=sv.get("signature"),
+        server_verification_signature_env=str(sv.get("signature_env", "BASTION_MANIFEST_SIGNING_KEY")),
+        transport_hardening_enabled=bool(th.get("enabled", True)),
+        transport_hardening_allowed_hosts=list(th.get("allowed_hosts", ["127.0.0.1", "localhost", "[::1]"])),
+        transport_hardening_block_browser_origin=bool(th.get("block_browser_origin", True)),
+        transport_hardening_require_loopback=bool(th.get("require_loopback", True)),
+        stdio_guard_enabled=bool(sg.get("enabled", False)),
+        tool_metadata_fingerprint_enabled=bool(tmf.get("enabled", False)),
+        tool_metadata_fingerprint_path=tmf.get("fingerprint_path") or tmf.get("path"),
+        tool_metadata_fingerprint_expected=tmf.get("expected") or tmf.get("expected_sha256"),
+        governance_allowed_registry_names=list(gov.get("allowed_registry_names", []))
+        if isinstance(gov.get("allowed_registry_names"), list)
+        else [],
+        governance_allowed_repository_urls=list(gov.get("allowed_repository_urls", []))
+        if isinstance(gov.get("allowed_repository_urls"), list)
+        else [],
     )
 
 
 def _load_server_manifest(config: BastionConfig) -> dict[str, str]:
-    """Merge inline manifest with optional manifest_path JSON/YAML file."""
+    files, _sig = _load_server_manifest_bundle(config)
+    return files
+
+
+def _load_server_manifest_bundle(config: BastionConfig) -> tuple[dict[str, str], str | None]:
+    """Return (files, optional HMAC signature) from inline config or manifest file."""
     manifest = dict(config.server_verification_manifest)
+    signature = config.server_verification_manifest_signature
     path_raw = config.server_verification_manifest_path
     if not path_raw:
-        return manifest
+        return manifest, signature
     p = Path(path_raw)
     if not p.is_file():
         logger.warning("server_verification manifest_path not found: %s", p)
-        return manifest
+        return manifest, signature
     try:
         if p.suffix.lower() in (".yaml", ".yml"):
             data = _load_yaml(p)
             files = data.get("files", data) if isinstance(data, dict) else {}
+            if isinstance(data, dict) and data.get("signature"):
+                signature = signature or str(data["signature"])
         else:
             import json
 
-            files = json.loads(p.read_text(encoding="utf-8"))
-            if isinstance(files, dict) and "files" in files:
-                files = files["files"]
+            data = json.loads(p.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and "files" in data:
+                files = data["files"]
+                if data.get("signature"):
+                    signature = signature or str(data["signature"])
+            else:
+                files = data
         if isinstance(files, dict):
             for k, v in files.items():
+                if str(k) in ("signature", "algorithm"):
+                    continue
                 manifest[str(k)] = str(v)
     except Exception as e:
         logger.warning("server_verification failed to load manifest_path %s: %s", p, e)
-    return manifest
+    return manifest, signature
 
 
 def _build_chain(config: BastionConfig) -> Any:
@@ -416,11 +465,13 @@ def _build_chain(config: BastionConfig) -> Any:
             policies,
             token_metadata_key=config.agent_iam_token_metadata_key,
             require_token=config.agent_iam_require_token,
+            isolate_sessions=config.agent_iam_isolate_sessions,
         )
 
     server_verifier: ServerVerifier | None = None
     if config.server_verification_enabled:
-        manifest = _load_server_manifest(config)
+        manifest, manifest_sig = _load_server_manifest_bundle(config)
+        signing_key = os.environ.get(config.server_verification_signature_env)
         if not manifest:
             logger.warning("server_verification enabled but manifest is empty")
         else:
@@ -428,9 +479,16 @@ def _build_chain(config: BastionConfig) -> Any:
                 manifest,
                 base_path=config.server_verification_base_path,
                 on_mismatch=config.server_verification_on_mismatch,  # type: ignore[arg-type]
+                manifest_signature=manifest_sig,
+                signing_key=signing_key,
             )
             if config.server_verification_on_mismatch == "block":
                 server_verifier.ensure_ok()
+
+    if config.stdio_guard_enabled:
+        from mcp_bastion.pillars.stdio_guard import install_stdio_guard
+
+        install_stdio_guard()
 
     bastion_mw = MCPBastionMiddleware(
         prompt_guard=PromptGuardEngine(

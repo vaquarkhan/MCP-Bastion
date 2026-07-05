@@ -84,6 +84,24 @@ def _is_call_tool_request(message: Any) -> bool:
     return False
 
 
+def _get_jsonrpc_method(message: Any) -> str | None:
+    if hasattr(message, "root"):
+        msg = message.root
+    else:
+        msg = message
+    if hasattr(msg, "method"):
+        m = getattr(msg, "method", None)
+        return str(m) if m else None
+    if isinstance(msg, dict):
+        m = msg.get("method")
+        return str(m) if m else None
+    return None
+
+
+def _is_resources_read_request(message: Any) -> bool:
+    return _get_jsonrpc_method(message) == "resources/read"
+
+
 def _tool_entry_to_dict(entry: Any) -> dict[str, Any]:
     if isinstance(entry, dict):
         return entry
@@ -695,6 +713,34 @@ class MCPBastionMiddleware(Middleware[Any]):
         _trace_append(trace, pillar=pillar, status="blocked", started=started, detail=str(error))
         raise error
 
+    async def _gate_agent_iam_for_request(
+        self,
+        context: MiddlewareContext[Any],
+        *,
+        method: str,
+        tool_name: str | None = None,
+        resource_uri: str | None = None,
+    ) -> None:
+        """Authenticate agent and enforce method/tool/resource policy."""
+        if not self.enable_agent_iam or self.agent_iam is None:
+            return
+        trace: list[dict[str, Any]] = context.metadata.setdefault("pillar_trace", [])
+        started = time.perf_counter()
+        raw_token = context.metadata.get(self.agent_iam.token_metadata_key)
+        agent_policy = self.agent_iam.authenticate(None if raw_token is None else str(raw_token))
+        self.agent_iam.apply_to_context(context, agent_policy)
+        if agent_policy is not None:
+            self.agent_iam.check_method(agent_policy, method)
+            if tool_name is not None:
+                self.agent_iam.check_tool(agent_policy, tool_name)
+            if resource_uri is not None:
+                self.agent_iam.check_resource(agent_policy, resource_uri)
+            isolated = self.agent_iam.isolated_session_id(agent_policy, context.session_id)
+            if isolated != context.session_id:
+                context.session_id = isolated
+        context.metadata["_agent_policy"] = agent_policy
+        _trace_append(trace, pillar="agent_iam", status="allowed", started=started)
+
     async def __call__(
         self,
         context: MiddlewareContext[Any],
@@ -707,6 +753,21 @@ class MCPBastionMiddleware(Middleware[Any]):
         try:
             if _is_call_tool_request(msg):
                 return await self._handle_call_tool(context, call_next)
+            if _is_resources_read_request(msg) and self.enable_agent_iam and self.agent_iam is not None:
+                params = _get_params(msg)
+                uri = ""
+                if isinstance(params, dict):
+                    uri = str(params.get("uri") or "")
+                trace = context.metadata.setdefault("pillar_trace", [])
+                started = time.perf_counter()
+                try:
+                    await self._gate_agent_iam_for_request(
+                        context, method="resources/read", resource_uri=uri or None
+                    )
+                except Exception as e:
+                    self._handle_violation(
+                        context=context, trace=trace, pillar="agent_iam", started=started, error=e
+                    )
             result = await call_next(context)
             if result is not None and _is_read_resource_result(result):
                 result = self._redact_result_content(result)
@@ -811,16 +872,23 @@ class MCPBastionMiddleware(Middleware[Any]):
         agent_policy = None
         if self.enable_agent_iam and self.agent_iam is not None:
             started = time.perf_counter()
-            raw_token = context.metadata.get(self.agent_iam.token_metadata_key)
             try:
-                agent_policy = self.agent_iam.authenticate(None if raw_token is None else str(raw_token))
-                self.agent_iam.apply_to_context(context, agent_policy)
-                if agent_policy is not None:
-                    self.agent_iam.check_tool(agent_policy, tool_name or "")
-                _trace_append(trace, pillar="agent_iam", status="allowed", started=started)
+                await self._gate_agent_iam_for_request(
+                    context,
+                    method="tools/call",
+                    tool_name=tool_name or "",
+                )
+                agent_policy = context.metadata.get("_agent_policy")
             except Exception as e:
                 self._handle_violation(context=context, trace=trace, pillar="agent_iam", started=started, error=e)
-        context.metadata["_agent_policy"] = agent_policy
+        else:
+            context.metadata["_agent_policy"] = agent_policy
+
+        if agent_policy is not None and self.agent_iam is not None:
+            isolated = self.agent_iam.isolated_session_id(agent_policy, session_id)
+            if isolated and isolated != session_id:
+                session_id = isolated
+                context.session_id = isolated
 
         if self.enable_edge_auth and self.edge_auth_secret and not self.enable_agent_iam:
             started = time.perf_counter()

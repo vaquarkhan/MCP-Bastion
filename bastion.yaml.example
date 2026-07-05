@@ -107,6 +107,7 @@ agent_iam:
   enabled: false
   token_metadata_key: bastion_agent_token
   require_token: true
+  isolate_sessions: true
   agents:
     - id: customer_support_bot
       token_env: BASTION_TOKEN_SUPPORT
@@ -121,6 +122,27 @@ server_verification:
   on_mismatch: block
   base_path: .
   manifest_path: mcp-server.manifest.json
+  signature_env: BASTION_MANIFEST_SIGNING_KEY
+
+# Localhost CSRF / DNS rebind mitigation for HTTP MCP
+transport_hardening:
+  enabled: true
+  allowed_hosts: ["127.0.0.1", "localhost", "[::1]"]
+  block_browser_origin: true
+  require_loopback: true
+
+# stdio transport: drop non-JSON lines on stdout
+stdio_guard:
+  enabled: false
+
+# Semantic schema drift detection (tools/list metadata fingerprint)
+tool_metadata_fingerprint:
+  enabled: false
+  fingerprint_path: tools.fingerprint.json
+
+governance:
+  allowed_registry_names: ["io.github.vaquarkhan/mcp-bastion"]
+  allowed_repository_urls: ["https://github.com/vaquarkhan/MCP-Bastion"]
 
 edge_auth:
   enabled: false

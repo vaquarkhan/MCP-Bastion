@@ -1,0 +1,16 @@
+# Reference reverse proxy for MCP HTTP — blocks direct browser CSRF to localhost MCP.
+# Upstream MCP must bind 127.0.0.1 only; inject auth token in gateway layer for production.
+
+:8443 {
+    tls internal
+
+    @browserOrigin header Origin http*
+    @localHost header Host localhost* 127.0.0.1* [::1]*
+
+    # Deny browser cross-origin posts to loopback MCP (CSRF / DNS rebind class)
+    respond @browserOrigin @localHost 403
+
+    reverse_proxy host.docker.internal:8080 {
+        header_up X-Bastion-Edge-Token {env.BASTION_EDGE_SECRET}
+    }
+}

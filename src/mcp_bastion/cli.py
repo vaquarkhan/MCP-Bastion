@@ -222,23 +222,52 @@ def cmd_redteam(config_path: str | None, output_path: str | None = None) -> int:
         return 1
 
 
-def cmd_manifest(files: list[str], base_path: str, output: str | None) -> int:
+def cmd_manifest(files: list[str], base_path: str, output: str | None, sign: bool = False) -> int:
     """Generate SHA-256 manifest for server_verification."""
     _ensure_src_on_path()
     import json
+    import os
 
-    from mcp_bastion.pillars.server_verification import build_manifest
+    from mcp_bastion.pillars.server_verification import build_manifest, sign_manifest
 
     try:
         manifest = build_manifest(files, base_path=base_path)
     except Exception as e:
         logger.error("manifest failed: %s", e)
         return 1
-    payload = {"files": manifest}
+    payload: dict = {"files": manifest, "algorithm": "hmac-sha256"}
+    if sign:
+        key = os.environ.get("BASTION_MANIFEST_SIGNING_KEY", "")
+        if not key:
+            logger.error("Set BASTION_MANIFEST_SIGNING_KEY to sign manifest")
+            return 1
+        payload["signature"] = sign_manifest(manifest, key)
     text = json.dumps(payload, indent=2)
     if output:
         Path(output).write_text(text + "\n", encoding="utf-8")
         logger.info("Wrote manifest: %s", output)
+    else:
+        logger.info(text)
+    return 0
+
+
+def cmd_fingerprint(tools_json: str, output: str | None) -> int:
+    """Generate tool metadata fingerprint JSON for schema drift detection."""
+    _ensure_src_on_path()
+    import json
+
+    from mcp_bastion.pillars.tool_metadata_fingerprint import build_fingerprint_document, load_tools_from_json
+
+    try:
+        tools = load_tools_from_json(tools_json)
+        doc = build_fingerprint_document(tools)
+    except Exception as e:
+        logger.error("fingerprint failed: %s", e)
+        return 1
+    text = json.dumps(doc, indent=2)
+    if output:
+        Path(output).write_text(text + "\n", encoding="utf-8")
+        logger.info("Wrote fingerprint: %s", output)
     else:
         logger.info(text)
     return 0
@@ -258,8 +287,8 @@ def main() -> int:
     serve_parser = sub.add_parser("serve", help="Run MCP server with config")
     serve_parser.add_argument("--config", "-c", help="Path to bastion.yaml", default="bastion.yaml")
     serve_parser.add_argument("--http", type=int, metavar="PORT", default=8080, help="HTTP port (default 8080)")
-    serve_parser.add_argument("--host", default="0.0.0.0", help="Bind host")
-    serve_parser.set_defaults(func=lambda **kw: cmd_serve(kw.get("config"), kw.get("http"), kw.get("host", "0.0.0.0")))
+    serve_parser.add_argument("--host", default="127.0.0.1", help="Bind host (default loopback)")
+    serve_parser.set_defaults(func=lambda **kw: cmd_serve(kw.get("config"), kw.get("http"), kw.get("host", "127.0.0.1")))
 
     dash_parser = sub.add_parser("dashboard", help="Run metrics dashboard")
     dash_parser.add_argument("--port", "-p", type=int, default=7000, help="Dashboard port (default 7000)")
@@ -315,9 +344,19 @@ def main() -> int:
     manifest_parser.add_argument("files", nargs="+", help="Relative file paths to hash")
     manifest_parser.add_argument("--base-path", default=".", help="Base directory for relative paths")
     manifest_parser.add_argument("--output", "-o", help="Write JSON manifest to file")
-    manifest_parser.set_defaults(
-        func=lambda **kw: cmd_manifest(kw.get("files"), kw.get("base_path"), kw.get("output"))
+    manifest_parser.add_argument(
+        "--sign",
+        action="store_true",
+        help="Add HMAC-SHA256 signature using BASTION_MANIFEST_SIGNING_KEY",
     )
+    manifest_parser.set_defaults(
+        func=lambda **kw: cmd_manifest(kw.get("files"), kw.get("base_path"), kw.get("output"), kw.get("sign", False))
+    )
+
+    fp_parser = sub.add_parser("fingerprint", help="Generate tool metadata fingerprint JSON")
+    fp_parser.add_argument("tools_json", help="JSON file with tools list or {tools: [...]}")
+    fp_parser.add_argument("--output", "-o", help="Write fingerprint document to file")
+    fp_parser.set_defaults(func=lambda **kw: cmd_fingerprint(kw.get("tools_json"), kw.get("output")))
 
     args = parser.parse_args()
     ns = vars(args)
