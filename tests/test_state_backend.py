@@ -39,11 +39,37 @@ def test_memory_backend_delete_clears_key():
     assert backend.get("k") is None
 
 
+def test_memory_backend_ttl_expires(monkeypatch):
+    backend = MemoryStateBackend()
+    times = iter([0.0, 0.0, 100.0])
+    monkeypatch.setattr("mcp_bastion.pillars.state_backend.time.monotonic", lambda: next(times))
+    backend.set("k", "v", ttl_seconds=10.0)
+    assert backend.get("k") == "v"
+    assert backend.get("k") is None
+
+
+def test_memory_backend_set_nx_after_expiry(monkeypatch):
+    backend = MemoryStateBackend()
+    times = iter([0.0, 0.0, 100.0, 100.0])
+    monkeypatch.setattr("mcp_bastion.pillars.state_backend.time.monotonic", lambda: next(times))
+    assert backend.set_nx("k", "v1", ttl_seconds=5.0) is True
+    assert backend.set_nx("k", "v2", ttl_seconds=5.0) is True
+    assert backend.get("k") == "v2"
+
+
 def test_memory_backend_set_contains():
     backend = MemoryStateBackend()
     backend.set_add("set:k", "member")
     assert backend.set_contains("set:k", "member") is True
     assert backend.set_contains("set:k", "other") is False
+
+
+def test_memory_backend_get_json_invalid():
+    backend = MemoryStateBackend()
+    backend.set("j", "not-json")
+    assert backend.get_json("j") is None
+    backend.set("d", '{"a": 1}')
+    assert backend.get_json("d") == {"a": 1}
 
 
 def test_shared_rate_limiter_across_instances():
@@ -101,11 +127,20 @@ def test_build_state_backend_redis_requires_package():
             build_state_backend(backend="redis")
 
 
+def _fake_redis_module(client: mock.Mock | None = None) -> tuple[mock.Mock, mock.Mock]:
+    """Build a stub ``redis`` module and client for tests without the redis package."""
+    fake_client = client or mock.Mock()
+    mod = mock.Mock()
+    mod.Redis.from_url = mock.Mock(return_value=fake_client)
+    return mod, fake_client
+
+
 def test_redis_backend_ping():
     fake_client = mock.Mock()
     fake_client.ping.return_value = True
     fake_client.get.return_value = None
-    with mock.patch("redis.Redis.from_url", return_value=fake_client):
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
         backend = RedisStateBackend("redis://localhost:6379/0")
         assert backend.ping() is True
 
@@ -113,7 +148,102 @@ def test_redis_backend_ping():
 def test_redis_backend_set_nx():
     fake_client = mock.Mock()
     fake_client.set.return_value = True
-    with mock.patch("redis.Redis.from_url", return_value=fake_client):
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
         backend = RedisStateBackend("redis://localhost:6379/0")
         assert backend.set_nx("nonce:x", "1", ttl_seconds=60.0) is True
         fake_client.set.assert_called_once()
+
+
+def test_redis_backend_get_set_delete():
+    fake_client = mock.Mock()
+    fake_client.get.return_value = "value"
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = RedisStateBackend("redis://localhost:6379/0", key_prefix="test")
+        assert backend.get("k") == "value"
+        backend.set("k2", "v2", ttl_seconds=30.0)
+        fake_client.setex.assert_called()
+        backend.delete("k")
+        fake_client.delete.assert_called()
+
+
+def test_redis_backend_set_add_with_max_size():
+    fake_client = mock.Mock()
+    fake_client.pipeline.return_value.execute.return_value = (False, 2)
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = RedisStateBackend("redis://localhost:6379/0")
+        assert backend.set_add("set:k", "m", max_size=2) is False
+
+
+def test_redis_backend_set_contains_and_json():
+    fake_client = mock.Mock()
+    fake_client.sismember.return_value = True
+    fake_client.get.return_value = '{"a": 1}'
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = RedisStateBackend("redis://localhost:6379/0")
+        assert backend.set_contains("set:k", "m") is True
+        assert backend.get_json("j") == {"a": 1}
+
+
+def test_redis_backend_ping_failure():
+    fake_client = mock.Mock()
+    fake_client.ping.side_effect = OSError("down")
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = RedisStateBackend("redis://localhost:6379/0")
+        assert backend.ping() is False
+
+
+def test_redis_backend_set_add_existing_member():
+    fake_client = mock.Mock()
+    fake_client.pipeline.return_value.execute.return_value = (True, 5)
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = RedisStateBackend("redis://localhost:6379/0")
+        assert backend.set_add("set:k", "m", max_size=10) is True
+
+
+def test_redis_backend_set_add_without_max_size():
+    fake_client = mock.Mock()
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = RedisStateBackend("redis://localhost:6379/0")
+        assert backend.set_add("set:k", "m") is True
+        fake_client.sadd.assert_called_once()
+
+
+def test_redis_backend_set_nx_without_ttl():
+    fake_client = mock.Mock()
+    fake_client.set.return_value = True
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = RedisStateBackend("redis://localhost:6379/0")
+        assert backend.set_nx("nonce:y", "1") is True
+
+
+def test_redis_backend_set_without_ttl():
+    fake_client = mock.Mock()
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = RedisStateBackend("redis://localhost:6379/0")
+        backend.set("plain", "v")
+        fake_client.set.assert_called_with("mcp-bastion:plain", "v")
+
+
+def test_redis_backend_get_json_invalid():
+    fake_client = mock.Mock()
+    fake_client.get.return_value = "not-json"
+    mod, _ = _fake_redis_module(fake_client)
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = RedisStateBackend("redis://localhost:6379/0")
+        assert backend.get_json("j") is None
+
+
+def test_build_state_backend_redis():
+    mod, fake_client = _fake_redis_module()
+    with mock.patch.dict("sys.modules", {"redis": mod}):
+        backend = build_state_backend(backend="redis")
+        assert isinstance(backend, RedisStateBackend)
