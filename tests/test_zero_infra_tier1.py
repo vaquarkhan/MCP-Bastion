@@ -8,7 +8,6 @@ import json
 import pytest
 
 from mcp_bastion.base import MiddlewareContext
-from mcp_bastion.errors import PromptInjectionError
 from mcp_bastion.middleware import MCPBastionMiddleware
 from mcp_bastion.pillars.identity_adapters import IdentityAdapter, IdentityAdapterConfig
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
@@ -47,6 +46,40 @@ def test_identity_adapter_jwt_claim_stamps_sub():
     assert adapter.stamp(ctx) is True
     assert ctx.metadata.get("principal_id") == "oidc-user-9"
     assert ctx.metadata.get("role") == "tools:read"
+
+
+def test_identity_adapter_disabled_returns_false():
+    adapter = IdentityAdapter(IdentityAdapterConfig(enabled=False))
+    ctx = MiddlewareContext(message={}, metadata={"X-Bastion-Principal": "x"})
+    assert adapter.stamp(ctx) is False
+
+
+def test_identity_adapter_jwt_invalid_returns_false():
+    adapter = IdentityAdapter(
+        IdentityAdapterConfig(enabled=True, adapter_type="jwt_claim", jwt_metadata_key="bastion_jwt")
+    )
+    ctx = MiddlewareContext(message={}, metadata={"bastion_jwt": "not-a-jwt"})
+    assert adapter.stamp(ctx) is False
+
+
+def test_identity_adapter_jwt_tenant_claim():
+    token = _jwt({"sub": "u1", "tenant_id": "acme"})
+    adapter = IdentityAdapter(
+        IdentityAdapterConfig(
+            enabled=True,
+            adapter_type="jwt_claim",
+            jwt_metadata_key="bastion_jwt",
+            tenant_claim="tenant_id",
+        )
+    )
+    ctx = MiddlewareContext(message={}, metadata={"bastion_jwt": token})
+    assert adapter.stamp(ctx) is True
+    assert ctx.metadata.get("tenant_id") == "acme"
+
+
+def test_identity_adapter_from_config_empty():
+    adapter = IdentityAdapter.from_config(None)
+    assert adapter.config.enabled is False
 
 
 @pytest.mark.asyncio

@@ -310,7 +310,7 @@ flowchart TB
   TS --> Sidecar["Rate limit in-process · ML via sidecar"]
 ```
 
-> **Releases:** npm, PyPI, and prebuilt **Docker** on GHCR — see [DOCKER.md](DOCKER.md). **Community:** GitHub **Issues**, **Discussions**, **PRs**. **Security:** [SECURITY.md](SECURITY.md).
+> **Releases:** npm, PyPI, and prebuilt **Docker** on GHCR — see [DOCKER.md](DOCKER.md). **Community:** [SUPPORT.md](SUPPORT.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [FUNDING.md](FUNDING.md) · **Security:** [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -1111,6 +1111,8 @@ See also:
 
 - [LICENSE](LICENSE)
 - [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
+- [FUNDING.md](FUNDING.md) — sponsorship and sustainability
+- [SUPPORT.md](SUPPORT.md) — docs, issues, response expectations
 - [CITATION.cff](CITATION.cff)
 
 ---

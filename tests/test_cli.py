@@ -15,6 +15,7 @@ from mcp_bastion.cli import (
     cmd_serve,
     cmd_dashboard,
     cmd_manifest,
+    cmd_attest_export,
     main,
     _ensure_src_on_path,
     _resolve_dashboard_repo,
@@ -335,3 +336,40 @@ def test_cli_main_entrypoint(monkeypatch):
         import runpy
         runpy.run_module("mcp_bastion.cli", run_name="__main__")
     assert exit_mock.called
+
+
+def test_cmd_serve_proxy_mode(tmp_path, monkeypatch):
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text("prompt_guard:\n  enabled: false\naudit:\n  enabled: false\n", encoding="utf-8")
+    called: list[tuple] = []
+
+    def fake_run(upstream_url, **kwargs):
+        called.append((upstream_url, kwargs))
+
+    monkeypatch.setattr("mcp_bastion.proxy_server.run_proxy_http", fake_run)
+    rc = cmd_serve(str(yaml_path), 8080, "127.0.0.1", proxy_url="http://127.0.0.1:9000/mcp")
+    assert rc == 0
+    assert called[0][0] == "http://127.0.0.1:9000/mcp"
+    assert called[0][1]["port"] == 8080
+
+
+def test_cmd_serve_missing_config_returns_one(tmp_path):
+    assert cmd_serve(str(tmp_path / "missing.yaml"), 8080, "127.0.0.1", proxy_url=None) == 1
+
+
+def test_cmd_attest_export_sign_missing_key(tmp_path, monkeypatch):
+    from mcp_bastion.pillars.session_governance import SessionGovernanceRecorder
+
+    SessionGovernanceRecorder.reset()
+    SessionGovernanceRecorder.get().record(
+        session_id="s",
+        request_id="r",
+        method="tools/call",
+        tool="t",
+        pillar="handler",
+        status="allowed",
+    )
+    monkeypatch.delenv("BASTION_MANIFEST_SIGNING_KEY", raising=False)
+    rc = cmd_attest_export("s", str(tmp_path / "bastion.yaml"), None, sign=True, principal_id=None, tenant_id=None)
+    assert rc == 1
+    SessionGovernanceRecorder.reset()

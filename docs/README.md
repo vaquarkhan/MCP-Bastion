@@ -19,6 +19,8 @@ Current Python package release: **`mcp-bastion-python==2.0.0`** ([PyPI](https://
 | [Advanced_Tutorials.md](Advanced_Tutorials.md) | Index of deeper docs (points to **DETAILED_TUTORIAL**, **TUTORIALS**, **PILLARS**, …) |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI (`validate`, `serve`, `serve --proxy`, `attest export`, …) |
 | [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) | **Guiding rule:** zero-infra guardrail brain; Tier 1–4 vs gateway products |
+| [../FUNDING.md](../FUNDING.md) | Sponsorship, commercial licensing, sustainability |
+| [../SUPPORT.md](../SUPPORT.md) | Where to get help; issue expectations |
 | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) | OpenAI/Claude/Gemini/Mistral/Grok integration patterns |
 | [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) | How Bastion fits stdio, HTTP, Python, TypeScript, and frameworks |
 | [TUTORIALS.md](TUTORIALS.md) | Popular MCP integration approaches |

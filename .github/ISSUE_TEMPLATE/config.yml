@@ -1,5 +1,14 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Documentation hub
+    url: https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/README.md
+    about: Quick start, pillars, policy-as-code, and production guides.
+  - name: Support (bugs & how-to)
+    url: https://github.com/vaquarkhan/MCP-Bastion/blob/main/SUPPORT.md
+    about: Where to ask questions and what to include in bug reports.
+  - name: Funding & sponsorship
+    url: https://github.com/vaquarkhan/MCP-Bastion/blob/main/FUNDING.md
+    about: GitHub Sponsors, commercial licensing, and non-monetary contributions.
   - name: Report a security vulnerability (private)
     url: https://github.com/vaquarkhan/MCP-Bastion/security/advisories/new
     about: Please do not open a public issue for security bugs. Use GitHub Private Security Advisories or see SECURITY.md.

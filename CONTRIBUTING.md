@@ -12,6 +12,8 @@ These usually need **no deep security internals** knowledge:
 
 When opening an issue, ask maintainers to apply the **`good first issue`** label if the task fits—volunteers filter on that tag.
 
+**Support & funding:** [SUPPORT.md](SUPPORT.md) · [FUNDING.md](FUNDING.md)
+
 ## Before you send a PR
 
 1. Run **`pytest --cov=mcp_bastion --cov-fail-under=92`** (with `[dev,policy,dashboard]` installed) and **`npm test`** at the repo root.
