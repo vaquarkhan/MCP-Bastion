@@ -312,6 +312,57 @@ def cmd_fingerprint(tools_json: str, output: str | None) -> int:
     return 0
 
 
+def cmd_attest_export(
+    session_id: str,
+    config_path: str | None,
+    output: str | None,
+    sign: bool,
+    principal_id: str | None,
+    tenant_id: str | None,
+) -> int:
+    """Export signed governance attestation for an agent session."""
+    _configure_cli_logging()
+    _ensure_src_on_path()
+    try:
+        from mcp_bastion.config import load_config
+        from mcp_bastion.pillars.governance_attestation import export_session_attestation
+    except ImportError as e:
+        logger.error("Error: %s", e)
+        return 1
+
+    cfg_path = config_path or os.environ.get("BASTION_CONFIG")
+    cfg = None
+    if cfg_path and Path(cfg_path).exists():
+        try:
+            cfg = load_config(cfg_path)
+        except Exception as e:
+            logger.error("Config error: %s", e)
+            return 1
+
+    try:
+        payload = export_session_attestation(
+            session_id,
+            config_path=cfg.source_path if cfg else cfg_path,
+            principal_id=principal_id,
+            tenant_id=tenant_id,
+            sign=sign,
+        )
+    except ValueError as e:
+        logger.error("%s", e)
+        return 1
+    except Exception as e:
+        logger.error("attest export failed: %s", e)
+        return 1
+
+    text = json.dumps(payload, indent=2)
+    if output:
+        Path(output).write_text(text + "\n", encoding="utf-8")
+        logger.info("Wrote attestation: %s", output)
+    else:
+        logger.info(text)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="mcp-bastion",
@@ -408,6 +459,30 @@ def main() -> int:
     tail_parser.add_argument("--config", "-c", help="Read audit.jsonl_path from bastion.yaml")
     tail_parser.set_defaults(
         func=lambda **kw: cmd_tail(kw.get("path"), kw.get("lines", 20), kw.get("config"))
+    )
+
+    attest_parser = sub.add_parser("attest", help="Governance attestation export")
+    attest_sub = attest_parser.add_subparsers(dest="attest_command", required=True)
+    export_parser = attest_sub.add_parser("export", help="Export session governance attestation JSON")
+    export_parser.add_argument("--session", "-s", required=True, help="Session ID to export")
+    export_parser.add_argument("--config", "-c", help="Path to bastion.yaml (for policy hash)")
+    export_parser.add_argument("--output", "-o", help="Write JSON to file")
+    export_parser.add_argument(
+        "--sign",
+        action="store_true",
+        help="HMAC-SHA256 sign with BASTION_MANIFEST_SIGNING_KEY",
+    )
+    export_parser.add_argument("--principal-id", help="Optional principal ID in attestation header")
+    export_parser.add_argument("--tenant-id", help="Optional tenant ID in attestation header")
+    export_parser.set_defaults(
+        func=lambda **kw: cmd_attest_export(
+            session_id=kw.get("session"),
+            config_path=kw.get("config"),
+            output=kw.get("output"),
+            sign=bool(kw.get("sign")),
+            principal_id=kw.get("principal_id"),
+            tenant_id=kw.get("tenant_id"),
+        )
     )
 
     args = parser.parse_args()

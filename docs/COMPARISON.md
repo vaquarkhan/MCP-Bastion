@@ -29,7 +29,7 @@ Scanners do not see spend at runtime. Gateways treat cost as billing, not as a *
 | Agent IAM + tool allowlists | ❌ | partial | ✅ | ✅ `agent_iam` |
 | Supply-chain manifest verification | ❌ | ❌ | partial | ✅ SHA-256 + HMAC |
 | FinOps caps (principal-based) | ❌ | partial | billing only | ✅ session + daily + **cost-as-policy** (3.0+) |
-| Governance attestation export | ❌ | ❌ | partial logs | 🔜 signed session bundle (3.0) |
+| Governance attestation export | ❌ | ❌ | partial logs | ✅ signed session bundle (`attest export`) |
 | Full MCP surface guards | ❌ | partial | varies | ✅ tools + resources + prompts + sampling + elicitation |
 | OPA / Cedar external policy | ❌ | ❌ | rare | ✅ |
 | Per-user upstream OAuth to GitHub/Notion | ❌ | rare | ✅ (gateway products) | 🔜 [ROADMAP](ROADMAP.md) P2 |

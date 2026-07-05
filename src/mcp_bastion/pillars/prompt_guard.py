@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 MALICIOUS_THRESHOLD = 0.85
 TEMPERATURE = 0.1
 MODEL_ID = "meta-llama/Llama-Prompt-Guard-2-86M"
+UNGATED_MODEL_ID = "ProtectAI/deberta-v3-base-prompt-injection-v2"
 HF_ACCESS_URL = "https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M"
 
 
@@ -39,10 +40,12 @@ class PromptGuardEngine:
         fail_open: bool = False,
         heuristic_fallback: bool = True,
         heuristic_extra_patterns: list[str] | None = None,
+        use_ungated_default: bool = False,
     ) -> None:
         self.threshold = threshold
         self.temperature = temperature
-        self.model_id = model_id
+        self.use_ungated_default = use_ungated_default
+        self.model_id = UNGATED_MODEL_ID if use_ungated_default else model_id
         self.fail_open = fail_open
         self.heuristic_fallback = heuristic_fallback
         self._heuristic_regexes = compile_injection_patterns(heuristic_extra_patterns)

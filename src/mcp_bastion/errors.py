@@ -194,3 +194,17 @@ class ArgumentGuardError(MCPBastionError):
 
     def __init__(self, message: str = "Request blocked: argument guard policy violation") -> None:
         super().__init__(message, code=-32022)
+
+
+class CostPolicyApprovalRequiredError(MCPBastionError):
+    """Raised when spend threshold requires explicit approval metadata."""
+
+    def __init__(self, message: str = "Request blocked: cost policy approval required") -> None:
+        super().__init__(message, code=-32023)
+
+
+class ExpensiveChainError(MCPBastionError):
+    """Raised when projected tool-sequence cost exceeds policy limit."""
+
+    def __init__(self, message: str = "Request blocked: expensive tool chain") -> None:
+        super().__init__(message, code=-32024)

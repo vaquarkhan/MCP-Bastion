@@ -19,6 +19,7 @@ from mcp_bastion.pillars.telemetry_sinks import build_telemetry_sinks_from_confi
 from mcp_bastion.pillars.external_policy import ExternalPolicyConfig, ExternalPolicyEvaluator, normalize_engine
 from mcp_bastion.pillars.circuit_breaker import CircuitBreaker
 from mcp_bastion.pillars.content_filter import ContentFilter
+from mcp_bastion.pillars.cost_policy import CostPolicyEngine
 from mcp_bastion.pillars.cost_tracker import CostTracker
 from mcp_bastion.pillars.sensitive_classifier import SensitiveContentClassifier
 from mcp_bastion.pillars.metrics import MetricsStore
@@ -98,6 +99,11 @@ class BastionConfig:
     cost_max_per_session: float = 0.50
     cost_max_per_day: float = 10.0
     cost_checkpoint_path: str | None = None
+    cost_policy_enabled: bool = False
+    cost_policy_config: dict[str, Any] = field(default_factory=dict)
+    prompt_guard_use_ungated_default: bool = False
+    boundary_mode_enabled: bool = False
+    governance_attestation_enabled: bool = True
     argument_guards_enabled: bool = False
     argument_guards_rules: list[dict[str, Any]] = field(default_factory=list)
     semantic_cache: bool = False
@@ -194,6 +200,14 @@ def validate_bastion_config(config: BastionConfig) -> None:
                 "otherwise callers can self-assert metadata.role"
             )
 
+    if config.boundary_mode_enabled and not config.edge_auth_enabled and not config.agent_iam_enabled:
+        raise BastionConfigError(
+            "boundary_mode.enabled requires edge_auth or agent_iam — proxy boundary must authenticate clients"
+        )
+
+    if config.cost_policy_enabled and not config.cost_tracker:
+        raise BastionConfigError("cost_policy.enabled requires cost_tracker.enabled")
+
     engine = normalize_engine(config.policy_engine_type)
     if engine != "none" and config.policy_engine_fail_closed:
         if engine == "opa":
@@ -260,11 +274,16 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     cedar_pe = pe.get("cedar", {}) or {}
     engine = normalize_engine(pe.get("type") or os.environ.get("BASTION_POLICY_ENGINE"))
     pg = data.get("prompt_guard", {}) or {}
+    cp = data.get("cost_policy", {}) or {}
+    bm = data.get("boundary_mode", {}) or {}
+    boundary_on = bool(bm.get("enabled", False))
+    th_require_loopback = bool(th.get("require_loopback", True))
     return BastionConfig(
         prompt_guard=pg.get("enabled", True),
         prompt_guard_threshold=float(pg.get("threshold", 0.85)),
         prompt_guard_fail_open=bool(pg.get("fail_open", False)),
         prompt_guard_heuristic_fallback=bool(pg.get("heuristic_fallback", True)),
+        prompt_guard_use_ungated_default=bool(pg.get("use_ungated_default", False)),
         prompt_guard_model_id=str(pg.get("model_id", "meta-llama/Llama-Prompt-Guard-2-86M")),
         pii=data.get("pii", {}).get("enabled", True),
         rate_limit=data.get("rate_limit", {}).get("enabled", True),
@@ -310,6 +329,9 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         cost_max_per_day=float(data.get("cost_tracker", {}).get("max_cost_per_day", 10.0)),
         cost_checkpoint_path=data.get("cost_tracker", {}).get("checkpoint_path")
         or os.environ.get("BASTION_COST_CHECKPOINT"),
+        cost_policy_enabled=bool(cp.get("enabled", False)),
+        cost_policy_config=cp if isinstance(cp, dict) else {},
+        boundary_mode_enabled=boundary_on,
         argument_guards_enabled=bool(ag.get("enabled", False)),
         argument_guards_rules=list(ag.get("rules", [])) if isinstance(ag.get("rules"), list) else [],
         semantic_cache=data.get("semantic_cache", {}).get("enabled", False),
@@ -379,7 +401,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         transport_hardening_enabled=bool(th.get("enabled", True)),
         transport_hardening_allowed_hosts=list(th.get("allowed_hosts", ["127.0.0.1", "localhost", "[::1]"])),
         transport_hardening_block_browser_origin=bool(th.get("block_browser_origin", True)),
-        transport_hardening_require_loopback=bool(th.get("require_loopback", True)),
+        transport_hardening_require_loopback=th_require_loopback,
         stdio_guard_enabled=bool(sg.get("enabled", False)),
         tool_metadata_fingerprint_enabled=bool(tmf.get("enabled", False)),
         tool_metadata_fingerprint_path=tmf.get("fingerprint_path") or tmf.get("path"),
@@ -390,6 +412,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         governance_allowed_repository_urls=list(gov.get("allowed_repository_urls", []))
         if isinstance(gov.get("allowed_repository_urls"), list)
         else [],
+        governance_attestation_enabled=bool(gov.get("attestation_enabled", True)),
         state_backend=str(sb.get("type", sb.get("backend", "memory"))),
         state_backend_redis_url=str(sb.get("redis_url", os.environ.get("BASTION_REDIS_URL", "redis://127.0.0.1:6379/0"))),
         state_backend_key_prefix=str(sb.get("key_prefix", "mcp-bastion")),
@@ -590,6 +613,7 @@ def _build_chain(config: BastionConfig) -> Any:
             model_id=config.prompt_guard_model_id,
             fail_open=config.prompt_guard_fail_open,
             heuristic_fallback=config.prompt_guard_heuristic_fallback,
+            use_ungated_default=config.prompt_guard_use_ungated_default,
         ),
         rate_limiter=TokenBucketRateLimiter(
             max_iterations=config.rate_limit_max_iterations,
@@ -662,6 +686,13 @@ def _build_chain(config: BastionConfig) -> Any:
         state_backend=state_backend,
         argument_guards=argument_guards,
         enable_argument_guards=config.argument_guards_enabled and argument_guards is not None,
+        cost_policy=CostPolicyEngine.from_config(config.cost_policy_config)
+        if config.cost_policy_enabled
+        else None,
+        enable_cost_policy=config.cost_policy_enabled,
+        config_source_path=config.source_path,
+        enable_governance_attestation=config.governance_attestation_enabled,
+        enable_boundary_mode=config.boundary_mode_enabled,
     )
     if config.governance_registry_url:
         schedule_registry_beacon(

@@ -94,7 +94,7 @@ Turn hash-chained audit into a **signed, exportable governance attestation** per
 
 **Why:** Makes Bastion the **system of record** for agent governance — what enterprises buy and cannot rip out. No OSS MCP competitor ships exportable attestation tied to spend.
 
-**Ship target:** 3.0 · `mcp-bastion attest export --session …` · optional HMAC with `BASTION_MANIFEST_SIGNING_KEY`
+**Ship target:** 3.0 · `mcp-bastion attest export --session …` · optional HMAC with `BASTION_MANIFEST_SIGNING_KEY` — **shipped in [Unreleased]**
 
 ### 2. Un-bypassable boundary mode *(kills the #1 criticism)*
 

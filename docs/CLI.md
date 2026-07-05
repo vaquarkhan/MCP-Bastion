@@ -9,6 +9,8 @@ Developer CLI for validating config, running the server, the dashboard, and oper
 | `dashboard` | Metrics UI + `/api/metrics` |
 | `redteam` | Run integrated OWASP / MCP Top 10 style harness |
 | `doctor` | Preflight + supply-chain style checks |
+| `attest export` | Export signed governance attestation for a session |
+| `tail` | Tail append-only audit JSONL |
 
 ## Install
 
@@ -64,6 +66,27 @@ mcp-bastion redteam --output report.json
 ```
 
 See [REDTEAM.md](REDTEAM.md) for interpreting the score.
+
+### attest export
+
+Export a **governance attestation** JSON bundle for an agent session (policy hash, pillars fired, blocked/allowed events, audit chain head):
+
+```bash
+mcp-bastion attest export --session SESSION_ID
+mcp-bastion attest export --session SESSION_ID --config bastion.yaml --sign
+mcp-bastion attest export --session SESSION_ID -o attestation.json
+```
+
+Signing uses `BASTION_MANIFEST_SIGNING_KEY` (same key as `manifest --sign`).
+
+### tail
+
+Tail the append-only audit JSONL sink:
+
+```bash
+mcp-bastion tail --path .bastion/audit.jsonl
+mcp-bastion tail --config bastion.yaml -n 50
+```
 
 ### doctor
 

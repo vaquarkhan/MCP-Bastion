@@ -8,6 +8,11 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **Cost-aware policy engine (`cost_policy`):** Live spend rules — `degrade_model`, `force_discovery_filter`, `require_approval` at session spend thresholds; **expensive-chain** blocking for projected multi-tool cost.
+- **Governance attestation export:** Per-session event log + `mcp-bastion attest export --session …` with optional HMAC signing (`BASTION_MANIFEST_SIGNING_KEY`); policy hash from `bastion.yaml`.
+- **Boundary mode:** `boundary_mode.enabled` enforces proxy authentication on every tool call (requires `edge_auth` or `agent_iam`); startup validation fails if misconfigured.
+- **Non-gated PromptGuard default:** `prompt_guard.use_ungated_default` selects `ProtectAI/deberta-v3-base-prompt-injection-v2` (no Hugging Face gate).
+- **E2E tests:** `tests/test_cost_policy_e2e.py`, `tests/test_attestation.py`, `tests/test_boundary_mode.py`, `tests/test_governance_integrations_e2e.py` (OPA/OTLP/Slack paths).
 - **Flagship strategy:** [docs/COST_AWARE_GOVERNANCE.md](docs/COST_AWARE_GOVERNANCE.md) — cost-aware runtime governance positioning, four ranked moats, 3.0–3.3 release alignment.
 - **Gateway boundary guide:** [docs/GATEWAY_BOUNDARY.md](docs/GATEWAY_BOUNDARY.md) — mandatory proxy mode checklist (loopback upstream, edge_auth, NetworkPolicy).
 - **Injection efficacy benchmark:** `benchmarks/injection_efficacy.py`, `tests/test_injection_efficacy.py`, row in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
