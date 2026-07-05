@@ -1088,3 +1088,9 @@ See also:
 - [LICENSE](LICENSE)
 - [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
 - [CITATION.cff](CITATION.cff)
+
+---
+
+## Product overview deck
+
+**[MCP-Bastion features deck (PDF)](docs/mcp-bastian-features-deck.pdf)** — cost-aware runtime governance, pillar map, FinOps benchmarks, and deployment patterns in a short slide deck for evaluators and stakeholders.

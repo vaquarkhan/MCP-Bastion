@@ -26,7 +26,7 @@ Current Python package release: **`mcp-bastion-python==2.0.0`** ([PyPI](https://
 
 1. **Policy-as-code only:** [PILLARS.md](PILLARS.md) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) → [CLI.md](CLI.md) (`validate`).
 2. **LLM desktop or API clients:** [LLM_INTEGRATION.md](LLM_INTEGRATION.md) → [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) → [../examples/README.md](../examples/README.md).
-3. **Production hardening:** [SECURITY.md](SECURITY.md) → [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) (includes **fleet-scale policy** and **SIEM / SOC audit** patterns) → [METRICS.md](METRICS.md).
+3. **Production hardening:** [SECURITY.md](SECURITY.md) → [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) → [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) (includes **fleet-scale policy** and **SIEM / SOC audit** patterns) → [METRICS.md](METRICS.md).
 
 ## Security and operations
 
@@ -35,9 +35,11 @@ Current Python package release: **`mcp-bastion-python==2.0.0`** ([PyPI](https://
 | [SECURITY.md](SECURITY.md) | OWASP mapping, mitigations, vulnerability reporting |
 | [BEYOND_OWASP.md](BEYOND_OWASP.md) | Threats outside OWASP Top 10 (localhost CSRF, context flooding, schema drift) |
 | [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md) | HTTP / localhost binding and edge_auth guidance |
+| [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) | **2.0.0+:** mandatory proxy boundary — loopback upstream, edge_auth, NetworkPolicy checklist |
 | [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) | Agent IAM (Confused Deputy) and server checksum verification |
-| [ROADMAP.md](ROADMAP.md) | **Future roadmap (3.0+):** P1–P5 priorities, release sequencing, non-goals |
-| [COMPARISON.md](COMPARISON.md) | MCP-Bastion vs unguarded MCP, thin proxy, full AI/MCP gateway |
+| [ROADMAP.md](ROADMAP.md) | **Future roadmap (3.0+):** P0 cost-aware policy, P1–P5 priorities, release sequencing |
+| [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) | **Flagship bet:** cost-aware runtime governance — category positioning, four moats, messaging |
+| [COMPARISON.md](COMPARISON.md) | MCP-Bastion vs scanners, gateways, unguarded MCP |
 | [ENGINEERING_10_10.md](ENGINEERING_10_10.md) | Strategic 10/10 plan: injection depth, tool scan, OAuth gateway, maturity |
 | [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) | Attack scenarios and prevention walkthroughs |
 | [METRICS.md](METRICS.md) | Metrics, dashboard, Prometheus and effectiveness guidance |

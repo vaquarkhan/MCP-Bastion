@@ -6,6 +6,17 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Flagship strategy:** [docs/COST_AWARE_GOVERNANCE.md](docs/COST_AWARE_GOVERNANCE.md) — cost-aware runtime governance positioning, four ranked moats, 3.0–3.3 release alignment.
+- **Gateway boundary guide:** [docs/GATEWAY_BOUNDARY.md](docs/GATEWAY_BOUNDARY.md) — mandatory proxy mode checklist (loopback upstream, edge_auth, NetworkPolicy).
+- **Injection efficacy benchmark:** `benchmarks/injection_efficacy.py`, `tests/test_injection_efficacy.py`, row in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+- **Integration packages 2.0.0:** all 17 `mcp-bastion-*` PyPI integrations published at **2.0.0** (tag `integration-v2.0.0`).
+
+### Fixed
+
+- **Session cost cap on `tools/call`:** `cost_tracker.record()` now passes `principal_id` / `tenant_id` on the tool-call path so `max_cost_per_session` matches `check()` keys (was silently bypassed after principal-keyed FinOps hardening).
+
 ## [2.0.0] - 2026-07-05
 
 Major release consolidating runtime governance hardening, critical bug fixes, benchmarks, and dashboard updates.

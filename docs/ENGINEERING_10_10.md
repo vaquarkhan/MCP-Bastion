@@ -2,7 +2,16 @@
 
 This document turns independent review findings into **concrete, testable milestones** tied to the current codebase. It complements the release checklist in [ROADMAP.md](ROADMAP.md).
 
-**Already fixed on the release branch (do not re-file as open bugs):**
+**Flagship lens:** [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) — cost-aware runtime governance for AI agents. The four ranked moats:
+
+1. Compliance-grade attestation  
+2. Un-bypassable boundary mode  
+3. Behavioral fingerprinting / adaptive defense  
+4. Real semantic layer + bundled default model  
+
+---
+
+**Already fixed in 2.0.0 (do not re-file as open bugs):**
 
 | ID | Issue | Fix |
 |----|-------|-----|
@@ -71,21 +80,29 @@ This document turns independent review findings into **concrete, testable milest
 
 ---
 
-## 4. Context / FinOps depth (Good → 10/10)
+## 4. Context / FinOps depth (Good → 10/10) — **flagship pillar**
 
-**Gap today:** Output budget and discovery filter work but savings are **input-dependent**; “semantic cache” is lexical Jaccard.
+**Gap today:** Output budget and discovery filter work but savings are **input-dependent**; “semantic cache” is lexical Jaccard; caps **hard-block** instead of **degrading** under budget pressure.
 
-**Code anchors:** `pillars/output_budget.py`, `middleware.py` (`discovery_filter`), `pillars/semantic_cache.py`, [BENCHMARKS.md](BENCHMARKS.md).
+**Bet:** Own [cost-aware runtime governance](COST_AWARE_GOVERNANCE.md) — live spend drives allow/deny/route, not only pattern match.
+
+**Code anchors:** `pillars/cost_tracker.py`, `pillars/budget_principal.py`, `pillars/output_budget.py`, `middleware.py` (`discovery_filter`), `pillars/semantic_cache.py`, [BENCHMARKS.md](BENCHMARKS.md).
 
 | Milestone | Work |
 |-----------|------|
-| Honest metrics | Keep published benchmarks; avoid flat “X% prompt reduction” marketing. |
-| Optional embedding cache | Real semantic cache behind a flag; keep lexical as zero-dep default. |
-| RBAC trust boundary | Document + enforce: RBAC + **Agent IAM** or **edge auth** (already in README/BENCHMARKS). |
+| Cost-aware policy | `cost_policy` rules: degrade model, force discovery filter, require approval at spend thresholds |
+| Expensive-chain prevention | Project sequence cost before run; block/throttle via semantic firewall + pricing table |
+| Attestation export | Signed session bundle: policy hash, controls fired, blocks, total cost |
+| Chargeback dashboard | Per-agent/tenant showback + burn-rate forecast |
+| Optional embedding cache | Real semantic cache behind a flag; keep lexical as zero-dep default |
+| Honest metrics | Keep published benchmarks; avoid flat “X% prompt reduction” marketing |
 
 **10/10 acceptance test:**
 
-- Benchmark doc + pytest suite stay green; dashboard shows governance + FinOps tiles with measured numbers.
+- Session at 80% budget triggers configured degradation (not silent allow).
+- Expensive tool chain blocked before execution with `projected_cost_usd` in audit.
+- `mcp-bastion attest export` produces verifiable session bundle.
+- Benchmark doc + pytest suite stay green.
 
 ---
 
@@ -119,8 +136,10 @@ Requires external services or alternate MCP paths: OPA/Cedar, OTEL collector, li
 
 ## Suggested priority order
 
-1. **Ship Bug A + B fixes** — ✅ shipped in **2.0.0**.
-2. **Prompt-injection** non-gated default + benchmark table (highest security ROI).
-3. **`mcp-bastion scan`** static tool scanner (competitive parity with mcp-scan).
-4. **JWT/OIDC gateway** path (unify with Agent IAM).
-5. **Maturity** — audit, npm/pip audit green, Sigstore.
+1. **Cost-aware policy + attestation** — flagship moat; builds on 2.0.0 FinOps (highest enterprise ROI).
+2. **Prompt-injection** non-gated default + benchmark table (closes honest security caveat).
+3. **Un-bypassable boundary** — hardened proxy Helm + e2e (kills in-process critique).
+4. **`mcp-bastion scan`** static tool scanner (competitive parity with mcp-scan).
+5. **Behavioral fingerprinting** — adaptive defense tied to spend telemetry.
+6. **JWT/OIDC gateway** path (unify with Agent IAM).
+7. **Maturity** — audit, npm/pip audit green, Sigstore.

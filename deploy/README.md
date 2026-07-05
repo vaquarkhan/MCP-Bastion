@@ -1,6 +1,6 @@
 # HTTP reverse proxy for MCP (P2)
 
-See [../docs/TRANSPORT_HARDENING.md](../docs/TRANSPORT_HARDENING.md) for the full threat model.
+See [../docs/TRANSPORT_HARDENING.md](../docs/TRANSPORT_HARDENING.md) for the full threat model and [../docs/GATEWAY_BOUNDARY.md](../docs/GATEWAY_BOUNDARY.md) for the mandatory proxy boundary checklist.
 
 ## Quick start
 
