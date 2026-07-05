@@ -1,6 +1,8 @@
 # Product roadmap — cost-aware runtime governance
 
-Status as of **2.0.0** (released 2026-07-05).
+**Guiding rule:** [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) — stay a **zero-infra, drop-in library**; be the **guardrail brain** that composes with any gateway.
+
+Status as of **main** post-3.0 governance merge (2026-07-05).
 
 **Flagship bet:** [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) — own *cost-aware runtime governance for AI agents* (policy + live spend + attestation). Deep engineering milestones: [ENGINEERING_10_10.md](ENGINEERING_10_10.md). Competitive positioning: [COMPARISON.md](COMPARISON.md).
 
@@ -52,6 +54,10 @@ Status as of **2.0.0** (released 2026-07-05).
 | **JSONPath argument guards** | ✅ `argument_guards` |
 | **Audit JSONL + `mcp-bastion tail`** | ✅ |
 | **Cost checkpoint (memory backend)** | ✅ |
+| **`cost_policy` + attestation + boundary mode** | ✅ [Unreleased on main] |
+| **`mcp-bastion serve --proxy`** (boundary, same config) | 🟡 |
+| **BYOI `identity_adapter`** | 🟡 |
+| **Secrets resolver + syslog SIEM sink** | 🟡 |
 
 ---
 
@@ -101,9 +107,11 @@ Closes the biggest *gateway* gap vs products like ThinkWatch **without** buildin
 | **MCP auth-required catalog UX** (`_meta.requires_user_auth`, JSON-RPC `-32050` + authorize URL) | M | Cursor / Claude Desktop expect catalog + auth prompt, not empty list | Compliant client can drive user to authorize |
 | **Per-user upstream credential vault** (encrypted OAuth/PAT per user + server, optional) | XL | “Upstream sees real user” for multi-tenant MCP hubs | GitHub MCP call audited with user `sub` + upstream identity |
 | **Virtual API keys with lifecycle** (issue, rotate, grace period, `surfaces` allowlist) | L | Enterprise key governance; separate dev/CI keys | Key rotation without downtime; audit ties to key id |
-| **Standalone hardened proxy mode** (`mcp-bastion serve` + TLS + body limits + Helm) | M | **Moat #2:** un-bypassable boundary vs in-process critique | Documented K8s/Compose path; proxy e2e test; NetworkPolicy defaults |
+| **Standalone hardened proxy mode** (`mcp-bastion serve --proxy`) | M | **Tier 1:** un-bypassable boundary, same code | 🟡 HTTP proxy + guarded JSON-RPC |
+| **BYOI identity adapters** (header / JWT claim) | S | Per-user governance without auth server | 🟡 `identity_adapter` in bastion.yaml |
+| **Secrets resolver** (env + vault optional extras) | M | BYO vault; no secrets in git | 🟡 `secrets.provider` interface |
+| **Syslog / Kafka SIEM sinks** | S | BYO backend vs managed ClickHouse | 🟡 syslog shipped; Kafka 🔜 |
 | **SSO for dashboard** (OIDC login for admin UI, not only edge bearer) | M | Teams want Okta/Azure AD on the console | Dashboard login via OIDC; RBAC from claims |
-| **Secrets adapters** (Vault / AWS SM for agent tokens & upstream keys) | M | Keys never in LLM context or git | `bastion.yaml` references secret ref, not plaintext |
 
 See [ENGINEERING_10_10.md §3](ENGINEERING_10_10.md).
 

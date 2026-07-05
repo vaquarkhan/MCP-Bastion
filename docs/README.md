@@ -17,7 +17,8 @@ Current Python package release: **`mcp-bastion-python==2.0.0`** ([PyPI](https://
 | [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) | **2.0.0:** full MCP method guards + Redis `state_backend` for multi-replica deploys |
 | [REDTEAM.md](REDTEAM.md) | Interpreting harness scores; **`mcp-bastion redteam`** |
 | [Advanced_Tutorials.md](Advanced_Tutorials.md) | Index of deeper docs (points to **DETAILED_TUTORIAL**, **TUTORIALS**, **PILLARS**, …) |
-| [CLI.md](CLI.md) | `mcp-bastion` CLI (`validate`, `serve`, `dashboard`, `redteam`, `doctor`, …) |
+| [CLI.md](CLI.md) | `mcp-bastion` CLI (`validate`, `serve`, `serve --proxy`, `attest export`, …) |
+| [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) | **Guiding rule:** zero-infra guardrail brain; Tier 1–4 vs gateway products |
 | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) | OpenAI/Claude/Gemini/Mistral/Grok integration patterns |
 | [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) | How Bastion fits stdio, HTTP, Python, TypeScript, and frameworks |
 | [TUTORIALS.md](TUTORIALS.md) | Popular MCP integration approaches |

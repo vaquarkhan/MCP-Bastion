@@ -41,6 +41,9 @@ Run the MCP server with config. Uses `examples/llm_server.py` when run from repo
 mcp-bastion serve
 mcp-bastion serve --http 8080 --host 0.0.0.0
 mcp-bastion serve --config bastion.yaml --http 9000
+
+# Boundary mode: same bastion.yaml, forward to upstream MCP (loopback only)
+mcp-bastion serve --proxy http://127.0.0.1:9000/mcp --http 8080 --config bastion.yaml
 ```
 
 ### dashboard

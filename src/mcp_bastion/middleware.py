@@ -43,6 +43,7 @@ from mcp_bastion.pillars.rate_limit import RateLimitCheckResult, TokenBucketRate
 from mcp_bastion.pillars.response_scanner import ResponseInjectionScanner
 from mcp_bastion.pillars.output_budget import OutputBudget
 from mcp_bastion.pillars.grounding_guard import GroundingGuard
+from mcp_bastion.pillars.identity_adapters import IdentityAdapter
 from mcp_bastion.pillars.agent_iam import AgentIAM
 from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine
 from mcp_bastion.pillars.budget_principal import mark_authenticated_role, resolve_budget_principal, AUTHENTICATED_ROLE_KEY
@@ -466,6 +467,8 @@ class MCPBastionMiddleware(Middleware[Any]):
         config_source_path: str | None = None,
         enable_governance_attestation: bool = True,
         enable_boundary_mode: bool = False,
+        identity_adapter: IdentityAdapter | None = None,
+        enable_identity_adapter: bool = False,
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -535,6 +538,8 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.config_source_path = config_source_path
         self.enable_governance_attestation = enable_governance_attestation
         self.enable_boundary_mode = enable_boundary_mode
+        self.identity_adapter = identity_adapter
+        self.enable_identity_adapter = enable_identity_adapter and identity_adapter is not None
         self._governance = SessionGovernanceRecorder.get()
 
         if self.enable_tool_metadata_guard and not self.enable_content_filter and not self.enable_prompt_guard:
@@ -1022,6 +1027,7 @@ class MCPBastionMiddleware(Middleware[Any]):
             resource_uri = str(params.get("uri") or "") or None
 
         agent_policy = None
+        self._apply_identity_adapter(context, trace)
         if self.enable_agent_iam and self.agent_iam is not None:
             started = time.perf_counter()
             try:
@@ -1157,6 +1163,18 @@ class MCPBastionMiddleware(Middleware[Any]):
             context.metadata["elapsed_ms"] = round(elapsed_ms, 2)
             logger.debug("request done elapsed_ms=%.2f", elapsed_ms)
 
+    def _apply_identity_adapter(self, context: MiddlewareContext[Any], trace: list[Any]) -> None:
+        if not self.enable_identity_adapter or self.identity_adapter is None:
+            return
+        started = time.perf_counter()
+        try:
+            self.identity_adapter.stamp(context)
+            _trace_append(trace, pillar="identity_adapter", status="allowed", started=started)
+        except Exception as e:
+            self._handle_violation(
+                context=context, trace=trace, pillar="identity_adapter", started=started, error=e
+            )
+
     async def _handle_call_tool(
         self,
         context: MiddlewareContext[Any],
@@ -1244,6 +1262,7 @@ class MCPBastionMiddleware(Middleware[Any]):
                 )
 
         agent_policy = None
+        self._apply_identity_adapter(context, trace)
         if self.enable_agent_iam and self.agent_iam is not None:
             started = time.perf_counter()
             try:
