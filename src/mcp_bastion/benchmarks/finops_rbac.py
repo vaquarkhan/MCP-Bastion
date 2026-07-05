@@ -32,7 +32,7 @@ def text_with_approx_tokens(
     if target <= 0:
         return ""
     word = "measurement "
-    text = word * max(1, target * 2)
+    text = ""
     while counter(text) < target:
         text += word
     return text

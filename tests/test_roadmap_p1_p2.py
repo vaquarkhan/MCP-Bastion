@@ -58,8 +58,19 @@ def test_stdio_guard_blocks_invalid_lines(capsys):
     guard.flush()
     out = buf.getvalue()
     assert "NOT JSON" not in out
-    assert is_valid_json_rpc_line('{"a":1}') is True
-    assert is_valid_json_rpc_line("print('x')") is False
+    assert "jsonrpc" in out
+
+
+def test_is_valid_json_rpc_line_edge_cases():
+    assert is_valid_json_rpc_line("") is True
+    assert is_valid_json_rpc_line("plain text") is False
+    assert is_valid_json_rpc_line("{bad json") is False
+    assert is_valid_json_rpc_line("[1, 2]") is True
+
+
+def test_stdio_guard_empty_write_returns_zero():
+    guard = JsonRpcStdoutGuard(io.StringIO())
+    assert guard.write("") == 0
 
 
 def test_manifest_hmac_sign_and_verify():
@@ -363,6 +374,36 @@ def test_tool_metadata_fingerprint_loaders(tmp_path):
     fp_file = tmp_path / "fp.json"
     fp_file.write_text(json.dumps(doc), encoding="utf-8")
     assert load_expected_fingerprint(fp_file) == doc["fingerprint"]
+
+
+def test_tool_metadata_fingerprint_list_json_and_invalid(tmp_path):
+    from mcp_bastion.pillars.tool_metadata_fingerprint import (
+        fingerprint_tools,
+        load_expected_fingerprint,
+        load_tools_from_json,
+    )
+
+    list_path = tmp_path / "list.json"
+    list_path.write_text(json.dumps([{"name": "only", "description": "tool"}]), encoding="utf-8")
+    assert len(load_tools_from_json(list_path)) == 1
+
+    bad_path = tmp_path / "bad.json"
+    bad_path.write_text(json.dumps({"unexpected": True}), encoding="utf-8")
+    with pytest.raises(ValueError, match="Expected tools list"):
+        load_tools_from_json(bad_path)
+
+    string_fp = tmp_path / "fp_str.json"
+    string_fp.write_text(json.dumps("abc123"), encoding="utf-8")
+    assert load_expected_fingerprint(string_fp) == "abc123"
+
+    invalid_fp = tmp_path / "fp_invalid.json"
+    invalid_fp.write_text(json.dumps({"no_fp": True}), encoding="utf-8")
+    with pytest.raises(ValueError, match="fingerprint"):
+        load_expected_fingerprint(invalid_fp)
+
+    fp = fingerprint_tools([{"name": "t", "input_schema": {"type": "object"}}])
+    assert fp == fingerprint_tools([{"name": "t", "inputSchema": {"type": "object"}}])
+    assert fingerprint_tools(["legacy-name"])  # non-dict tool entries
 
 
 def test_doctor_tool_metadata_fingerprint(tmp_path):

@@ -4,13 +4,14 @@ OWASP MCP Top 10 covers agent-to-server risks at the protocol boundary. MCP-Bast
 
 | Threat | Bastion coverage | Config / notes |
 |--------|------------------|----------------|
-| **Browser → localhost MCP (CSRF / DNS rebind)** | Primary (with proxy) | `transport_hardening` ASGI middleware + [deploy/](../deploy/) Caddy recipe + bind `127.0.0.1` |
+| **Browser → localhost MCP (CSRF / DNS rebind)** | Primary | `transport_hardening` ASGI middleware + [deploy/](../deploy/) Caddy recipe + bind `127.0.0.1` |
 | **Confused Deputy (multi-agent IAM)** | Primary | `agent_iam`: token → identity, per-tool allow/block, per-agent rate limits, `isolate_sessions`. See [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md). |
 | **Registry typosquatting / tampered server** | Primary | `server_verification` + HMAC manifest signatures + `doctor` registry publisher check |
-| **stdio stdout JSON injection** | Partial | `stdio_guard` drops non-JSON stdout lines when enabled |
+| **stdio stdout JSON injection** | Primary | `stdio_guard` drops non-JSON stdout lines when enabled (2.0.0) |
 | **Context flooding (denial-of-wallet)** | Primary | `token_budget`, `output_budget`, `max_response_bytes`, `cost_tracker`. See [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md#8-context-flooding-denial-of-wallet). |
-| **Multi-agent state poisoning** | Partial | `response_scan`, `prompt_guard`, RBAC, audit hash chain, `multi_tenant`. Separate trust zones per agent class. |
-| **Semantic schema drift** | Partial | `tool_metadata_guard`, `hot_reload`, `doctor` / `redteam`. Enable metadata guard in production. |
+| **Multi-agent state poisoning** | Primary | `agent_iam.isolate_sessions`, `state_backend: redis`, `response_scan`, audit hash chain, `multi_tenant` (2.0.0) |
+| **MCP surface exfil (non tools/call)** | Primary | Full surface guards on `resources/read`, `prompts/get`, `sampling/createMessage`, `elicitation/create` (2.0.0) |
+| **Semantic schema drift** | Partial | `tool_metadata_fingerprint`, `tool_metadata_guard`, `hot_reload`, `doctor` / `redteam` |
 | **Ransomware via RCE / injection** | Partial | `content_filter`, `prompt_guard`, `schema_validation`, `tool_allowlist`. Not a sandbox — pair with OS controls. |
 | **Rogue MCP servers (supply chain)** | Partial | `doctor`, pip-audit, PyPI/npm provenance. Verify publisher before install. |
 

@@ -148,9 +148,11 @@ def test_run_doctor_state_backend_redis_ping(tmp_path):
         pytest.skip("pyyaml not installed")
     fake_client = mock.Mock()
     fake_client.ping.return_value = True
+    fake_mod = mock.Mock()
+    fake_mod.Redis.from_url = mock.Mock(return_value=fake_client)
     with mock.patch("mcp_bastion.doctor.shutil.which", return_value=None):
         with mock.patch("mcp_bastion.pillars.prompt_guard.PromptGuardEngine.score", return_value=0.0):
-            with mock.patch("redis.Redis.from_url", return_value=fake_client):
+            with mock.patch.dict("sys.modules", {"redis": fake_mod}):
                 r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
     sb = next(c for c in r["checks"] if c["id"] == "state_backend_redis")
     assert sb["ok"] is True
