@@ -167,3 +167,23 @@ telemetry:
     cfg = load_config(str(p))
     mw = build_middleware_from_config(cfg)
     assert mw is not None
+
+
+def test_format_syslog_rfc5424():
+    evt = {"tool": "t", "action": "ALLOWED"}
+    raw = format_telemetry_body("syslog_rfc5424", evt, service="mcp-bastion", ddtags="")
+    text = raw.decode()
+    assert "mcp-bastion" in text
+    assert "ALLOWED" in text
+
+
+def test_build_telemetry_sinks_syslog():
+    from unittest import mock
+
+    cfg = BastionConfig(telemetry_sinks=[{"format": "syslog", "host": "127.0.0.1", "port": 514}])
+    sinks = build_telemetry_sinks_from_config(cfg)
+    assert len(sinks) == 1
+    with mock.patch("socket.socket") as sock_cls:
+        inst = sock_cls.return_value.__enter__.return_value
+        sinks[0](_sample_entry())
+        inst.sendto.assert_called_once()

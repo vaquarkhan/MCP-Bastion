@@ -1,4 +1,4 @@
-# @mcp-bastion/core
+﻿# @mcp-bastion/core
 
 [npm](https://www.npmjs.com/package/@mcp-bastion/core)
 
@@ -51,7 +51,7 @@ await server.connect(transport);
 
 ### Scope vs Python (`mcp-bastion-python`)
 
-The **npm** package is **smaller by design**: in-process **rate limiting** plus optional **sidecar** for prompt guard and PII only. It does **not** implement the full Python control set (for example content filter, replay guard, schema validation, RBAC, circuit breaker, and others listed in the main repo’s [docs/PILLARS.md](../../docs/PILLARS.md)). For those controls, use **`mcp-bastion-python`** or a sidecar you run that performs the same checks. Compare the two packages explicitly when you design your deployment—**npm** and **PyPI** are complementary, not interchangeable.
+The **npm** package is **smaller by design**: in-process **rate limiting** plus optional **sidecar** for prompt guard and PII only. It does **not** implement the full Python control set (for example content filter, replay guard, schema validation, RBAC, circuit breaker, and others listed in the main repo’s [docs/PILLARS.md](../../docs/PILLARS.md)). For those controls, use **`mcp-bastion-python`** or a sidecar you run that performs the same checks. Compare the two packages explicitly when you design your deployment - **npm** and **PyPI** are complementary, not interchangeable.
 
 ## Full docs
 

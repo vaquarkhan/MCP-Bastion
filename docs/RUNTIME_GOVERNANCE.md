@@ -1,6 +1,6 @@
-# Runtime Governance & Zero-Trust Control Plane
+﻿# Runtime Governance & Zero-Trust Control Plane
 
-MCP-Bastion positions as the **Zero-Trust control plane** for Model Context Protocol deployments — runtime governance for multi-agent IAM and supply-chain verification at the MCP boundary.
+MCP-Bastion positions as the **Zero-Trust control plane** for Model Context Protocol deployments  -  runtime governance for multi-agent IAM and supply-chain verification at the MCP boundary.
 
 ## 1. Agent Identity & Access Management (Confused Deputy)
 
@@ -44,7 +44,7 @@ Bastion will:
 
 Errors: `AuthenticationError` (-32013), `AgentAccessDeniedError` (-32019)
 
-When `agent_iam` is enabled, the generic single-secret `edge_auth` pillar is skipped — use per-agent tokens instead.
+When `agent_iam` is enabled, the generic single-secret `edge_auth` pillar is skipped  -  use per-agent tokens instead.
 
 ## 2. Server cryptographic verification (supply chain)
 

@@ -1,4 +1,4 @@
-# Community use, citation, and commercial licensing
+﻿# Community use, citation, and commercial licensing
 
 ## Free to use (with credit)
 
@@ -12,7 +12,7 @@ If you use, ship, or describe MCP-Bastion in a product, service, course, researc
 - **Repository:** https://github.com/vaquarkhan/MCP-Bastion  
 - **Copyright** line from the [LICENSE](LICENSE) file, unchanged  
 
-Structured citation metadata (authors, year, version) is in [CITATION.cff](CITATION.cff) — use it in acknowledgements, references, or software sections.
+Structured citation metadata (authors, year, version) is in [CITATION.cff](CITATION.cff)  -  use it in acknowledgements, references, or software sections.
 
 ## Copyright and not duplicating the code
 
@@ -26,7 +26,7 @@ Copyright applies to the Software (see the License). In particular you must **no
 
 ## When a separate written commercial license may still be needed
 
-**Commercial Use** (as defined in the [LICENSE](LICENSE) — e.g. production or revenue‑driven use by a business, hosting for a fee, or bundling with paid products) is **not** automatically granted by the community License. For those cases you may need a **separate agreement** with the copyright holder. To discuss terms, use the contact path below.
+**Commercial Use** (as defined in the [LICENSE](LICENSE)  -  e.g. production or revenue‑driven use by a business, hosting for a fee, or bundling with paid products) is **not** automatically granted by the community License. For those cases you may need a **separate agreement** with the copyright holder. To discuss terms, use the contact path below.
 
 ## What to include in a commercial or enterprise inquiry (optional)
 

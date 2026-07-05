@@ -1,4 +1,4 @@
-# GitHub branch and merge rules (for maintainers)
+﻿# GitHub branch and merge rules (for maintainers)
 
 Branch protection and **rulesets** are configured in the GitHub **web UI** (or the `gh` CLI / REST API), not by a rules file in this repo. Use this as a **checklist** when tightening `main`.
 
@@ -11,11 +11,11 @@ Create a ruleset targeting **`main`** (or `include default branch`).
 | **Require a pull request before merging** | On |
 | **Required approvals** | 1 (2 if you have multiple maintainers) |
 | **Dismiss stale pull request approvals** | On |
-| **Require status checks to pass** | On — add the job that runs your Python + npm CI (see `.github/workflows/ci.yml` job name: `Python (validate + pytest)` and `TypeScript (npm test)` or whatever appears in the PR checks) |
+| **Require status checks to pass** | On  -  add the job that runs your Python + npm CI (see `.github/workflows/ci.yml` job name: `Python (validate + pytest)` and `TypeScript (npm test)` or whatever appears in the PR checks) |
 | **Require branches to be up to date** | On (optional; stricter) |
 | **Block force pushes** | On |
 | **Require code scanning results** | On if Code Scanning is enabled |
-| **Require review from Code Owners** | Optional — requires `.github/CODEOWNERS` and that listed accounts can review |
+| **Require review from Code Owners** | Optional  -  requires `.github/CODEOWNERS` and that listed accounts can review |
 
 **Solo maintainers:** you can add yourself to a **bypass list** in the ruleset so urgent fixes can still merge while keeping the rules for everyone else, or start without “required approvals” and add them when the team grows.
 

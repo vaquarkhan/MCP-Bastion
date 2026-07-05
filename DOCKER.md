@@ -1,4 +1,4 @@
-# MCP-Bastion Docker
+﻿# MCP-Bastion Docker
 
 ## Prebuilt images (GitHub Container Registry)
 
@@ -10,10 +10,10 @@ Images are built by [`.github/workflows/publish-docker.yml`](.github/workflows/p
 
 | Image | Use |
 |-------|-----|
-| [`ghcr.io/vaquarkhan/mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy) | HTTP MCP entrypoint (see [Dockerfile](Dockerfile)) — port `8080` |
-| [`ghcr.io/vaquarkhan/mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard) | Metrics dashboard — port `7000` |
+| [`ghcr.io/vaquarkhan/mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy) | HTTP MCP entrypoint (see [Dockerfile](Dockerfile))  -  port `8080` |
+| [`ghcr.io/vaquarkhan/mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard) | Metrics dashboard  -  port `7000` |
 
-**Current release:** **2.0.0** (2026-07-05) — `pip install mcp-bastion-python==2.0.0`
+**Current release:** **2.0.0** (2026-07-05)  -  `pip install mcp-bastion-python==2.0.0`
 
 ```bash
 docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.0

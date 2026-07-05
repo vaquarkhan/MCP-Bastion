@@ -1,10 +1,10 @@
-# Quick start: protect an MCP server in minutes
+﻿# Quick start: protect an MCP server in minutes
 
 Time-to-value matters. Pick **one** path; each keeps Bastion-specific code to **a couple of lines** before you wire transport (stdio or HTTP) the same way you already do for MCP.
 
 ---
 
-## Path A — FastMCP (Python)
+## Path A  -  FastMCP (Python)
 
 After `pip install mcp-bastion-fastmcp` and your usual `mcp` / FastMCP install:
 
@@ -22,7 +22,7 @@ Full runnable pattern: [integrations/mcp-bastion-fastmcp/README.md](../integrati
 
 ---
 
-## Path B — Policy-as-code (`bastion.yaml`)
+## Path B  -  Policy-as-code (`bastion.yaml`)
 
 After `pip install mcp-bastion-python[policy]` and copying `bastion.yaml.example` → `bastion.yaml`:
 
@@ -36,7 +36,7 @@ Register `middleware` on your MCP server’s request path (see [TUTORIALS.md](TU
 
 ---
 
-## Path C — CI gate (machine-scale adoption)
+## Path C  -  CI gate (machine-scale adoption)
 
 Add **`mcp-bastion validate`** to every PR so policy stays valid in pipelines: [examples/ci/README.md](../examples/ci/README.md).
 

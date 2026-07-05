@@ -5,7 +5,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-ARG BASTION_VERSION=2.0.0
+ARG BASTION_VERSION=2.0.1
 # Pin to PyPI release (published by tag workflow). Re-dispatch Docker publish after PyPI is green if this step races.
 RUN pip install --no-cache-dir mcp "mcp-bastion-python==${BASTION_VERSION}"
 

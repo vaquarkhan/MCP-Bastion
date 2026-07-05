@@ -1,4 +1,4 @@
-# Security Policy
+﻿# Security Policy
 
 MCP-Bastion is security middleware for Model Context Protocol (MCP) servers. We take vulnerability reports seriously and ask that you disclose them privately before opening a public issue or pull request.
 
@@ -17,8 +17,8 @@ Security fixes are applied to the **latest release** (**2.0.0** on [PyPI](https:
 
 Use one of these private channels:
 
-1. **GitHub Private Security Advisory (preferred)** — [Report a vulnerability](https://github.com/vaquarkhan/MCP-Bastion/security/advisories/new) on this repository. GitHub keeps the report private until we publish a coordinated advisory.
-2. **Repository maintainer** — If you cannot use GitHub advisories, contact the maintainer via the profile linked from [github.com/vaquarkhan](https://github.com/vaquarkhan) and include **“MCP-Bastion security”** in the subject or message.
+1. **GitHub Private Security Advisory (preferred)**  -  [Report a vulnerability](https://github.com/vaquarkhan/MCP-Bastion/security/advisories/new) on this repository. GitHub keeps the report private until we publish a coordinated advisory.
+2. **Repository maintainer**  -  If you cannot use GitHub advisories, contact the maintainer via the profile linked from [github.com/vaquarkhan](https://github.com/vaquarkhan) and include **“MCP-Bastion security”** in the subject or message.
 
 Include as much detail as you can: affected version, reproduction steps, impact, and any proof-of-concept. We aim to acknowledge reports within **5 business days** and will work with you on disclosure timing.
 
@@ -32,6 +32,6 @@ Include as much detail as you can: affected version, reproduction steps, impact,
 
 For OWASP-relevant controls, production hardening, dependency notes, and supply-chain provenance, see:
 
-- [docs/SECURITY.md](docs/SECURITY.md) — mitigations and operational guidance
-- [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) — OWASP MCP Top 10, SIEM / fleet rollout
-- [docs/SUPPLY_CHAIN.md](docs/SUPPLY_CHAIN.md) — CI, provenance, and release boundaries
+- [docs/SECURITY.md](docs/SECURITY.md)  -  mitigations and operational guidance
+- [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md)  -  OWASP MCP Top 10, SIEM / fleet rollout
+- [docs/SUPPLY_CHAIN.md](docs/SUPPLY_CHAIN.md)  -  CI, provenance, and release boundaries
