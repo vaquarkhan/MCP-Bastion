@@ -34,7 +34,9 @@ from mcp_bastion.errors import (
 )
 from mcp_bastion.pillars.circuit_breaker import CircuitBreaker
 from mcp_bastion.pillars.content_filter import ContentFilter
+from mcp_bastion.pillars.cost_policy import CostPolicyEngine
 from mcp_bastion.pillars.cost_tracker import CostTracker
+from mcp_bastion.pillars.session_governance import SessionGovernanceRecorder
 from mcp_bastion.pillars.pii_redaction import PIIRedactor
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
 from mcp_bastion.pillars.rate_limit import RateLimitCheckResult, TokenBucketRateLimiter
@@ -43,7 +45,7 @@ from mcp_bastion.pillars.output_budget import OutputBudget
 from mcp_bastion.pillars.grounding_guard import GroundingGuard
 from mcp_bastion.pillars.agent_iam import AgentIAM
 from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine
-from mcp_bastion.pillars.budget_principal import mark_authenticated_role, resolve_budget_principal
+from mcp_bastion.pillars.budget_principal import mark_authenticated_role, resolve_budget_principal, AUTHENTICATED_ROLE_KEY
 from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.tokens import estimate_text_tokens
 from mcp_bastion.pillars.rbac import RBAC
@@ -459,6 +461,11 @@ class MCPBastionMiddleware(Middleware[Any]):
         state_backend: StateBackend | None = None,
         argument_guards: ArgumentGuardEngine | None = None,
         enable_argument_guards: bool = False,
+        cost_policy: CostPolicyEngine | None = None,
+        enable_cost_policy: bool = False,
+        config_source_path: str | None = None,
+        enable_governance_attestation: bool = True,
+        enable_boundary_mode: bool = False,
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -523,6 +530,12 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.enable_server_verification = enable_server_verification and server_verifier is not None
         self.argument_guards = argument_guards
         self.enable_argument_guards = enable_argument_guards and argument_guards is not None
+        self.cost_policy = cost_policy
+        self.enable_cost_policy = enable_cost_policy and cost_policy is not None
+        self.config_source_path = config_source_path
+        self.enable_governance_attestation = enable_governance_attestation
+        self.enable_boundary_mode = enable_boundary_mode
+        self._governance = SessionGovernanceRecorder.get()
 
         if self.enable_tool_metadata_guard and not self.enable_content_filter and not self.enable_prompt_guard:
             raise BastionConfigError(
@@ -666,9 +679,42 @@ class MCPBastionMiddleware(Middleware[Any]):
         if content:
             self.response_scanner.check_content_items(content)
 
+    def _record_governance(
+        self,
+        context: MiddlewareContext[Any],
+        *,
+        method: str,
+        tool: str | None,
+        pillar: str,
+        status: str,
+    ) -> None:
+        if not self.enable_governance_attestation:
+            return
+        try:
+            cost = float(context.metadata.get("cost") or context.metadata.get("cost_usd") or 0.0)
+        except (TypeError, ValueError):
+            cost = 0.0
+        self._governance.record(
+            session_id=context.session_id or "default",
+            request_id=context.request_id,
+            method=method,
+            tool=tool,
+            pillar=pillar,
+            status=status,
+            cost_usd=cost,
+            metadata={
+                "tenant_id": context.metadata.get("tenant_id"),
+                "principal_id": context.metadata.get("_budget_principal"),
+                "cost_policy_actions": context.metadata.get("cost_policy_actions"),
+            },
+        )
+
     def _apply_discovery_filter(self, context: MiddlewareContext[Any], result: Any) -> Any:
         """Strip tools from tools/list that are not on the allowlist (reduces agent context tokens)."""
-        if not self.enable_discovery_filter or not self.enable_tool_allowlist:
+        force = bool(context.metadata.get("_cost_policy_force_discovery_filter"))
+        if not force and (not self.enable_discovery_filter or not self.enable_tool_allowlist):
+            return result
+        if force and not self.enable_tool_allowlist:
             return result
         tools = _get_tools_list_from_result(result)
         if tools is None or not tools:
@@ -809,6 +855,12 @@ class MCPBastionMiddleware(Middleware[Any]):
             _trace_append(trace, pillar=pillar, status="would_block", started=started, detail=str(error))
             return
         _trace_append(trace, pillar=pillar, status="blocked", started=started, detail=str(error))
+        method = str((context.message or {}).get("method") or "unknown")
+        tool = None
+        params = (context.message or {}).get("params") if isinstance(context.message, dict) else None
+        if isinstance(params, dict):
+            tool = params.get("name")
+        self._record_governance(context, method=method, tool=str(tool) if tool else None, pillar=pillar, status="blocked")
         raise error
 
     async def _gate_agent_iam_for_request(
@@ -1225,6 +1277,19 @@ class MCPBastionMiddleware(Middleware[Any]):
             except Exception as e:
                 self._handle_violation(context=context, trace=trace, pillar="edge_auth", started=started, error=e)
 
+        if self.enable_boundary_mode:
+            started = time.perf_counter()
+            try:
+                if not context.metadata.get(AUTHENTICATED_ROLE_KEY) and not context.metadata.get("agent_id"):
+                    raise AuthenticationError(
+                        "Request blocked: boundary mode requires edge_auth or agent_iam authentication"
+                    )
+                _trace_append(trace, pillar="boundary_mode", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="boundary_mode", started=started, error=e
+                )
+
         if self.enable_tool_allowlist:
             started = time.perf_counter()
             try:
@@ -1302,6 +1367,25 @@ class MCPBastionMiddleware(Middleware[Any]):
             except Exception as e:
                 self._handle_violation(
                     context=context, trace=trace, pillar="cost_tracker_precheck", started=started, error=e
+                )
+
+        if self.enable_cost_policy and self.cost_policy is not None and self.enable_cost_tracker:
+            started = time.perf_counter()
+            try:
+                budget_principal, budget_tenant = self._finops_keys(context)
+                projected = self.cost_policy.tool_projected_cost(tool_name, context.metadata)
+                self.cost_policy.check_expensive_chain(session_id or "default", tool_name, projected)
+                self.cost_policy.apply_rules(
+                    self.cost_tracker,
+                    context.metadata,
+                    session_id=session_id,
+                    request_id=request_id,
+                    principal_id=budget_principal,
+                )
+                _trace_append(trace, pillar="cost_policy", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="cost_policy", started=started, error=e
                 )
 
         if self.enable_semantic_cache and params:
@@ -1556,6 +1640,13 @@ class MCPBastionMiddleware(Middleware[Any]):
                 )
 
         context.metadata["forensic_response"] = _safe_forensic_value(result)
+
+        if self.enable_cost_policy and self.cost_policy is not None:
+            self.cost_policy.record_tool(session_id or "default", tool_name)
+
+        self._record_governance(
+            context, method="tools/call", tool=tool_name, pillar="handler", status="allowed"
+        )
 
         return result
 

@@ -9,6 +9,7 @@ prompt_guard:
   threshold: 0.85
   heuristic_fallback: true   # blocks obvious jailbreaks without ML (always on by default)
   fail_open: false         # when ML unavailable: block unverified payloads (dev: set true)
+  use_ungated_default: false  # true → ProtectAI/deberta-v3-base-prompt-injection-v2 (no HF gate)
   # Requires Hugging Face access to gated model meta-llama/Llama-Prompt-Guard-2-86M + `huggingface-cli login`
 
 pii:
@@ -84,6 +85,29 @@ cost_tracker:
   max_cost_per_day: 10.0
   # Optional disk checkpoint for session/daily totals (memory backend only).
   checkpoint_path: .bastion/cost-checkpoint.json
+
+# Cost-aware policy: degrade/route/block using live spend (requires cost_tracker).
+cost_policy:
+  enabled: false
+  rules:
+    - when: { session_spend_pct_gte: 80 }
+      action: degrade_model
+      target_model: gpt-4o-mini
+    - when: { session_spend_pct_gte: 90 }
+      action: force_discovery_filter
+    - when: { session_spend_pct_gte: 95 }
+      action: require_approval
+  expensive_chain:
+    enabled: false
+    max_projected_cost_usd: 1.0
+    default_tool_cost_usd: 0.05
+    tool_costs:
+      expensive_api: 0.50
+  approval_metadata_key: bastion_cost_approval
+
+# Mandatory proxy boundary — requires edge_auth or agent_iam (see docs/GATEWAY_BOUNDARY.md).
+boundary_mode:
+  enabled: false
 
 argument_guards:
   enabled: false
@@ -166,6 +190,7 @@ tool_metadata_fingerprint:
   fingerprint_path: tools.fingerprint.json
 
 governance:
+  attestation_enabled: true   # per-session events for mcp-bastion attest export
   allowed_registry_names: ["io.github.vaquarkhan/mcp-bastion"]
   allowed_repository_urls: ["https://github.com/vaquarkhan/MCP-Bastion"]
 

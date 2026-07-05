@@ -92,8 +92,30 @@ Battle-tested patterns from the broader MCP gateway ecosystem, wired into the mi
 | **RBAC fnmatch globs** | Role permissions like `read_*` / `files_*` with **specificity-aware** matching |
 | **Audit JSONL + `mcp-bastion tail`** | Append-only compliance log; `audit.jsonl_path` in config or `mcp-bastion tail -p audit.jsonl` |
 | **Cost checkpoint** | Optional disk persistence for session totals across restarts (`cost_tracker.checkpoint_path`, memory backend only) |
+| **Cost-aware policy (`cost_policy`)** | Live spend rules: degrade model, force discovery filter, require approval; expensive-chain blocking |
+| **Governance attestation** | `mcp-bastion attest export --session …` — signed session bundle with policy hash + controls fired |
+| **Boundary mode** | Mandatory proxy auth on every request (`boundary_mode` + `edge_auth` / `agent_iam`) — [GATEWAY_BOUNDARY.md](docs/GATEWAY_BOUNDARY.md) |
+| **Ungated PromptGuard** | `prompt_guard.use_ungated_default: true` → ProtectAI DeBERTa classifier (no HF gate) |
 
 ```yaml
+cost_policy:
+  enabled: true
+  rules:
+    - when: { session_spend_pct_gte: 80 }
+      action: degrade_model
+      target_model: gpt-4o-mini
+    - when: { session_spend_pct_gte: 95 }
+      action: require_approval
+  expensive_chain:
+    enabled: true
+    max_projected_cost_usd: 1.0
+
+governance:
+  attestation_enabled: true
+
+boundary_mode:
+  enabled: true   # requires edge_auth or agent_iam
+
 argument_guards:
   enabled: true
   rules:
@@ -370,7 +392,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Policy-as-code** | Single **`bastion.yaml`**: toggles for all request-path controls plus audit, alerts, and hot reload ([docs/PILLARS.md](docs/PILLARS.md)); load via `load_config` / `build_middleware_from_config`. |
 | **Hot reload** | Optional **reload `bastion.yaml` on change** without restarting the MCP server ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)). |
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
-| **CLI** | **`mcp-bastion validate`**, **`manifest`** (SHA-256 manifest for server verification), **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** / **`--demo`**), **`redteam`**, **`doctor`** — [docs/CLI.md](docs/CLI.md). |
+| **CLI** | **`mcp-bastion validate`**, **`manifest`**, **`attest export`**, **`serve`**, **`dashboard`**, **`redteam`**, **`doctor`**, **`tail`** — [docs/CLI.md](docs/CLI.md). |
 | **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
 | **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard) — [DOCKER.md](DOCKER.md). **Prebuilt images (GHCR):** [`mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy), [`mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard) — published on each `v*` tag ([publish-docker.yml](.github/workflows/publish-docker.yml)). |
 
