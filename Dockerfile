@@ -6,12 +6,10 @@ FROM python:3.11-slim
 WORKDIR /app
 
 ARG BASTION_VERSION=2.0.0
-LABEL org.opencontainers.image.version="${BASTION_VERSION}"
+# Pin to PyPI release (published by tag workflow). Re-dispatch Docker publish after PyPI is green if this step races.
+RUN pip install --no-cache-dir mcp "mcp-bastion-python==${BASTION_VERSION}"
 
-# Install from checkout so tag builds do not race the PyPI publish job.
-COPY pyproject.toml README.md LICENSE ./
-COPY src ./src
-RUN pip install --no-cache-dir .
+LABEL org.opencontainers.image.version="${BASTION_VERSION}"
 
 COPY examples/llm_server.py /app/llm_server.py
 
