@@ -49,6 +49,8 @@ def _build_shadow_config(base: BastionConfig | None, overrides: dict[str, Any] |
     if isinstance(pe, dict):
         if pe.get("type") is not None:
             cfg.policy_engine_type = normalize_engine(str(pe.get("type")))
+        if pe.get("fail_closed") is not None:
+            cfg.policy_engine_fail_closed = bool(pe.get("fail_closed"))
         opa = pe.get("opa") if isinstance(pe.get("opa"), dict) else {}
         cedar = pe.get("cedar") if isinstance(pe.get("cedar"), dict) else {}
         if opa.get("policy_dir") is not None:
@@ -82,6 +84,7 @@ def _build_shadow_middleware(config: BastionConfig) -> MCPBastionMiddleware:
             cedar_binary=getattr(config, "cedar_binary", "cedar"),
             cedar_policies_dir=getattr(config, "cedar_policies_dir", None),
             cedar_schema_path=getattr(config, "cedar_schema_path", None),
+            fail_closed=bool(getattr(config, "policy_engine_fail_closed", False)),
         )
     )
     eng = normalize_engine(getattr(config, "policy_engine_type", "none"))

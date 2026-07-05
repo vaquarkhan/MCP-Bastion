@@ -471,3 +471,55 @@ prompt_guard:
         mw = build_middleware_from_config(load_config(str(yaml_path)))
     assert mw is not None
     assert "argument_guards" in caplog.text.lower()
+
+
+def test_validate_bastion_config_rejects_tool_metadata_guard_without_scanners():
+    from mcp_bastion.config import BastionConfig, validate_bastion_config
+    from mcp_bastion.errors import BastionConfigError
+
+    cfg = BastionConfig(
+        prompt_guard=False,
+        content_filter=False,
+        tool_metadata_guard_enabled=True,
+    )
+    with pytest.raises(BastionConfigError, match="tool_metadata_guard"):
+        validate_bastion_config(cfg)
+
+
+def test_validate_bastion_config_policy_fail_closed_requires_opa_dir(tmp_path):
+    from mcp_bastion.config import BastionConfig, validate_bastion_config
+    from mcp_bastion.errors import BastionConfigError
+
+    cfg = BastionConfig(
+        policy_engine_type="opa",
+        policy_engine_fail_closed=True,
+        opa_policy_dir=str(tmp_path / "missing"),
+    )
+    with pytest.raises(BastionConfigError, match="policy_dir"):
+        validate_bastion_config(cfg)
+
+
+def test_build_middleware_rejects_misconfigured_tool_metadata_guard(tmp_path):
+    from mcp_bastion.config import build_middleware_from_config, load_config
+    from mcp_bastion.errors import BastionConfigError
+
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+tool_metadata_guard:
+  enabled: true
+prompt_guard:
+  enabled: false
+content_filter:
+  enabled: false
+audit:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    with pytest.raises(BastionConfigError):
+        build_middleware_from_config(load_config(str(yaml_path)))

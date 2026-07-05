@@ -44,7 +44,7 @@ def cmd_validate(config_path: str | None) -> int:
     _configure_cli_logging()
     _ensure_src_on_path()
     try:
-        from mcp_bastion.config import load_config
+        from mcp_bastion.config import load_config, validate_bastion_config
     except ImportError as e:
         logger.error("Error: %s", e)
         return 1
@@ -55,6 +55,7 @@ def cmd_validate(config_path: str | None) -> int:
         return 1
     try:
         config = load_config(path)
+        validate_bastion_config(config)
         logger.info("Valid: %s", path)
         logger.info("  prompt_guard=%s pii=%s rate_limit=%s", config.prompt_guard, config.pii, config.rate_limit)
         logger.info("  audit=%s rbac=%s cost_tracker=%s", config.audit, config.rbac, config.cost_tracker)

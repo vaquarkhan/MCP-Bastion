@@ -42,11 +42,11 @@ The following are **additionally** wired in `bastion.yaml` and `BastionConfig` (
 | **Server cryptographic verification** | `server_verification` | SHA-256 manifest checksums at startup and per `tools/call`; `mcp-bastion manifest` CLI. |
 | Semantic firewall | `semantic_firewall` | Blocks unsafe tool/argument **sequences** and injection-style patterns before execution. |
 | Sensitive business classifier | `sensitive_classifier` | Weighted and optional local classifier to flag M&A / insider-style content. |
-| External policy (OPA / Cedar) | `policy_engine` | Delegates allow/deny to **OPA** or **Cedar** when `type` is set. |
+| External policy (OPA / Cedar) | `policy_engine` | Delegates allow/deny to **OPA** or **Cedar** CLI (`opa eval -d` / `cedar evaluate`). Set `fail_closed: true` to deny when the engine is unavailable. |
 | Edge authentication | `edge_auth` | Optional shared-secret check on request **metadata** (e.g. gateway-issued token). |
 | Tool allowlist | `tool_allowlist` | Enforce a fixed list of tool names. |
-| Session scope / privilege creep | `session_limits` | Cap **distinct tools per session** to limit scope creep. |
-| Tool metadata guard | `tool_metadata_guard` | Sanitize or drop poisoned `tools/list` metadata (content filter and/or prompt guard assist). |
+| Session scope / privilege creep | `session_limits` | Cap distinct tools per session via `max_unique_tools_per_session` (0 = off). |
+| Tool metadata guard | `tool_metadata_guard` | Sanitize or drop poisoned `tools/list` metadata. **Requires** `content_filter` or `prompt_guard` enabled. |
 | **Shadow mode** | `MCPBastionMiddleware(..., shadow_mode=True)` (programmatic) | Log-only / alternate handling for some block paths; does not remove other pillars. |
 | Multi-tenant | `multi_tenant` | Per-tenant `bastion.yaml` resolution and `tenant_id` in audit context. |
 | Audit hash chain | `audit_hash_chain` | Chained **hash** over audit records for tamper evidence; optional **anchor** webhook. |

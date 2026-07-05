@@ -20,6 +20,7 @@ _tracer: Any = None
 _meter: Any = None
 _cw_client: Any = None
 _observability_target: str | None = None
+_otel_init_attempted = False
 
 
 def _is_port_open(host: str, port: int, timeout: float = 0.2) -> bool:
@@ -68,9 +69,13 @@ def detect_observability_target() -> tuple[str | None, dict[str, str]]:
 
 
 def _init_otel() -> tuple[Any, Any]:
-    global _tracer, _meter, _cw_client, _observability_target
-    if _tracer is not None or _meter is not None:
+    global _tracer, _meter, _cw_client, _observability_target, _otel_init_attempted
+    if _otel_init_attempted:
         return _tracer, _meter
+    if _tracer is not None or _meter is not None:
+        _otel_init_attempted = True
+        return _tracer, _meter
+    _otel_init_attempted = True
     endpoint, headers = detect_observability_target()
     if not endpoint:
         if _looks_like_aws():

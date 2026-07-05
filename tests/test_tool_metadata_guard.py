@@ -3,7 +3,7 @@
 import pytest
 
 from mcp_bastion.base import MiddlewareContext
-from mcp_bastion.errors import ToolMetadataPoisoningError
+from mcp_bastion.errors import BastionConfigError, ToolMetadataPoisoningError
 from mcp_bastion.middleware import MCPBastionMiddleware
 from mcp_bastion.pillars.content_filter import ContentFilter
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
@@ -96,3 +96,13 @@ async def test_nested_result_tools_dict():
     inner = out.get("result", {})
     assert len(inner.get("tools", [])) == 1
     assert inner["tools"][0]["name"] == "a"
+
+
+def test_tool_metadata_guard_misconfiguration_raises_at_init():
+    with pytest.raises(BastionConfigError):
+        MCPBastionMiddleware(
+            rate_limiter=TokenBucketRateLimiter(max_iterations=50),
+            enable_prompt_guard=False,
+            enable_content_filter=False,
+            enable_tool_metadata_guard=True,
+        )

@@ -187,9 +187,10 @@ tool_metadata_guard:
 session_limits:
   max_unique_tools_per_session: 0   # e.g. 5 to limit tool sprawl per session
 
-# External policy: OPA or Cedar CLI (not HTTP). Missing binary/policy dir fails open.
+# External policy: OPA or Cedar CLI (not HTTP). fail_closed: true denies when engine unavailable.
 policy_engine:
   type: none   # none | opa | cedar
+  fail_closed: false   # true → deny if binary/policy dir missing or eval fails
   opa:
     binary: opa
     policy_dir: ./policies/opa   # directory passed to `opa eval -d`

@@ -8,11 +8,26 @@ import pytest
 from mcp_bastion import otel
 
 
-def test_get_tracer_without_endpoint_returns_none(monkeypatch):
-    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
-    # Reset module state so _init_otel runs again
+@pytest.fixture(autouse=True)
+def _reset_otel_module_state():
     otel._tracer = None
     otel._meter = None
+    otel._cw_client = None
+    otel._observability_target = None
+    otel._otel_init_attempted = False
+    yield
+    otel._tracer = None
+    otel._meter = None
+    otel._cw_client = None
+    otel._observability_target = None
+    otel._otel_init_attempted = False
+
+
+def test_get_tracer_without_endpoint_returns_none(monkeypatch):
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
+    otel._tracer = None
+    otel._meter = None
+    otel._otel_init_attempted = False
     tr = otel.get_tracer()
     assert tr is None
 
@@ -22,17 +37,36 @@ def test_get_tracer_returns_cached_when_already_set():
     sentinel = object()
     otel._tracer = sentinel
     otel._meter = None
+    otel._otel_init_attempted = False
     try:
         assert otel.get_tracer() is sentinel
     finally:
         otel._tracer = None
         otel._meter = None
+        otel._otel_init_attempted = False
+
+
+def test_init_otel_negative_cache_skips_repeated_datadog_probe(monkeypatch):
+    """Without OTLP env, Datadog port probe must not run on every audit span."""
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
+    monkeypatch.delenv("GRAFANA_CLOUD_OTLP_ENDPOINT", raising=False)
+    otel._tracer = None
+    otel._meter = None
+    otel._cw_client = None
+    otel._otel_init_attempted = False
+    probe = mock.Mock(return_value=False)
+    with mock.patch.object(otel, "_is_port_open", probe):
+        otel.record_tool_span("add", "ALLOWED", 1.0, None)
+        otel.record_tool_span("add", "ALLOWED", 2.0, None)
+        otel.record_tool_span("run", "BLOCKED", 3.0, "rate_limit")
+    assert probe.call_count == 1
 
 
 def test_record_tool_span_no_tracer_is_noop(monkeypatch):
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
     otel._tracer = None
     otel._meter = None
+    otel._otel_init_attempted = False
     otel.record_tool_span("add", "ALLOWED", 10.5, None)
     otel.record_tool_span("run", "BLOCKED", 2.0, "injection")
     # No exception; no-op when tracer is None

@@ -123,6 +123,7 @@ class BastionConfig:
     behavior_fingerprint: bool = True
     cost_attribution: bool = True
     policy_engine_type: str = "none"
+    policy_engine_fail_closed: bool = False
     opa_binary: str = "opa"
     opa_policy_dir: str | None = None
     opa_query: str = "data.bastion.allow"
@@ -173,6 +174,34 @@ class BastionConfig:
     state_backend: str = "memory"
     state_backend_redis_url: str = "redis://127.0.0.1:6379/0"
     state_backend_key_prefix: str = "mcp-bastion"
+
+
+def validate_bastion_config(config: BastionConfig) -> None:
+    """Raise BastionConfigError on incompatible pillar combinations."""
+    from mcp_bastion.errors import BastionConfigError
+
+    if config.tool_metadata_guard_enabled and not config.content_filter and not config.prompt_guard:
+        raise BastionConfigError(
+            "tool_metadata_guard.enabled requires content_filter.enabled or prompt_guard.enabled — "
+            "enable at least one metadata scanner or disable tool_metadata_guard"
+        )
+
+    engine = normalize_engine(config.policy_engine_type)
+    if engine != "none" and config.policy_engine_fail_closed:
+        if engine == "opa":
+            pol = config.opa_policy_dir
+            if not pol or not Path(pol).is_dir():
+                raise BastionConfigError(
+                    "policy_engine.fail_closed is true but policy_engine.opa.policy_dir "
+                    "is missing or not a directory"
+                )
+        if engine == "cedar":
+            pol = config.cedar_policies_dir
+            if not pol or not Path(pol).is_dir():
+                raise BastionConfigError(
+                    "policy_engine.fail_closed is true but policy_engine.cedar.policies_dir "
+                    "is missing or not a directory"
+                )
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -298,6 +327,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         behavior_fingerprint=bool(bf.get("enabled", True)),
         cost_attribution=bool(ca.get("enabled", True)),
         policy_engine_type=engine,
+        policy_engine_fail_closed=bool(pe.get("fail_closed", False)),
         opa_binary=str(opa_pe.get("binary") or os.environ.get("BASTION_OPA_BINARY", "opa")),
         opa_policy_dir=opa_pe.get("policy_dir") or os.environ.get("BASTION_OPA_POLICY_DIR"),
         opa_query=str(opa_pe.get("query") or os.environ.get("BASTION_OPA_QUERY", "data.bastion.allow")),
@@ -398,6 +428,7 @@ def _load_server_manifest_bundle(config: BastionConfig) -> tuple[dict[str, str],
 
 
 def _build_chain(config: BastionConfig) -> Any:
+    validate_bastion_config(config)
     AuditHashChain.configure(anchor_every=config.audit_hash_chain_anchor_every)
     sinks = []
     if config.alerts_slack_webhook:
@@ -468,6 +499,7 @@ def _build_chain(config: BastionConfig) -> Any:
         cedar_binary=config.cedar_binary,
         cedar_policies_dir=config.cedar_policies_dir,
         cedar_schema_path=config.cedar_schema_path,
+        fail_closed=config.policy_engine_fail_closed,
     )
     external_evaluator = ExternalPolicyEvaluator(ext_cfg)
     sensitive_classifier = SensitiveContentClassifier(
