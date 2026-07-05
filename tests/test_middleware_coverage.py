@@ -477,6 +477,7 @@ async def test_middleware_content_filter_json_decode_error():
 async def test_middleware_prompt_guard_json_decode_error():
     """Prompt guard handles JSON decode error."""
     mw = MCPBastionMiddleware(
+        prompt_guard=PromptGuardEngine(fail_open=True),
         rate_limiter=TokenBucketRateLimiter(max_iterations=100),
         enable_prompt_guard=True,
         enable_pii_redaction=False,

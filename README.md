@@ -11,7 +11,7 @@
   />
 </p>
 
-[![PyPI: mcp-bastion-python 1.0.17](https://img.shields.io/pypi/v/mcp-bastion-python?logo=python)](https://pypi.org/project/mcp-bastion-python/1.0.17/)
+[![PyPI: mcp-bastion-python 1.0.18](https://img.shields.io/pypi/v/mcp-bastion-python?logo=python)](https://pypi.org/project/mcp-bastion-python/1.0.18/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
@@ -20,7 +20,53 @@
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**The security layer MCP servers are missing.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes. MCP-Bastion wraps your MCP server with **local** guardrails: injection blocking, PII redaction, and **denial-of-wallet caps** (iteration limits, token budget, optional USD ceilings), under **5ms overhead**, with no third-party safety API.
+**The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
+
+## Why MCP-Bastion? (Solving the 2026 MCP Security Crisis)
+
+As noted in the NSA's recent Cybersecurity Information Sheet on MCP security and the OWASP MCP Top 10, traditional AppSec tools cannot secure agentic workflows. The gap is **runtime governance** and the **confused deputy problem**: multiple AI agents sharing one MCP server with no native identity boundary. Public registry typosquatting and unverified servers have made supply-chain verification a board-level concern.
+
+MCP-Bastion acts as the **Zero-Trust Control Plane** for your agents, addressing the hardest production problems:
+
+1. **The Confused Deputy (Agent IAM):** Identity-aware routing binds API tokens to **Agent Identities** and enforces strict per-tool RBAC. Your customer-support bot can call `search_docs`, not `delete_user`.
+2. **Supply chain & typosquatting defense:** Cryptographic SHA-256 manifest verification blocks traffic when MCP server artifacts drift from your signed-off checksums.
+3. **Data exfiltration & injection prevention:** PromptGuard heuristics + ML block jailbreaks locally; Presidio scrubs outbound PII before it hits a model context window.
+
+### Define your agent policies (`bastion.yaml`)
+
+```yaml
+# Stop the Confused Deputy Problem — Identity-Aware Routing
+agent_iam:
+  enabled: true
+  token_metadata_key: bastion_agent_token
+  agents:
+    - id: customer_support_bot
+      token_env: BASTION_TOKEN_SUPPORT
+      allowed_tools: ["search_docs", "get_ticket_status"]
+      blocked_tools: ["execute_sql", "delete_user"]
+      rate_limit:
+        max_iterations: 5
+
+# Supply-chain checksums before any tool executes
+server_verification:
+  enabled: true
+  on_mismatch: block
+  base_path: .
+  manifest_path: mcp-server.manifest.json
+```
+
+Generate a manifest after a trusted build: `mcp-bastion manifest server.py pyproject.toml -o mcp-server.manifest.json`
+
+Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ROADMAP.md](docs/ROADMAP.md)
+
+<p align="center">
+  <img
+    src="images/mcp-bastion-runtime-governance.png"
+    alt="MCP-Bastion Zero-Trust Runtime Governance: Agent IAM, server verification, beyond-OWASP coverage, and roadmap"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
 
 ### Why developers adopt it
 
@@ -83,12 +129,12 @@ All **10** [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/) risks a
 | ID | Risk | Bastion controls |
 |----|------|------------------|
 | MCP01 | Token / secret exposure | PII redaction, audit trail, outbound response scan |
-| MCP02 | Privilege escalation | RBAC, rate limits, cost caps, session tool scope |
+| MCP02 | Privilege escalation | RBAC, **agent IAM**, rate limits, cost caps, session tool scope |
 | MCP03 | Tool poisoning | Prompt guard, content filter, response scan, metadata guard, grounding guard |
-| MCP04 | Supply chain | Circuit breaker, `doctor` CLI, audit, observability |
+| MCP04 | Supply chain | Circuit breaker, **`server_verification` checksums**, `doctor` CLI, `mcp-bastion manifest`, audit |
 | MCP05 | Command injection | Prompt guard, content filter, schema validation |
 | MCP06 | Intent subversion | Rate limits, replay guard, per-tool caps, semantic firewall |
-| MCP07 | Weak authentication | RBAC, edge auth |
+| MCP07 | Weak authentication | RBAC, edge auth, **agent IAM** (per-agent tokens) |
 | MCP08 | Audit & telemetry | Audit log, dashboard, Prometheus, OTEL, alerts |
 | MCP09 | Shadow MCP servers | Central `bastion.yaml` policy, metrics, discovery filter |
 | MCP10 | Context injection | PII redaction, response scan, output budget, discovery filter |
@@ -139,7 +185,7 @@ middleware = build_middleware_from_config()  # loads bastion.yaml
 
 More paths (TypeScript, CI validate, Docker): **[docs/QUICK_START.md](docs/QUICK_START.md)** · **[docs/README.md](docs/README.md)** · **[website](https://vaquarkhan.github.io/MCP-Bastion/)**
 
-- **Prompt injection defense:** Meta PromptGuard blocks adversarial payloads locally.
+- **Prompt injection defense:** Heuristic jailbreak blocking out of the box; Meta PromptGuard ML when Hugging Face access is configured.
 - **PII redaction:** Presidio masks SSN, email, phone in outbound content.
 - **Denial-of-wallet protection:** Token buckets, iteration caps, token budget, cost tracking.
 - **Response scan:** Blocks jailbreak patterns in outbound tool/resource text.
@@ -209,7 +255,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 ### Complete feature catalog
 
-**Pillar definitions:** Security controls, `bastion.yaml` sections, and how they relate to dashboard health rows are documented in [docs/PILLARS.md](docs/PILLARS.md) (canonical reference; avoids ambiguous “total pillar” counts). The same page lists **extended** features restored in 1.0.16+ (semantic firewall, sensitive classifier, external policy, edge auth, tool allowlist, session scope, tool metadata guard, multi-tenant, audit hash chain, pricing hooks, telemetry sinks, **red team** and **doctor** CLIs, etc.) and **FinOps/context** pillars in 1.0.17+ (output budget, discovery filter, response scan, grounding guard).
+**Pillar definitions:** Security controls, `bastion.yaml` sections, and how they relate to dashboard health rows are documented in [docs/PILLARS.md](docs/PILLARS.md) (canonical reference; avoids ambiguous “total pillar” counts). The same page lists **extended** features restored in 1.0.16+ (semantic firewall, sensitive classifier, external policy, edge auth, tool allowlist, session scope, tool metadata guard, multi-tenant, audit hash chain, pricing hooks, telemetry sinks, **red team** and **doctor** CLIs, etc.), **FinOps/context** pillars in 1.0.17+ (output budget, discovery filter, response scan, grounding guard), and **runtime governance** in 1.0.18+ (**agent IAM**, **server verification**).
 
 > **Deeper context:** [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) — **OWASP MCP Top 10** alignment, attack scenarios, and SIEM/log integrations. **Framework add-ons** (LangChain, OpenAI, Bedrock, …) are listed under [Framework Integrations](#framework-integrations) below.
 
@@ -225,6 +271,8 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 | Feature | What you get |
 |--------|----------------|
+| **Agent IAM (Confused Deputy)** | Bind **API tokens** to **agent identities**; per-agent `allowed_tools` / `blocked_tools` and optional rate limits — stops a support bot from calling admin tools. See [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md). |
+| **Server verification (supply chain)** | SHA-256 **manifest checksums** verified at startup and on every `tools/call`; `mcp-bastion manifest` generates trusted manifests after a signed-off build. |
 | **RBAC** | **Tool-level** allow/deny by **role** (from request metadata); map roles to tool names in `bastion.yaml`. |
 | **Schema validation** | Validate `tools/call` arguments against **JSON Schema** before the tool runs (block malformed or bypass attempts). |
 | **Replay guard** | **Nonce** tracking to reject replayed requests (configurable **require_nonce**). |
@@ -256,7 +304,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Policy-as-code** | Single **`bastion.yaml`**: toggles for all request-path controls plus audit, alerts, and hot reload ([docs/PILLARS.md](docs/PILLARS.md)); load via `load_config` / `build_middleware_from_config`. |
 | **Hot reload** | Optional **reload `bastion.yaml` on change** without restarting the MCP server ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)). |
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
-| **CLI** | **`mcp-bastion validate`**, **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** / **`--demo`**), **`redteam`**, **`doctor`** — [docs/CLI.md](docs/CLI.md). |
+| **CLI** | **`mcp-bastion validate`**, **`manifest`** (SHA-256 manifest for server verification), **`serve`** (HTTP MCP), **`dashboard`** (optional **`--reload`** / **`--demo`**), **`redteam`**, **`doctor`** — [docs/CLI.md](docs/CLI.md). |
 | **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
 | **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard) — [DOCKER.md](DOCKER.md). **Prebuilt images (GHCR):** [`mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy), [`mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard) — published on each `v*` tag ([publish-docker.yml](.github/workflows/publish-docker.yml)). |
 
@@ -464,7 +512,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pinned latest
-pip install mcp-bastion-python==1.0.17
+pip install mcp-bastion-python==1.0.18
 ```
 
 **Prerequisites (recommended)**
@@ -475,7 +523,9 @@ pip install mcp-bastion-python==1.0.17
 - **Policy-as-Code (`bastion.yaml`):** install YAML support:  
   `pip install mcp-bastion-python[policy]`  
   (adds `pyyaml`; otherwise you may get `ImportError` when loading policy files).
-- **PromptGuard fail-open:** if the PromptGuard model fails to load or inference errors, MCP-Bastion **allows** the request and logs a warning. Treat this as a security degradation and fix the model/runtime before production.
+- **Prompt injection (PromptGuard):** two layers:
+  1. **Regex heuristics** (always on) block obvious jailbreak strings such as “ignore previous instructions” — no model download required.
+  2. **Meta Llama Prompt Guard 2** (`meta-llama/Llama-Prompt-Guard-2-86M`) is a **gated** Hugging Face model. Request access, then run `huggingface-cli login`. Without ML, obvious attacks are still blocked; unverified payloads are **blocked** when `fail_open: false` (default). Run `mcp-bastion doctor` to verify ML availability.
 
 The PyPI wheel ships the full `mcp_bastion` tree (including `config`, `cli`, `otel`, dashboard metrics, and alert sinks). If you use an older wheel that omits modules, upgrade to the current release.
 
@@ -846,6 +896,9 @@ When MCP-Bastion blocks a request, it returns standard MCP/JSON-RPC errors:
 | -32015 | `SessionScopeExceededError` | Too many distinct tools per session (scope creep) |
 | -32016 | `ToolMetadataPoisoningError` | Tool list / metadata failed safety checks |
 | -32017 | `GroundingViolationError` | Ungrounded file reference in tool output |
+| -32018 | `PromptGuardUnavailableError` | PromptGuard ML unavailable and fail-closed (or heuristics disabled) |
+| -32019 | `AgentAccessDeniedError` | Authenticated agent attempted a tool outside its IAM policy |
+| -32020 | `ServerVerificationError` | MCP server file checksums do not match trusted manifest |
 
 ```python
 # Python: exceptions
@@ -867,6 +920,9 @@ from mcp_bastion.errors import (
     SessionScopeExceededError,
     ToolMetadataPoisoningError,
     GroundingViolationError,
+    PromptGuardUnavailableError,
+    AgentAccessDeniedError,
+    ServerVerificationError,
 )
 import logging
 logger = logging.getLogger(__name__)
@@ -891,6 +947,9 @@ except (
     SessionScopeExceededError,
     ToolMetadataPoisoningError,
     GroundingViolationError,
+    PromptGuardUnavailableError,
+    AgentAccessDeniedError,
+    ServerVerificationError,
 ) as e:
     logger.warning("blocked: %s", e.to_mcp_error())
 ```

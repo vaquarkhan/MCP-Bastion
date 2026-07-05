@@ -139,3 +139,37 @@ class GroundingViolationError(MCPBastionError):
 
     def __init__(self, message: str = "Response blocked: ungrounded file reference in tool output") -> None:
         super().__init__(message, code=-32017)
+
+
+class PromptGuardUnavailableError(MCPBastionError):
+    """Raised when PromptGuard ML is required but unavailable (gated model, auth, runtime error)."""
+
+    def __init__(
+        self,
+        message: str = (
+            "Request blocked: PromptGuard ML model unavailable. "
+            "Configure Hugging Face access for meta-llama/Llama-Prompt-Guard-2-86M "
+            "or enable heuristic-only dev mode."
+        ),
+    ) -> None:
+        super().__init__(message, code=-32018)
+
+
+class AgentAccessDeniedError(MCPBastionError):
+    """Raised when an authenticated agent attempts a tool outside its IAM policy."""
+
+    def __init__(
+        self,
+        message: str = "Request blocked: agent is not permitted to call this tool",
+    ) -> None:
+        super().__init__(message, code=-32019)
+
+
+class ServerVerificationError(MCPBastionError):
+    """Raised when MCP server artifact checksums do not match the trusted manifest."""
+
+    def __init__(
+        self,
+        message: str = "Request blocked: MCP server failed cryptographic verification",
+    ) -> None:
+        super().__init__(message, code=-32020)

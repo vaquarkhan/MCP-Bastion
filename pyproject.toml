@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-python"
-version = "1.0.17"
+version = "1.0.18"
 description = "Security middleware for MCP servers protecting LLM agents from prompt injection, resource exhaustion, and PII leakage"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
 authors = [
-    { name = "Viquar Khan" }
+    { name = "Vaquar Khan" }
 ]
 keywords = ["mcp", "security", "middleware", "llm", "prompt-injection", "pii"]
 classifiers = [
@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Security",
 ]
 dependencies = [
@@ -52,9 +53,9 @@ otel = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mcp-bastion/mcp-bastion"
-Repository = "https://github.com/mcp-bastion/mcp-bastion"
-Documentation = "https://github.com/mcp-bastion/mcp-bastion#readme"
+Homepage = "https://github.com/vaquarkhan/MCP-Bastion"
+Repository = "https://github.com/vaquarkhan/MCP-Bastion"
+Documentation = "https://github.com/vaquarkhan/MCP-Bastion#readme"
 
 [project.scripts]
 mcp-bastion = "mcp_bastion.cli:main"

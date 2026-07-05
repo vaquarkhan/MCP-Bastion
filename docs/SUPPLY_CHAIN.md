@@ -30,8 +30,8 @@ Integration packages in `integrations/*/pyproject.toml` depend on **`mcp-bastion
 
 **Recommended order:**
 
-1. **Merge** your release branch to the branch you tag from (usually `main`) so `pyproject.toml` at the repo root matches the version you are shipping (e.g. `1.0.17`).
-2. **Tag the monorepo** with **`v1.0.17`** (same version as [pyproject.toml](../pyproject.toml) `version`) and **push the tag** — this runs [`.github/workflows/publish-mcp.yml`](../.github/workflows/publish-mcp.yml) and publishes **`mcp-bastion-python`** (and npm `@mcp-bastion/core` when the job succeeds, plus MCP registry steps if configured).
+1. **Merge** your release branch to the branch you tag from (usually `main`) so `pyproject.toml` at the repo root matches the version you are shipping (e.g. `1.0.18`).
+2. **Tag the monorepo** with **`v1.0.18`** (same version as [pyproject.toml](../pyproject.toml) `version`) and **push the tag** — this runs [`.github/workflows/publish-mcp.yml`](../.github/workflows/publish-mcp.yml) and publishes **`mcp-bastion-python`** (and npm `@mcp-bastion/core` when the job succeeds, plus MCP registry steps if configured).
 3. **Wait** until [PyPI](https://pypi.org/project/mcp-bastion-python/#history) shows the new **`mcp-bastion-python`** release (and fix any failed workflow before continuing).
 4. **Publish each integration on PyPI one at a time** — use **Run workflow** on **`publish-integrations.yml`**, set **package** to e.g. `mcp-bastion-openai`, then repeat for `mcp-bastion-langchain`, `mcp-bastion-fastmcp`, etc. Avoid choosing **`all`** for the first time after a core bump if you want easier failure triage; the matrix is **parallel** and does not depend on each other, but a missing core wheel still breaks every integration’s install.
 5. If you need a new **integration** package version, bump `version` in that integration’s `pyproject.toml`, merge, then run the integration workflow (or use an `integration-v*` tag if your process uses it).

@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [1.0.18] - 2026-07-05
+
+### Added
+
+- **Runtime governance:** Agent Identity & RBAC (`agent_iam`), server SHA-256 verification (`server_verification`), `mcp-bastion manifest` CLI.
+- **Security:** PromptGuard heuristic fallback and fail-closed default; `max_response_bytes` on output budget; errors `-32018`–`-32020`.
+- **Docs:** [RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md), [ROADMAP.md](docs/ROADMAP.md), [BEYOND_OWASP.md](docs/BEYOND_OWASP.md), [TRANSPORT_HARDENING.md](docs/TRANSPORT_HARDENING.md); runtime governance infographic in README.
+- **Tests:** End-to-end config → middleware tests in `tests/test_runtime_governance_e2e.py`.
+
+### Changed
+
+- Docker proxy and dashboard images pin `mcp-bastion-python==1.0.18` at build time (`ARG BASTION_VERSION`).
+- Server verification re-checks checksums on every `tools/call` (`force=True`).
+
 ## [1.0.17] - 2026-07-05
 
 ### Added

@@ -222,6 +222,28 @@ def cmd_redteam(config_path: str | None, output_path: str | None = None) -> int:
         return 1
 
 
+def cmd_manifest(files: list[str], base_path: str, output: str | None) -> int:
+    """Generate SHA-256 manifest for server_verification."""
+    _ensure_src_on_path()
+    import json
+
+    from mcp_bastion.pillars.server_verification import build_manifest
+
+    try:
+        manifest = build_manifest(files, base_path=base_path)
+    except Exception as e:
+        logger.error("manifest failed: %s", e)
+        return 1
+    payload = {"files": manifest}
+    text = json.dumps(payload, indent=2)
+    if output:
+        Path(output).write_text(text + "\n", encoding="utf-8")
+        logger.info("Wrote manifest: %s", output)
+    else:
+        logger.info(text)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="mcp-bastion",
@@ -288,6 +310,14 @@ def main() -> int:
     doctor_parser.add_argument("--config", "-c", help="Path to bastion.yaml", default=None)
     doctor_parser.add_argument("--repo-root", help="Directory for manifest discovery", default=None)
     doctor_parser.set_defaults(func=lambda **kw: cmd_doctor(kw.get("config"), kw.get("repo_root")))
+
+    manifest_parser = sub.add_parser("manifest", help="Generate SHA-256 manifest for server_verification")
+    manifest_parser.add_argument("files", nargs="+", help="Relative file paths to hash")
+    manifest_parser.add_argument("--base-path", default=".", help="Base directory for relative paths")
+    manifest_parser.add_argument("--output", "-o", help="Write JSON manifest to file")
+    manifest_parser.set_defaults(
+        func=lambda **kw: cmd_manifest(kw.get("files"), kw.get("base_path"), kw.get("output"))
+    )
 
     args = parser.parse_args()
     ns = vars(args)

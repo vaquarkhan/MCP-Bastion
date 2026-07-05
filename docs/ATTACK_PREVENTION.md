@@ -170,3 +170,44 @@ python -m spacy download en_core_web_sm
 ```
 
 See [examples/README.md](../examples/README.md) for the full list of demos (1–11) and [VALIDATION_CHECKLIST.md](../VALIDATION_CHECKLIST.md) for automated checks.
+
+---
+
+## 8. Context Flooding (Denial-of-Wallet)
+
+**Attack:** A compromised data source returns a 100,000-token payload. The agent processes it, burning API credits without executing malicious commands.
+
+**Without MCP-Bastion:** Full payload reaches the LLM context window every turn.
+
+**With MCP-Bastion:**
+
+- **Token budget** (default 50k/session) hard-stops session burn.
+- **Output budget** truncates or offloads oversized tool responses (`bastion_get_offloaded`).
+- **`max_response_bytes`** rejects responses above a byte ceiling (context flooding).
+
+```yaml
+output_budget:
+  enabled: true
+  max_output_tokens: 4000
+  max_response_bytes: 524288
+  offload: true
+```
+
+**Dashboard:** FinOps metadata on truncated/offloaded responses; cost tracker alerts.
+
+See also [BEYOND_OWASP.md](BEYOND_OWASP.md).
+
+---
+
+## 9. Indirect Prompt Injection (Tool Output)
+
+**Attack:** Malicious instructions are embedded in a file or database row. When a tool returns that content, the agent follows hidden instructions.
+
+**With MCP-Bastion:** **Response scan** blocks known jailbreak patterns in outbound tool/resource text before the agent sees them. Enable in `bastion.yaml`:
+
+```yaml
+response_scan:
+  enabled: true
+```
+
+Pair with **prompt guard** on tool arguments for write-path coverage.

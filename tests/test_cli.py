@@ -14,6 +14,7 @@ from mcp_bastion.cli import (
     cmd_validate,
     cmd_serve,
     cmd_dashboard,
+    cmd_manifest,
     main,
     _ensure_src_on_path,
     _resolve_dashboard_repo,
@@ -290,6 +291,27 @@ def test_main_dashboard_help(monkeypatch):
     monkeypatch.setattr("sys.argv", ["mcp-bastion", "dashboard", "--help"])
     with pytest.raises(SystemExit):
         main()
+
+
+def test_cmd_manifest_writes_json(tmp_path, caplog):
+    import json
+    import logging
+
+    f = tmp_path / "server.py"
+    f.write_text("print('x')\n", encoding="utf-8")
+    out = tmp_path / "manifest.json"
+    with caplog.at_level(logging.INFO):
+        rc = cmd_manifest(["server.py"], base_path=str(tmp_path), output=str(out))
+    assert rc == 0
+    assert out.is_file()
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert "server.py" in data["files"]
+    assert len(data["files"]["server.py"]) == 64
+
+
+def test_cmd_manifest_missing_file_returns_one(tmp_path):
+    rc = cmd_manifest(["missing.py"], base_path=str(tmp_path), output=None)
+    assert rc == 1
 
 
 @pytest.mark.filterwarnings(

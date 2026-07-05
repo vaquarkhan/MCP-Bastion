@@ -1,6 +1,6 @@
 {
   "name": "mcp-bastion",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "MCP-Bastion monorepo: security middleware for MCP servers",
   "private": true,
   "workspaces": [
