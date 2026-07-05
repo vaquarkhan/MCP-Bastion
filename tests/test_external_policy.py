@@ -46,7 +46,12 @@ def test_from_env_reads_vars(monkeypatch):
 
 def test_opa_skips_when_policy_dir_missing(tmp_path):
     ev = ExternalPolicyEvaluator(
-        ExternalPolicyConfig(engine="opa", opa_policy_dir=str(tmp_path / "nope"), opa_binary="opa")
+        ExternalPolicyConfig(
+            engine="opa",
+            opa_policy_dir=str(tmp_path / "nope"),
+            opa_binary="opa",
+            fail_closed=False,
+        )
     )
     ok, reason = ev.evaluate({"tool": "x"})
     assert ok is True and reason is None
@@ -55,7 +60,14 @@ def test_opa_skips_when_policy_dir_missing(tmp_path):
 def test_opa_skips_when_policy_dir_not_a_directory(tmp_path):
     f = tmp_path / "file.txt"
     f.write_text("x", encoding="utf-8")
-    ev = ExternalPolicyEvaluator(ExternalPolicyConfig(engine="opa", opa_policy_dir=str(f), opa_binary="opa"))
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="opa",
+            opa_policy_dir=str(f),
+            opa_binary="opa",
+            fail_closed=False,
+        )
+    )
     ok, reason = ev.evaluate({"tool": "x"})
     assert ok is True and reason is None
 
@@ -95,7 +107,12 @@ def test_opa_nonzero_returncode_allows_with_warning(tmp_path, caplog):
     policies.mkdir()
     fake = mock.Mock(returncode=1, stdout="", stderr="bad policy")
     ev = ExternalPolicyEvaluator(
-        ExternalPolicyConfig(engine="opa", opa_policy_dir=str(policies), opa_binary="opa")
+        ExternalPolicyConfig(
+            engine="opa",
+            opa_policy_dir=str(policies),
+            opa_binary="opa",
+            fail_closed=False,
+        )
     )
     with caplog.at_level("WARNING"):
         with mock.patch("subprocess.run", return_value=fake):
@@ -107,7 +124,12 @@ def test_opa_subprocess_timeout_allows(tmp_path, caplog):
     policies = tmp_path / "policies"
     policies.mkdir()
     ev = ExternalPolicyEvaluator(
-        ExternalPolicyConfig(engine="opa", opa_policy_dir=str(policies), opa_binary="opa")
+        ExternalPolicyConfig(
+            engine="opa",
+            opa_policy_dir=str(policies),
+            opa_binary="opa",
+            fail_closed=False,
+        )
     )
     with caplog.at_level("WARNING"):
         with mock.patch("subprocess.run", side_effect=subprocess.TimeoutExpired("opa", 5)):
@@ -119,7 +141,12 @@ def test_opa_file_not_found_allows(tmp_path, caplog):
     policies = tmp_path / "policies"
     policies.mkdir()
     ev = ExternalPolicyEvaluator(
-        ExternalPolicyConfig(engine="opa", opa_policy_dir=str(policies), opa_binary="opa")
+        ExternalPolicyConfig(
+            engine="opa",
+            opa_policy_dir=str(policies),
+            opa_binary="opa",
+            fail_closed=False,
+        )
     )
     with caplog.at_level("WARNING"):
         with mock.patch("subprocess.run", side_effect=FileNotFoundError("opa")):
@@ -129,7 +156,11 @@ def test_opa_file_not_found_allows(tmp_path, caplog):
 
 def test_cedar_skips_when_policies_dir_missing(tmp_path):
     ev = ExternalPolicyEvaluator(
-        ExternalPolicyConfig(engine="cedar", cedar_policies_dir=str(tmp_path / "missing"))
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(tmp_path / "missing"),
+            fail_closed=False,
+        )
     )
     ok, reason = ev.evaluate({"x": 1})
     assert ok is True and reason is None
@@ -190,7 +221,12 @@ def test_cedar_nonzero_returncode_allows(tmp_path, caplog):
     pol.mkdir()
     fake = mock.Mock(returncode=2, stdout="", stderr="cedar err")
     ev = ExternalPolicyEvaluator(
-        ExternalPolicyConfig(engine="cedar", cedar_policies_dir=str(pol), cedar_binary="cedar")
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(pol),
+            cedar_binary="cedar",
+            fail_closed=False,
+        )
     )
     with caplog.at_level("WARNING"):
         with mock.patch("subprocess.run", return_value=fake):
@@ -255,7 +291,12 @@ def test_cedar_oserror_allows(tmp_path, caplog):
     pol = tmp_path / "policies"
     pol.mkdir()
     ev = ExternalPolicyEvaluator(
-        ExternalPolicyConfig(engine="cedar", cedar_policies_dir=str(pol), cedar_binary="cedar")
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(pol),
+            cedar_binary="cedar",
+            fail_closed=False,
+        )
     )
     with caplog.at_level("WARNING"):
         with mock.patch("subprocess.run", side_effect=OSError("nope")):

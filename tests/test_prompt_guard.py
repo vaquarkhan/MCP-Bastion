@@ -23,7 +23,7 @@ def test_fail_closed_raises_when_ml_unavailable_and_no_heuristic_match():
     engine = PromptGuardEngine(fail_open=False, heuristic_fallback=True)
     with mock.patch.object(engine, "score", side_effect=RuntimeError("HTTP 401 gated repo")):
         with pytest.raises(PromptGuardUnavailableError) as exc:
-            engine.is_malicious("benign query without obvious jailbreak tokens")
+            engine.is_malicious("benign query about weather and arithmetic")
         assert "401" in str(exc.value) or "gated" in str(exc.value).lower()
 
 

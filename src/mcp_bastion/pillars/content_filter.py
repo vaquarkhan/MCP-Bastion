@@ -10,6 +10,9 @@ import logging
 import re
 from typing import Any
 
+from mcp_bastion.errors import ContentFilterError
+from mcp_bastion.pillars.content_normalize import normalize_for_scan
+
 logger = logging.getLogger(__name__)
 
 # Default patterns
@@ -22,6 +25,12 @@ DEFAULT_CODE_PATTERNS = [
     r"subprocess\.(run|call|Popen)",
     r"os\.system\s*\(",
     r"shell\s*=\s*True",
+    r"(?i)\brm\s+-rf\b",
+    r"(?i)\bcurl\s+[^\n|]*\|\s*(?:ba)?sh\b",
+    r"(?i)\bwget\s+[^\n|]*\|\s*(?:ba)?sh\b",
+    r"(?i)\bchmod\s+\+x\b",
+    r"(?i)base64\s+-d[^\n|]*\|\s*(?:ba)?sh\b",
+    r"(?i)\|\s*(?:ba)?sh\s*$",
 ]
 
 DEFAULT_PATH_PATTERNS = [
@@ -45,9 +54,6 @@ DEFAULT_SECRET_PATTERNS = [
     r"gh[pousr]_[A-Za-z0-9_]{36,}",  # GitHub PAT
     r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
 ]
-
-
-from mcp_bastion.errors import ContentFilterError
 
 
 class ContentFilter:
@@ -121,7 +127,7 @@ class ContentFilter:
         flat = self._extract_text(text)
         if not flat or not flat.strip():
             return
-        text = flat
+        text = normalize_for_scan(flat)
 
         for rx in self._allowlist_regexes:
             if rx.search(text):

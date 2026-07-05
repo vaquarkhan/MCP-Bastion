@@ -126,7 +126,7 @@ async def test_rbac_blocks_in_middleware():
     ctx = MiddlewareContext(
         message={"method": "tools/call", "params": {"name": "write", "arguments": {}}},
         request_id="r1",
-        metadata={"role": "viewer"},
+        metadata={"role": "viewer", "bastion_authenticated_role": True},
     )
 
     async def handler(c):
@@ -152,7 +152,7 @@ async def test_rbac_allows_in_middleware():
     ctx = MiddlewareContext(
         message={"method": "tools/call", "params": {"name": "read", "arguments": {}}},
         request_id="r1",
-        metadata={"role": "admin"},
+        metadata={"role": "admin", "bastion_authenticated_role": True},
     )
 
     async def handler(c):
@@ -217,7 +217,7 @@ async def test_replay_guard_blocks_duplicate_in_middleware():
 async def test_cost_tracker_blocks_over_budget_in_middleware():
     """Cost tracker blocks when over budget."""
     ct = CostTracker(max_cost_per_session=0.10)
-    ct.record(0.15, session_id="s1")
+    ct.record(0.15, session_id="s1", principal_id="anonymous:default", tenant_id="default")
     mw = MCPBastionMiddleware(
         prompt_guard=PromptGuardEngine(),
         rate_limiter=TokenBucketRateLimiter(max_iterations=100),
