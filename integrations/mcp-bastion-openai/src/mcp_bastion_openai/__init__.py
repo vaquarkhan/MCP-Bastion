@@ -1,6 +1,6 @@
 """MCP-Bastion security integration for OpenAI."""
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 
 from mcp_bastion_openai.middleware import SecureOpenAI
 
