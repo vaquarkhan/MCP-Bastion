@@ -186,6 +186,15 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
         checks.append({"id": "tool_metadata_guard", "ok": False, "detail": str(e)})
 
     try:
+        from mcp_bastion.config import load_config as _load_cfg_val, validate_bastion_config
+
+        cfg_val = _load_cfg_val(config_path)
+        validate_bastion_config(cfg_val)
+        checks.append({"id": "config_validation", "ok": True, "detail": "pillar combinations valid"})
+    except Exception as e:
+        checks.append({"id": "config_validation", "ok": False, "detail": str(e)})
+
+    try:
         from mcp_bastion.config import load_config as _load_cfg_sb
         from mcp_bastion.pillars.state_backend import RedisStateBackend, build_state_backend
 

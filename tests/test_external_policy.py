@@ -198,6 +198,59 @@ def test_cedar_nonzero_returncode_allows(tmp_path, caplog):
     assert ok is True
 
 
+def test_opa_fail_closed_when_policy_dir_missing(tmp_path):
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="opa",
+            opa_policy_dir=str(tmp_path / "nope"),
+            opa_binary="opa",
+            fail_closed=True,
+        )
+    )
+    ok, reason = ev.evaluate({"tool": "x"})
+    assert ok is False
+    assert reason is not None
+    assert "external_policy" in reason
+
+
+def test_opa_fail_closed_on_nonzero_returncode(tmp_path):
+    policies = tmp_path / "policies"
+    policies.mkdir()
+    fake = mock.Mock(returncode=1, stdout="", stderr="bad policy")
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(engine="opa", opa_policy_dir=str(policies), opa_binary="opa", fail_closed=True)
+    )
+    with mock.patch("subprocess.run", return_value=fake):
+        ok, reason = ev.evaluate({"a": 1})
+    assert ok is False
+    assert "OPA eval failed" in (reason or "")
+
+
+def test_opa_fail_closed_on_timeout(tmp_path):
+    policies = tmp_path / "policies"
+    policies.mkdir()
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(engine="opa", opa_policy_dir=str(policies), opa_binary="opa", fail_closed=True)
+    )
+    with mock.patch("subprocess.run", side_effect=subprocess.TimeoutExpired("opa", 5)):
+        ok, reason = ev.evaluate({"a": 1})
+    assert ok is False
+    assert "timed out" in (reason or "").lower()
+
+
+def test_cedar_fail_closed_when_policies_dir_missing(tmp_path):
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(tmp_path / "missing"),
+            fail_closed=True,
+        )
+    )
+    ok, reason = ev.evaluate({"x": 1})
+    assert ok is False
+    assert reason is not None
+
+
 def test_cedar_oserror_allows(tmp_path, caplog):
     pol = tmp_path / "policies"
     pol.mkdir()
@@ -208,3 +261,10 @@ def test_cedar_oserror_allows(tmp_path, caplog):
         with mock.patch("subprocess.run", side_effect=OSError("nope")):
             ok, reason = ev.evaluate({"a": 1})
     assert ok is True
+
+
+def test_from_env_reads_fail_closed(monkeypatch):
+    monkeypatch.setenv("BASTION_POLICY_ENGINE", "none")
+    monkeypatch.setenv("BASTION_POLICY_FAIL_CLOSED", "true")
+    ev = ExternalPolicyEvaluator.from_env()
+    assert ev._cfg.fail_closed is True

@@ -21,6 +21,10 @@ class MCPBastionError(Exception):
         }
 
 
+class BastionConfigError(ValueError):
+    """Invalid bastion.yaml or incompatible pillar combination at startup."""
+
+
 class PromptInjectionError(MCPBastionError):
     """Raised when prompt injection or jailbreak is detected."""
 

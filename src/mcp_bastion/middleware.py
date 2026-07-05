@@ -19,6 +19,7 @@ from mcp_bastion.errors import (
     AgentAccessDeniedError,
     ArgumentGuardError,
     AuthenticationError,
+    BastionConfigError,
     ExternalPolicyDeniedError,
     GroundingViolationError,
     PromptInjectionError,
@@ -523,9 +524,9 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.enable_argument_guards = enable_argument_guards and argument_guards is not None
 
         if self.enable_tool_metadata_guard and not self.enable_content_filter and not self.enable_prompt_guard:
-            logger.warning(
-                "tool_metadata_guard is enabled but both content_filter and prompt_guard are disabled; "
-                "metadata scanning will not run until at least one is enabled"
+            raise BastionConfigError(
+                "tool_metadata_guard is enabled but both content_filter and prompt_guard are disabled — "
+                "enable at least one metadata scanner or disable tool_metadata_guard"
             )
 
     @staticmethod
@@ -737,10 +738,9 @@ class MCPBastionMiddleware(Middleware[Any]):
         if not self.enable_tool_metadata_guard:
             return result
         if not self.enable_content_filter and not self.enable_prompt_guard:
-            logger.warning(
-                "tool_metadata_guard is enabled but both content_filter and prompt_guard are disabled; skipping"
+            raise BastionConfigError(
+                "tool_metadata_guard is enabled but both content_filter and prompt_guard are disabled"
             )
-            return result
 
         tools = _get_tools_list_from_result(result)
         if tools is None or not tools:
