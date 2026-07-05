@@ -50,7 +50,7 @@ def test_memory_backend_ttl_expires(monkeypatch):
 
 def test_memory_backend_set_nx_after_expiry(monkeypatch):
     backend = MemoryStateBackend()
-    times = iter([0.0, 100.0, 100.0])
+    times = iter([0.0, 100.0, 100.0, 100.0])
     monkeypatch.setattr("mcp_bastion.pillars.state_backend.time.monotonic", lambda: next(times))
     assert backend.set_nx("k", "v1", ttl_seconds=5.0) is True
     assert backend.set_nx("k", "v2", ttl_seconds=5.0) is True

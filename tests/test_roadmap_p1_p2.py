@@ -403,6 +403,7 @@ def test_tool_metadata_fingerprint_list_json_and_invalid(tmp_path):
 
     fp = fingerprint_tools([{"name": "t", "input_schema": {"type": "object"}}])
     assert fp == fingerprint_tools([{"name": "t", "inputSchema": {"type": "object"}}])
+    assert fingerprint_tools(["legacy-name"])  # non-dict tool entries
 
 
 def test_doctor_tool_metadata_fingerprint(tmp_path):
