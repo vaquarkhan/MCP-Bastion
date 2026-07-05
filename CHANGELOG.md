@@ -1,5 +1,7 @@
 # Changelog
 
+**Current release:** **2.0.0** (2026-07-05) — [PyPI](https://pypi.org/project/mcp-bastion-python/2.0.0/) · [Docker `v2.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
