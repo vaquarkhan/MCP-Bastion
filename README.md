@@ -113,7 +113,7 @@ cost_tracker:
 <p align="center">
   <img
     src="images/mcp-bastion-runtime-governance.png"
-    alt="MCP-Bastion Zero-Trust Runtime Governance: Agent IAM, server verification, beyond-OWASP coverage, and roadmap"
+    alt="MCP-Bastion 2.0.0 Zero-Trust Runtime Governance: full MCP surface, Redis scale, Agent IAM, and beyond-OWASP coverage"
     width="960"
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
