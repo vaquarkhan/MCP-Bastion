@@ -376,6 +376,35 @@ def test_tool_metadata_fingerprint_loaders(tmp_path):
     assert load_expected_fingerprint(fp_file) == doc["fingerprint"]
 
 
+def test_tool_metadata_fingerprint_list_json_and_invalid(tmp_path):
+    from mcp_bastion.pillars.tool_metadata_fingerprint import (
+        fingerprint_tools,
+        load_expected_fingerprint,
+        load_tools_from_json,
+    )
+
+    list_path = tmp_path / "list.json"
+    list_path.write_text(json.dumps([{"name": "only", "description": "tool"}]), encoding="utf-8")
+    assert len(load_tools_from_json(list_path)) == 1
+
+    bad_path = tmp_path / "bad.json"
+    bad_path.write_text(json.dumps({"unexpected": True}), encoding="utf-8")
+    with pytest.raises(ValueError, match="Expected tools list"):
+        load_tools_from_json(bad_path)
+
+    string_fp = tmp_path / "fp_str.json"
+    string_fp.write_text(json.dumps("abc123"), encoding="utf-8")
+    assert load_expected_fingerprint(string_fp) == "abc123"
+
+    invalid_fp = tmp_path / "fp_invalid.json"
+    invalid_fp.write_text(json.dumps({"no_fp": True}), encoding="utf-8")
+    with pytest.raises(ValueError, match="fingerprint"):
+        load_expected_fingerprint(invalid_fp)
+
+    fp = fingerprint_tools([{"name": "t", "input_schema": {"type": "object"}}])
+    assert fp == fingerprint_tools([{"name": "t", "inputSchema": {"type": "object"}}])
+
+
 def test_doctor_tool_metadata_fingerprint(tmp_path):
     from mcp_bastion.doctor import run_doctor
     from mcp_bastion.pillars.tool_metadata_fingerprint import build_fingerprint_document

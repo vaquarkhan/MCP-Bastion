@@ -26,3 +26,15 @@ def test_cmd_tail_missing_path_returns_error(caplog):
         rc = cmd_tail(None, lines=5, config_path=None)
     assert rc == 1
     assert caplog.text
+
+
+def test_cmd_tail_reads_path_from_config(tmp_path: Path, caplog):
+    _reset_cli_logger()
+    audit = tmp_path / "audit.jsonl"
+    audit.write_text('{"tool":"from-config","action":"ALLOWED"}\n', encoding="utf-8")
+    cfg = tmp_path / "bastion.yaml"
+    cfg.write_text(f"audit:\n  jsonl_path: {audit.as_posix()}\n", encoding="utf-8")
+    with caplog.at_level(logging.INFO, logger="mcp_bastion.cli"):
+        rc = cmd_tail(None, lines=5, config_path=str(cfg))
+    assert rc == 0
+    assert "from-config" in caplog.text

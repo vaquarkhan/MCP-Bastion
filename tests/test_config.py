@@ -443,3 +443,31 @@ cost_tracker:
     assert len(cfg.argument_guards_rules) == 1
     assert cfg.audit_jsonl_path == "/var/log/bastion.jsonl"
     assert cfg.cost_checkpoint_path == "/tmp/cost.json"
+
+
+def test_build_middleware_argument_guards_enabled_no_rules(tmp_path, caplog):
+    import logging
+
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text(
+        """
+argument_guards:
+  enabled: true
+  rules: []
+audit:
+  enabled: false
+prompt_guard:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    from mcp_bastion.config import build_middleware_from_config, load_config
+
+    with caplog.at_level(logging.WARNING):
+        mw = build_middleware_from_config(load_config(str(yaml_path)))
+    assert mw is not None
+    assert "argument_guards" in caplog.text.lower()
