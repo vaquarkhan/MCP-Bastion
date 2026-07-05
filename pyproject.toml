@@ -83,6 +83,7 @@ source = ["src/mcp_bastion"]
 omit = [
     "*/pii_redaction.py",
     "*/prompt_guard.py",
+    "*/demo_live_traffic.py",
 ]
 
 [tool.coverage.report]

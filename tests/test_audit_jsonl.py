@@ -56,3 +56,16 @@ def test_make_audit_export_callback_writes_jsonl(tmp_path: Path):
     )
     data = json.loads(path.read_text(encoding="utf-8").strip())
     assert data["tool"] == "t"
+
+
+def test_audit_jsonl_tail_missing_file():
+    assert AuditJsonlSink.tail("/nonexistent/audit.jsonl") == []
+
+
+def test_audit_jsonl_tail_skips_blank_and_bad_json(tmp_path: Path):
+    path = tmp_path / "audit.jsonl"
+    path.write_text('\n{"tool":"ok"}\n{bad json}\n', encoding="utf-8")
+    rows = AuditJsonlSink.tail(path, lines=5)
+    assert len(rows) == 2
+    assert rows[0]["tool"] == "ok"
+    assert "raw" in rows[1]

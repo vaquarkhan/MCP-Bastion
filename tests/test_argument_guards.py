@@ -76,3 +76,19 @@ def test_redact_guard_masks_nested_values():
 def test_argument_guard_error_code():
     err = ArgumentGuardError("blocked by test")
     assert err.code == -32022
+
+
+def test_compiled_guard_import_error(monkeypatch):
+    import builtins
+
+    real_import = builtins.__import__
+
+    def blocked_import(name, *args, **kwargs):
+        if name == "jsonpath_ng":
+            raise ImportError("no jsonpath")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+    rules = parse_guard_rules([{"name": "x", "match": "*", "arg": "$.a", "pattern": "bad"}])
+    with pytest.raises(ImportError, match="jsonpath-ng"):
+        ArgumentGuardEngine(rules)
