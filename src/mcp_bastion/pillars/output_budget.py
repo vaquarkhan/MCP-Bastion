@@ -42,6 +42,7 @@ class OutputBudget:
         retrieve_tool: str = "bastion_get_offloaded",
         offload_store: SessionOffloadStore | None = None,
         token_counter: Callable[[str], int] | None = None,
+        max_response_bytes: int = 0,
     ) -> None:
         if max_output_tokens < 1:
             raise ValueError("max_output_tokens must be >= 1")
@@ -56,6 +57,25 @@ class OutputBudget:
         self.retrieve_tool = retrieve_tool.strip()
         self.offload_store = offload_store or SessionOffloadStore()
         self._count_tokens = token_counter or count_text_tokens
+        self.max_response_bytes = max(0, int(max_response_bytes))
+
+    def total_text_bytes(self, content: list[dict[str, Any]]) -> int:
+        """Sum UTF-8 byte length of text content items."""
+        total = 0
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text" and "text" in item:
+                total += len(str(item["text"]).encode("utf-8"))
+        return total
+
+    def check_response_size(self, content: list[dict[str, Any]]) -> None:
+        """Raise ValueError if outbound text exceeds max_response_bytes."""
+        if self.max_response_bytes <= 0 or not content:
+            return
+        total = self.total_text_bytes(content)
+        if total > self.max_response_bytes:
+            raise ValueError(
+                f"Response size {total:,} bytes exceeds max_response_bytes={self.max_response_bytes:,}"
+            )
 
     def process_content_items(
         self,
@@ -68,6 +88,8 @@ class OutputBudget:
         summary = OutputBudgetResult()
         if not content:
             return content, summary
+
+        self.check_response_size(content)
 
         out: list[dict[str, Any]] = []
         for item in content:

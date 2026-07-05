@@ -3,16 +3,19 @@
 import pytest
 
 from mcp_bastion.errors import (
+    AgentAccessDeniedError,
     CircuitBreakerOpenError,
     ContentFilterError,
     CostBudgetExceededError,
     GroundingViolationError,
     MCPBastionError,
+    PromptGuardUnavailableError,
     PromptInjectionError,
     RBACError,
     RateLimitExceededError,
     ReplayAttackError,
     SchemaValidationError,
+    ServerVerificationError,
     TokenBudgetExceededError,
 )
 
@@ -56,6 +59,9 @@ def test_all_errors_to_mcp_error():
         ReplayAttackError("replay"),
         CostBudgetExceededError("cost"),
         GroundingViolationError("grounding"),
+        PromptGuardUnavailableError("unavailable"),
+        AgentAccessDeniedError("agent denied"),
+        ServerVerificationError("bad hash"),
     ]
     for err in errors:
         obj = err.to_mcp_error()

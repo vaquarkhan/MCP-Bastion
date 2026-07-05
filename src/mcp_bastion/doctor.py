@@ -42,6 +42,83 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
     except Exception as e:
         checks.append({"id": "config_load", "ok": False, "detail": str(e)})
 
+    # PromptGuard ML availability (heuristics still work without it)
+    try:
+        from mcp_bastion.config import load_config as _load_cfg
+        from mcp_bastion.pillars.prompt_guard import HF_ACCESS_URL, PromptGuardEngine
+
+        cfg = _load_cfg(config_path)
+        if cfg.prompt_guard:
+            engine = PromptGuardEngine(
+                threshold=cfg.prompt_guard_threshold,
+                model_id=cfg.prompt_guard_model_id,
+                fail_open=cfg.prompt_guard_fail_open,
+                heuristic_fallback=cfg.prompt_guard_heuristic_fallback,
+            )
+            try:
+                engine.score("health check")
+                checks.append({"id": "prompt_guard_ml", "ok": True, "detail": f"model={cfg.prompt_guard_model_id}"})
+            except Exception as e:
+                checks.append(
+                    {
+                        "id": "prompt_guard_ml",
+                        "ok": False,
+                        "detail": (
+                            f"Heuristic fallback active; ML unavailable ({e}). "
+                            f"Accept access at {HF_ACCESS_URL} and run `huggingface-cli login`."
+                        ),
+                    }
+                )
+        else:
+            checks.append({"id": "prompt_guard_ml", "ok": True, "skipped": True, "detail": "prompt_guard disabled"})
+    except Exception as e:
+        checks.append({"id": "prompt_guard_ml", "ok": False, "detail": str(e)})
+
+    try:
+        from mcp_bastion.config import load_config as _load_cfg2
+        from mcp_bastion.config import _load_server_manifest
+        from mcp_bastion.pillars.agent_iam import parse_agent_policies
+        from mcp_bastion.pillars.server_verification import ServerVerifier
+
+        cfg2 = _load_cfg2(config_path)
+        if cfg2.agent_iam_enabled:
+            policies = parse_agent_policies(cfg2.agent_iam_agents)
+            checks.append(
+                {
+                    "id": "agent_iam",
+                    "ok": len(policies) > 0,
+                    "detail": f"{len(policies)} agent(s) resolved"
+                    if policies
+                    else "agent_iam enabled but no tokens resolved",
+                }
+            )
+        else:
+            checks.append({"id": "agent_iam", "ok": True, "skipped": True, "detail": "agent_iam disabled"})
+        if cfg2.server_verification_enabled:
+            manifest = _load_server_manifest(cfg2)
+            if not manifest:
+                checks.append({"id": "server_verification", "ok": False, "detail": "manifest empty"})
+            else:
+                sv = ServerVerifier(
+                    manifest,
+                    base_path=cfg2.server_verification_base_path,
+                    on_mismatch=cfg2.server_verification_on_mismatch,  # type: ignore[arg-type]
+                )
+                result = sv.verify()
+                checks.append(
+                    {
+                        "id": "server_verification",
+                        "ok": result.ok or cfg2.server_verification_on_mismatch == "warn",
+                        "detail": result.summary,
+                    }
+                )
+        else:
+            checks.append(
+                {"id": "server_verification", "ok": True, "skipped": True, "detail": "server_verification disabled"}
+            )
+    except Exception as e:
+        checks.append({"id": "runtime_governance", "ok": False, "detail": str(e)})
+
     # Lockfiles / manifests (MCP04 hygiene); informational only
     manifest_names = ("pyproject.toml", "requirements.txt", "package-lock.json", "pnpm-lock.yaml", "yarn.lock")
     present = [name for name in manifest_names if (root / name).is_file()]
@@ -88,7 +165,13 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
     cfg_ok = bool(by_id.get("config_load", {}).get("ok"))
     pa = by_id.get("pip_audit", {})
     pa_ok = bool(pa.get("skipped") or pa.get("ok"))
-    ok = cfg_ok and pa_ok
+    pg = by_id.get("prompt_guard_ml", {})
+    pg_ok = bool(pg.get("skipped") or pg.get("ok"))
+    iam = by_id.get("agent_iam", {})
+    iam_ok = bool(iam.get("skipped") or iam.get("ok"))
+    sv = by_id.get("server_verification", {})
+    sv_ok = bool(sv.get("skipped") or sv.get("ok"))
+    ok = cfg_ok and pa_ok and pg_ok and iam_ok and sv_ok
     return {
         "bastion_version": _package_version(),
         "python": sys.version.split()[0],

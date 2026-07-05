@@ -17,12 +17,15 @@ from typing import Any
 
 from mcp_bastion.base import CallNext, Middleware, MiddlewareContext
 from mcp_bastion.errors import (
+    AgentAccessDeniedError,
     AuthenticationError,
     ExternalPolicyDeniedError,
     GroundingViolationError,
     PromptInjectionError,
+    PromptGuardUnavailableError,
     RateLimitExceededError,
     SensitiveContentError,
+    ServerVerificationError,
     SessionScopeExceededError,
     TokenBudgetExceededError,
     ToolMetadataPoisoningError,
@@ -37,6 +40,8 @@ from mcp_bastion.pillars.rate_limit import RateLimitCheckResult, TokenBucketRate
 from mcp_bastion.pillars.response_scanner import ResponseInjectionScanner
 from mcp_bastion.pillars.output_budget import OutputBudget
 from mcp_bastion.pillars.grounding_guard import GroundingGuard
+from mcp_bastion.pillars.agent_iam import AgentIAM
+from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.tokens import estimate_text_tokens
 from mcp_bastion.pillars.rbac import RBAC
 from mcp_bastion.pillars.replay_guard import ReplayGuard
@@ -350,6 +355,10 @@ class MCPBastionMiddleware(Middleware[Any]):
         output_budget: OutputBudget | None = None,
         enable_grounding_guard: bool = False,
         grounding_guard: GroundingGuard | None = None,
+        agent_iam: AgentIAM | None = None,
+        enable_agent_iam: bool = False,
+        server_verifier: ServerVerifier | None = None,
+        enable_server_verification: bool = False,
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -408,6 +417,10 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.enable_output_budget = enable_output_budget
         self.grounding_guard = grounding_guard or GroundingGuard()
         self.enable_grounding_guard = enable_grounding_guard
+        self.agent_iam = agent_iam
+        self.enable_agent_iam = enable_agent_iam and agent_iam is not None
+        self.server_verifier = server_verifier
+        self.enable_server_verification = enable_server_verification and server_verifier is not None
 
     @staticmethod
     def _offload_key_from_params(params: dict | None) -> str | None:
@@ -598,8 +611,11 @@ class MCPBastionMiddleware(Middleware[Any]):
             except Exception as e:
                 return str(e)
         if self.enable_prompt_guard and text.strip():
-            if self.prompt_guard.is_malicious(text):
-                return "prompt_guard flagged tool metadata"
+            try:
+                if self.prompt_guard.is_malicious(text):
+                    return "prompt_guard flagged tool metadata"
+            except PromptGuardUnavailableError as e:
+                return str(e)
         return None
 
     def _apply_tool_metadata_guard(self, context: MiddlewareContext[Any], result: Any) -> Any:
@@ -782,7 +798,31 @@ class MCPBastionMiddleware(Middleware[Any]):
             except Exception as e:
                 self._handle_violation(context=context, trace=trace, pillar="replay_guard", started=started, error=e)
 
-        if self.enable_edge_auth and self.edge_auth_secret:
+        if self.enable_server_verification and self.server_verifier is not None:
+            started = time.perf_counter()
+            try:
+                self.server_verifier.ensure_ok(force=True)
+                _trace_append(trace, pillar="server_verification", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="server_verification", started=started, error=e
+                )
+
+        agent_policy = None
+        if self.enable_agent_iam and self.agent_iam is not None:
+            started = time.perf_counter()
+            raw_token = context.metadata.get(self.agent_iam.token_metadata_key)
+            try:
+                agent_policy = self.agent_iam.authenticate(None if raw_token is None else str(raw_token))
+                self.agent_iam.apply_to_context(context, agent_policy)
+                if agent_policy is not None:
+                    self.agent_iam.check_tool(agent_policy, tool_name or "")
+                _trace_append(trace, pillar="agent_iam", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(context=context, trace=trace, pillar="agent_iam", started=started, error=e)
+        context.metadata["_agent_policy"] = agent_policy
+
+        if self.enable_edge_auth and self.edge_auth_secret and not self.enable_agent_iam:
             started = time.perf_counter()
             raw = context.metadata.get(self.edge_auth_metadata_key)
             token = "" if raw is None else str(raw)
@@ -890,9 +930,16 @@ class MCPBastionMiddleware(Middleware[Any]):
 
         if self.enable_rate_limit:
             started = time.perf_counter()
-            check = self.rate_limiter.check_iteration(
+            limiter = self.rate_limiter
+            rate_session = session_id
+            if agent_policy is not None and self.agent_iam is not None:
+                agent_limiter = self.agent_iam.rate_limiter_for(agent_policy)
+                if agent_limiter is not None:
+                    limiter = agent_limiter
+                    rate_session = f"{session_id or request_id or 'default'}::agent::{agent_policy.agent_id}"
+            check = limiter.check_iteration(
                 request_id=request_id,
-                session_id=session_id,
+                session_id=rate_session,
                 tool_name=tool_name,
             )
             if not check.allowed:
@@ -912,6 +959,8 @@ class MCPBastionMiddleware(Middleware[Any]):
                 )
             else:
                 _trace_append(trace, pillar="rate_limit", status="allowed", started=started)
+            context.metadata["_rate_limiter"] = limiter
+            context.metadata["_rate_session"] = rate_session
 
         if self.enable_content_filter and params:
             started = time.perf_counter()
@@ -937,15 +986,22 @@ class MCPBastionMiddleware(Middleware[Any]):
                 except json.JSONDecodeError:
                     arguments = {"raw": arguments}
             text = _extract_text_from_value(arguments)
-            if text and self.prompt_guard.is_malicious(text):
-                logger.warning("prompt_injection_blocked request_id=%s", request_id)
-                self._handle_violation(
-                    context=context,
-                    trace=trace,
-                    pillar="prompt_guard",
-                    started=started,
-                    error=PromptInjectionError(),
-                )
+            if text:
+                try:
+                    malicious = self.prompt_guard.is_malicious(text)
+                except PromptGuardUnavailableError as e:
+                    self._handle_violation(
+                        context=context, trace=trace, pillar="prompt_guard", started=started, error=e
+                    )
+                if malicious:
+                    logger.warning("prompt_injection_blocked request_id=%s", request_id)
+                    self._handle_violation(
+                        context=context,
+                        trace=trace,
+                        pillar="prompt_guard",
+                        started=started,
+                        error=PromptInjectionError(),
+                    )
             _trace_append(trace, pillar="prompt_guard", status="allowed", started=started)
 
         if self.enable_sensitive_classifier and params:
@@ -1017,9 +1073,11 @@ class MCPBastionMiddleware(Middleware[Any]):
                 if tokens:
                     context.metadata["tokens_used"] = tokens
                 started = time.perf_counter()
-                self.rate_limiter.consume_iteration(
+                consume_limiter = context.metadata.get("_rate_limiter") or self.rate_limiter
+                consume_session = context.metadata.get("_rate_session") or session_id
+                consume_limiter.consume_iteration(
                     request_id=request_id,
-                    session_id=session_id,
+                    session_id=consume_session,
                     tokens=tokens,
                     tool_name=tool_name,
                 )

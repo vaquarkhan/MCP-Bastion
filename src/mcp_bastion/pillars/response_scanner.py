@@ -7,20 +7,16 @@ in tool results before they reach the agent (MCP03 / MCP06 / MCP10).
 
 from __future__ import annotations
 
-import re
 from typing import Iterable
 
 from mcp_bastion.errors import PromptInjectionError
+from mcp_bastion.pillars.injection_heuristics import (
+    DEFAULT_INJECTION_PATTERNS,
+    compile_injection_patterns,
+    find_injection_match,
+)
 
-DEFAULT_RESPONSE_INJECTION_PATTERNS = [
-    r"(?i)ignore\s+(?:all\s+)?previous\s+instructions",
-    r"(?i)disregard\s+(?:all\s+)?(?:prior|previous|above)\s+instructions",
-    r"(?i)you\s+are\s+now\s+(?:in\s+)?(?:developer|admin|god)\s+mode",
-    r"(?i)<\s*system\s*>",
-    r"(?i)\[INST\]",
-    r"(?i)<!--\s*hidden",
-    r"(?i)do\s+not\s+tell\s+the\s+user",
-]
+DEFAULT_RESPONSE_INJECTION_PATTERNS = DEFAULT_INJECTION_PATTERNS
 
 
 class ResponseInjectionScanner:
@@ -31,19 +27,11 @@ class ResponseInjectionScanner:
         *,
         extra_patterns: Iterable[str] | None = None,
     ) -> None:
-        patterns = list(DEFAULT_RESPONSE_INJECTION_PATTERNS)
-        if extra_patterns:
-            patterns.extend(str(p) for p in extra_patterns if str(p).strip())
-        self._regexes = [re.compile(p) for p in patterns]
+        self._regexes = compile_injection_patterns(extra_patterns)
 
     def find_match(self, text: str) -> str | None:
         """Return matched pattern source if text is suspicious."""
-        if not text or not isinstance(text, str):
-            return None
-        for rx in self._regexes:
-            if rx.search(text):
-                return rx.pattern
-        return None
+        return find_injection_match(text, self._regexes)
 
     def check_text(self, text: str) -> None:
         """Raise PromptInjectionError if injection pattern found."""

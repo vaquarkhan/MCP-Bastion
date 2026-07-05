@@ -6,6 +6,10 @@
 
 prompt_guard:
   enabled: true
+  threshold: 0.85
+  heuristic_fallback: true   # blocks obvious jailbreaks without ML (always on by default)
+  fail_open: false         # when ML unavailable: block unverified payloads (dev: set true)
+  # Requires Hugging Face access to gated model meta-llama/Llama-Prompt-Guard-2-86M + `huggingface-cli login`
 
 pii:
   enabled: true
@@ -29,6 +33,7 @@ output_budget:
   enabled: false
   max_output_tokens: 4000
   min_tokens: 500
+  max_response_bytes: 0    # e.g. 524288 (512 KiB) to block context-flooding payloads
   offload: true
   retrieve_tool: bastion_get_offloaded
 
@@ -94,3 +99,39 @@ alerts:
 hot_reload:
   enabled: true
   poll_seconds: 2.0
+
+# --- Production hardening (opt-in) ---
+
+# Zero-Trust: Agent Identity & Access Management (Confused Deputy)
+agent_iam:
+  enabled: false
+  token_metadata_key: bastion_agent_token
+  require_token: true
+  agents:
+    - id: customer_support_bot
+      token_env: BASTION_TOKEN_SUPPORT
+      allowed_tools: ["search_docs", "get_ticket_status"]
+      blocked_tools: ["execute_sql", "delete_user"]
+      rate_limit:
+        max_iterations: 5
+
+# Supply chain: verify MCP server file checksums before tool traffic
+server_verification:
+  enabled: false
+  on_mismatch: block
+  base_path: .
+  manifest_path: mcp-server.manifest.json
+
+edge_auth:
+  enabled: false
+  metadata_key: bastion_edge_token
+  secret_env: BASTION_EDGE_SECRET
+
+tool_allowlist:
+  enabled: false
+  tools: []
+
+tool_metadata_guard:
+  enabled: false
+  on_poison: remove_tool   # remove_tool | block_all
+  use_content_filter: true

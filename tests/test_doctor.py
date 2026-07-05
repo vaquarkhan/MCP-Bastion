@@ -27,7 +27,8 @@ def test_run_doctor_config_ok(tmp_path):
         pytest.skip("pyyaml not installed")
     # pip-audit on PATH may report local vulns (returncode != 0); isolate config check.
     with mock.patch("mcp_bastion.doctor.shutil.which", return_value=None):
-        r = run_doctor(config_path=str(p), repo_root=tmp_path)
+        with mock.patch("mcp_bastion.pillars.prompt_guard.PromptGuardEngine.score", return_value=0.0):
+            r = run_doctor(config_path=str(p), repo_root=tmp_path)
     assert r["ok"] is True
     assert any(c["id"] == "config_load" and c["ok"] for c in r["checks"])
     assert any(c["id"] == "manifests" for c in r["checks"])
@@ -53,7 +54,8 @@ def test_run_doctor_pip_audit_skipped(tmp_path):
     except ImportError:
         pytest.skip("pyyaml not installed")
     with mock.patch("mcp_bastion.doctor.shutil.which", return_value=None):
-        r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
+        with mock.patch("mcp_bastion.pillars.prompt_guard.PromptGuardEngine.score", return_value=0.0):
+            r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
     pa = next(c for c in r["checks"] if c["id"] == "pip_audit")
     assert pa.get("skipped") is True
 
@@ -65,9 +67,10 @@ def test_run_doctor_pip_audit_bad_json_stdout(tmp_path):
     except ImportError:
         pytest.skip("pyyaml not installed")
     with mock.patch("mcp_bastion.doctor.shutil.which", return_value="pip-audit"):
-        with mock.patch("mcp_bastion.doctor.subprocess.run") as run:
-            run.return_value = mock.Mock(returncode=0, stdout="not-json")
-            r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
+        with mock.patch("mcp_bastion.pillars.prompt_guard.PromptGuardEngine.score", return_value=0.0):
+            with mock.patch("mcp_bastion.doctor.subprocess.run") as run:
+                run.return_value = mock.Mock(returncode=0, stdout="not-json")
+                r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
     pa = next(c for c in r["checks"] if c["id"] == "pip_audit")
     assert pa.get("ok") is True
 
@@ -79,8 +82,9 @@ def test_run_doctor_pip_audit_subprocess_error(tmp_path):
     except ImportError:
         pytest.skip("pyyaml not installed")
     with mock.patch("mcp_bastion.doctor.shutil.which", return_value="pip-audit"):
-        with mock.patch("mcp_bastion.doctor.subprocess.run", side_effect=OSError("nope")):
-            r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
+        with mock.patch("mcp_bastion.pillars.prompt_guard.PromptGuardEngine.score", return_value=0.0):
+            with mock.patch("mcp_bastion.doctor.subprocess.run", side_effect=OSError("nope")):
+                r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
     assert r["ok"] is False
 
 
@@ -91,8 +95,9 @@ def test_run_doctor_pip_audit_runs(tmp_path):
     except ImportError:
         pytest.skip("pyyaml not installed")
     with mock.patch("mcp_bastion.doctor.shutil.which", return_value="pip-audit"):
-        with mock.patch("mcp_bastion.doctor.subprocess.run") as run:
-            run.return_value = mock.Mock(returncode=0, stdout=json.dumps([]))
-            r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
+        with mock.patch("mcp_bastion.pillars.prompt_guard.PromptGuardEngine.score", return_value=0.0):
+            with mock.patch("mcp_bastion.doctor.subprocess.run") as run:
+                run.return_value = mock.Mock(returncode=0, stdout=json.dumps([]))
+                r = run_doctor(config_path=str(tmp_path / "bastion.yaml"), repo_root=tmp_path)
     pa = next(c for c in r["checks"] if c["id"] == "pip_audit")
     assert pa.get("returncode") == 0

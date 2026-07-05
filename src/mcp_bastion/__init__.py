@@ -25,4 +25,4 @@ __all__ = [
     "MiddlewareContext",
     "compose_middleware",
 ]
-__version__ = "1.0.17"
+__version__ = "1.0.18"

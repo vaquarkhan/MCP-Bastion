@@ -31,6 +31,8 @@ from mcp_bastion.pillars.schema_validation import SchemaValidator
 from mcp_bastion.pillars.semantic_cache import SemanticCache
 from mcp_bastion.pillars.output_budget import OutputBudget
 from mcp_bastion.pillars.grounding_guard import GroundingGuard
+from mcp_bastion.pillars.agent_iam import AgentIAM, parse_agent_policies
+from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.base import CallNext, MiddlewareContext, compose_middleware
 from mcp_bastion.governance_beacon import schedule_registry_beacon
 from mcp_bastion.middleware import MCPBastionMiddleware
@@ -53,6 +55,10 @@ class BastionConfig:
     """Single config file schema for MCP-Bastion."""
 
     prompt_guard: bool = True
+    prompt_guard_threshold: float = 0.85
+    prompt_guard_fail_open: bool = False
+    prompt_guard_heuristic_fallback: bool = True
+    prompt_guard_model_id: str = "meta-llama/Llama-Prompt-Guard-2-86M"
     pii: bool = True
     rate_limit: bool = True
     rate_limit_max_iterations: int = 15
@@ -67,6 +73,7 @@ class BastionConfig:
     output_budget_min_tokens: int = 500
     output_budget_offload: bool = True
     output_budget_retrieve_tool: str = "bastion_get_offloaded"
+    output_budget_max_response_bytes: int = 0
     grounding_guard: bool = False
     grounding_guard_workspace_root: str = "."
     grounding_guard_on_violation: str = "warn"
@@ -132,6 +139,15 @@ class BastionConfig:
     tool_metadata_guard_enabled: bool = False
     tool_metadata_guard_on_poison: str = "remove_tool"
     tool_metadata_guard_use_content_filter: bool = True
+    agent_iam_enabled: bool = False
+    agent_iam_token_metadata_key: str = "bastion_agent_token"
+    agent_iam_require_token: bool = True
+    agent_iam_agents: list[dict[str, Any]] = field(default_factory=list)
+    server_verification_enabled: bool = False
+    server_verification_on_mismatch: str = "block"
+    server_verification_base_path: str = "."
+    server_verification_manifest: dict[str, str] = field(default_factory=dict)
+    server_verification_manifest_path: str | None = None
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -167,13 +183,20 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     tmg = data.get("tool_metadata_guard", {}) or {}
     edge = data.get("edge_auth", {}) or {}
     tal = data.get("tool_allowlist", {}) or {}
+    iam = data.get("agent_iam", {}) or {}
+    sv = data.get("server_verification", {}) or {}
     sess = data.get("session_limits", {}) or {}
     sc = data.get("sensitive_classifier", {}) or {}
     opa_pe = pe.get("opa", {}) or {}
     cedar_pe = pe.get("cedar", {}) or {}
     engine = normalize_engine(pe.get("type") or os.environ.get("BASTION_POLICY_ENGINE"))
+    pg = data.get("prompt_guard", {}) or {}
     return BastionConfig(
-        prompt_guard=data.get("prompt_guard", {}).get("enabled", True),
+        prompt_guard=pg.get("enabled", True),
+        prompt_guard_threshold=float(pg.get("threshold", 0.85)),
+        prompt_guard_fail_open=bool(pg.get("fail_open", False)),
+        prompt_guard_heuristic_fallback=bool(pg.get("heuristic_fallback", True)),
+        prompt_guard_model_id=str(pg.get("model_id", "meta-llama/Llama-Prompt-Guard-2-86M")),
         pii=data.get("pii", {}).get("enabled", True),
         rate_limit=data.get("rate_limit", {}).get("enabled", True),
         rate_limit_max_iterations=data.get("rate_limit", {}).get("max_iterations", 15),
@@ -190,6 +213,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         output_budget_retrieve_tool=str(
             data.get("output_budget", {}).get("retrieve_tool", "bastion_get_offloaded")
         ),
+        output_budget_max_response_bytes=int(data.get("output_budget", {}).get("max_response_bytes", 0)),
         grounding_guard=bool(data.get("grounding_guard", {}).get("enabled", False)),
         grounding_guard_workspace_root=str(data.get("grounding_guard", {}).get("workspace_root", ".")),
         grounding_guard_on_violation=str(data.get("grounding_guard", {}).get("on_violation", "warn")),
@@ -259,7 +283,46 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         tool_metadata_guard_enabled=bool(tmg.get("enabled", False)),
         tool_metadata_guard_on_poison=str(tmg.get("on_poison", "remove_tool")),
         tool_metadata_guard_use_content_filter=bool(tmg.get("use_content_filter", True)),
+        agent_iam_enabled=bool(iam.get("enabled", False)),
+        agent_iam_token_metadata_key=str(iam.get("token_metadata_key", "bastion_agent_token")),
+        agent_iam_require_token=bool(iam.get("require_token", True)),
+        agent_iam_agents=list(iam.get("agents", [])) if isinstance(iam.get("agents"), list) else [],
+        server_verification_enabled=bool(sv.get("enabled", False)),
+        server_verification_on_mismatch=str(sv.get("on_mismatch", "block")),
+        server_verification_base_path=str(sv.get("base_path", ".")),
+        server_verification_manifest={
+            str(k): str(v) for k, v in (sv.get("manifest") or {}).items()
+        },
+        server_verification_manifest_path=sv.get("manifest_path") or sv.get("manifest_file"),
     )
+
+
+def _load_server_manifest(config: BastionConfig) -> dict[str, str]:
+    """Merge inline manifest with optional manifest_path JSON/YAML file."""
+    manifest = dict(config.server_verification_manifest)
+    path_raw = config.server_verification_manifest_path
+    if not path_raw:
+        return manifest
+    p = Path(path_raw)
+    if not p.is_file():
+        logger.warning("server_verification manifest_path not found: %s", p)
+        return manifest
+    try:
+        if p.suffix.lower() in (".yaml", ".yml"):
+            data = _load_yaml(p)
+            files = data.get("files", data) if isinstance(data, dict) else {}
+        else:
+            import json
+
+            files = json.loads(p.read_text(encoding="utf-8"))
+            if isinstance(files, dict) and "files" in files:
+                files = files["files"]
+        if isinstance(files, dict):
+            for k, v in files.items():
+                manifest[str(k)] = str(v)
+    except Exception as e:
+        logger.warning("server_verification failed to load manifest_path %s: %s", p, e)
+    return manifest
 
 
 def _build_chain(config: BastionConfig) -> Any:
@@ -344,7 +407,38 @@ def _build_chain(config: BastionConfig) -> Any:
                 config.edge_auth_secret_env,
             )
 
+    agent_iam: AgentIAM | None = None
+    if config.agent_iam_enabled:
+        policies = parse_agent_policies(config.agent_iam_agents)
+        if not policies:
+            logger.warning("agent_iam enabled but no agents resolved (check token_env / token)")
+        agent_iam = AgentIAM(
+            policies,
+            token_metadata_key=config.agent_iam_token_metadata_key,
+            require_token=config.agent_iam_require_token,
+        )
+
+    server_verifier: ServerVerifier | None = None
+    if config.server_verification_enabled:
+        manifest = _load_server_manifest(config)
+        if not manifest:
+            logger.warning("server_verification enabled but manifest is empty")
+        else:
+            server_verifier = ServerVerifier(
+                manifest,
+                base_path=config.server_verification_base_path,
+                on_mismatch=config.server_verification_on_mismatch,  # type: ignore[arg-type]
+            )
+            if config.server_verification_on_mismatch == "block":
+                server_verifier.ensure_ok()
+
     bastion_mw = MCPBastionMiddleware(
+        prompt_guard=PromptGuardEngine(
+            threshold=config.prompt_guard_threshold,
+            model_id=config.prompt_guard_model_id,
+            fail_open=config.prompt_guard_fail_open,
+            heuristic_fallback=config.prompt_guard_heuristic_fallback,
+        ),
         rate_limiter=TokenBucketRateLimiter(
             max_iterations=config.rate_limit_max_iterations,
             timeout_seconds=config.rate_limit_timeout_seconds,
@@ -395,12 +489,17 @@ def _build_chain(config: BastionConfig) -> Any:
             min_tokens=config.output_budget_min_tokens,
             enable_offload=config.output_budget_offload,
             retrieve_tool=config.output_budget_retrieve_tool,
+            max_response_bytes=config.output_budget_max_response_bytes,
         ),
         enable_grounding_guard=config.grounding_guard,
         grounding_guard=GroundingGuard(
             workspace_root=config.grounding_guard_workspace_root,
             on_violation=config.grounding_guard_on_violation,  # type: ignore[arg-type]
         ),
+        agent_iam=agent_iam,
+        enable_agent_iam=config.agent_iam_enabled and agent_iam is not None,
+        server_verifier=server_verifier,
+        enable_server_verification=config.server_verification_enabled and server_verifier is not None,
     )
     if config.governance_registry_url:
         schedule_registry_beacon(

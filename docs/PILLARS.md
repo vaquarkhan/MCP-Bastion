@@ -9,7 +9,7 @@ This page is the **authoritative** reference for what “pillar” means in MCP-
 | **Core request-path toggles** | **10** | Original `MCPBastionMiddleware` feature flags: prompt guard, PII, rate limit, circuit breaker, content filter, RBAC, schema validation, replay guard, cost tracker, semantic cache (`BastionConfig` fields wired to `enable_*` on the middleware). |
 | **Extended request-path / policy features** | **8** | **Semantic firewall**, **sensitive classifier**, **external policy** (OPA/Cedar), **edge auth**, **tool allowlist**, **session tool-cap** (scope), **tool metadata guard**, and **shadow mode** (constructor flag on the middleware, not a YAML boolean). |
 | **Combined “pillars” (core + extended, request path)** | **18** | **10 + 8** from the two rows above. This is the usual full stack count when you list **all** first-class request-path and policy features together. **Additional** capabilities (multi-tenant, audit hash chain, pricing hooks, telemetry, governance, etc.) are configured separately; see the extended table below. |
-| **JSON-RPC deny codes** | **16** | Errors **-32001** through **-32016** in `mcp_bastion.errors` (see [README error table](../README.md#error-handling)). |
+| **JSON-RPC deny codes** | **18** | Errors **-32001** through **-32020** in `mcp_bastion.errors` (includes Agent IAM -32019, server verification -32020). |
 | **Policy file surface (`bastion.yaml`)** | **20+** | Top-level keys read by `load_config()` — core sections, **audit_hash_chain**, **behavior_fingerprint**, **cost_attribution**, **policy_engine**, **multi_tenant**, **governance**, **telemetry**, **tool_metadata_guard**, **edge_auth**, **tool_allowlist**, **session_limits**, **sensitive_classifier**, **semantic_firewall**, plus **audit**, **alerts**, **hot_reload**, etc. Exact set evolves with `BastionConfig`; treat `bastion.yaml.example` + `config.py` as source of truth. |
 | **Dashboard `pillar_health` rows** | **14** | Built in `MetricsStore._build_pillar_health()`: 14 named rows in code (Prompt Guard, PII, Rate Limiter, Circuit Breaker, Content Filter, RBAC, Schema Validation, Semantic Firewall, Sensitive Classifier, External Policy, Replay Guard, Cost Tracker, Semantic Cache, Audit Log). Not every config-only or auxiliary feature (e.g. multi-tenant, edge auth alone) has its own row. |
 
@@ -34,10 +34,12 @@ These are enforced (when enabled) on the MCP tool-call path inside `MCPBastionMi
 
 ## Extended request-path and policy features (1.0.16+)
 
-The following are **additionally** wired in `bastion.yaml` and `BastionConfig` (and reflected in JSON-RPC error codes **-32010** through **-32016** for deny outcomes where applicable — see `mcp_bastion/errors.py`).
+The following are **additionally** wired in `bastion.yaml` and `BastionConfig` (and reflected in JSON-RPC error codes **-32010** through **-32020** for deny outcomes where applicable — see `mcp_bastion/errors.py`).
 
 | Area | `bastion.yaml` sections (typical) | What it does |
 |------|----------------------------------|----------------|
+| **Agent IAM (Confused Deputy)** | `agent_iam` | Map API tokens to **agent identities**; per-agent tool allow/block lists and optional rate limits. See [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md). |
+| **Server cryptographic verification** | `server_verification` | SHA-256 manifest checksums at startup and per `tools/call`; `mcp-bastion manifest` CLI. |
 | Semantic firewall | `semantic_firewall` | Blocks unsafe tool/argument **sequences** and injection-style patterns before execution. |
 | Sensitive business classifier | `sensitive_classifier` | Weighted and optional local classifier to flag M&A / insider-style content. |
 | External policy (OPA / Cedar) | `policy_engine` | Delegates allow/deny to **OPA** or **Cedar** when `type` is set. |

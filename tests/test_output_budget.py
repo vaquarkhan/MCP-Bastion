@@ -21,6 +21,16 @@ def test_output_budget_truncates_large_text():
     assert "truncated" in out[0]["text"].lower() or "omitted" in out[0]["text"].lower()
 
 
+def test_output_budget_max_response_bytes():
+    ob = OutputBudget(max_output_tokens=10000, min_tokens=0, max_response_bytes=100)
+    content = [{"type": "text", "text": "x" * 200}]
+    try:
+        ob.process_content_items(content)
+        assert False, "expected size limit"
+    except ValueError as e:
+        assert "max_response_bytes" in str(e)
+
+
 def test_output_budget_offload_returns_key():
     ob = OutputBudget(max_output_tokens=50, min_tokens=10, enable_offload=True)
     big = "x" * 5000
