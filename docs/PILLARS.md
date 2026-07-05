@@ -58,6 +58,7 @@ The following are **additionally** wired in `bastion.yaml` and `BastionConfig` (
 | **Argument guards (2.0.0)** | `argument_guards` | JSONPath + regex **block/redact** on `tools/call` arguments (`pip install mcp-bastion-python[policy]`). Error **-32022**. |
 | **Audit JSONL (2.0.0)** | `audit.jsonl_path` | Append-only compliance log; **`mcp-bastion tail`** CLI. |
 | **Cost checkpoint (2.0.0)** | `cost_tracker.checkpoint_path` | Disk persistence for session totals across restarts (memory backend only). |
+| **Principal-keyed FinOps (2.0.0)** | `cost_tracker` + `agent_iam` / `edge_auth` | Session and daily caps aggregate by authenticated **`principal_id`** (not client-supplied `session_id` rotation). Set cost via `context.metadata["cost"]` on each tool call. |
 | Red-team / policy dev | `mcp_bastion redteam`, `policy_simulator` module | **redteam** harness; **policy_simulator** for dry-runs. |
 
 Supporting modules in `src/mcp_bastion/` and `pillars/`: e.g. `policy_simulator.py`, `redteam.py`, `tenant.py`, `governance_beacon.py`, `doctor.py`.

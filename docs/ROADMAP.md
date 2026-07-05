@@ -1,8 +1,23 @@
-# Product roadmap — runtime governance & beyond
+# Product roadmap — cost-aware runtime governance
 
-Status as of **2.0.0** (released 2026-07-05). Deep engineering milestones: [ENGINEERING_10_10.md](ENGINEERING_10_10.md). Competitive positioning: stay **middleware-first** (embed + policy-as-code), not a full LLM API gateway clone.
+Status as of **2.0.0** (released 2026-07-05).
 
-**Current release:** [2.0.0](https://pypi.org/project/mcp-bastion-python/2.0.0/) · Docker `v2.0.0`
+**Flagship bet:** [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) — own *cost-aware runtime governance for AI agents* (policy + live spend + attestation). Deep engineering milestones: [ENGINEERING_10_10.md](ENGINEERING_10_10.md). Competitive positioning: [COMPARISON.md](COMPARISON.md).
+
+**Current release:** [2.0.0](https://pypi.org/project/mcp-bastion-python/2.0.0/) · Docker `v2.0.0` · integration packages **2.0.0**
+
+---
+
+## Flagship: four features that stick (ranked)
+
+| # | Feature | Moat | Target | Doc |
+|---|---------|------|--------|-----|
+| **1** | **Compliance-grade attestation** | Signed session export: policy version, controls fired, blocks, cost | **3.0** | [COST_AWARE_GOVERNANCE.md §1](COST_AWARE_GOVERNANCE.md#1-compliance-grade-attestation-the-moat) |
+| **2** | **Un-bypassable boundary mode** | Hardened proxy/sidecar; same `bastion.yaml` without host cooperation | **3.1** | [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) |
+| **3** | **Behavioral fingerprinting** | Per-agent baselines (tools, args, rates, spend) in shadow mode | **3.2** | [COST_AWARE_GOVERNANCE.md §3](COST_AWARE_GOVERNANCE.md#3-behavioral-fingerprinting--adaptive-defense-research-credible) |
+| **4** | **Real semantic layer + bundled model** | Embedding cache + non-gated classifier; offline not regex-only | **3.0 / 3.2** | [ENGINEERING_10_10.md §1, §4](ENGINEERING_10_10.md) |
+
+**Cost-aware policy** (budget-driven degradation, expensive-chain prevention, chargeback/forecast) ships across **3.0–3.2** — see [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md).
 
 ---
 
@@ -44,6 +59,20 @@ Status as of **2.0.0** (released 2026-07-05). Deep engineering milestones: [ENGI
 
 Prioritized by **security ROI**, **production adoption**, and **discoverability**. Effort: **S** (days–1 week), **M** (2–4 weeks), **L** (1–2 months), **XL** (quarter+).
 
+### P0 — Cost-aware policy (target: 3.0–3.2) **flagship**
+
+| Feature | Effort | Why implement | Acceptance |
+|---------|--------|---------------|------------|
+| **`cost_policy` rules engine** (degrade model, force discovery filter, require approval) | M | Spend as control signal, not only hard block | Session at 80% budget triggers configured action; pytest |
+| **Expensive-chain prevention** (projected sequence cost before run) | M | Stops denial-of-wallet *chains* before execution | Semantic-firewall + cost projection blocks over-threshold sequence |
+| **Governance attestation export** (signed session bundle) | M | Enterprise system-of-record; moat #1 | `mcp-bastion attest export`; includes policy hash + cost |
+| **Dashboard chargeback / forecast** | M | FinOps buyers need showback | Per-agent spend + burn-rate forecast tile |
+| **Per-model cost weighting** in caps | S | gpt-4o should burn budget faster | Configurable multipliers |
+
+See [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md).
+
+---
+
 ### P1 — Security depth (target: 3.0)
 
 Highest value; closes audit gaps and matches mcp-scan / Invariant class tooling.
@@ -72,7 +101,7 @@ Closes the biggest *gateway* gap vs products like ThinkWatch **without** buildin
 | **MCP auth-required catalog UX** (`_meta.requires_user_auth`, JSON-RPC `-32050` + authorize URL) | M | Cursor / Claude Desktop expect catalog + auth prompt, not empty list | Compliant client can drive user to authorize |
 | **Per-user upstream credential vault** (encrypted OAuth/PAT per user + server, optional) | XL | “Upstream sees real user” for multi-tenant MCP hubs | GitHub MCP call audited with user `sub` + upstream identity |
 | **Virtual API keys with lifecycle** (issue, rotate, grace period, `surfaces` allowlist) | L | Enterprise key governance; separate dev/CI keys | Key rotation without downtime; audit ties to key id |
-| **Standalone hardened proxy mode** (`mcp-bastion serve` + TLS + body limits + Helm) | M | Third-party MCP servers you cannot fork | Documented K8s/Compose path; proxy e2e test |
+| **Standalone hardened proxy mode** (`mcp-bastion serve` + TLS + body limits + Helm) | M | **Moat #2:** un-bypassable boundary vs in-process critique | Documented K8s/Compose path; proxy e2e test; NetworkPolicy defaults |
 | **SSO for dashboard** (OIDC login for admin UI, not only edge bearer) | M | Teams want Okta/Azure AD on the console | Dashboard login via OIDC; RBAC from claims |
 | **Secrets adapters** (Vault / AWS SM for agent tokens & upstream keys) | M | Keys never in LLM context or git | `bastion.yaml` references secret ref, not plaintext |
 
@@ -84,10 +113,11 @@ See [ENGINEERING_10_10.md §3](ENGINEERING_10_10.md).
 
 | Feature | Effort | Why implement | Acceptance |
 |---------|--------|---------------|------------|
+| **Behavioral fingerprinting** (per-agent baseline + anomaly) | L | **Moat #3:** adaptive defense tied to spend telemetry | Shadow mode learns baseline; anomaly flags in audit + dashboard |
 | **Calendar-aligned budgets** (daily / weekly / monthly token caps in Redis) | M | FinOps teams think in billing periods, not rolling windows only | Budget resets on period boundary; pytest + benchmark |
 | **Multi-window rate limits** (1m / 1h / 1d stacks per principal) | M | Burst vs sustained abuse need different windows | Stacked rules enforced; denial names winning rule |
 | **Per-model token weighting** for quotas | S | gpt-4o bursts should consume budget faster than small models | Configurable multipliers in cost/rate paths |
-| **Optional embedding semantic cache** (lexical remains default) | M | Honest upgrade path for cache hit rate | Flag-gated; benchmark shows hit rate vs lexical |
+| **Optional embedding semantic cache** (lexical remains default) | M | **Moat #4:** honest "semantic" claims | Flag-gated; benchmark shows hit rate vs lexical |
 | **Prometheus export hardening** (multi-worker doc + scrape auth recipe) | S | Fleet deployments need one metrics endpoint story | [METRICS.md](METRICS.md) + compose example |
 | **ClickHouse / OLAP audit sink** (optional, behind plugin) | L | Large fleets want SQL analytics on audit | Optional sink; not required for core install |
 
@@ -149,12 +179,12 @@ Also out of scope:
 
 | Release | Theme | Headline items |
 |---------|-------|----------------|
-| **3.0** | Security depth | Non-gated PromptGuard, `mcp-bastion scan`, tool drift pinning, injection benchmark |
-| **3.1** | Identity & clients | OIDC JWT edge, MCP `-32050` auth catalog UX, virtual key lifecycle (phase 1) |
-| **3.2** | Scale & FinOps | Calendar budgets, multi-window rate limits, Helm chart, hardened proxy docs |
+| **3.0** | **Cost-aware governance v1** | `cost_policy` degradation, expensive-chain prevention, attestation export, non-gated PromptGuard, `mcp-bastion scan` |
+| **3.1** | **Un-bypassable boundary** | Hardened proxy Helm, OIDC JWT edge, MCP `-32050` auth catalog UX, virtual key lifecycle (phase 1) |
+| **3.2** | **Adaptive + semantic** | Behavioral fingerprinting, embedding cache, chargeback forecast dashboard, calendar budgets |
 | **3.3** | Enterprise maturity | Sigstore, SBOM, optional audit OLAP sink, external audit |
 
-Order within a release can shift based on contributor capacity and user demand. Security items (P1) always trump discoverability (P4) for semver minors.
+Order within a release can shift based on contributor capacity and user demand. **P0 cost-aware policy** and **attestation (moat #1)** trump discoverability (P4) for semver minors.
 
 ---
 

@@ -241,6 +241,42 @@ async def test_cost_tracker_blocks_over_budget_in_middleware():
 
 
 @pytest.mark.asyncio
+async def test_cost_tracker_session_cap_enforced_on_tools_call_path():
+    """tools/call must record cost under the same principal key used by check()."""
+    ct = CostTracker(max_cost_per_session=0.25, max_cost_per_day=10.0)
+    mw = MCPBastionMiddleware(
+        prompt_guard=PromptGuardEngine(),
+        rate_limiter=TokenBucketRateLimiter(max_iterations=100),
+        cost_tracker=ct,
+        enable_cost_tracker=True,
+        enable_prompt_guard=False,
+        enable_pii_redaction=False,
+        enable_rate_limit=False,
+    )
+
+    async def handler(c):
+        return {"ok": True}
+
+    for i in range(3):
+        ctx = MiddlewareContext(
+            message={"method": "tools/call", "params": {"name": "x", "arguments": {}}},
+            request_id=f"r{i}",
+            session_id="s1",
+            metadata={"cost": 0.10},
+        )
+        assert await mw(ctx, handler) == {"ok": True}
+
+    ctx4 = MiddlewareContext(
+        message={"method": "tools/call", "params": {"name": "x", "arguments": {}}},
+        request_id="r4",
+        session_id="s1",
+        metadata={"cost": 0.10},
+    )
+    with pytest.raises(CostBudgetExceededError, match="Session cost"):
+        await mw(ctx4, handler)
+
+
+@pytest.mark.asyncio
 async def test_semantic_cache_returns_cached():
     """Semantic cache returns cached result for similar query."""
     sc = SemanticCache(similarity_threshold=0.9)

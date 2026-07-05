@@ -1518,10 +1518,16 @@ class MCPBastionMiddleware(Middleware[Any]):
         if self.enable_cost_tracker:
             started = time.perf_counter()
             context.metadata.setdefault("cost", 0.0)
+            budget_principal = context.metadata.get("_budget_principal")
+            budget_tenant = context.metadata.get("_budget_tenant")
+            if budget_principal is None or budget_tenant is None:
+                budget_principal, budget_tenant = self._finops_keys(context)
             self.cost_tracker.record(
                 context.metadata.get("cost", 0.0),
                 session_id=session_id,
                 request_id=request_id,
+                principal_id=budget_principal,
+                tenant_id=budget_tenant,
             )
             _trace_append(trace, pillar="cost_tracker_record", status="ok", started=started)
 

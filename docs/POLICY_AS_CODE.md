@@ -92,7 +92,7 @@ middleware = build_middleware_from_config()
 | rbac | enabled, permissions | Role -> list of tools |
 | schema_validation | enabled | Input schema validation |
 | replay_guard | enabled, require_nonce | Replay protection |
-| cost_tracker | enabled, max_cost_per_session, max_cost_per_day | Cost budgets |
+| cost_tracker | enabled, max_cost_per_session, max_cost_per_day, checkpoint_path | Cost budgets keyed by authenticated principal (2.0.0); set per-call cost in `metadata["cost"]` |
 | semantic_cache | enabled | Semantic cache |
 | audit | enabled | Audit log + metrics |
 | alerts | slack_webhook, webhook_url, webhooks, alert_on, retry_attempts, retry_backoff_seconds, retry_backoff_max_seconds, timeout_seconds | Slack/generic webhook(s), alert kinds, and retry/backoff policy |

@@ -13,7 +13,12 @@ from typing import Iterable
 DEFAULT_INJECTION_PATTERNS = [
     r"(?i)ignore\s+(?:all\s+)?previous\s+instructions",
     r"(?i)disregard\s+(?:all\s+)?(?:prior|previous|above)\s+instructions",
-    r"(?i)you\s+are\s+now\s+(?:in\s+)?(?:developer|admin|god)\s+mode",
+    r"(?i)forget\s+(?:everything|what)\s+you\s+(?:were|are)\s+(?:told|instructed)",
+    r"(?i)(?:stop|cease)\s+following\s+(?:your|the)\s+(?:rules|guidelines|instructions)",
+    r"(?i)from\s+now\s+on\s+(?:you\s+)?(?:will|must|should)\s+(?:ignore|disregard|override)",
+    r"(?i)override\s+(?:your|the)\s+(?:system|initial|original)\s+(?:prompt|instructions)",
+    r"(?i)pretend\s+(?:you\s+)?(?:are|have)\s+no\s+(?:rules|guidelines|limits|restrictions)",
+    r"(?i)you\s+are\s+now\s+(?:in\s+)?(?:developer|admin|god|DAN)\s+mode",
     r"(?i)<\s*system\s*>",
     r"(?i)\[INST\]",
     r"(?i)<!--\s*hidden",
@@ -23,6 +28,7 @@ DEFAULT_INJECTION_PATTERNS = [
     r"(?i)\bDAN\b",
     r"(?i)jailbreak",
     r"(?i)act\s+as\s+(?:if\s+you\s+have\s+)?no\s+(?:restrictions|rules|limits)",
+    r"(?i)role[\s-]*play\s+as\s+(?:an?\s+)?(?:unrestricted|unfiltered)",
 ]
 
 

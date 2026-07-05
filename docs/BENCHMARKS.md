@@ -15,6 +15,7 @@ No single flat 'X% prompt reduction' applies. Savings target oversized tool outp
 | **Output budget + offload** | Oversized **tool response** text | **Up to ~99.72%** reduction on 50k-token dumps; **0%** when under budget |
 | **Discovery filter** | `tools/list` JSON size (20 → 3 tools) | **~84.87%** fewer catalog tokens (opt-in) |
 | **Lexical cache** | Repeat vs paraphrased tool queries | Exact repeat **hits**; paraphrase **misses** at 0.9 threshold |
+| **Injection efficacy (offline heuristics)** | Known jailbreak bypass set vs benign traffic | **`tests/test_injection_efficacy.py`** — target **100%** attack block, **0%** benign FP (regex + normalize only) |
 
 <p align="center">
   <img
@@ -76,11 +77,27 @@ Threshold: **0.9**
 | exact_repeat | find all customers in the database | Yes | 1.0 |
 | paraphrase_extra_words | find all the customers in the database please | No | 0.8571 |
 
+## Injection efficacy (offline heuristics)
+
+Measures **bypass resistance** when PromptGuard ML is unavailable — regex + `normalize_for_scan` only. Not a claim of novel-paraphrase defense.
+
+| Metric | Target |
+|--------|--------|
+| Attack block rate | **100%** on the fixed adversarial set (letter-spaced ignore, disregard paraphrase, DAN, system tags, …) |
+| Benign false-positive rate | **0%** on weather/math/docs/code-review/translate prompts |
+
+```bash
+PYTHONPATH=src python -m pytest tests/test_injection_efficacy.py -v
+PYTHONPATH=src python -c "from mcp_bastion.benchmarks.injection_efficacy import run_injection_efficacy; import json; print(json.dumps(run_injection_efficacy(), indent=2))"
+```
+
+Heuristic mode catches **known jailbreak families** only. A non-gated default classifier (roadmap 3.0) is required for offline 10/10 — see [ENGINEERING_10_10.md](ENGINEERING_10_10.md).
+
 ## Reproduce locally
 
 ```bash
 pip install -e ".[dev]"
-PYTHONPATH=src python -m pytest tests/test_benchmarks_finops_rbac.py -v
+PYTHONPATH=src python -m pytest tests/test_benchmarks_finops_rbac.py tests/test_injection_efficacy.py -v
 PYTHONPATH=src python scripts/generate_benchmark_report.py
 ```
 
