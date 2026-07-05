@@ -36,7 +36,8 @@ Current Python package release: **`mcp-bastion-python==2.0.0`** ([PyPI](https://
 | [BEYOND_OWASP.md](BEYOND_OWASP.md) | Threats outside OWASP Top 10 (localhost CSRF, context flooding, schema drift) |
 | [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md) | HTTP / localhost binding and edge_auth guidance |
 | [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) | Agent IAM (Confused Deputy) and server checksum verification |
-| [ROADMAP.md](ROADMAP.md) | Shipped vs pending features (P1/P2) |
+| [ROADMAP.md](ROADMAP.md) | **Future roadmap (3.0+):** P1–P5 priorities, release sequencing, non-goals |
+| [COMPARISON.md](COMPARISON.md) | MCP-Bastion vs unguarded MCP, thin proxy, full AI/MCP gateway |
 | [ENGINEERING_10_10.md](ENGINEERING_10_10.md) | Strategic 10/10 plan: injection depth, tool scan, OAuth gateway, maturity |
 | [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) | Attack scenarios and prevention walkthroughs |
 | [METRICS.md](METRICS.md) | Metrics, dashboard, Prometheus and effectiveness guidance |
