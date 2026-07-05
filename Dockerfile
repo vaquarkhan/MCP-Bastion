@@ -5,8 +5,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+ARG BASTION_VERSION=1.0.17
 # Install deps (minimal for stdio/HTTP server; add torch/presidio for full features)
-RUN pip install --no-cache-dir mcp mcp-bastion-python
+RUN pip install --no-cache-dir mcp "mcp-bastion-python==${BASTION_VERSION}"
+
+LABEL org.opencontainers.image.version="${BASTION_VERSION}"
 
 # Copy server entrypoint
 COPY examples/llm_server.py /app/llm_server.py

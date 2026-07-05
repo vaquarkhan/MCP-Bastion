@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [1.0.17] - 2026-07-05
+
+### Added
+
+- **FinOps:** Token budget wired on tool calls, per-tool session caps, optional output budget (truncate/offload with `bastion_get_offloaded`), optional tiktoken counting.
+- **Security:** Response injection scan on outbound tool/resource text, discovery filter for `tools/list`, grounding guard for ungrounded file paths (`GroundingViolationError`, -32017).
+- **Docs:** OWASP MCP Top 10 infographic and mapping table in README; updates to [SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md).
+
+### Changed
+
+- Docker proxy image pins `mcp-bastion-python==1.0.17` at build time (`ARG BASTION_VERSION`).
+
 ## [1.0.16] - 2026-04-24
 
 PyPI, npm, and MCP registry publish **1.0.16**; extended pillars (semantic firewall, sensitive classifier, external policy, etc.) and the documentation below are part of this line.

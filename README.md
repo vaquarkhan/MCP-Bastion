@@ -2,7 +2,7 @@
 
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
 
-[![PyPI: mcp-bastion-python 1.0.16](https://img.shields.io/pypi/v/mcp-bastion-python?logo=python)](https://pypi.org/project/mcp-bastion-python/1.0.16/)
+[![PyPI: mcp-bastion-python 1.0.17](https://img.shields.io/pypi/v/mcp-bastion-python?logo=python)](https://pypi.org/project/mcp-bastion-python/1.0.17/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
@@ -406,7 +406,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pinned latest
-pip install mcp-bastion-python==1.0.16
+pip install mcp-bastion-python==1.0.17
 ```
 
 **Prerequisites (recommended)**
