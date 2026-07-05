@@ -66,7 +66,7 @@ server_verification:
 
 Generate a manifest after a trusted build: `mcp-bastion manifest server.py pyproject.toml -o mcp-server.manifest.json`
 
-Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ROADMAP.md](docs/ROADMAP.md)
+Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ROADMAP.md](docs/ROADMAP.md) (future 3.0+ plan)
 
 ### Full MCP surface + horizontal scale (2.0.0)
 
@@ -452,7 +452,8 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 | [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md) | Publish docs as a GitHub Pages website from this same repo |
 | [docs/QUICK_START.md](docs/QUICK_START.md) | Minimal FastMCP / `bastion.yaml` / CI snippets (time-to-value) |
 | [docs/DISCOVERY.md](docs/DISCOVERY.md) | Registry and ecosystem discovery checklist |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | High-level directions; execution tracked in GitHub Issues |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | **Future roadmap (3.0+):** security, identity, FinOps, discoverability, maturity |
+| [docs/COMPARISON.md](docs/COMPARISON.md) | vs unguarded MCP, thin proxy, full AI/MCP gateway |
 | [docs/ENGINEERING_10_10.md](docs/ENGINEERING_10_10.md) | Strategic path to 10/10 on injection depth, tool poisoning, gateway maturity, FinOps metrics, project maturity |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contributor guide and **`good first issue`** ideas |
 
