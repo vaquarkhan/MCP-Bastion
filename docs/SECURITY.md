@@ -62,4 +62,11 @@ Releases are automated in GitHub Actions; **npm** uses **`npm publish --provenan
 
 ## Reporting Vulnerabilities
 
-If you find a security issue in MCP-Bastion, please report it privately (e.g. GitHub Security Advisories or a contact listed in the repository) rather than opening a public issue.
+If you find a security issue in MCP-Bastion, **do not open a public GitHub issue**.
+
+Report privately via:
+
+- **[GitHub Private Security Advisory](https://github.com/vaquarkhan/MCP-Bastion/security/advisories/new)** (preferred), or
+- The maintainer contact described in the root **[SECURITY.md](../SECURITY.md)** policy.
+
+We aim to acknowledge reports within **5 business days**.

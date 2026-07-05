@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="images/mcp-bastian.png" alt="MCP-Bastion" width="520" />
-</p>
-
 # MCP-Bastion
 
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
@@ -15,25 +11,39 @@
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**Enterprise-Grade Security Middleware for the Model Context Protocol**
+**Enterprise-grade local security firewall for the Model Context Protocol (MCP).** Block prompt injections, redact PII locally, and stop runaway agents — **under 5ms overhead** on the tool path. No third-party safety APIs; everything runs in your process.
 
-> Releases are published to npm, PyPI, and prebuilt **Docker** images on **GitHub Container Registry** (`ghcr.io/vaquarkhan/mcp-bastion-proxy`, `ghcr.io/vaquarkhan/mcp-bastion-dashboard`) — pull/run details in [DOCKER.md](DOCKER.md) — via GitHub Actions on tag push.
+### Secure your MCP server in 3 lines (FastMCP)
 
-**Documentation:** structured paths for **policy** and **LLM integration** live in [docs/README.md](docs/README.md) and [docs/index.md](docs/index.md). **Community:** open a GitHub **Issue** for bugs or gaps, a **Discussion** for integration questions (if enabled on the repo), or a **PR** for docs and examples—those help every adopter.
+```python
+from mcp.server.fastmcp import FastMCP
+from mcp_bastion_fastmcp import secure_fastmcp
 
-**Hello world (minimal Bastion on code):** see **[docs/QUICK_START.md](docs/QUICK_START.md)** — FastMCP helper `secure_fastmcp(mcp)` (wires `MCPBastionMiddleware` into tool dispatch), or two-line `build_middleware_from_config()` for full `bastion.yaml` policy, plus a **CI validate** snippet for pipeline-driven installs.
+mcp = FastMCP("My Server")
+secure_fastmcp(mcp)  # prompt guard + PII redaction + rate limits
+```
 
-The Model Context Protocol (MCP) has rapidly become the universally accepted standard for connecting AI agents to enterprise databases and APIs. However, this connectivity introduces a massive new attack surface: unpredictable, non-deterministic agentic behavior.
+**Policy-as-code instead?** After `pip install mcp-bastion-python[policy]`:
 
-MCP-Bastion is a lightweight, drop-in security middleware designed to wrap around any existing Python or TypeScript MCP server. Instead of relying on passive logging, human-in-the-loop approvals, or third-party APIs, MCP-Bastion provides an active, 100% local defense layer. It intercepts standard JSON-RPC traffic to stop threats before they cross the enterprise boundary.
+```python
+from mcp_bastion import build_middleware_from_config
 
-Under 5ms proxy overhead. MCP-Bastion provides:
+middleware = build_middleware_from_config()  # loads bastion.yaml
+```
 
-- **Prompt Injection Defense:** Meta PromptGuard runs locally to block adversarial payloads and jailbreaks.
-- **PII Redaction:** Uses Microsoft Presidio to detect and mask PII before it reaches the LLM context.
-- **Infinite Loop Protection:** Token buckets and cycle detection stop runaway agents from burning API budget.
+More paths (TypeScript, CI validate, Docker): **[docs/QUICK_START.md](docs/QUICK_START.md)** · **[docs/README.md](docs/README.md)** · **[website](https://vaquarkhan.github.io/MCP-Bastion/)**
 
-Secure your MCP server without changing business logic.
+<p align="center">
+  <img src="images/mcp-bastian.png" alt="MCP-Bastion" width="520" />
+</p>
+
+- **Prompt injection defense** — Meta PromptGuard blocks adversarial payloads and jailbreaks locally.
+- **PII redaction** — Microsoft Presidio masks SSN, email, phone, and more before data reaches the LLM.
+- **Denial-of-wallet protection** — Token buckets and cycle detection stop runaway agents from burning API budget.
+
+The Model Context Protocol (MCP) connects AI agents to enterprise databases and APIs — and introduces a new attack surface: unpredictable, non-deterministic agentic behavior. MCP-Bastion is drop-in middleware for Python and TypeScript MCP servers. It intercepts JSON-RPC on the tool path and stops threats **before** they cross your boundary, without changing your business logic.
+
+> **Releases:** npm, PyPI, and prebuilt **Docker** on GHCR (`ghcr.io/vaquarkhan/mcp-bastion-proxy`, `ghcr.io/vaquarkhan/mcp-bastion-dashboard`) — see [DOCKER.md](DOCKER.md). **Community:** GitHub **Issues** for bugs, **Discussions** for integration questions, **PRs** for docs and examples. **Security:** report vulnerabilities privately via [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -790,7 +800,7 @@ npx -y @modelcontextprotocol/inspector
 
 ## Third-Party Components
 
-See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 Community License) and Microsoft Presidio. For OWASP-relevant mitigations, dependency audit, and reporting vulnerabilities, see [docs/SECURITY.md](docs/SECURITY.md).
+See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 Community License) and Microsoft Presidio. For OWASP-relevant mitigations and dependency audit, see [docs/SECURITY.md](docs/SECURITY.md). To report vulnerabilities privately, see [SECURITY.md](SECURITY.md).
 
 ## License
 
