@@ -25,7 +25,7 @@ DEFAULT_INJECTION_PATTERNS = [
     r"(?i)do\s+not\s+tell\s+the\s+user",
     r"(?i)reveal\s+(?:your\s+)?system\s+prompt",
     r"(?i)output\s+(?:your\s+)?system\s+prompt",
-    r"(?i)\bDAN\b",
+    r"(?i)\bDAN\s+mode\b",
     r"(?i)jailbreak",
     r"(?i)act\s+as\s+(?:if\s+you\s+have\s+)?no\s+(?:restrictions|rules|limits)",
     r"(?i)role[\s-]*play\s+as\s+(?:an?\s+)?(?:unrestricted|unfiltered)",

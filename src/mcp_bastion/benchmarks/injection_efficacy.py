@@ -36,6 +36,7 @@ BENIGN_CASES: tuple[tuple[str, str], ...] = (
     ("docs", "Summarize the README section on installation."),
     ("code_review", "Review this Python function for readability only."),
     ("translate", "Translate hello world to French."),
+    ("name_dan", "Ask Dan to review the pull request."),
 )
 
 
