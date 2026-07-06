@@ -314,3 +314,52 @@ def test_init_otel_otlp_both_grpc_and_http_fail(monkeypatch):
     assert tr is None
     otel._tracer = None
     otel._meter = None
+
+
+def test_detect_observability_target_explicit_otel(monkeypatch):
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://collector:4317")
+    endpoint, headers = otel.detect_observability_target()
+    assert endpoint == "http://collector:4317"
+    assert headers == {}
+
+
+def test_detect_observability_target_grafana_with_basic_auth(monkeypatch):
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
+    monkeypatch.setenv("GRAFANA_CLOUD_OTLP_ENDPOINT", "https://otlp.grafana.net")
+    monkeypatch.setenv("GRAFANA_CLOUD_USERNAME", "user")
+    monkeypatch.setenv("GRAFANA_CLOUD_API_KEY", "key")
+    endpoint, headers = otel.detect_observability_target()
+    assert endpoint == "https://otlp.grafana.net"
+    assert headers["Authorization"].startswith("Basic ")
+
+
+def test_detect_observability_target_grafana_no_credentials(monkeypatch):
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
+    monkeypatch.setenv("GRAFANA_CLOUD_OTLP_ENDPOINT", "https://otlp.grafana.net")
+    monkeypatch.delenv("GRAFANA_CLOUD_USERNAME", raising=False)
+    monkeypatch.delenv("GRAFANA_CLOUD_API_KEY", raising=False)
+    endpoint, headers = otel.detect_observability_target()
+    assert endpoint == "https://otlp.grafana.net"
+    assert headers == {}
+
+
+def test_record_cloudwatch_fallback_emits_metrics():
+    otel._tracer = None
+    otel._meter = None
+    otel._cw_client = None
+    otel._otel_init_attempted = True
+    client = mock.MagicMock()
+    otel._cw_client = client
+    otel._record_cloudwatch_fallback(tool="search", action="ALLOWED", latency_ms=3.5)
+    client.put_metric_data.assert_called_once()
+    args = client.put_metric_data.call_args.kwargs
+    assert args["Namespace"] == "MCPBastion"
+    assert len(args["MetricData"]) == 2
+    otel._cw_client = None
+
+
+def test_record_cloudwatch_fallback_swallows_client_errors():
+    otel._cw_client = mock.MagicMock()
+    otel._cw_client.put_metric_data.side_effect = RuntimeError("cw down")
+    otel._record_cloudwatch_fallback(tool="x", action="BLOCKED", latency_ms=1.0)
+    otel._cw_client = None
