@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: **`mcp-bastion-python==2.0.1`** ([PyPI](https://pypi.org/project/mcp-bastion-python/2.0.1/)) - patch with developer docs, community files, and CI coverage fixes.
+Current Python package release: **`mcp-bastion-python==2.0.2`** ([PyPI](https://pypi.org/project/mcp-bastion-python/2.0.2/)) - version metadata fix, coverage gate, and docs site refresh.
 
 ## Start here
 

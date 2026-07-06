@@ -11,12 +11,12 @@
   />
 </p>
 
-[![PyPI 2.0.1](https://img.shields.io/badge/PyPI-2.0.1-3775A9?logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/2.0.1/)
+[![PyPI 2.0.2](https://img.shields.io/badge/PyPI-2.0.2-3775A9?logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/2.0.2/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
-[![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/2.0.1/)
+[![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/2.0.2/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
-[![Docker: GHCR mcp-bastion-proxy v2.0.1](https://img.shields.io/badge/GHCR-mcp--bastion--proxy%3Av2.0.1-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
-[![Docker: GHCR mcp-bastion-dashboard v2.0.1](https://img.shields.io/badge/GHCR-mcp--bastion--dashboard%3Av2.0.1-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
+[![Docker: GHCR mcp-bastion-proxy v2.0.2](https://img.shields.io/badge/GHCR-mcp--bastion--proxy%3Av2.0.2-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+[![Docker: GHCR mcp-bastion-dashboard v2.0.2](https://img.shields.io/badge/GHCR-mcp--bastion--dashboard%3Av2.0.2-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
@@ -486,11 +486,11 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 **Prebuilt images (after the first [publish-docker](.github/workflows/publish-docker.yml) run, usually on a `v*` release tag):**
 
 ```bash
-docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.1
-docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.1
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.2
+docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.2
 # Dashboard (optional, port 7000):
-# docker pull ghcr.io/vaquarkhan/mcp-bastion-dashboard:v2.0.1
-# docker run -p 7000:7000 ghcr.io/vaquarkhan/mcp-bastion-dashboard:v2.0.1
+# docker pull ghcr.io/vaquarkhan/mcp-bastion-dashboard:v2.0.2
+# docker run -p 7000:7000 ghcr.io/vaquarkhan/mcp-bastion-dashboard:v2.0.2
 # :latest is updated on each v* tag publish
 ```
 
