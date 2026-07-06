@@ -1,10 +1,28 @@
 ﻿# Changelog
 
-**Current release:** **2.0.1** (2026-07-05) - [PyPI](https://pypi.org/project/mcp-bastion-python/2.0.1/) · [Docker `v2.0.1`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **2.0.2** (2026-07-05) - [PyPI](https://pypi.org/project/mcp-bastion-python/2.0.2/) · [Docker `v2.0.2`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [2.0.2] - 2026-07-05
+
+Patch release: correct runtime version metadata, CI coverage gate, and GitHub Pages site refresh.
+
+### Fixed
+
+- **`mcp_bastion.__version__`** and **CITATION.cff** now match `pyproject.toml` (2.0.1 PyPI wheel reported `2.0.0` at import time).
+- All **17 integration** `__version__` strings synced with package metadata.
+
+### Added
+
+- **Coverage tests** for `budget_principal.py` and OTEL Grafana/CloudWatch detection paths (clears 92% gate).
+
+### Changed
+
+- GitHub Pages site (`docs/site/`) updated to **2.0.2** PyPI links.
+- All **18 PyPI packages**, npm `@mcp-bastion/core`, Docker images, and MCP Registry republished at **2.0.2**.
 
 ## [2.0.1] - 2026-07-05
 
