@@ -1,4 +1,4 @@
-<!-- MCP-Bastion GitHub Pages | Last deployed: 2026-07-05 -->
+<!-- MCP-Bastion GitHub Pages | Last deployed: 2026-07-11 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -86,6 +86,7 @@ tailwind.config = {
     <div class="hidden md:flex items-center gap-8">
       <a href="index.html" class="text-sm text-white/90 hover:text-white transition-colors">Home</a>
       <a href="integrations.html" class="text-sm text-white/60 hover:text-white transition-colors">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/tree/main/docs/ENTERPRISE_RUNTIME_CONTROLS.md" class="text-sm text-white/60 hover:text-white transition-colors">3.0 Docs</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion" class="text-sm text-white/60 hover:text-white transition-colors">GitHub</a>
       <a href="https://pypi.org/project/mcp-bastion-python/" class="text-sm font-medium px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-all">pip install</a>
     </div>
@@ -104,7 +105,7 @@ tailwind.config = {
       <!-- Badge -->
       <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-indigo-300 mb-8">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        Open Source | MIT License | 100% Local
+        Open Source | MIT License | 100% Local | 3.0 runtime governance
       </div>
 
       <h1 class="text-5xl md:text-7xl font-black leading-tight mb-6">
@@ -148,7 +149,7 @@ tailwind.config = {
           <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Security Pillars</div>
         </div>
         <div class="glass rounded-xl p-5 text-center">
-          <div class="text-3xl font-bold text-white glow-text">100%</div>
+          <div class="text-3xl font-bold text-white glow-text">92%+</div>
           <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Test Coverage</div>
         </div>
         <div class="glass rounded-xl p-5 text-center">
@@ -300,6 +301,42 @@ middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</c
   </div>
 </section>
 
+<!-- RUNTIME GOVERNANCE 3.0 -->
+<section class="py-24 relative">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-10">
+      <h2 class="text-3xl font-bold mb-3">Runtime Governance <span class="text-indigo-400">3.0</span></h2>
+      <p class="text-slate-400 max-w-2xl mx-auto">Opt-in enterprise controls for production MCP deployments. All default off — enable only what you need in <code class="text-indigo-300">bastion.yaml</code>.</p>
+    </div>
+    <div class="rounded-2xl overflow-hidden border border-white/10 mb-10">
+      <img src="assets/mcp-bastion-runtime-governance-3.0.png" alt="MCP-Bastion 3.0 runtime governance pillars overview" class="w-full" loading="lazy">
+    </div>
+    <div class="grid md:grid-cols-2 gap-6 mb-10">
+      <div class="rounded-2xl overflow-hidden border border-white/10">
+        <img src="assets/mcp-bastion-canary-exfiltration.png" alt="Exfiltration canary detects context leakage in tool arguments" class="w-full" loading="lazy">
+      </div>
+      <div class="rounded-2xl overflow-hidden border border-white/10">
+        <img src="assets/mcp-bastion-enterprise-controls.png" alt="ATR rules, threat feeds, and compliance reports" class="w-full" loading="lazy">
+      </div>
+    </div>
+    <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">Exfiltration Canary</h3><p class="text-sm text-slate-400">Session token echo detection in tool args</p></div>
+      <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">ATR YAML Rules</h3><p class="text-sm text-slate-400">Community threat rules merged into scanners</p></div>
+      <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">Local LLM Scanner</h3><p class="text-sm text-slate-400">Optional Ollama tier, fail-open</p></div>
+      <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">Threat Intel Feeds</h3><p class="text-sm text-slate-400">Background regex rule refresh</p></div>
+      <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">Auto-Repave</h3><p class="text-sm text-slate-400">Threshold-based containment actions</p></div>
+      <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">Secret Redaction</h3><p class="text-sm text-slate-400">mask / hash / remove on tool outputs</p></div>
+      <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">Observe Mode</h3><p class="text-sm text-slate-400">Log would-block without denying</p></div>
+      <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">Compliance Report</h3><p class="text-sm text-slate-400"><code class="text-xs">mcp-bastion report</code> CLI</p></div>
+    </div>
+    <div class="text-center mt-8 flex flex-wrap justify-center gap-4">
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ENTERPRISE_RUNTIME_CONTROLS.md" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium">Enterprise runtime controls docs &rarr;</a>
+      <a href="integrations.html" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium">Package download widgets &rarr;</a>
+      <a href="https://github.com/sponsors/vaquarkhan" class="text-pink-400 hover:text-pink-300 text-sm font-medium">Sponsor the project &rarr;</a>
+    </div>
+  </div>
+</section>
+
 <!-- INTEGRATIONS PREVIEW -->
 <section class="py-24">
   <div class="max-w-7xl mx-auto px-6">
@@ -349,7 +386,7 @@ middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</c
           <tr class="border-b border-white/5"><td class="py-4 px-6">Category</td><td class="text-center py-4 px-6 text-emerald-400">Runtime governance</td><td class="text-center py-4 px-6 text-slate-500">Scanner or gateway</td></tr>
           <tr class="border-b border-white/5"><td class="py-4 px-6">Architecture</td><td class="text-center py-4 px-6 text-emerald-400">Drop-in middleware</td><td class="text-center py-4 px-6 text-slate-500">Standalone proxy</td></tr>
           <tr class="border-b border-white/5"><td class="py-4 px-6">Latency</td><td class="text-center py-4 px-6 text-emerald-400">&lt;5ms</td><td class="text-center py-4 px-6 text-slate-500">50-200ms</td></tr>
-          <tr><td class="py-4 px-6">Test coverage</td><td class="text-center py-4 px-6 text-emerald-400">100%</td><td class="text-center py-4 px-6 text-slate-500">Unknown</td></tr>
+          <tr><td class="py-4 px-6">Test coverage</td><td class="text-center py-4 px-6 text-emerald-400">92%+ gate</td><td class="text-center py-4 px-6 text-slate-500">Unknown</td></tr>
         </tbody>
       </table>
     </div>
