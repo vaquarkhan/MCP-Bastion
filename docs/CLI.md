@@ -10,6 +10,7 @@ Developer CLI for validating config, running the server, the dashboard, and oper
 | `redteam` | Run integrated OWASP / MCP Top 10 style harness |
 | `doctor` | Preflight + supply-chain style checks |
 | `attest export` | Export signed governance attestation for a session |
+| `report` | Generate compliance evidence report from audit JSONL |
 | `tail` | Tail append-only audit JSONL |
 
 ## Install
@@ -90,6 +91,18 @@ Tail the append-only audit JSONL sink:
 mcp-bastion tail --path .bastion/audit.jsonl
 mcp-bastion tail --config bastion.yaml -n 50
 ```
+
+### report
+
+Generate a **compliance evidence** markdown report from audit JSONL. Maps pillar activity to framework controls (evidence only, not certification).
+
+```bash
+mcp-bastion report --framework soc2 --audit .bastion/audit.jsonl
+mcp-bastion report --framework iso27001 --audit audit.jsonl -o report.md
+mcp-bastion report --framework gdpr --audit audit.jsonl --from 2026-01-01 --to 2026-12-31
+```
+
+Framework keys: `soc2`, `iso27001`, `gdpr`, `nist_ai_rmf`. See [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md).
 
 ### doctor
 

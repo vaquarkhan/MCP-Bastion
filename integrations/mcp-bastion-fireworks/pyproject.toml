@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-fireworks"
-version = "2.0.2"
+version = "3.0.0"
 description = "MCP-Bastion security middleware for Fireworks AI. Prompt injection, PII, and rate-limit protection."
 readme = "README.md"
 license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }

@@ -28,7 +28,7 @@ def test_cli_version_flag(capsys, monkeypatch):
         main()
     assert exc.value.code == 0
     out, _ = capsys.readouterr()
-    assert "2.0.0" in out
+    assert "3.0.0" in out
 
 
 def test_cmd_validate_missing_file_returns_one():

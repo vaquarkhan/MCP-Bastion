@@ -11,12 +11,12 @@
   />
 </p>
 
-[![PyPI 2.0.2](https://img.shields.io/badge/PyPI-2.0.2-3775A9?logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/2.0.2/)
+[![PyPI 3.0.0](https://img.shields.io/badge/PyPI-3.0.0-3775A9?logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/3.0.0/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
-[![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/2.0.2/)
+[![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/3.0.0/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
-[![Docker: GHCR mcp-bastion-proxy v2.0.2](https://img.shields.io/badge/GHCR-mcp--bastion--proxy%3Av2.0.2-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
-[![Docker: GHCR mcp-bastion-dashboard v2.0.2](https://img.shields.io/badge/GHCR-mcp--bastion--dashboard%3Av2.0.2-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
+[![Docker: GHCR mcp-bastion-proxy v3.0.0](https://img.shields.io/badge/GHCR-mcp--bastion--proxy%3Av3.0.0-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+[![Docker: GHCR mcp-bastion-dashboard v3.0.0](https://img.shields.io/badge/GHCR-mcp--bastion--dashboard%3Av3.0.0-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
@@ -68,7 +68,57 @@ server_verification:
 
 Generate a manifest after a trusted build: `mcp-bastion manifest server.py pyproject.toml -o mcp-server.manifest.json`
 
-Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ROADMAP.md](docs/ROADMAP.md) (future 3.0+ plan)
+Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ENTERPRISE_RUNTIME_CONTROLS.md](docs/ENTERPRISE_RUNTIME_CONTROLS.md) (3.0 pillars)
+
+### Runtime governance pillars (3.0.0)
+
+Opt-in enterprise controls for production MCP runtimes. All default **off** so 2.x behavior is unchanged until you enable them.
+
+| Pillar | Config | What it does |
+|--------|--------|--------------|
+| **Exfiltration canary** | `canary_goallock` | Session token in context; blocks tool args that echo it (**-32025**) |
+| **ATR YAML rules** | `atr_rules` | Community threat rules merged into `content_filter` (**-32027**) |
+| **Local LLM scanner** | `llm_scanner` | Optional Ollama tier after heuristics; fail-open (**-32026**) |
+| **Threat intel feeds** | `threat_feeds` | Background refresh of remote regex patterns |
+| **Auto-repave** | `auto_repave` | Threshold-based containment (rotate canary, reset scope) |
+| **Secret redaction** | `secrets.redact_patterns` | `replace` / `hash` / `mask` / `remove` on tool outputs |
+| **Observe mode** | `mode: observe` | Log `would_block` without denying |
+
+```yaml
+mode: enforce
+
+canary_goallock:
+  enabled: true
+
+atr_rules:
+  enabled: true
+  rules_dir: ./atr-rules
+
+secrets:
+  redact_patterns:
+    - rule: "sk-[A-Za-z0-9]{20,}"
+      strategy: mask
+```
+
+CLI compliance evidence: `mcp-bastion report --framework soc2 --audit ./audit.jsonl`
+
+<p align="center">
+  <img
+    src="images/mcp-bastion-runtime-governance-3.0.png"
+    alt="MCP-Bastion 3.0 runtime governance pillars"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+
+<p align="center">
+  <img
+    src="images/mcp-bastion-canary-exfiltration.png"
+    alt="Exfiltration canary blocks context leakage in tool arguments"
+    width="720"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
 
 ### Full MCP surface + horizontal scale (2.0.0)
 
@@ -476,7 +526,8 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 | [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md) | Publish docs as a GitHub Pages website from this same repo |
 | [docs/QUICK_START.md](docs/QUICK_START.md) | Minimal FastMCP / `bastion.yaml` / CI snippets (time-to-value) |
 | [docs/DISCOVERY.md](docs/DISCOVERY.md) | Registry and ecosystem discovery checklist |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | **Future roadmap (3.0+):** security, identity, FinOps, discoverability, maturity |
+| [docs/ENTERPRISE_RUNTIME_CONTROLS.md](docs/ENTERPRISE_RUNTIME_CONTROLS.md) | **3.0 runtime governance:** canary, ATR rules, LLM scanner, threat feeds, auto-repave, secret redaction, observe mode |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Product roadmap: cost-aware governance, security depth, discoverability |
 | [docs/COMPARISON.md](docs/COMPARISON.md) | vs unguarded MCP, thin proxy, full AI/MCP gateway |
 | [docs/ENGINEERING_10_10.md](docs/ENGINEERING_10_10.md) | Strategic path to 10/10 on injection depth, tool poisoning, gateway maturity, FinOps metrics, project maturity |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contributor guide and **`good first issue`** ideas |
@@ -486,11 +537,11 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 **Prebuilt images (after the first [publish-docker](.github/workflows/publish-docker.yml) run, usually on a `v*` release tag):**
 
 ```bash
-docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.2
-docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.2
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v3.0.0
+docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:v3.0.0
 # Dashboard (optional, port 7000):
-# docker pull ghcr.io/vaquarkhan/mcp-bastion-dashboard:v2.0.2
-# docker run -p 7000:7000 ghcr.io/vaquarkhan/mcp-bastion-dashboard:v2.0.2
+# docker pull ghcr.io/vaquarkhan/mcp-bastion-dashboard:v3.0.0
+# docker run -p 7000:7000 ghcr.io/vaquarkhan/mcp-bastion-dashboard:v3.0.0
 # :latest is updated on each v* tag publish
 ```
 
@@ -688,7 +739,7 @@ Integration examples for Python and TypeScript. Full contributor and feature doc
 | Doc | Description |
 |-----|-------------|
 | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Repo layout, local dev, tests, release |
-| [docs/FEATURES.md](docs/FEATURES.md) | How-to for all 18 security pillars |
+| [docs/FEATURES.md](docs/FEATURES.md) | How-to for all security pillars including 3.0 runtime governance |
 | [docs/RBAC.md](docs/RBAC.md) | RBAC roles, fnmatch globs, Agent IAM pairing |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | PR checklist and good-first issues |
 | [SUPPORT.md](SUPPORT.md) · [FUNDING.md](FUNDING.md) | Help and sponsorship |

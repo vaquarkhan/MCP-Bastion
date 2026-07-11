@@ -208,3 +208,30 @@ class ExpensiveChainError(MCPBastionError):
 
     def __init__(self, message: str = "Request blocked: expensive tool chain") -> None:
         super().__init__(message, code=-32024)
+
+
+class CanaryExfiltrationError(MCPBastionError):
+    """Raised when runtime canary token appears in outbound tool arguments."""
+
+    def __init__(
+        self,
+        message: str = "Request blocked: runtime canary exfiltration detected",
+    ) -> None:
+        super().__init__(message, code=-32025)
+
+
+class LLMScannerBlockedError(MCPBastionError):
+    """Raised when optional local LLM scanner flags injection above threshold."""
+
+    def __init__(
+        self,
+        message: str = "Request blocked: local LLM scanner flagged injection",
+    ) -> None:
+        super().__init__(message, code=-32026)
+
+
+class ATRRuleMatchError(MCPBastionError):
+    """Raised when an ATR community rule matches inbound content."""
+
+    def __init__(self, message: str = "Request blocked: ATR threat rule matched") -> None:
+        super().__init__(message, code=-32027)

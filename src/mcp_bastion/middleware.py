@@ -18,10 +18,13 @@ from mcp_bastion.base import CallNext, Middleware, MiddlewareContext
 from mcp_bastion.errors import (
     AgentAccessDeniedError,
     ArgumentGuardError,
+    ATRRuleMatchError,
     AuthenticationError,
     BastionConfigError,
+    CanaryExfiltrationError,
     ExternalPolicyDeniedError,
     GroundingViolationError,
+    LLMScannerBlockedError,
     PromptInjectionError,
     PromptGuardUnavailableError,
     RateLimitExceededError,
@@ -58,6 +61,11 @@ from mcp_bastion.pillars.semantic_cache import SemanticCache
 from mcp_bastion.pillars.sensitive_classifier import SensitiveContentClassifier
 from mcp_bastion.pillars.semantic_firewall import SemanticFirewall
 from mcp_bastion.pillars.state_backend import MemoryStateBackend, StateBackend
+from mcp_bastion.pillars.atr_rules import ATRRuleLoader
+from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
+from mcp_bastion.pillars.canary_goallock import CanaryGoalLock
+from mcp_bastion.pillars.llm_scanner import LLMScanner
+from mcp_bastion.pillars.secret_redaction import SecretPatternRedactor
 from mcp_bastion.tenant import resolve_tenant_id
 
 logger = logging.getLogger(__name__)
@@ -469,6 +477,16 @@ class MCPBastionMiddleware(Middleware[Any]):
         enable_boundary_mode: bool = False,
         identity_adapter: IdentityAdapter | None = None,
         enable_identity_adapter: bool = False,
+        canary_goallock: CanaryGoalLock | None = None,
+        enable_canary_goallock: bool = False,
+        atr_rules: ATRRuleLoader | None = None,
+        enable_atr_rules: bool = False,
+        llm_scanner: LLMScanner | None = None,
+        enable_llm_scanner: bool = False,
+        auto_repave: AutoRepaveEngine | None = None,
+        enable_auto_repave: bool = False,
+        secret_redactor: SecretPatternRedactor | None = None,
+        enable_secret_redaction: bool = False,
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -540,6 +558,16 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.enable_boundary_mode = enable_boundary_mode
         self.identity_adapter = identity_adapter
         self.enable_identity_adapter = enable_identity_adapter and identity_adapter is not None
+        self.canary_goallock = canary_goallock
+        self.enable_canary_goallock = enable_canary_goallock and canary_goallock is not None
+        self.atr_rules = atr_rules
+        self.enable_atr_rules = enable_atr_rules and atr_rules is not None
+        self.llm_scanner = llm_scanner
+        self.enable_llm_scanner = enable_llm_scanner and llm_scanner is not None
+        self.auto_repave = auto_repave
+        self.enable_auto_repave = enable_auto_repave and auto_repave is not None
+        self.secret_redactor = secret_redactor
+        self.enable_secret_redaction = enable_secret_redaction and secret_redactor is not None
         self._governance = SessionGovernanceRecorder.get()
 
         if self.enable_tool_metadata_guard and not self.enable_content_filter and not self.enable_prompt_guard:
@@ -840,6 +868,22 @@ class MCPBastionMiddleware(Middleware[Any]):
             return result
         return _set_tools_on_result(result, kept)
 
+    def _maybe_auto_repave(self, error: Exception, context: MiddlewareContext[Any]) -> None:
+        if not self.enable_auto_repave or self.auto_repave is None:
+            return
+        event: str | None = None
+        if isinstance(error, CanaryExfiltrationError):
+            event = "canary_detections"
+        elif isinstance(error, LLMScannerBlockedError):
+            event = "llm_scanner_blocks"
+        elif isinstance(error, ATRRuleMatchError):
+            event = "atr_rule_matches"
+        if not event:
+            return
+        fired = self.auto_repave.record_detection(event)
+        if fired:
+            context.metadata.setdefault("auto_repave", {})["actions"] = fired
+
     def _handle_violation(
         self,
         *,
@@ -849,6 +893,7 @@ class MCPBastionMiddleware(Middleware[Any]):
         started: float,
         error: Exception,
     ) -> None:
+        self._maybe_auto_repave(error, context)
         if self.shadow_mode:
             context.metadata.setdefault("shadow_blocked", []).append(
                 {
@@ -1206,6 +1251,9 @@ class MCPBastionMiddleware(Middleware[Any]):
             "tenant_id": tenant_id,
         }
 
+        if self.enable_canary_goallock and self.canary_goallock is not None:
+            context.metadata["bastion_canary_snippet"] = self.canary_goallock.context_snippet()
+
         if (
             self.enable_output_budget
             and self.output_budget.retrieve_tool
@@ -1529,6 +1577,71 @@ class MCPBastionMiddleware(Middleware[Any]):
                     )
             _trace_append(trace, pillar="prompt_guard", status="allowed", started=started)
 
+        if self.enable_canary_goallock and params and self.canary_goallock is not None:
+            started = time.perf_counter()
+            arguments = params.get("arguments") or params
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except json.JSONDecodeError:
+                    arguments = {"raw": arguments}
+            try:
+                self.canary_goallock.check_outbound_arguments(arguments)
+                _trace_append(trace, pillar="canary_goallock", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="canary_goallock", started=started, error=e
+                )
+
+        if self.enable_atr_rules and params and self.atr_rules is not None:
+            started = time.perf_counter()
+            arguments = params.get("arguments") or params
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except json.JSONDecodeError:
+                    arguments = {"raw": arguments}
+            text = _extract_text_from_value(arguments)
+            if text:
+                matched = self.atr_rules.match(text)
+                if matched is not None:
+                    self._handle_violation(
+                        context=context,
+                        trace=trace,
+                        pillar="atr_rules",
+                        started=started,
+                        error=ATRRuleMatchError(
+                            f"Request blocked: ATR rule {matched.rule_id} matched ({matched.title})"
+                        ),
+                    )
+            _trace_append(trace, pillar="atr_rules", status="allowed", started=started)
+
+        if self.enable_llm_scanner and params and self.llm_scanner is not None:
+            started = time.perf_counter()
+            arguments = params.get("arguments") or params
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except json.JSONDecodeError:
+                    arguments = {"raw": arguments}
+            text = _extract_text_from_value(arguments)
+            if text:
+                heuristic_hit = bool(self.prompt_guard.heuristic_match(text)) if self.enable_prompt_guard else False
+                malicious_pg = False
+                if self.enable_prompt_guard:
+                    try:
+                        malicious_pg = self.prompt_guard.is_malicious(text)
+                    except PromptGuardUnavailableError:
+                        malicious_pg = False
+                heuristics_uncertain = not heuristic_hit and not malicious_pg
+                try:
+                    self.llm_scanner.scan(text, heuristics_uncertain=heuristics_uncertain)
+                    _trace_append(trace, pillar="llm_scanner", status="allowed", started=started)
+                except Exception as e:
+                    self._handle_violation(
+                        context=context, trace=trace, pillar="llm_scanner", started=started, error=e
+                    )
+
         if self.enable_sensitive_classifier and params:
             started = time.perf_counter()
             arguments = params.get("arguments") or params
@@ -1711,11 +1824,19 @@ class MCPBastionMiddleware(Middleware[Any]):
             )
 
     def _redact_result_content(self, result: Any) -> Any:
-        """Redact PII from result content items."""
+        """Redact PII and configured secret patterns from result content items."""
         content = _get_content_from_result(result)
         if not content:
             return result
         redacted = self.pii_redactor.redact_content_items(content)
+        if self.enable_secret_redaction and self.secret_redactor is not None:
+            out = []
+            for item in redacted:
+                if isinstance(item, dict) and item.get("type") == "text" and "text" in item:
+                    out.append({**item, "text": self.secret_redactor.redact_text(str(item["text"]))})
+                else:
+                    out.append(item)
+            redacted = out
         _set_content_in_result(result, redacted)
         return result
 

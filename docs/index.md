@@ -55,6 +55,7 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 | **Connect Claude, ChatGPT, OpenAI, Gemini, …** | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) → [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) |
 | **FastMCP, npm server, or proxy patterns** | [TUTORIALS.md](TUTORIALS.md) → [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) |
 | **Prove RBAC & token savings with numbers** | [BENCHMARKS.md](BENCHMARKS.md)  -  pytest suite + reproducible RBAC / output-budget / discovery / cache metrics |
+| **Enterprise runtime governance (3.0+)** | [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md) → `bastion.yaml.example` |
 
 Hub with all files: [Docs README](README.md).
 
@@ -73,6 +74,7 @@ Hub with all files: [Docs README](README.md).
 - [Metrics and Dashboard](METRICS.md)
 - [Security, OWASP MCP Top 10, observability, fleet rollout, SIEM audit](SECURITY_OBSERVABILITY.md)
 - [Security Guidance](SECURITY.md)
+- [Enterprise runtime controls (3.0+)](ENTERPRISE_RUNTIME_CONTROLS.md)
 - [GitHub Pages Setup](GITHUB_PAGES.md)
 
 ## Core Capabilities

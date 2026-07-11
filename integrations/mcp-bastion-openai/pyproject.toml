@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-openai"
-version = "2.0.2"
+version = "3.0.0"
 description = "MCP-Bastion security middleware for OpenAI  -  prompt injection, PII, and rate-limit protection for GPT agents"
 readme = "README.md"
 license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }

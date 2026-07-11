@@ -41,4 +41,35 @@ Desktop.ini
 
 # Local config (optional: remove to track bastion.yaml)
 # bastion.yaml
+bastion.local.yaml
+*.local.yaml
+
+# IDE / editor / agent tooling (local only)
+.cursor/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local runtime artifacts
+.bastion/
+audit.jsonl
+report.md
+*.tmp
+*.temp
+local-*.json
+*.manifest.local.json
+
+# Python / Node tooling caches
+.ruff_cache/
+.tox/
+.nox/
+.hypothesis/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Generated / duplicate assets (keep committed images/ and docs/images/)
+assets/
+agent-transcripts/
 

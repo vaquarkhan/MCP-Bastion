@@ -1,0 +1,47 @@
+# Example: enable 3.0 runtime governance pillars (all opt-in).
+# Copy sections into your bastion.yaml and tune thresholds.
+
+mode: enforce   # or observe (log would-block without denying)
+
+canary_goallock:
+  enabled: true
+  token_prefix: BASTION-CANARY-
+  rotate_on_detection: true
+
+atr_rules:
+  enabled: true
+  rules_dir: ./atr-rules
+  min_severity: medium
+
+llm_scanner:
+  enabled: false
+  url: http://localhost:11434
+  model: llama3.2:3b
+  confidence_threshold: 0.85
+  timeout_ms: 2500
+  only_when_heuristics_uncertain: true
+
+threat_feeds:
+  enabled: false
+  feeds: []
+
+auto_repave:
+  enabled: true
+  triggers:
+    window_minutes: 5
+    canary_detections: 3
+  actions:
+    rotate_canary: true
+    reset_session_scope: false
+    kill_sessions: false
+
+secrets:
+  redact_patterns:
+    - rule: "sk-[A-Za-z0-9]{20,}"
+      strategy: mask
+      mask_prefix: 4
+      mask_suffix: 4
+
+audit:
+  enabled: true
+  jsonl_path: .bastion/audit.jsonl

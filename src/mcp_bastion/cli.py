@@ -380,6 +380,38 @@ def cmd_attest_export(
     return 0
 
 
+def cmd_report(
+    *,
+    framework: str,
+    audit_path: str,
+    output: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> int:
+    """Generate compliance evidence report from audit JSONL."""
+    from mcp_bastion import __version__
+    from mcp_bastion.pillars.compliance_report import generate_report_markdown
+
+    p = Path(audit_path)
+    if not p.is_file():
+        logger.error("Audit log not found: %s", audit_path)
+        return 1
+    report = generate_report_markdown(
+        framework=framework,
+        audit_path=p,
+        date_from=date_from,
+        date_to=date_to,
+        version=__version__,
+    )
+    if output:
+        out = Path(output)
+        out.write_text(report, encoding="utf-8")
+        logger.info("Wrote compliance report to %s", out)
+    else:
+        print(report)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="mcp-bastion",
@@ -511,6 +543,32 @@ def main() -> int:
             sign=bool(kw.get("sign")),
             principal_id=kw.get("principal_id"),
             tenant_id=kw.get("tenant_id"),
+        )
+    )
+
+    report_parser = sub.add_parser("report", help="Generate compliance evidence report from audit JSONL")
+    report_parser.add_argument(
+        "--framework",
+        "-f",
+        required=True,
+        help="Framework key: soc2, iso27001, gdpr, nist_ai_rmf",
+    )
+    report_parser.add_argument(
+        "--audit",
+        "-a",
+        required=True,
+        help="Path to audit JSONL log",
+    )
+    report_parser.add_argument("--output", "-o", help="Write markdown report to file")
+    report_parser.add_argument("--from", dest="date_from", help="Filter events from ISO date")
+    report_parser.add_argument("--to", dest="date_to", help="Filter events to ISO date")
+    report_parser.set_defaults(
+        func=lambda **kw: cmd_report(
+            framework=kw.get("framework"),
+            audit_path=kw.get("audit"),
+            output=kw.get("output"),
+            date_from=kw.get("date_from"),
+            date_to=kw.get("date_to"),
         )
     )
 
