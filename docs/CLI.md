@@ -4,6 +4,7 @@ Developer CLI for validating config, running the server, the dashboard, and oper
 
 | Command | Purpose |
 |---------|---------|
+| **`scan`** | Static scan of MCP tool definitions (pre-deploy poisoning / drift) |
 | `validate` | Check `bastion.yaml` / policy |
 | `serve` | Run the example MCP server with config |
 | `dashboard` | Metrics UI + `/api/metrics` |
@@ -21,7 +22,25 @@ pip install mcp-bastion-python
 
 Then run `mcp-bastion` (or `python -m mcp_bastion.cli` from repo).
 
-## Commands
+### scan
+
+Static scan of MCP **tool definitions** before deploy. Client-side only — reuses Bastion `content_filter`, injection heuristics, and `tool_metadata_fingerprint`. No ML download, no cloud.
+
+```bash
+# Scan a tools/list export or hand-authored catalog
+mcp-bastion scan examples/fixtures/tools-poisoned.json
+
+# Baseline drift detection (pair with fingerprint)
+mcp-bastion fingerprint tools.json -o baseline.json
+mcp-bastion scan tools.json --baseline baseline.json
+
+# CI-friendly JSON + non-failing report
+mcp-bastion scan tools.json --format json -o report.json --fail-on none
+```
+
+Checks: prompt-injection patterns in descriptions/schemas, credential-like material, code-exec patterns, homoglyph tool-name pairs, hidden Unicode, optional fingerprint drift. Letter grade **A–F** in output. Exit **1** when findings meet `--fail-on` (default `high`).
+
+Sample fixtures: `examples/fixtures/tools-clean.json`, `tools-poisoned.json`.
 
 ### validate
 

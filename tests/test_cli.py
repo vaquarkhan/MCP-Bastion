@@ -303,6 +303,12 @@ def test_main_dashboard_help(monkeypatch):
         main()
 
 
+def test_main_scan_help(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["mcp-bastion", "scan", "--help"])
+    with pytest.raises(SystemExit):
+        main()
+
+
 def test_cmd_manifest_writes_json(tmp_path, caplog):
     import json
     import logging

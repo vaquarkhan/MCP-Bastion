@@ -10,11 +10,11 @@ MCP-Bastion is **cost-aware runtime governance** on the MCP path: embed in your 
 
 | Category | Examples | Primary question they answer |
 |----------|----------|------------------------------|
-| **Scanner** | mcp-scan, Invariant | "Is this tool definition poisoned *before* deploy?" |
+| **Scanner** | mcp-scan, Invariant, **`mcp-bastion scan`** | "Is this tool definition poisoned *before* deploy?" |
 | **Gateway** | Arcade, Enkrypt, Zuplo, ThinkWatch | "Who is the user and how do we route API/MCP traffic?" |
 | **Cost-aware runtime governance** | **MCP-Bastion** | "What ran, what did it cost, what was blocked  -  and how does **live spend** change allow/deny/route?" |
 
-Scanners do not see spend at runtime. Gateways treat cost as billing, not as a **control plane**. Bastion is the only OSS MCP stack with a credible **denial-of-wallet** story *and* a path to **budget-driven policy** (degrade, filter, approve  -  not only hard block).
+Scanners do not see spend at runtime. Gateways treat cost as billing, not as a **control plane**. Bastion is the only OSS MCP stack with a credible **denial-of-wallet** story *and* a path to **budget-driven policy** (degrade, filter, approve  -  not only hard block), plus an end-to-end **scan → test → enforce** CLI (`mcp-bastion scan`, `redteam`, runtime middleware).
 
 ---
 
@@ -45,6 +45,7 @@ MCP-Bastion wins on **zero-infra governance depth** and **library-only wedges**:
 | PII redaction (Presidio) | ❌ | rare | partial | ✅ |
 | Agent IAM + tool allowlists | ❌ | partial | ✅ | ✅ `agent_iam` |
 | Supply-chain manifest verification | ❌ | ❌ | partial | ✅ SHA-256 + HMAC |
+| **Static tool-definition scan (pre-deploy)** | partial | partial | partial | ✅ **`mcp-bastion scan`** |
 | FinOps caps (principal-based) | ❌ | partial | billing only | ✅ session + daily + **cost-as-policy** (3.0+) |
 | Governance attestation export | ❌ | ❌ | partial logs | ✅ signed session bundle (`attest export`) |
 | Full MCP surface guards | ❌ | partial | varies | ✅ tools + resources + prompts + sampling + elicitation |

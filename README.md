@@ -24,6 +24,39 @@
 
 **Guiding rule:** Stay a **zero-infra, drop-in library**  -  the guardrail brain that composes with any gateway, not a gateway itself. Strategy: [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md).
 
+### Scan → Test → Enforce (no competitor has all three)
+
+| Phase | What | Command |
+|-------|------|---------|
+| **Scan** | Static tool-definition checks before deploy (injection in descriptions, secrets, homoglyphs, fingerprint drift) | `mcp-bastion scan tools.json` |
+| **Test** | Integrated red-team harness against your `bastion.yaml` policy | `mcp-bastion redteam` |
+| **Enforce** | Runtime middleware on every MCP method | `secure_fastmcp(mcp)` or `bastion.yaml` |
+
+```bash
+# 1. Scan a tools/list export (or hand-authored catalog) — client-side, no cloud
+mcp-bastion scan examples/fixtures/tools-poisoned.json
+mcp-bastion fingerprint tools.json -o baseline.json
+mcp-bastion scan tools.json --baseline baseline.json --format json -o report.json
+
+# 2. Test policy effectiveness
+mcp-bastion redteam --config bastion.yaml
+
+# 3. Enforce at runtime
+mcp-bastion validate --config bastion.yaml
+```
+
+<p align="center">
+  <a href="https://vimeo.com/1186084574" title="Watch MCP-Bastion dashboard demo on Vimeo">
+    <img
+      src="docs/images/dashboard.png"
+      alt="MCP-Bastion dashboard — live KPIs, block rate, PII redacted, cost, forensics, and alerts"
+      width="960"
+      style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b; box-shadow:0 8px 32px rgba(15,23,42,0.35);"
+    />
+  </a>
+</p>
+<p align="center"><strong>Live governance dashboard</strong> — optional, local, demo-ready. <code>mcp-bastion dashboard --demo</code> · <a href="https://vimeo.com/1186084574">Watch demo</a></p>
+
 <p align="center">
   <img
     src="images/mcp-bastion-mcp-surface-scale.png"
@@ -444,11 +477,13 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Policy-as-code** | Single **`bastion.yaml`**: toggles for all request-path controls plus audit, alerts, and hot reload ([docs/PILLARS.md](docs/PILLARS.md)); load via `load_config` / `build_middleware_from_config`. |
 | **Hot reload** | Optional **reload `bastion.yaml` on change** without restarting the MCP server ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)). |
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
-| **CLI** | **`mcp-bastion validate`**, **`manifest`**, **`attest export`**, **`serve`**, **`dashboard`**, **`redteam`**, **`doctor`**, **`tail`**  -  [docs/CLI.md](docs/CLI.md). |
+| **CLI** | **`mcp-bastion scan`**, **`validate`**, **`redteam`**, **`manifest`**, **`attest export`**, **`serve`**, **`dashboard`**, **`doctor`**, **`tail`**  -  [docs/CLI.md](docs/CLI.md). |
 | **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
 | **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard)  -  [DOCKER.md](DOCKER.md). **Prebuilt images (GHCR):** [`mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy), [`mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)  -  published on each `v*` tag ([publish-docker.yml](.github/workflows/publish-docker.yml)). |
 
 ### Real-Time Dashboard and Alerts
+
+The dashboard is **optional and local** — a polished storefront for governance metrics, not a mandatory multi-tenant control plane. Use it in demos, SOC review, and FinOps standups.
 
 **🎥 Demo (screen recording):** [Watch on Vimeo](https://vimeo.com/1186084574)  -  overview of the dashboard and metrics (link opens the player on Vimeo).
 
