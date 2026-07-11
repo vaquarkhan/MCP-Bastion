@@ -100,6 +100,18 @@ class ContentFilter:
         self._allowlist_regexes = _compile_patterns(self.allowlist_patterns, "allowlist")
         self._denylist_regexes = _compile_patterns(self.denylist_patterns, "custom")
 
+    def update_denylist_patterns(self, patterns: list[str]) -> None:
+        """Replace custom/denylist patterns and recompile (e.g. after threat-feed refresh)."""
+        self.denylist_patterns = list(patterns)
+        self.custom_patterns = self.denylist_patterns
+        compiled: list[re.Pattern[str]] = []
+        for p in self.denylist_patterns:
+            try:
+                compiled.append(re.compile(p))
+            except re.error as e:
+                logger.warning("content_filter: skip invalid denylist pattern: %s", e)
+        self._denylist_regexes = compiled
+
     @property
     def _custom_regexes(self) -> list[re.Pattern[str]]:
         """Alias for denylist regexes (backward compatible with older tests)."""

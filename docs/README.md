@@ -15,7 +15,9 @@ Current Python package release: **`mcp-bastion-python==2.0.2`** ([PyPI](https://
 | [index.md](index.md) | Landing page for docs website (GitHub Pages home) |
 | [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) | End-to-end tutorial from install to production checks |
 | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) | Full `bastion.yaml` schema and examples |
-| [PILLARS.md](PILLARS.md) | Canonical mapping: base controls, **extended** policy features (1.0.16+), FinOps/context pillars (1.0.17+), runtime governance (1.0.18+, shipped in **2.0.0**), `bastion.yaml` ↔ dashboard |
+| [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) | Agent IAM, server verification, supply-chain checks |
+| [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md) | **3.0+** runtime governance pillars (canary, ATR, LLM scanner, threat feeds, auto-repave, secret redaction) |
+| [PILLARS.md](PILLARS.md) | Canonical mapping: base controls, **extended** policy features (1.0.16+), FinOps/context pillars (1.0.17+), runtime governance (1.0.18+, shipped in **2.0.0**), **enterprise controls (3.0.0)**, `bastion.yaml` ↔ dashboard |
 | [BENCHMARKS.md](BENCHMARKS.md) | **Measured** RBAC matrix, output-budget reduction, discovery filter, lexical cache - pytest + `scripts/generate_benchmark_report.py` |
 | [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) | **2.0.0:** full MCP method guards + Redis `state_backend` for multi-replica deploys |
 | [REDTEAM.md](REDTEAM.md) | Interpreting harness scores; **`mcp-bastion redteam`** |

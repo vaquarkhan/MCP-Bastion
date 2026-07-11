@@ -323,5 +323,24 @@ mcp-bastion serve --config bastion.yaml --http 8080
 | -32019 | Agent IAM |
 | -32020 | Server verification |
 | -32022 | Argument guards |
+| -32025 | Exfiltration canary (`canary_goallock`) |
+| -32026 | Local LLM scanner |
+| -32027 | ATR threat rules |
 
 Full table: [README error handling](../README.md#error-handling)
+
+## Runtime governance pillars (3.0+)
+
+Opt-in enterprise controls for production MCP runtimes. See [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md).
+
+| Pillar | Config key |
+|--------|------------|
+| Exfiltration canary | `canary_goallock` |
+| ATR YAML rules | `atr_rules` |
+| Local LLM scanner | `llm_scanner` |
+| Threat intel feeds | `threat_feeds` |
+| Auto-repave | `auto_repave` |
+| Secret pattern redaction | `secrets.redact_patterns` |
+| Observe mode | `mode: observe` |
+
+CLI: `mcp-bastion report --framework soc2 --audit ./audit.jsonl`

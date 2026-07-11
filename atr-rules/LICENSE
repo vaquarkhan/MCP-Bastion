@@ -1,0 +1,3 @@
+Sample ATR-style rules in this directory are provided as examples for MCP-Bastion.
+When vendoring community Agent Threat Rules, retain the upstream LICENSE file
+from the original rules repository alongside each rule pack.

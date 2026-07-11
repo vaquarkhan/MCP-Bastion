@@ -44,10 +44,12 @@ def main() -> None:
         if not p.exists():
             continue
         t = p.read_text(encoding="utf-8")
-        t2 = t.replace("2.0.0", NEW).replace(OLD, NEW)
-        if t2 != t:
-            p.write_text(t2, encoding="utf-8")
-            print(rel)
+        # Only bump JSON-LD softwareVersion; PyPI links and badges are version-agnostic (Shields.io).
+        if rel.endswith("index.html") and f'"softwareVersion": "{OLD}"' in t:
+            t2 = t.replace(f'"softwareVersion": "{OLD}"', f'"softwareVersion": "{NEW}"')
+            if t2 != t:
+                p.write_text(t2, encoding="utf-8")
+                print(rel)
 
 
 if __name__ == "__main__":

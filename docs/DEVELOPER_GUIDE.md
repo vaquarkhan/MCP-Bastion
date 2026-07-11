@@ -80,7 +80,19 @@ python dashboard/app.py
 1. Copy `bastion.yaml.example` to `bastion.yaml`
 2. Enable pillars incrementally ([FEATURES.md](FEATURES.md))
 3. Validate: `mcp-bastion validate --config bastion.yaml`
-4. Dry-run blocks: enable `shadow_mode=True` programmatically or use `policy_simulator`
+4. Dry-run blocks: set `mode: observe` in `bastion.yaml` (shadow mode) or use `policy_simulator`
+
+### Runtime governance (3.0+)
+
+Enable pillars incrementally from `bastion.yaml.example` or `examples/bastion-runtime-governance-3.0.yaml`:
+
+```bash
+mcp-bastion validate --config examples/bastion-runtime-governance-3.0.yaml
+pytest tests/test_runtime_governance_pillars_30.py -v
+mcp-bastion report --framework soc2 --audit .bastion/audit.jsonl
+```
+
+Deep dive: [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md)
 
 Policy flows: **`bastion.yaml` → `load_config()` → `BastionConfig` → `build_middleware_from_config()`**.
 

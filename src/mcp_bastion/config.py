@@ -37,6 +37,12 @@ from mcp_bastion.pillars.agent_iam import AgentIAM, parse_agent_policies
 from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine, parse_guard_rules
 from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.state_backend import build_state_backend
+from mcp_bastion.pillars.atr_rules import ATRRuleLoader
+from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
+from mcp_bastion.pillars.canary_goallock import CanaryGoalLock
+from mcp_bastion.pillars.llm_scanner import LLMScanner
+from mcp_bastion.pillars.secret_redaction import SecretPatternRedactor
+from mcp_bastion.pillars.threat_feeds import ThreatFeedManager
 from mcp_bastion.base import CallNext, MiddlewareContext, compose_middleware
 from mcp_bastion.governance_beacon import schedule_registry_beacon
 from mcp_bastion.middleware import MCPBastionMiddleware
@@ -185,6 +191,26 @@ class BastionConfig:
     state_backend: str = "memory"
     state_backend_redis_url: str = "redis://127.0.0.1:6379/0"
     state_backend_key_prefix: str = "mcp-bastion"
+    # Runtime governance pillars (3.0+)
+    canary_goallock_enabled: bool = False
+    canary_token_prefix: str = "BASTION-CANARY-"
+    canary_rotate_on_detection: bool = True
+    atr_rules_enabled: bool = False
+    atr_rules_dir: str = "./atr-rules"
+    atr_min_severity: str = "medium"
+    llm_scanner_enabled: bool = False
+    llm_scanner_url: str = "http://localhost:11434"
+    llm_scanner_model: str = "llama3.2:3b"
+    llm_scanner_confidence_threshold: float = 0.85
+    llm_scanner_timeout_ms: int = 2500
+    llm_scanner_only_when_uncertain: bool = True
+    threat_feeds_enabled: bool = False
+    threat_feeds: list[dict[str, Any]] = field(default_factory=list)
+    auto_repave_enabled: bool = False
+    auto_repave_triggers: dict[str, Any] = field(default_factory=dict)
+    auto_repave_actions: dict[str, bool] = field(default_factory=dict)
+    secrets_redact_patterns: list[dict[str, Any]] = field(default_factory=list)
+    bastion_mode: str = "enforce"  # enforce | observe
 
 
 def validate_bastion_config(config: BastionConfig) -> None:
@@ -282,6 +308,12 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     bm = data.get("boundary_mode", {}) or {}
     ia = data.get("identity_adapter", {}) or {}
     sec = data.get("secrets", {}) or {}
+    cg = data.get("canary_goallock", {}) or {}
+    atr = data.get("atr_rules", {}) or {}
+    lls = data.get("llm_scanner", {}) or {}
+    tf = data.get("threat_feeds", {}) or {}
+    ar = data.get("auto_repave", {}) or {}
+    mode = str(data.get("mode", data.get("bastion_mode", "enforce")))
     boundary_on = bool(bm.get("enabled", False))
     th_require_loopback = bool(th.get("require_loopback", True))
     return BastionConfig(
@@ -425,6 +457,27 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         state_backend=str(sb.get("type", sb.get("backend", "memory"))),
         state_backend_redis_url=str(sb.get("redis_url", os.environ.get("BASTION_REDIS_URL", "redis://127.0.0.1:6379/0"))),
         state_backend_key_prefix=str(sb.get("key_prefix", "mcp-bastion")),
+        canary_goallock_enabled=bool(cg.get("enabled", False)),
+        canary_token_prefix=str(cg.get("token_prefix", "BASTION-CANARY-")),
+        canary_rotate_on_detection=bool(cg.get("rotate_on_detection", True)),
+        atr_rules_enabled=bool(atr.get("enabled", False)),
+        atr_rules_dir=str(atr.get("rules_dir", "./atr-rules")),
+        atr_min_severity=str(atr.get("min_severity", "medium")),
+        llm_scanner_enabled=bool(lls.get("enabled", False)),
+        llm_scanner_url=str(lls.get("url", "http://localhost:11434")),
+        llm_scanner_model=str(lls.get("model", "llama3.2:3b")),
+        llm_scanner_confidence_threshold=float(lls.get("confidence_threshold", 0.85)),
+        llm_scanner_timeout_ms=int(lls.get("timeout_ms", 2500)),
+        llm_scanner_only_when_uncertain=bool(lls.get("only_when_heuristics_uncertain", True)),
+        threat_feeds_enabled=bool(tf.get("enabled", False)),
+        threat_feeds=list(tf.get("feeds", [])) if isinstance(tf.get("feeds"), list) else [],
+        auto_repave_enabled=bool(ar.get("enabled", False)),
+        auto_repave_triggers=dict(ar.get("triggers", {})) if isinstance(ar.get("triggers"), dict) else {},
+        auto_repave_actions=dict(ar.get("actions", {})) if isinstance(ar.get("actions"), dict) else {},
+        secrets_redact_patterns=list(sec.get("redact_patterns", []))
+        if isinstance(sec.get("redact_patterns"), list)
+        else [],
+        bastion_mode=mode if mode in ("enforce", "observe") else "enforce",
     )
 
 
@@ -526,13 +579,28 @@ def _build_chain(config: BastionConfig) -> Any:
     )
 
     audit_mw = AuditLogMiddleware(export_callback=export_cb) if config.audit else None
+
+    denylist_patterns = list(config.content_filter_denylist_patterns)
+    threat_feed_extra_heuristics: list[str] = []
+    atr_loader: ATRRuleLoader | None = None
+    if config.atr_rules_enabled:
+        atr_loader = ATRRuleLoader(config.atr_rules_dir, min_severity=config.atr_min_severity)
+        denylist_patterns.extend(atr_loader.denylist_patterns())
+
+    threat_feed_manager: ThreatFeedManager | None = None
+    if config.threat_feeds_enabled and config.threat_feeds:
+        threat_feed_manager = ThreatFeedManager(config.threat_feeds)
+        threat_feed_manager.refresh_all()
+        denylist_patterns.extend(threat_feed_manager.patterns_for("content_filter"))
+        threat_feed_extra_heuristics = threat_feed_manager.patterns_for("prompt_injection")
+
     content_filter = ContentFilter(
         block_code_execution=config.content_filter_block_code_execution,
         block_file_paths=config.content_filter_block_file_paths,
         block_urls=config.content_filter_block_urls,
         block_secrets=config.content_filter_block_secrets,
         allowlist_patterns=config.content_filter_allowlist_patterns,
-        denylist_patterns=config.content_filter_denylist_patterns,
+        denylist_patterns=denylist_patterns,
     )
     ext_cfg = ExternalPolicyConfig(
         engine=normalize_engine(config.policy_engine_type),
@@ -616,14 +684,63 @@ def _build_chain(config: BastionConfig) -> Any:
         else:
             logger.warning("argument_guards enabled but rules list is empty")
 
+    canary_goallock: CanaryGoalLock | None = None
+    if config.canary_goallock_enabled:
+        canary_goallock = CanaryGoalLock(
+            token_prefix=config.canary_token_prefix,
+            rotate_on_detection=config.canary_rotate_on_detection,
+            backend=shared_backend,
+        )
+
+    llm_scanner: LLMScanner | None = None
+    if config.llm_scanner_enabled:
+        llm_scanner = LLMScanner(
+            url=config.llm_scanner_url,
+            model=config.llm_scanner_model,
+            confidence_threshold=config.llm_scanner_confidence_threshold,
+            timeout_ms=config.llm_scanner_timeout_ms,
+            only_when_heuristics_uncertain=config.llm_scanner_only_when_uncertain,
+        )
+
+    auto_repave: AutoRepaveEngine | None = None
+    if config.auto_repave_enabled:
+        auto_repave = AutoRepaveEngine(
+            triggers=config.auto_repave_triggers,
+            actions=config.auto_repave_actions,
+            backend=shared_backend,
+            on_rotate_canary=(canary_goallock.rotate_canary if canary_goallock else None),
+        )
+
+    secret_redactor: SecretPatternRedactor | None = None
+    if config.secrets_redact_patterns:
+        secret_redactor = SecretPatternRedactor(config.secrets_redact_patterns)
+
+    prompt_guard_engine = PromptGuardEngine(
+        threshold=config.prompt_guard_threshold,
+        model_id=config.prompt_guard_model_id,
+        fail_open=config.prompt_guard_fail_open,
+        heuristic_fallback=config.prompt_guard_heuristic_fallback,
+        use_ungated_default=config.prompt_guard_use_ungated_default,
+        heuristic_extra_patterns=threat_feed_extra_heuristics or None,
+    )
+
+    if threat_feed_manager is not None:
+
+        def _sync_threat_feed_patterns() -> None:
+            merged_denylists = list(config.content_filter_denylist_patterns)
+            if atr_loader is not None:
+                merged_denylists.extend(atr_loader.denylist_patterns())
+            merged_denylists.extend(threat_feed_manager.patterns_for("content_filter"))
+            content_filter.update_denylist_patterns(merged_denylists)
+            prompt_guard_engine.update_heuristic_extra_patterns(
+                threat_feed_manager.patterns_for("prompt_injection")
+            )
+
+        threat_feed_manager._on_refresh = _sync_threat_feed_patterns
+        threat_feed_manager.start_background()
+
     bastion_mw = MCPBastionMiddleware(
-        prompt_guard=PromptGuardEngine(
-            threshold=config.prompt_guard_threshold,
-            model_id=config.prompt_guard_model_id,
-            fail_open=config.prompt_guard_fail_open,
-            heuristic_fallback=config.prompt_guard_heuristic_fallback,
-            use_ungated_default=config.prompt_guard_use_ungated_default,
-        ),
+        prompt_guard=prompt_guard_engine,
         rate_limiter=TokenBucketRateLimiter(
             max_iterations=config.rate_limit_max_iterations,
             timeout_seconds=config.rate_limit_timeout_seconds,
@@ -706,6 +823,17 @@ def _build_chain(config: BastionConfig) -> Any:
         if config.identity_adapter_enabled
         else None,
         enable_identity_adapter=config.identity_adapter_enabled,
+        canary_goallock=canary_goallock,
+        enable_canary_goallock=config.canary_goallock_enabled and canary_goallock is not None,
+        atr_rules=atr_loader,
+        enable_atr_rules=config.atr_rules_enabled and atr_loader is not None,
+        llm_scanner=llm_scanner,
+        enable_llm_scanner=config.llm_scanner_enabled and llm_scanner is not None,
+        auto_repave=auto_repave,
+        enable_auto_repave=config.auto_repave_enabled and auto_repave is not None,
+        secret_redactor=secret_redactor,
+        enable_secret_redaction=secret_redactor is not None,
+        shadow_mode=config.bastion_mode == "observe",
     )
     if config.governance_registry_url:
         schedule_registry_beacon(

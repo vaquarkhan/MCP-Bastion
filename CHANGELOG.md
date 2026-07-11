@@ -1,10 +1,30 @@
 ﻿# Changelog
 
-**Current release:** **2.0.2** (2026-07-05) - [PyPI](https://pypi.org/project/mcp-bastion-python/2.0.2/) · [Docker `v2.0.2`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **3.0.0** (2026-07-11) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.0.0/) · [Docker `v3.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [3.0.0] - 2026-07-11
+
+Feature release: runtime governance pillars for production MCP deployments. All new controls are opt-in via `bastion.yaml`.
+
+### Added
+
+- **Exfiltration canary** (`canary_goallock`): session token injection and outbound argument scanning (-32025).
+- **ATR YAML rules** (`atr_rules`): community threat rules merged into `content_filter` denylist (-32027).
+- **Local LLM scanner** (`llm_scanner`): optional Ollama-compatible second tier, fail-open (-32026).
+- **Threat intel feeds** (`threat_feeds`): background refresh of remote regex rules.
+- **Auto-repave** (`auto_repave`): threshold-based automated containment actions.
+- **Secret pattern redaction** (`secrets.redact_patterns`): `replace` | `hash` | `mask` | `remove` on tool outputs.
+- **Observe mode** (`mode: observe`): shadow enforcement without denying requests.
+- **CLI:** `mcp-bastion report` for framework-mapped compliance evidence from audit JSONL.
+- **Docs:** [ENTERPRISE_RUNTIME_CONTROLS.md](docs/ENTERPRISE_RUNTIME_CONTROLS.md), sample `atr-rules/` directory.
+
+### Changed
+
+- All **18 PyPI packages**, npm `@mcp-bastion/core`, Docker images, and MCP Registry bumped to **3.0.0**.
 
 ## [2.0.2] - 2026-07-05
 

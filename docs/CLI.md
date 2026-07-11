@@ -4,12 +4,14 @@ Developer CLI for validating config, running the server, the dashboard, and oper
 
 | Command | Purpose |
 |---------|---------|
+| **`scan`** | Static scan of MCP tool definitions (pre-deploy poisoning / drift) |
 | `validate` | Check `bastion.yaml` / policy |
 | `serve` | Run the example MCP server with config |
 | `dashboard` | Metrics UI + `/api/metrics` |
 | `redteam` | Run integrated OWASP / MCP Top 10 style harness |
 | `doctor` | Preflight + supply-chain style checks |
 | `attest export` | Export signed governance attestation for a session |
+| `report` | Generate compliance evidence report from audit JSONL |
 | `tail` | Tail append-only audit JSONL |
 
 ## Install
@@ -20,7 +22,25 @@ pip install mcp-bastion-python
 
 Then run `mcp-bastion` (or `python -m mcp_bastion.cli` from repo).
 
-## Commands
+### scan
+
+Static scan of MCP **tool definitions** before deploy. Client-side only — reuses Bastion `content_filter`, injection heuristics, and `tool_metadata_fingerprint`. No ML download, no cloud.
+
+```bash
+# Scan a tools/list export or hand-authored catalog
+mcp-bastion scan examples/fixtures/tools-poisoned.json
+
+# Baseline drift detection (pair with fingerprint)
+mcp-bastion fingerprint tools.json -o baseline.json
+mcp-bastion scan tools.json --baseline baseline.json
+
+# CI-friendly JSON + non-failing report
+mcp-bastion scan tools.json --format json -o report.json --fail-on none
+```
+
+Checks: prompt-injection patterns in descriptions/schemas, credential-like material, code-exec patterns, homoglyph tool-name pairs, hidden Unicode, optional fingerprint drift. Letter grade **A–F** in output. Exit **1** when findings meet `--fail-on` (default `high`).
+
+Sample fixtures: `examples/fixtures/tools-clean.json`, `tools-poisoned.json`.
 
 ### validate
 
@@ -90,6 +110,18 @@ Tail the append-only audit JSONL sink:
 mcp-bastion tail --path .bastion/audit.jsonl
 mcp-bastion tail --config bastion.yaml -n 50
 ```
+
+### report
+
+Generate a **compliance evidence** markdown report from audit JSONL. Maps pillar activity to framework controls (evidence only, not certification).
+
+```bash
+mcp-bastion report --framework soc2 --audit .bastion/audit.jsonl
+mcp-bastion report --framework iso27001 --audit audit.jsonl -o report.md
+mcp-bastion report --framework gdpr --audit audit.jsonl --from 2026-01-01 --to 2026-12-31
+```
+
+Framework keys: `soc2`, `iso27001`, `gdpr`, `nist_ai_rmf`. See [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md).
 
 ### doctor
 

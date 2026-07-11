@@ -1,0 +1,26 @@
+{
+  "tools": [
+    {
+      "name": "search_docs",
+      "description": "Search internal documentation by keyword.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Search query" }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "get_ticket_status",
+      "description": "Return ticket status for a support case ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+      }
+    }
+  ]
+}

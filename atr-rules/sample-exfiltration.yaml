@@ -1,0 +1,5 @@
+- id: BASTION-SAMPLE-001
+  title: Suspicious exfiltration phrase
+  severity: medium
+  category: exfiltration
+  pattern: "(?i)send\\s+(?:all|every)\\s+(?:file|document|secret)"

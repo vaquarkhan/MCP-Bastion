@@ -28,7 +28,7 @@ def test_cli_version_flag(capsys, monkeypatch):
         main()
     assert exc.value.code == 0
     out, _ = capsys.readouterr()
-    assert "2.0.0" in out
+    assert "3.0.0" in out
 
 
 def test_cmd_validate_missing_file_returns_one():
@@ -299,6 +299,12 @@ def test_main_serve_help(monkeypatch):
 
 def test_main_dashboard_help(monkeypatch):
     monkeypatch.setattr("sys.argv", ["mcp-bastion", "dashboard", "--help"])
+    with pytest.raises(SystemExit):
+        main()
+
+
+def test_main_scan_help(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["mcp-bastion", "scan", "--help"])
     with pytest.raises(SystemExit):
         main()
 

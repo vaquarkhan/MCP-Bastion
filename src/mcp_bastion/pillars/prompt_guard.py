@@ -62,6 +62,10 @@ class PromptGuardEngine:
             return None
         return find_injection_match(text, self._heuristic_regexes)
 
+    def update_heuristic_extra_patterns(self, patterns: list[str] | None) -> None:
+        """Replace merged threat-feed / config heuristic patterns."""
+        self._heuristic_regexes = compile_injection_patterns(patterns)
+
     def model_status(self) -> dict[str, Any]:
         """Report ML model load state for doctor / validation scripts."""
         return {

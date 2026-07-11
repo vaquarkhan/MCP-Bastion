@@ -3,6 +3,7 @@ CLI for MCP-Bastion developers.
 
 Usage:
   mcp-bastion validate [--config PATH]
+  mcp-bastion scan TOOLS.json [--baseline FINGERPRINT.json]
   mcp-bastion serve [--config PATH] [--http PORT] [--host HOST]
   mcp-bastion tail [--path PATH] [--lines N] [--config PATH]
 """
@@ -380,6 +381,83 @@ def cmd_attest_export(
     return 0
 
 
+def cmd_scan(
+    tools_json: str,
+    *,
+    baseline: str | None = None,
+    output: str | None = None,
+    output_format: str = "text",
+    fail_on: str = "high",
+) -> int:
+    """Static scan of MCP tool definitions (pre-deploy rug-pull / poisoning checks)."""
+    _configure_cli_logging()
+    _ensure_src_on_path()
+    from mcp_bastion.static_scan import format_report_text, scan_tools_file
+
+    p = Path(tools_json)
+    if not p.is_file():
+        logger.error("Tools file not found: %s", tools_json)
+        return 1
+    try:
+        report = scan_tools_file(str(p), baseline_path=baseline)
+    except Exception as e:
+        logger.error("scan failed: %s", e)
+        return 1
+
+    fmt = (output_format or "text").strip().lower()
+    if fmt == "json":
+        text = json.dumps(report.to_dict(), indent=2)
+    else:
+        text = format_report_text(report)
+
+    if output:
+        Path(output).write_text(text + ("\n" if not text.endswith("\n") else ""), encoding="utf-8")
+        logger.info("Wrote scan report: %s", output)
+    else:
+        print(text)
+
+    threshold = (fail_on or "high").strip().lower()
+    if threshold not in ("critical", "high", "medium", "low", "info", "none"):
+        logger.error("Invalid --fail-on severity: %s", fail_on)
+        return 1
+    if threshold != "none" and report.findings_at_or_above(threshold):  # type: ignore[arg-type]
+        logger.error("Scan failed: findings at or above %s severity", threshold)
+        return 1
+    return 0
+
+
+def cmd_report(
+    *,
+    framework: str,
+    audit_path: str,
+    output: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> int:
+    """Generate compliance evidence report from audit JSONL."""
+    from mcp_bastion import __version__
+    from mcp_bastion.pillars.compliance_report import generate_report_markdown
+
+    p = Path(audit_path)
+    if not p.is_file():
+        logger.error("Audit log not found: %s", audit_path)
+        return 1
+    report = generate_report_markdown(
+        framework=framework,
+        audit_path=p,
+        date_from=date_from,
+        date_to=date_to,
+        version=__version__,
+    )
+    if output:
+        out = Path(output)
+        out.write_text(report, encoding="utf-8")
+        logger.info("Wrote compliance report to %s", out)
+    else:
+        print(report)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="mcp-bastion",
@@ -482,6 +560,39 @@ def main() -> int:
     fp_parser.add_argument("--output", "-o", help="Write fingerprint document to file")
     fp_parser.set_defaults(func=lambda **kw: cmd_fingerprint(kw.get("tools_json"), kw.get("output")))
 
+    scan_parser = sub.add_parser(
+        "scan",
+        help="Static scan of MCP tool definitions (injection, secrets, homoglyphs, drift)",
+    )
+    scan_parser.add_argument("tools_json", help="JSON file with tools list or {tools: [...]}")
+    scan_parser.add_argument(
+        "--baseline",
+        "-b",
+        help="Fingerprint JSON from mcp-bastion fingerprint (detect catalog drift)",
+    )
+    scan_parser.add_argument("--output", "-o", help="Write report to file")
+    scan_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Report format (default text)",
+    )
+    scan_parser.add_argument(
+        "--fail-on",
+        default="high",
+        choices=("critical", "high", "medium", "low", "info", "none"),
+        help="Exit 1 if any finding meets this severity (default high; none = always 0)",
+    )
+    scan_parser.set_defaults(
+        func=lambda **kw: cmd_scan(
+            kw.get("tools_json"),
+            baseline=kw.get("baseline"),
+            output=kw.get("output"),
+            output_format=kw.get("format", "text"),
+            fail_on=kw.get("fail_on", "high"),
+        )
+    )
+
     tail_parser = sub.add_parser("tail", help="Tail append-only JSONL audit log")
     tail_parser.add_argument("--path", "-p", help="Path to audit JSONL file")
     tail_parser.add_argument("--lines", "-n", type=int, default=20, help="Number of lines (default 20)")
@@ -511,6 +622,32 @@ def main() -> int:
             sign=bool(kw.get("sign")),
             principal_id=kw.get("principal_id"),
             tenant_id=kw.get("tenant_id"),
+        )
+    )
+
+    report_parser = sub.add_parser("report", help="Generate compliance evidence report from audit JSONL")
+    report_parser.add_argument(
+        "--framework",
+        "-f",
+        required=True,
+        help="Framework key: soc2, iso27001, gdpr, nist_ai_rmf",
+    )
+    report_parser.add_argument(
+        "--audit",
+        "-a",
+        required=True,
+        help="Path to audit JSONL log",
+    )
+    report_parser.add_argument("--output", "-o", help="Write markdown report to file")
+    report_parser.add_argument("--from", dest="date_from", help="Filter events from ISO date")
+    report_parser.add_argument("--to", dest="date_to", help="Filter events to ISO date")
+    report_parser.set_defaults(
+        func=lambda **kw: cmd_report(
+            framework=kw.get("framework"),
+            audit_path=kw.get("audit"),
+            output=kw.get("output"),
+            date_from=kw.get("date_from"),
+            date_to=kw.get("date_to"),
         )
     )
 

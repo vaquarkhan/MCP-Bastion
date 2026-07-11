@@ -34,7 +34,7 @@ tailwind.config = {
       <a href="index.html" class="text-sm text-white/60 hover:text-white transition-colors">Home</a>
       <a href="integrations.html" class="text-sm text-white/90 hover:text-white transition-colors">Integrations</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion" class="text-sm text-white/60 hover:text-white transition-colors">GitHub</a>
-      <a href="https://pypi.org/project/mcp-bastion-python/2.0.2/" class="text-sm font-medium px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-all">pip install 2.0.2</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/" class="text-sm font-medium px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-all">pip install</a>
     </div>
   </div>
 </nav>
@@ -49,8 +49,70 @@ tailwind.config = {
     <div class="mt-8 inline-block rounded-xl bg-slate-900/80 border border-white/10 px-6 py-3 font-mono text-indigo-300">
       pip install mcp-bastion-<span class="text-pink-400">{framework}</span>
     </div>
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+      <a href="https://pypi.org/project/mcp-bastion-python/"><img src="https://img.shields.io/pypi/v/mcp-bastion-python?label=core%20PyPI&color=3775A9" alt="PyPI version mcp-bastion-python"></a>
+      <a href="https://pepy.tech/projects/mcp-bastion-python"><img src="https://img.shields.io/pepy/dt/mcp-bastion-python?label=core%20downloads" alt="PePy downloads mcp-bastion-python"></a>
+      <a href="https://github.com/sponsors/vaquarkhan"><img src="https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github" alt="Sponsor MCP-Bastion"></a>
+    </div>
   </div>
 </section>
+
+<!-- DOWNLOAD WIDGET -->
+<section class="py-10 border-y border-white/5 bg-slate-900/40">
+  <div class="max-w-6xl mx-auto px-6 overflow-x-auto">
+    <h2 class="text-lg font-bold mb-2 text-center">Package versions &amp; downloads</h2>
+    <p class="text-sm text-slate-500 text-center mb-6">Live badges from PyPI and PePy — no manual version bump in docs.</p>
+    <table class="w-full text-sm text-left border-collapse min-w-[720px]">
+      <thead>
+        <tr class="text-slate-400 border-b border-white/10">
+          <th class="py-3 pr-4 font-medium">Package</th>
+          <th class="py-3 pr-4 font-medium">Protects</th>
+          <th class="py-3 pr-4 font-medium">Version</th>
+          <th class="py-3 font-medium">Downloads</th>
+        </tr>
+      </thead>
+      <tbody class="text-slate-300" id="pypi-widget-body">
+        <!-- rows injected by script -->
+      </tbody>
+    </table>
+  </div>
+</section>
+<script>
+const PKGS = [
+  ["mcp-bastion-python","Core middleware"],
+  ["mcp-bastion-langchain","LangChain"],
+  ["mcp-bastion-openai","OpenAI GPT"],
+  ["mcp-bastion-anthropic","Anthropic Claude"],
+  ["mcp-bastion-bedrock","AWS Bedrock"],
+  ["mcp-bastion-gemini","Google Gemini"],
+  ["mcp-bastion-crewai","CrewAI"],
+  ["mcp-bastion-llamaindex","LlamaIndex"],
+  ["mcp-bastion-groq","Groq"],
+  ["mcp-bastion-mistral","Mistral AI"],
+  ["mcp-bastion-cohere","Cohere"],
+  ["mcp-bastion-azure","Azure OpenAI"],
+  ["mcp-bastion-vertexai","Vertex AI"],
+  ["mcp-bastion-huggingface","Hugging Face"],
+  ["mcp-bastion-deepseek","DeepSeek AI"],
+  ["mcp-bastion-together","Together AI"],
+  ["mcp-bastion-fireworks","Fireworks AI"],
+  ["mcp-bastion-fastmcp","FastMCP servers"],
+];
+const tbody = document.getElementById("pypi-widget-body");
+PKGS.forEach(([name, protects]) => {
+  const tr = document.createElement("tr");
+  tr.className = "border-b border-white/5 hover:bg-white/[0.02]";
+  tr.innerHTML = `
+    <td class="py-3 pr-4 font-mono text-indigo-300"><a href="https://pypi.org/project/${name}/" class="hover:text-white">${name}</a></td>
+    <td class="py-3 pr-4">${protects}</td>
+    <td class="py-3 pr-4"><a href="https://pypi.org/project/${name}/"><img src="https://img.shields.io/pypi/v/${name}" alt="PyPI ${name}"></a></td>
+    <td class="py-3">
+      <a href="https://pepy.tech/projects/${name}"><img src="https://img.shields.io/pepy/dt/${name}?label=downloads" alt="PePy ${name}"></a>
+      <a href="https://pypistats.org/packages/${name}" class="ml-2 text-xs text-slate-500 hover:text-indigo-300">pypistats</a>
+    </td>`;
+  tbody.appendChild(tr);
+});
+</script>
 
 <!-- LLM PROVIDERS -->
 <section class="py-16">
@@ -327,7 +389,8 @@ tailwind.config = {
         <a href="https://github.com/vaquarkhan/MCP-Bastion" class="hover:text-white transition-colors">GitHub</a>
         <a href="https://github.com/vaquarkhan/MCP-Bastion/tree/main/docs" class="hover:text-white transition-colors">Docs</a>
         <a href="assets/mcp-bastian-features-deck.pdf" class="hover:text-white transition-colors">Features deck</a>
-        <a href="https://pypi.org/project/mcp-bastion-python/2.0.2/" class="hover:text-white transition-colors">PyPI 2.0.2</a>
+        <a href="https://pypi.org/project/mcp-bastion-python/" class="hover:text-white transition-colors">PyPI</a>
+        <a href="https://github.com/sponsors/vaquarkhan" class="hover:text-white transition-colors">Sponsor</a>
         <a href="index.html" class="hover:text-white transition-colors">Home</a>
       </div>
     </div>

@@ -6,7 +6,7 @@ Status as of **main** post-3.0 governance merge (2026-07-05).
 
 **Flagship bet:** [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md)  -  own *cost-aware runtime governance for AI agents* (policy + live spend + attestation). Deep engineering milestones: [ENGINEERING_10_10.md](ENGINEERING_10_10.md). Competitive positioning: [COMPARISON.md](COMPARISON.md).
 
-**Current release:** [2.0.0](https://pypi.org/project/mcp-bastion-python/2.0.0/) · Docker `v2.0.0` · integration packages **2.0.0**
+**Current release:** [3.0.0](https://pypi.org/project/mcp-bastion-python/3.0.0/) · Docker `v3.0.0` · integration packages **3.0.0**
 
 ---
 
@@ -88,7 +88,7 @@ Highest value; closes audit gaps and matches mcp-scan / Invariant class tooling.
 | **Non-gated PromptGuard default** (ONNX / small classifier, no HF login) | M | Heuristic-only mode is bypassable; offline installs need real ML | Benchmark recall/FPR published; `doctor` reports active layer |
 | **Layered injection scoring** (heuristic + ML + attribution in audit) | M | Operators need to know *which* layer blocked a request | Audit/metrics show per-layer reason |
 | **Second-order injection scan** (tool outputs + resources, not only inbound args) | M | Exfil via tool results is a top MCP attack path | Red-team case blocked + attributed to `response_scan` |
-| **`mcp-bastion scan`** static tool-definition scanner | M | Parity with mcp-scan; rug-pull / homoglyph / embedded prompts in `tools/list` | CLI report flags poisoned description + drift |
+| **`mcp-bastion scan`** static tool-definition scanner | M | Parity with mcp-scan; rug-pull / homoglyph / embedded prompts in `tools/list` | ✅ Shipped 3.0 — CLI report flags poisoned description + drift |
 | **Live tool-definition pinning** (hash on first sight, block on drift) | M | Extends server verification from files to runtime catalog | Drift scenario blocked in integration test |
 | **Shadow / typosquat tool detection** | S | `read_file` vs `read_fi1e` across servers | Scanner flags homoglyph pair |
 | **Bundled injection benchmark corpus** | S | Honest marketing; CI regression gate | `tests/` + [BENCHMARKS.md](BENCHMARKS.md) table |

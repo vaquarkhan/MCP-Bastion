@@ -20,6 +20,9 @@ All Python files in this folder:
 | `examples/llm_mistral_example.py` | Mistral (Agents SDK) |
 | `examples/llm_grok_example.py` | Grok (xAI, HTTP only) |
 | `examples/server_with_config.py` | Policy-as-code (bastion.yaml) |
+| `examples/bastion-runtime-governance-3.0.yaml` | Sample config for 3.0 runtime governance pillars |
+| `examples/fixtures/tools-clean.json` | Clean tool catalog for `mcp-bastion scan` demos |
+| `examples/fixtures/tools-poisoned.json` | Poisoned catalog (injection, homoglyph, secrets) for scan demos |
 | `examples/ci/README.md` | CI: copy-paste workflow to validate `bastion.yaml` in your repository |
 
 ---
@@ -201,6 +204,22 @@ PYTHONPATH=src python examples/server_with_config.py           # Linux/Mac
 | Replay guard | replay_guard | Block duplicate nonces |
 | Cost tracker | cost_tracker | Per-session cost budget |
 | Semantic cache | semantic_cache | Cache similar queries |
+| Exfiltration canary (3.0) | canary_goallock | Block tool args that echo session canary token |
+| ATR rules (3.0) | atr_rules | YAML threat rules + content filter merge |
+| Secret redaction (3.0) | secrets.redact_patterns | Mask/hash/remove secrets in tool outputs |
+
+---
+
+## Runtime governance (3.0)
+
+Sample policy: `examples/bastion-runtime-governance-3.0.yaml`
+
+```bash
+mcp-bastion validate --config examples/bastion-runtime-governance-3.0.yaml
+mcp-bastion report --framework soc2 --audit .bastion/audit.jsonl
+```
+
+Docs: [docs/ENTERPRISE_RUNTIME_CONTROLS.md](../docs/ENTERPRISE_RUNTIME_CONTROLS.md)
 
 ---
 

@@ -48,6 +48,40 @@ middleware = compose_middleware(bastion)
 
 **Policy-as-code option:** Use `bastion.yaml` and `build_middleware_from_config()` so security limits and features are configurable without code changes. See [POLICY_AS_CODE.md](POLICY_AS_CODE.md).
 
+**3.0 runtime governance:** Enable opt-in pillars (`canary_goallock`, `atr_rules`, `llm_scanner`, etc.) from `bastion.yaml.example` or `examples/bastion-runtime-governance-3.0.yaml`. See [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md).
+
+---
+
+## Tutorial 1b: Enable 3.0 runtime governance (policy-as-code)
+
+**Step 1.** Copy the sample policy:
+
+```bash
+cp examples/bastion-runtime-governance-3.0.yaml bastion.yaml
+# Or merge sections into your existing bastion.yaml
+```
+
+**Step 2.** Add ATR sample rules (already in repo under `atr-rules/`).
+
+**Step 3.** Validate and run:
+
+```bash
+mcp-bastion validate --config bastion.yaml
+mcp-bastion serve --config bastion.yaml --http 8080
+```
+
+**Step 4.** Try observe mode before enforcing:
+
+```yaml
+mode: observe   # logs would_block in metadata without denying
+```
+
+**Step 5.** Export compliance evidence from audit JSONL:
+
+```bash
+mcp-bastion report --framework soc2 --audit .bastion/audit.jsonl -o report.md
+```
+
 ---
 
 ## Tutorial 2: Wrap a TypeScript MCP Server

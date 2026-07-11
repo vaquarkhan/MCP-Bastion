@@ -246,3 +246,48 @@ state_backend:
   type: memory   # memory | redis
   redis_url: redis://127.0.0.1:6379/0
   key_prefix: mcp-bastion
+
+# Runtime governance pillars (3.0+). All opt-in.
+mode: enforce   # enforce | observe (observe logs would-block without denying)
+
+canary_goallock:
+  enabled: false
+  token_prefix: BASTION-CANARY-
+  rotate_on_detection: true
+
+atr_rules:
+  enabled: false
+  rules_dir: ./atr-rules
+  min_severity: medium
+
+llm_scanner:
+  enabled: false
+  url: http://localhost:11434
+  model: llama3.2:3b
+  confidence_threshold: 0.85
+  timeout_ms: 2500
+  only_when_heuristics_uncertain: true
+
+threat_feeds:
+  enabled: false
+  feeds: []
+  # - url: https://example.com/rules.json
+  #   scanner: prompt_injection   # or content_filter
+  #   interval_minutes: 60
+
+auto_repave:
+  enabled: false
+  triggers:
+    window_minutes: 5
+    canary_detections: 3
+  actions:
+    rotate_canary: true
+    reset_session_scope: false
+    kill_sessions: false
+
+secrets:
+  redact_patterns: []
+  # - rule: "sk-[A-Za-z0-9]{20,}"
+  #   strategy: mask   # replace | hash | mask | remove
+  #   mask_prefix: 4
+  #   mask_suffix: 4
