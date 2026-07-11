@@ -24,7 +24,16 @@
 
 **Guiding rule:** Stay a **zero-infra, drop-in library**  -  the guardrail brain that composes with any gateway, not a gateway itself. Strategy: [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md).
 
-### Scan → Test → Enforce (no competitor has all three)
+<p align="center">
+  <img
+    src="images/mcp-bastion-scan-test-enforce.png"
+    alt="MCP-Bastion: SCAN → TEST → ENFORCE — No other tool has all three"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+
+### Scan → Test → Enforce (no other tool has all three)
 
 | Phase | What | Command |
 |-------|------|---------|
@@ -46,9 +55,19 @@ mcp-bastion validate --config bastion.yaml
 ```
 
 <p align="center">
+  <img
+    src="images/mcp-bastion-scan-cli.png"
+    alt="mcp-bastion scan CLI — flags injection, secrets, homoglyphs, and fingerprint drift with letter grade A–F"
+    width="920"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+<p align="center"><sub><code>mcp-bastion scan</code> — client-side static scanner; no cloud, no ML download</sub></p>
+
+<p align="center">
   <a href="https://vimeo.com/1186084574" title="Watch MCP-Bastion dashboard demo on Vimeo">
     <img
-      src="docs/images/dashboard.png"
+      src="images/mcp-bastion-dashboard.png"
       alt="MCP-Bastion dashboard — live KPIs, block rate, PII redacted, cost, forensics, and alerts"
       width="960"
       style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b; box-shadow:0 8px 32px rgba(15,23,42,0.35);"
@@ -490,7 +509,7 @@ The dashboard is **optional and local** — a polished storefront for governance
 <p align="center">
   <a href="https://vimeo.com/1186084574" title="Watch MCP-Bastion dashboard demo on Vimeo">
     <img
-      src="docs/images/dashboard.png"
+      src="images/mcp-bastion-dashboard.png"
       alt="MCP-Bastion dashboard  -  request KPIs, block rate, PII redacted, cost, top tools, and forensics"
       width="920"
       style="max-width:100%; height:auto; border-radius:12px; border:1px solid #e2e8f0;"

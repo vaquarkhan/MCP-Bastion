@@ -17,8 +17,8 @@
 <meta name="twitter:title" content="MCP-Bastion | Security Middleware for MCP Servers">
 <meta name="twitter:description" content="Block prompt injection, PII leakage, and resource exhaustion. Under 5ms. 100% local.">
 
-<meta property="og:image" content="https://vaquarkhan.github.io/MCP-Bastion/assets/mcp-bastion-runtime-governance-3.0.png">
-<meta name="twitter:image" content="https://vaquarkhan.github.io/MCP-Bastion/assets/mcp-bastion-runtime-governance-3.0.png">
+<meta property="og:image" content="https://vaquarkhan.github.io/MCP-Bastion/assets/mcp-bastion-scan-test-enforce.png">
+<meta name="twitter:image" content="https://vaquarkhan.github.io/MCP-Bastion/assets/mcp-bastion-scan-test-enforce.png">
 
 <script type="application/ld+json">
 {
@@ -161,6 +161,52 @@ tailwind.config = {
         </div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- SCAN → TEST → ENFORCE -->
+<section class="py-24 relative border-t border-white/5">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="rounded-2xl overflow-hidden border border-white/10 mb-12">
+      <img src="assets/mcp-bastion-scan-test-enforce.png" alt="SCAN → TEST → ENFORCE — No other tool has all three" class="w-full" loading="lazy">
+    </div>
+    <div class="text-center mb-10">
+      <h2 class="text-4xl md:text-5xl font-black mb-4">
+        <span class="text-sky-400">Scan</span>
+        <span class="text-slate-500 mx-2">→</span>
+        <span class="text-amber-400">Test</span>
+        <span class="text-slate-500 mx-2">→</span>
+        <span class="text-emerald-400">Enforce</span>
+      </h2>
+      <p class="text-xl text-indigo-300 font-semibold mb-2">No other tool has all three</p>
+      <p class="text-slate-400 max-w-2xl mx-auto">Privacy-first, in-process, MCP-native — plus FinOps and a CI testing companion. One permissively licensed stack.</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6 mb-12">
+      <div class="glass rounded-xl p-6 border-t-4 border-sky-400">
+        <h3 class="text-2xl font-bold text-sky-400 mb-2">Scan</h3>
+        <p class="text-sm text-slate-400 mb-3">Static tool-definition checks before deploy</p>
+        <code class="text-xs font-mono text-white bg-slate-800 px-2 py-1 rounded">mcp-bastion scan tools.json</code>
+      </div>
+      <div class="glass rounded-xl p-6 border-t-4 border-amber-400">
+        <h3 class="text-2xl font-bold text-amber-400 mb-2">Test</h3>
+        <p class="text-sm text-slate-400 mb-3">Red-team harness against your policy</p>
+        <code class="text-xs font-mono text-white bg-slate-800 px-2 py-1 rounded">mcp-bastion redteam</code>
+      </div>
+      <div class="glass rounded-xl p-6 border-t-4 border-emerald-400">
+        <h3 class="text-2xl font-bold text-emerald-400 mb-2">Enforce</h3>
+        <p class="text-sm text-slate-400 mb-3">Runtime middleware on every MCP method</p>
+        <code class="text-xs font-mono text-white bg-slate-800 px-2 py-1 rounded">bastion.yaml</code>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-8">
+      <div class="rounded-2xl overflow-hidden border border-white/10">
+        <img src="assets/mcp-bastion-scan-cli.png" alt="mcp-bastion scan CLI output with letter grade and findings" class="w-full" loading="lazy">
+      </div>
+      <div class="rounded-2xl overflow-hidden border border-white/10">
+        <img src="assets/dashboard.png" alt="MCP-Bastion live governance dashboard" class="w-full" loading="lazy">
+      </div>
+    </div>
+    <p class="text-center text-sm text-slate-500 mt-6"><code>mcp-bastion dashboard --demo</code> · optional local metrics UI</p>
   </div>
 </section>
 
