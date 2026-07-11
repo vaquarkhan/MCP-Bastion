@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -16,21 +16,22 @@ DISCLAIMER = (
     "It does not constitute certification, attestation, or legal advice."
 )
 
-# Pillar to framework control mapping (starter set)
+# Pillar names align with forensic_trace[].pillar values written by middleware.
+# Use _total_events for controls that map to overall audit coverage.
 FRAMEWORK_CONTROLS: dict[str, dict[str, list[str]]] = {
     "soc2": {
         "CC6.1": ["rbac", "agent_iam", "edge_auth", "tool_allowlist"],
-        "CC6.6": ["prompt_guard", "content_filter", "argument_guards", "pii"],
-        "CC7.2": ["audit", "audit_hash_chain", "telemetry"],
+        "CC6.6": ["prompt_guard", "content_filter", "argument_guards", "pii_redaction"],
+        "CC7.2": ["_total_events", "cost_tracker"],
     },
     "iso27001": {
         "A.9.2": ["rbac", "agent_iam"],
-        "A.12.4": ["audit", "audit_hash_chain"],
+        "A.12.4": ["_total_events"],
         "A.14.2": ["server_verification", "prompt_guard"],
     },
     "gdpr": {
-        "Art32": ["pii", "audit", "edge_auth"],
-        "Art25": ["pii", "content_filter", "output_budget"],
+        "Art32": ["pii_redaction", "_total_events", "edge_auth"],
+        "Art25": ["pii_redaction", "content_filter", "output_budget"],
     },
     "nist_ai_rmf": {
         "MAP-1": ["prompt_guard", "semantic_firewall", "sensitive_classifier"],
@@ -49,26 +50,46 @@ def _parse_jsonl_line(line: str) -> dict[str, Any] | None:
         return None
 
 
-def _in_date_range(ts: str, start: str | None, end: str | None) -> bool:
-    if not ts:
-        return True
+def _parse_utc_datetime(value: str) -> datetime | None:
+    if not value:
+        return None
     try:
-        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _in_date_range(ts: str, start: str | None, end: str | None) -> bool:
+    dt = _parse_utc_datetime(ts)
+    if dt is None:
         return True
     if start:
-        try:
-            if dt < datetime.fromisoformat(start):
-                return False
-        except ValueError:
-            pass
+        start_dt = _parse_utc_datetime(start)
+        if start_dt is not None and dt < start_dt:
+            return False
     if end:
-        try:
-            if dt > datetime.fromisoformat(end):
-                return False
-        except ValueError:
-            pass
+        end_dt = _parse_utc_datetime(end)
+        if end_dt is not None and dt > end_dt:
+            return False
     return True
+
+
+def _pillars_from_entry(entry: dict[str, Any]) -> list[str]:
+    names: list[str] = []
+    trace = entry.get("forensic_trace")
+    if isinstance(trace, list):
+        for item in trace:
+            if isinstance(item, dict) and item.get("pillar"):
+                names.append(str(item["pillar"]))
+    if names:
+        return names
+    legacy = entry.get("pillar")
+    if legacy:
+        return [str(legacy)]
+    return [str(entry.get("kind", entry.get("reason", "other")))]
 
 
 def summarize_audit_log(
@@ -96,14 +117,20 @@ def summarize_audit_log(
                 blocked += 1
             kind = str(entry.get("kind", entry.get("reason", "other")))
             kinds[kind] += 1
-            pillar = str(entry.get("pillar", kind))
-            pillars[pillar] += 1
+            for pname in _pillars_from_entry(entry):
+                pillars[pname] += 1
     return {
         "total_events": total,
         "blocked_events": blocked,
         "kinds": dict(kinds),
         "pillars": dict(pillars),
     }
+
+
+def _pillar_event_count(summary: dict[str, Any], pillar_name: str) -> int:
+    if pillar_name == "_total_events":
+        return int(summary["total_events"])
+    return int(summary["pillars"].get(pillar_name, 0))
 
 
 def generate_report_markdown(
@@ -118,7 +145,7 @@ def generate_report_markdown(
     controls = FRAMEWORK_CONTROLS.get(fw, {})
     summary = summarize_audit_log(audit_path, date_from=date_from, date_to=date_to)
     lines = [
-        f"# MCP-Bastion Compliance Evidence Report",
+        "# MCP-Bastion Compliance Evidence Report",
         "",
         f"**Framework:** {framework.upper()}",
         f"**Package version:** {version}",
@@ -140,7 +167,8 @@ def generate_report_markdown(
     for control_id, pillar_names in controls.items():
         lines.append(f"### {control_id}")
         for pname in pillar_names:
-            count = summary["pillars"].get(pname, 0)
-            lines.append(f"- **{pname}**: {count} related audit events")
+            count = _pillar_event_count(summary, pname)
+            label = "all audit events" if pname == "_total_events" else pname
+            lines.append(f"- **{label}**: {count} related audit events")
         lines.append("")
     return "\n".join(lines)

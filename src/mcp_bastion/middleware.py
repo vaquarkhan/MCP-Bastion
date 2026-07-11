@@ -368,6 +368,54 @@ def _set_content_in_result(result: Any, content: list[dict[str, Any]]) -> None:
             payload["content"] = content
 
 
+def _inject_canary_snippet_into_result(result: Any, snippet: str) -> Any:
+    """Append canary snippet to the first text block in an MCP surface response."""
+    payload = result
+    wrapper: dict[str, Any] | None = None
+    if isinstance(result, dict) and "result" in result:
+        wrapper = result
+        payload = result["result"]
+
+    if isinstance(payload, dict) and isinstance(payload.get("messages"), list):
+        messages = [dict(m) if isinstance(m, dict) else {"role": "user", "content": str(m)} for m in payload["messages"]]
+        injected = False
+        for msg in messages:
+            content = msg.get("content")
+            if isinstance(content, str):
+                msg["content"] = f"{content}\n\n{snippet}"
+                injected = True
+                break
+        if not injected:
+            messages.append({"role": "user", "content": snippet})
+        updated = {**payload, "messages": messages}
+        if wrapper is not None:
+            return {**wrapper, "result": updated}
+        payload.update(updated)
+        return result
+
+    content = _get_content_from_result(result)
+    if content is None:
+        content = []
+    injected = False
+    new_content: list[dict[str, Any]] = []
+    for item in content:
+        if (
+            not injected
+            and isinstance(item, dict)
+            and item.get("type") == "text"
+            and "text" in item
+        ):
+            text = str(item["text"])
+            new_content.append({**item, "text": f"{text}\n\n{snippet}"})
+            injected = True
+        else:
+            new_content.append(item)
+    if not injected:
+        new_content.append({"type": "text", "text": snippet})
+    _set_content_in_result(result, new_content)
+    return result
+
+
 def _safe_forensic_value(value: Any, *, depth: int = 0) -> Any:
     """Best-effort JSON-safe value with bounded depth for forensic snapshots."""
     if depth > 4:
@@ -941,6 +989,18 @@ class MCPBastionMiddleware(Middleware[Any]):
         context.metadata["_agent_policy"] = agent_policy
         _trace_append(trace, pillar="agent_iam", status="allowed", started=started)
 
+    def _record_prompt_guard_scan(self, context: MiddlewareContext[Any], text: str) -> tuple[bool, bool]:
+        """Run PromptGuard once and cache heuristic/ML results for LLM scanner reuse."""
+        heuristic_hit = bool(self.prompt_guard.heuristic_match(text))
+        malicious = False
+        if text.strip():
+            malicious = self.prompt_guard.is_malicious(text)
+        context.metadata["bastion_prompt_guard_scan"] = {
+            "heuristic_hit": heuristic_hit,
+            "malicious": malicious,
+        }
+        return heuristic_hit, malicious
+
     def _apply_inbound_text_guards(
         self,
         *,
@@ -961,7 +1021,7 @@ class MCPBastionMiddleware(Middleware[Any]):
         if self.enable_prompt_guard and text.strip():
             started = time.perf_counter()
             try:
-                malicious = self.prompt_guard.is_malicious(text)
+                _heuristic_hit, malicious = self._record_prompt_guard_scan(context, text)
             except PromptGuardUnavailableError as e:
                 self._handle_violation(
                     context=context, trace=trace, pillar="prompt_guard", started=started, error=e
@@ -1025,6 +1085,16 @@ class MCPBastionMiddleware(Middleware[Any]):
                 self._handle_violation(
                     context=context, trace=trace, pillar="response_scan", started=started, error=e
                 )
+        if (
+            self.enable_canary_goallock
+            and self.canary_goallock is not None
+            and method in ("prompts/get", "resources/read")
+        ):
+            snippet = self.canary_goallock.context_snippet()
+            context.metadata["bastion_canary_snippet"] = snippet
+            started = time.perf_counter()
+            result = _inject_canary_snippet_into_result(result, snippet)
+            _trace_append(trace, pillar="canary_goallock", status="injected", started=started)
         return result
 
     async def _handle_guarded_surface(
@@ -1559,9 +1629,10 @@ class MCPBastionMiddleware(Middleware[Any]):
                 except json.JSONDecodeError:
                     arguments = {"raw": arguments}
             text = _extract_text_from_value(arguments)
+            malicious = False
             if text:
                 try:
-                    malicious = self.prompt_guard.is_malicious(text)
+                    _heuristic_hit, malicious = self._record_prompt_guard_scan(context, text)
                 except PromptGuardUnavailableError as e:
                     self._handle_violation(
                         context=context, trace=trace, pillar="prompt_guard", started=started, error=e
@@ -1588,7 +1659,7 @@ class MCPBastionMiddleware(Middleware[Any]):
             try:
                 self.canary_goallock.check_outbound_arguments(arguments)
                 _trace_append(trace, pillar="canary_goallock", status="allowed", started=started)
-            except Exception as e:
+            except CanaryExfiltrationError as e:
                 self._handle_violation(
                     context=context, trace=trace, pillar="canary_goallock", started=started, error=e
                 )
@@ -1626,18 +1697,14 @@ class MCPBastionMiddleware(Middleware[Any]):
                     arguments = {"raw": arguments}
             text = _extract_text_from_value(arguments)
             if text:
-                heuristic_hit = bool(self.prompt_guard.heuristic_match(text)) if self.enable_prompt_guard else False
-                malicious_pg = False
-                if self.enable_prompt_guard:
-                    try:
-                        malicious_pg = self.prompt_guard.is_malicious(text)
-                    except PromptGuardUnavailableError:
-                        malicious_pg = False
+                scan = context.metadata.get("bastion_prompt_guard_scan") or {}
+                heuristic_hit = bool(scan.get("heuristic_hit")) if self.enable_prompt_guard else False
+                malicious_pg = bool(scan.get("malicious")) if self.enable_prompt_guard else False
                 heuristics_uncertain = not heuristic_hit and not malicious_pg
                 try:
                     self.llm_scanner.scan(text, heuristics_uncertain=heuristics_uncertain)
                     _trace_append(trace, pillar="llm_scanner", status="allowed", started=started)
-                except Exception as e:
+                except LLMScannerBlockedError as e:
                     self._handle_violation(
                         context=context, trace=trace, pillar="llm_scanner", started=started, error=e
                     )

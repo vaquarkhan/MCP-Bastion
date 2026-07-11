@@ -17,13 +17,14 @@ logger = logging.getLogger(__name__)
 
 
 class ThreatFeed:
-    __slots__ = ("url", "scanner", "interval_minutes", "patterns")
+    __slots__ = ("url", "scanner", "interval_minutes", "patterns", "_last_key")
 
     def __init__(self, url: str, scanner: str, interval_minutes: int = 60) -> None:
         self.url = url
         self.scanner = scanner
         self.interval_minutes = max(1, interval_minutes)
         self.patterns: list[str] = []
+        self._last_key = ""
 
 
 class ThreatFeedManager:
@@ -94,10 +95,8 @@ class ThreatFeedManager:
                 for feed in self._feeds:
                     # simple stagger: refresh each feed on its interval
                     key = f"{feed.url}:{int(now // (feed.interval_minutes * 60))}"
-                    if not hasattr(feed, "_last_key"):
-                        feed._last_key = ""  # type: ignore[attr-defined]
-                    if feed._last_key != key:  # type: ignore[attr-defined]
-                        feed._last_key = key  # type: ignore[attr-defined]
+                    if feed._last_key != key:
+                        feed._last_key = key
                         self.refresh_feed(feed)
 
         self._thread = threading.Thread(target=_loop, name="bastion-threat-feeds", daemon=True)

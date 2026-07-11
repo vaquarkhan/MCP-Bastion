@@ -177,7 +177,7 @@ tailwind.config = {
       </div>
       <pre class="p-6 text-sm font-mono leading-relaxed overflow-x-auto"><code><span class="text-purple-400">from</span> <span class="text-blue-300">mcp_bastion</span> <span class="text-purple-400">import</span> MCPBastionMiddleware, compose_middleware
 
-<span class="text-slate-500"># One object. All 14 security pillars.</span>
+<span class="text-slate-500"># One object. All 18 security pillars.</span>
 bastion = <span class="text-yellow-300">MCPBastionMiddleware</span>(
     enable_prompt_guard=<span class="text-emerald-400">True</span>,    <span class="text-slate-500"># Block jailbreaks</span>
     enable_pii_redaction=<span class="text-emerald-400">True</span>,   <span class="text-slate-500"># Mask SSN, email, phone</span>
@@ -319,6 +319,14 @@ middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</c
         <img src="assets/mcp-bastion-enterprise-controls.png" alt="ATR rules, threat feeds, and compliance reports" class="w-full" loading="lazy">
       </div>
     </div>
+    <div class="rounded-2xl overflow-hidden border border-white/10 mb-10 max-w-3xl mx-auto">
+      <img src="assets/mcp-bastion-secret-redaction.png" alt="Secret pattern redaction on outbound tool results" class="w-full" loading="lazy">
+    </div>
+    <p class="text-sm text-slate-400 max-w-3xl mx-auto text-center mb-8">
+      The exfiltration canary injects a session token into <code class="text-indigo-300">prompts/get</code> and <code class="text-indigo-300">resources/read</code> responses, then blocks tool arguments that echo it back.
+      Host orchestrators can also read <code class="text-indigo-300">bastion_canary_snippet</code> from request metadata for custom system prompts.
+      LLM scanner and ATR rules are opt-in; expect up to ~2.5s latency (scanner) or per-rule regex cost when enabled.
+    </p>
     <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
       <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">Exfiltration Canary</h3><p class="text-sm text-slate-400">Session token echo detection in tool args</p></div>
       <div class="glass rounded-xl p-5 card-hover"><h3 class="font-semibold mb-1 text-indigo-300">ATR YAML Rules</h3><p class="text-sm text-slate-400">Community threat rules merged into scanners</p></div>

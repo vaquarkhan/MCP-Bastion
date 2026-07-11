@@ -16,7 +16,7 @@ from mcp_bastion.errors import (
     CanaryExfiltrationError,
     LLMScannerBlockedError,
 )
-from mcp_bastion.middleware import MCPBastionMiddleware
+from mcp_bastion.middleware import MCPBastionMiddleware, _get_content_from_result
 from mcp_bastion.pillars.atr_rules import ATRRuleLoader
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
 from mcp_bastion.pillars.canary_goallock import CanaryGoalLock, generate_canary
@@ -91,6 +91,23 @@ def test_threat_feeds_refresh_and_patterns():
     assert manager.patterns_for("content_filter") == [r"(?i)feed_pattern_xyz"]
 
 
+def test_threat_feed_background_loop_sets_last_key():
+    feed_data = json.dumps({"patterns": [r"(?i)bg_pattern"]}).encode()
+    manager = ThreatFeedManager(
+        [{"url": "http://example.test/bg.json", "scanner": "prompt_guard", "interval_minutes": 1}]
+    )
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        urlopen.return_value.__enter__.return_value.read.return_value = feed_data
+        with mock.patch.object(manager._stop, "wait", side_effect=[False, True]):
+            with mock.patch("time.time", return_value=1_700_000_000.0):
+                manager.start_background()
+                manager._thread.join(timeout=2)
+    feed = manager._feeds[0]
+    assert feed._last_key
+    assert manager.patterns_for("prompt_guard") == [r"(?i)bg_pattern"]
+    manager.stop()
+
+
 def test_auto_repave_fires_at_threshold():
     fired: list[str] = []
 
@@ -127,15 +144,35 @@ def test_secret_redactor_on_text():
 def test_compliance_report_markdown(tmp_path):
     audit = tmp_path / "audit.jsonl"
     audit.write_text(
-        json.dumps({"timestamp": "2026-01-01T00:00:00", "action": "BLOCKED", "pillar": "rbac"}) + "\n",
+        json.dumps(
+            {
+                "timestamp": "2026-01-01T00:00:00",
+                "action": "BLOCKED",
+                "forensic_trace": [{"pillar": "rbac", "status": "blocked"}],
+            }
+        )
+        + "\n",
         encoding="utf-8",
     )
     summary = summarize_audit_log(audit)
     assert summary["total_events"] == 1
     assert summary["blocked_events"] == 1
+    assert summary["pillars"]["rbac"] == 1
     md = generate_report_markdown(framework="soc2", audit_path=audit, version="3.0.0")
     assert "CC6.1" in md
+    assert "**rbac**: 1 related audit events" in md
     assert "does not constitute certification" in md
+
+
+def test_compliance_date_filter_handles_z_timestamps(tmp_path):
+    audit = tmp_path / "audit.jsonl"
+    audit.write_text(
+        json.dumps({"timestamp": "2026-06-15T12:00:00Z", "action": "ALLOW"}) + "\n"
+        + json.dumps({"timestamp": "2026-07-01T00:00:00Z", "action": "ALLOW"}) + "\n",
+        encoding="utf-8",
+    )
+    summary = summarize_audit_log(audit, date_from="2026-06-01", date_to="2026-06-30")
+    assert summary["total_events"] == 1
 
 
 def test_cmd_report_writes_file(tmp_path, capsys):
@@ -194,6 +231,47 @@ secrets:
     assert len(cfg.threat_feeds) == 1
     assert cfg.auto_repave_enabled is True
     assert len(cfg.secrets_redact_patterns) == 1
+
+
+@pytest.mark.asyncio
+async def test_middleware_injects_canary_into_prompts_get_and_blocks_echo():
+    canary = CanaryGoalLock(rotate_on_detection=False)
+    token = canary.active_token()
+    mw = MCPBastionMiddleware(
+        prompt_guard=PromptGuardEngine(fail_open=True),
+        canary_goallock=canary,
+        enable_canary_goallock=True,
+        enable_prompt_guard=False,
+        enable_pii_redaction=False,
+        enable_rate_limit=False,
+    )
+    prompt_ctx = MiddlewareContext(
+        message={"method": "prompts/get", "params": {"name": "demo"}},
+        request_id="r-prompt",
+        session_id="s1",
+        metadata={},
+    )
+
+    async def prompt_handler(c):
+        return {"result": {"messages": [{"role": "user", "content": "system context"}]}}
+
+    prompt_result = await mw(prompt_ctx, prompt_handler)
+    injected = json.dumps(prompt_result)
+    assert token in injected
+    assert token in str(prompt_ctx.metadata.get("bastion_canary_snippet", ""))
+
+    tool_ctx = MiddlewareContext(
+        message={"method": "tools/call", "params": {"name": "t", "arguments": {"q": token}}},
+        request_id="r-tool",
+        session_id="s1",
+        metadata={},
+    )
+
+    async def tool_handler(c):
+        return {"ok": True}
+
+    with pytest.raises(CanaryExfiltrationError):
+        await mw(tool_ctx, tool_handler)
 
 
 @pytest.mark.asyncio

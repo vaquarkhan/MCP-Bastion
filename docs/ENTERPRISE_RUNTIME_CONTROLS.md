@@ -35,7 +35,9 @@ All features are **opt-in** via `bastion.yaml`; defaults preserve existing 2.x b
   />
 </p>
 
-A per-session token is embedded in request metadata. If tool-call arguments contain that token, Bastion treats it as likely context exfiltration and raises **-32025**.
+A per-session token is planted into **MCP surface responses** (`prompts/get`, `resources/read`) so models that read those surfaces may carry it forward. The same snippet is exposed on `tools/call` as `context.metadata["bastion_canary_snippet"]` for host integrations that assemble system prompts outside MCP. If tool-call arguments contain the active token, Bastion treats it as likely context exfiltration and raises **-32025**.
+
+> **Host integrations:** Bastion sits at the MCP tool boundary, not inside the LLM prompt. For custom orchestrators, copy `bastion_canary_snippet` from request metadata into your system prompt if the model never calls `prompts/get` or `resources/read`.
 
 ```yaml
 canary_goallock:
@@ -115,6 +117,12 @@ Set `mode: observe` to evaluate all pillars without denying requests. Block even
 
 Place YAML rules under `atr-rules/` (see `atr-rules/sample-exfiltration.yaml`).
 When vendoring third-party rule packs, keep upstream `LICENSE` files in that directory.
+
+## Performance notes (opt-in pillars)
+
+- **LLM scanner:** When enabled and heuristics are uncertain, adds up to **2.5s** synchronous network latency per `tools/call` (fail-open on timeout).
+- **ATR rules:** Each enabled rule runs a regex scan on inbound tool text — consider consolidating rules or lowering rule count on hot paths.
+- **PromptGuard + LLM scanner:** When both are enabled, Bastion reuses the PromptGuard scan result for the LLM tier (no duplicate ML inference).
 
 ## Error codes
 
