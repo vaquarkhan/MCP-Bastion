@@ -18,13 +18,18 @@ from mcp_bastion.errors import (
     LLMScannerBlockedError,
 )
 from mcp_bastion.middleware import MCPBastionMiddleware, _inject_canary_snippet_into_result
-from mcp_bastion.pillars.atr_rules import ATRRuleLoader
+from mcp_bastion.pillars.atr_rules import ATRRuleLoader, _severity_rank
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
 from mcp_bastion.pillars.canary_goallock import CanaryGoalLock, generate_canary
-from mcp_bastion.pillars.compliance_report import generate_report_markdown, summarize_audit_log
+from mcp_bastion.pillars.compliance_report import (
+    FRAMEWORK_CONTROLS,
+    generate_report_markdown,
+    summarize_audit_log,
+)
 from mcp_bastion.pillars.llm_scanner import LLMScanner
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
 from mcp_bastion.pillars.secret_redaction import SecretPatternRedactor, apply_redaction_strategy
+from mcp_bastion.pillars.state_backend import MemoryStateBackend
 from mcp_bastion.pillars.threat_feeds import ThreatFeedManager
 
 
@@ -48,6 +53,38 @@ def test_canary_rotates_on_detection():
     assert canary.active_token() != old
 
 
+def test_canary_backend_token_and_on_detection_event():
+    backend = MemoryStateBackend()
+    canary = CanaryGoalLock(token_prefix="CANARY-", backend=backend, rotate_on_detection=False)
+    canary.set_active_token("CANARY-fixed-token")
+    assert "CANARY-fixed-token" in canary.context_snippet()
+    canary.check_outbound_arguments({"safe": "payload"})
+    new_token = canary.on_detection_event()
+    assert new_token.startswith("CANARY-")
+    assert canary.active_token() == new_token
+
+
+def test_canary_check_accepts_string_and_non_json_args():
+    canary = CanaryGoalLock(rotate_on_detection=False)
+    token = canary.active_token()
+    canary.check_outbound_arguments("plain string without token")
+    with pytest.raises(CanaryExfiltrationError):
+        canary.check_outbound_arguments(f"leak {token}")
+
+    class _Bad:
+        def __str__(self) -> str:
+            return token
+
+    with pytest.raises(CanaryExfiltrationError):
+        canary.check_outbound_arguments(_Bad())
+
+
+def test_canary_empty_token_short_circuits(monkeypatch):
+    canary = CanaryGoalLock(rotate_on_detection=False)
+    monkeypatch.setattr(canary, "active_token", lambda: "")
+    canary.check_outbound_arguments("anything")
+
+
 def test_atr_rules_load_and_match(tmp_path):
     rules_dir = tmp_path / "rules"
     rules_dir.mkdir()
@@ -67,6 +104,86 @@ def test_atr_rules_load_and_match(tmp_path):
     assert "evil_phrase_here" in loader.denylist_patterns()[0]
 
 
+def test_atr_severity_rank_unknown_defaults_medium():
+    assert _severity_rank("not-a-real-level") == 2
+
+
+def test_atr_rules_skips_low_severity_and_bad_patterns(tmp_path):
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "mixed.yaml").write_text(
+        """
+- id: LOW
+  severity: informational
+  pattern: "low_only"
+- id: OK
+  severity: high
+  detection:
+    pattern: "(?i)detection_hit"
+- id: NODET
+  severity: high
+  title: no pattern field
+- just-a-string
+""",
+        encoding="utf-8",
+    )
+    (rules_dir / "bad.yaml").write_text(
+        """
+- id: BAD
+  severity: high
+  pattern: "[unclosed"
+""",
+        encoding="utf-8",
+    )
+    (rules_dir / "single.yml").write_text(
+        """
+id: SINGLE
+severity: critical
+pattern: "(?i)single_rule"
+category: test
+""",
+        encoding="utf-8",
+    )
+    loader = ATRRuleLoader(rules_dir, min_severity="high")
+    rules = loader.load()
+    assert len(rules) == 2
+    assert loader.match("") is None
+    assert loader.match("detection_hit") is not None
+    assert loader.match("single_rule") is not None
+    assert loader.match("no_match_here") is None
+    # cached load path
+    assert loader.load() is rules
+
+
+def test_atr_rules_missing_dir_and_corrupt_file(tmp_path):
+    missing = ATRRuleLoader(tmp_path / "nope")
+    assert missing.load() == []
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "broken.yaml").write_text("::: not yaml", encoding="utf-8")
+    loader = ATRRuleLoader(rules_dir)
+    assert loader.load() == []
+
+
+def test_atr_rules_without_pyyaml_returns_empty(tmp_path, monkeypatch):
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "r.yaml").write_text('- id: X\n  pattern: "a"\n', encoding="utf-8")
+
+    import builtins
+
+    real_import = builtins.__import__
+
+    def _import(name, *args, **kwargs):
+        if name == "yaml":
+            raise ImportError("no yaml")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", _import)
+    loader = ATRRuleLoader(rules_dir)
+    assert loader.load() == []
+
+
 def test_llm_scanner_fail_open_on_network_error():
     scanner = LLMScanner(url="http://127.0.0.1:1", timeout_ms=100, only_when_heuristics_uncertain=False)
     scanner.scan("some benign text", heuristics_uncertain=True)
@@ -79,6 +196,28 @@ def test_llm_scanner_blocks_high_confidence():
         urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(payload).encode()
         with pytest.raises(LLMScannerBlockedError):
             scanner.scan("sneaky payload", heuristics_uncertain=True)
+
+
+def test_llm_scanner_skips_when_heuristics_certain():
+    scanner = LLMScanner(only_when_heuristics_uncertain=True)
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        scanner.scan("text", heuristics_uncertain=False)
+        urlopen.assert_not_called()
+
+
+def test_llm_scanner_ignores_empty_and_low_confidence():
+    scanner = LLMScanner(confidence_threshold=0.99, only_when_heuristics_uncertain=False)
+    scanner.scan("", heuristics_uncertain=True)
+    scanner.scan(None, heuristics_uncertain=True)  # type: ignore[arg-type]
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(
+            {"response": '{"injection": true, "confidence": 0.1}'}
+        ).encode()
+        scanner.scan("maybe", heuristics_uncertain=True)
+        urlopen.return_value.__enter__.return_value.read.return_value = b'{"response": "not json"}'
+        scanner.scan("maybe", heuristics_uncertain=True)
+        urlopen.return_value.__enter__.return_value.read.return_value = b'{"response": "{broken"}'
+        scanner.scan("maybe", heuristics_uncertain=True)
 
 
 def test_threat_feeds_refresh_and_patterns():
@@ -166,12 +305,52 @@ def test_auto_repave_fires_at_threshold():
     assert "rotated" in fired
 
 
+def test_auto_repave_zero_threshold_is_noop():
+    engine = AutoRepaveEngine(triggers={"canary_detections": 0}, actions={"rotate_canary": True})
+    assert engine.record_detection() == []
+
+
+def test_auto_repave_backend_fires_all_actions():
+    backend = MemoryStateBackend()
+    fired: list[str] = []
+
+    engine = AutoRepaveEngine(
+        triggers={"window_minutes": 10, "canary_detections": 1},
+        actions={
+            "rotate_canary": True,
+            "reset_session_scope": True,
+            "kill_sessions": True,
+        },
+        backend=backend,
+        on_rotate_canary=lambda: fired.append("rotate"),
+        on_reset_session_scope=lambda: fired.append("scope"),
+        on_kill_sessions=lambda: fired.append("kill"),
+    )
+    actions = engine.record_detection("canary_detections")
+    assert actions == ["rotate_canary", "reset_session_scope", "kill_sessions"]
+    assert fired == ["rotate", "scope", "kill"]
+
+
 def test_secret_redaction_strategies():
     assert apply_redaction_strategy("secret", strategy="remove") == ""
     assert apply_redaction_strategy("secret", strategy="replace") == "<REDACTED>"
     assert apply_redaction_strategy("abcdefghij", strategy="mask", mask_prefix=2, mask_suffix=2) == "ab******ij"
+    assert apply_redaction_strategy("abc", strategy="mask", mask_prefix=2, mask_suffix=2) == "***"
     hashed = apply_redaction_strategy("secret", strategy="hash")
     assert hashed.startswith("<HASH:")
+
+
+def test_secret_redactor_skips_bad_rules_and_custom_placeholder():
+    redactor = SecretPatternRedactor(
+        [
+            {"pattern": "[bad"},
+            {"rule": ""},
+            {"rule": r"TOKEN-\w+", "strategy": "replace", "placeholder": "<SECRET>"},
+        ]
+    )
+    assert redactor.redact_text("") == ""
+    assert redactor.redact_text("no secrets") == "no secrets"
+    assert redactor.redact_text("TOKEN-ABCDEF") == "<SECRET>"
 
 
 def test_secret_redactor_on_text():
@@ -221,6 +400,46 @@ def test_compliance_report_counts_total_events_control(tmp_path):
     audit.write_text(json.dumps({"timestamp": "2026-01-01", "action": "ALLOW"}) + "\n", encoding="utf-8")
     md = generate_report_markdown(framework="soc2", audit_path=audit, version="3.0.0")
     assert "**all audit events**: 1 related audit events" in md
+
+
+def test_compliance_summarize_skips_blank_and_invalid_lines(tmp_path):
+    audit = tmp_path / "audit.jsonl"
+    audit.write_text(
+        "\n"
+        + "not-json\n"
+        + json.dumps({"timestamp": "2026-01-15T00:00:00Z", "action": "ALLOW", "reason": "ok"}) + "\n"
+        + json.dumps({"timestamp": "2026-01-02", "action": "BLOCKED", "pillar": "legacy_pillar"}) + "\n"
+        + json.dumps(
+            {
+                "timestamp": "2026-12-31T00:00:00Z",
+                "action": "ALLOW",
+                "forensic_trace": [{"pillar": "edge_auth"}],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    summary = summarize_audit_log(audit, date_from="not-a-date", date_to="also-bad")
+    assert summary["total_events"] == 3
+    assert summary["blocked_events"] == 1
+    assert summary["pillars"]["legacy_pillar"] == 1
+    assert summary["kinds"]["ok"] == 1
+    filtered = summarize_audit_log(audit, date_from="2026-03-01", date_to="2026-03-31")
+    assert filtered["total_events"] == 0
+
+
+def test_compliance_unknown_framework_has_empty_controls(tmp_path):
+    audit = tmp_path / "audit.jsonl"
+    audit.write_text(json.dumps({"timestamp": "2026-01-01", "action": "ALLOW"}) + "\n", encoding="utf-8")
+    md = generate_report_markdown(framework="custom-framework", audit_path=audit)
+    assert "CUSTOM-FRAMEWORK" in md
+    assert "Control mapping" in md
+    assert FRAMEWORK_CONTROLS.get("custom_framework") is None
+
+
+def test_compliance_missing_audit_file_returns_zeros(tmp_path):
+    summary = summarize_audit_log(tmp_path / "missing.jsonl")
+    assert summary["total_events"] == 0
 
 
 def test_cmd_report_writes_file(tmp_path, capsys):
@@ -330,6 +549,45 @@ async def test_middleware_injects_canary_into_prompts_get_and_blocks_echo():
 
 
 @pytest.mark.asyncio
+async def test_middleware_llm_scanner_reuses_prompt_guard_scan():
+    scanner = LLMScanner(url="http://127.0.0.1:9", timeout_ms=50, only_when_heuristics_uncertain=True)
+    mw = MCPBastionMiddleware(
+        prompt_guard=PromptGuardEngine(fail_open=True),
+        llm_scanner=scanner,
+        enable_prompt_guard=True,
+        enable_llm_scanner=True,
+        enable_pii_redaction=False,
+        enable_rate_limit=False,
+        enable_content_filter=False,
+    )
+    ctx = MiddlewareContext(
+        message={
+            "method": "tools/call",
+            "params": {"name": "t", "arguments": {"q": "totally benign request text"}},
+        },
+        request_id="r1",
+        session_id="s1",
+        metadata={},
+    )
+
+    async def handler(c):
+        return {"ok": True}
+
+    with (
+        mock.patch.object(mw.prompt_guard, "heuristic_match", return_value=False),
+        mock.patch.object(mw.prompt_guard, "is_malicious", return_value=False),
+        mock.patch.object(scanner, "scan") as scan,
+    ):
+        await mw(ctx, handler)
+        scan.assert_called_once()
+        assert scan.call_args.kwargs.get("heuristics_uncertain") is True
+        assert ctx.metadata.get("bastion_prompt_guard_scan") == {
+            "heuristic_hit": False,
+            "malicious": False,
+        }
+
+
+@pytest.mark.asyncio
 async def test_middleware_canary_blocks_tool_call():
     canary = CanaryGoalLock(rotate_on_detection=False)
     token = canary.active_token()
@@ -427,8 +685,20 @@ def test_build_middleware_wires_30_pillars(tmp_path):
         canary_goallock_enabled=True,
         atr_rules_enabled=True,
         atr_rules_dir=str(rules_dir),
+        llm_scanner_enabled=True,
+        threat_feeds_enabled=True,
+        threat_feeds=[{"url": "http://127.0.0.1:9/feed.json", "scanner": "content_filter"}],
+        auto_repave_enabled=True,
+        auto_repave_triggers={"canary_detections": 3},
+        auto_repave_actions={"rotate_canary": True},
         secrets_redact_patterns=[{"rule": r"SECRET-\d+", "strategy": "remove"}],
         bastion_mode="observe",
     )
     mw = build_middleware_from_config(cfg)
     assert mw is not None
+    assert mw.enable_canary_goallock
+    assert mw.enable_atr_rules
+    assert mw.enable_llm_scanner
+    assert mw.enable_auto_repave
+    assert mw.enable_secret_redaction
+    assert mw.shadow_mode
