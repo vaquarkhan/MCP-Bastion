@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from unittest import mock
+import urllib.error
 
 import pytest
 
@@ -16,7 +17,7 @@ from mcp_bastion.errors import (
     CanaryExfiltrationError,
     LLMScannerBlockedError,
 )
-from mcp_bastion.middleware import MCPBastionMiddleware
+from mcp_bastion.middleware import MCPBastionMiddleware, _inject_canary_snippet_into_result
 from mcp_bastion.pillars.atr_rules import ATRRuleLoader
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
 from mcp_bastion.pillars.canary_goallock import CanaryGoalLock, generate_canary
@@ -108,6 +109,46 @@ def test_threat_feed_background_loop_sets_last_key():
     manager.stop()
 
 
+def test_threat_feeds_parses_list_and_skips_invalid_patterns():
+    feed_data = json.dumps(
+        [
+            r"(?i)ok_pattern",
+            {"pattern": "(?i)dict_pattern"},
+            {"pattern": "[unclosed"},
+            "also_ok",
+        ]
+    ).encode()
+    manager = ThreatFeedManager([{"url": "http://example.test/list.json", "scanner": "x"}])
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        urlopen.return_value.__enter__.return_value.read.return_value = feed_data
+        manager.refresh_all()
+    patterns = manager.patterns_for("x")
+    assert r"(?i)ok_pattern" in patterns
+    assert "(?i)dict_pattern" in patterns
+    assert len(patterns) == 3
+
+
+def test_threat_feeds_refresh_failure_keeps_last_good():
+    manager = ThreatFeedManager([{"url": "http://example.test/fail.json", "scanner": "x"}])
+    good = json.dumps({"patterns": [r"(?i)cached"]}).encode()
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        urlopen.return_value.__enter__.return_value.read.return_value = good
+        manager.refresh_all()
+        urlopen.side_effect = urllib.error.URLError("down")
+        manager.refresh_feed(manager._feeds[0])
+    assert manager.patterns_for("x") == [r"(?i)cached"]
+
+
+def test_threat_feeds_start_background_is_idempotent():
+    manager = ThreatFeedManager([{"url": "http://example.test/idempotent.json", "scanner": "x"}])
+    with mock.patch.object(manager, "refresh_all") as refresh_all:
+        manager.start_background()
+        first = manager._thread
+        manager.start_background()
+        refresh_all.assert_called_once()
+        assert manager._thread is first
+
+
 def test_auto_repave_fires_at_threshold():
     fired: list[str] = []
 
@@ -175,6 +216,13 @@ def test_compliance_date_filter_handles_z_timestamps(tmp_path):
     assert summary["total_events"] == 1
 
 
+def test_compliance_report_counts_total_events_control(tmp_path):
+    audit = tmp_path / "audit.jsonl"
+    audit.write_text(json.dumps({"timestamp": "2026-01-01", "action": "ALLOW"}) + "\n", encoding="utf-8")
+    md = generate_report_markdown(framework="soc2", audit_path=audit, version="3.0.0")
+    assert "**all audit events**: 1 related audit events" in md
+
+
 def test_cmd_report_writes_file(tmp_path, capsys):
     audit = tmp_path / "audit.jsonl"
     audit.write_text(
@@ -231,6 +279,13 @@ secrets:
     assert len(cfg.threat_feeds) == 1
     assert cfg.auto_repave_enabled is True
     assert len(cfg.secrets_redact_patterns) == 1
+
+
+def test_inject_canary_snippet_into_resource_contents():
+    result = {"result": {"contents": [{"type": "text", "text": "resource body"}]}}
+    out = _inject_canary_snippet_into_result(result, "[canary: TOKEN]")
+    assert "TOKEN" in json.dumps(out)
+    assert "resource body" in json.dumps(out)
 
 
 @pytest.mark.asyncio
