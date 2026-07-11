@@ -817,3 +817,146 @@ def test_build_middleware_wires_30_pillars(tmp_path):
     assert mw.enable_auto_repave
     assert mw.enable_secret_redaction
     assert mw.shadow_mode
+
+
+def test_atr_rules_skips_license_and_rejects_oversized_text(tmp_path):
+    from mcp_bastion.pillars.atr_rules import MAX_ATR_TEXT_LEN
+
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "LICENSE").write_text(
+        '- id: LIC\n  severity: high\n  pattern: "license_only"\n',
+        encoding="utf-8",
+    )
+    (rules_dir / "ok.yaml").write_text(
+        '- id: OK\n  severity: high\n  pattern: "(?i)ok_hit"\n',
+        encoding="utf-8",
+    )
+    loader = ATRRuleLoader(rules_dir)
+    assert len(loader.load()) == 1
+    assert loader.match("x" * (MAX_ATR_TEXT_LEN + 1)) is None
+
+
+def test_auto_repave_backend_corrupt_json_and_subthreshold_persist(tmp_path):
+    backend = MemoryStateBackend()
+    backend.set("auto_repave:count:canary_detections", "not-json")
+    engine = AutoRepaveEngine(
+        triggers={"window_minutes": 5, "canary_detections": 3},
+        actions={"rotate_canary": True},
+        backend=backend,
+        on_rotate_canary=lambda: None,
+    )
+    assert engine.record_detection("canary_detections") == []
+    raw = backend.get("auto_repave:count:canary_detections")
+    assert raw is not None
+
+
+def test_auto_repave_actions_without_callbacks_do_not_clear_counts():
+    engine = AutoRepaveEngine(
+        triggers={"window_minutes": 5, "canary_detections": 1},
+        actions={"rotate_canary": True, "kill_sessions": True},
+    )
+    assert engine.record_detection("canary_detections") == []
+    assert engine.record_detection("canary_detections") == []
+
+
+def test_canary_reads_active_token_from_backend():
+    backend = MemoryStateBackend()
+    backend.set("canary:canary:active", "CANARY-from-backend")
+    canary = CanaryGoalLock(backend=backend)
+    assert canary.active_token() == "CANARY-from-backend"
+
+
+def test_build_middleware_merges_atr_into_content_filter(tmp_path):
+    rules_dir = tmp_path / "atr"
+    rules_dir.mkdir()
+    (rules_dir / "r.yaml").write_text(
+        '- id: ATR1\n  severity: high\n  pattern: "(?i)atr_merged_hit"\n',
+        encoding="utf-8",
+    )
+    cfg = BastionConfig(
+        audit=False,
+        prompt_guard=False,
+        pii=False,
+        rate_limit=False,
+        content_filter=True,
+        atr_rules_enabled=True,
+        atr_rules_dir=str(rules_dir),
+        threat_feeds_enabled=True,
+        threat_feeds=[{"url": "http://127.0.0.1:9/feed.json", "scanner": "content_filter"}],
+    )
+    feed = json.dumps({"patterns": [r"(?i)feed_merged_hit"]}).encode()
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        urlopen.return_value.__enter__.return_value.read.return_value = feed
+        mw = build_middleware_from_config(cfg)
+    assert mw is not None
+    with pytest.raises(ContentFilterError):
+        mw.content_filter.check("please atr_merged_hit now")
+    with pytest.raises(ContentFilterError):
+        mw.content_filter.check("please feed_merged_hit now")
+
+
+@pytest.mark.asyncio
+async def test_middleware_auto_repave_fires_on_canary_block():
+    fired: list[str] = []
+
+    def _rotate() -> None:
+        fired.append("rotated")
+
+    canary = CanaryGoalLock(rotate_on_detection=False)
+    token = canary.active_token()
+    repave = AutoRepaveEngine(
+        triggers={"window_minutes": 5, "canary_detections": 1},
+        actions={"rotate_canary": True},
+        on_rotate_canary=_rotate,
+    )
+    mw = MCPBastionMiddleware(
+        prompt_guard=PromptGuardEngine(fail_open=True),
+        canary_goallock=canary,
+        auto_repave=repave,
+        enable_canary_goallock=True,
+        enable_auto_repave=True,
+        enable_prompt_guard=False,
+        enable_pii_redaction=False,
+        enable_rate_limit=False,
+    )
+    ctx = MiddlewareContext(
+        message={"method": "tools/call", "params": {"name": "t", "arguments": {"q": token}}},
+        request_id="r1",
+        session_id="s1",
+        metadata={},
+    )
+
+    async def handler(c):
+        return {"ok": True}
+
+    with pytest.raises(CanaryExfiltrationError):
+        await mw(ctx, handler)
+    assert fired == ["rotated"]
+    assert ctx.metadata["auto_repave"]["actions"] == ["rotate_canary"]
+
+
+@pytest.mark.asyncio
+async def test_middleware_secret_redaction_on_resources_read():
+    redactor = SecretPatternRedactor([{"rule": r"SECRET-\d+", "strategy": "remove"}])
+    mw = MCPBastionMiddleware(
+        prompt_guard=PromptGuardEngine(fail_open=True),
+        secret_redactor=redactor,
+        enable_secret_redaction=True,
+        enable_pii_redaction=True,
+        enable_prompt_guard=False,
+        enable_rate_limit=False,
+    )
+    ctx = MiddlewareContext(
+        message={"method": "resources/read", "params": {"uri": "file://demo"}},
+        request_id="r1",
+        session_id="s1",
+        metadata={},
+    )
+
+    async def handler(c):
+        return {"result": {"contents": [{"type": "text", "text": "value=SECRET-12345"}]}}
+
+    result = await mw(ctx, handler)
+    text = result["result"]["contents"][0]["text"]
+    assert "SECRET-12345" not in text
