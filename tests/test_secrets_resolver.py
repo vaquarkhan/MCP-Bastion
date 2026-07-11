@@ -34,6 +34,34 @@ def test_secrets_resolver_from_config_defaults_env():
     assert isinstance(r, EnvSecretsResolver)
 
 
+def test_secrets_config_from_empty_dict():
+    cfg = SecretsConfig.from_config(None)
+    assert cfg.provider == "env"
+    assert cfg.vault_path_prefix == "secret/mcp-bastion/"
+
+
+def test_secrets_resolver_provider_routing():
+    assert isinstance(SecretsResolver.from_config(SecretsConfig(provider="vault")), VaultSecretsResolver)
+    assert isinstance(SecretsResolver.from_config(SecretsConfig(provider="aws_sm")), AwsSecretsResolver)
+    assert isinstance(SecretsResolver.from_config(SecretsConfig(provider="gcp_sm")), GcpSecretsResolver)
+
+
+def test_gcp_resolver_import_error():
+    r = GcpSecretsResolver(SecretsConfig())
+    import builtins
+
+    real_import = builtins.__import__
+
+    def _block_google(name, *args, **kwargs):
+        if name == "google.cloud" or name.startswith("google"):
+            raise ImportError("no google")
+        return real_import(name, *args, **kwargs)
+
+    with mock.patch("builtins.__import__", side_effect=_block_google):
+        with pytest.raises(RuntimeError, match="google-cloud-secret-manager"):
+            r.resolve("api-key")
+
+
 def test_secrets_resolver_unknown_provider_falls_back_to_env():
     r = SecretsResolver.from_config(SecretsConfig(provider="unknown-vault"))
     assert isinstance(r, EnvSecretsResolver)

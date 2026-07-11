@@ -72,4 +72,7 @@ yarn-error.log*
 # Generated / duplicate assets (keep committed images/ and docs/images/)
 /assets/
 agent-transcripts/
+.pr-body-tmp.md
+coverage-full.log
+coverage-run.log
 

@@ -387,6 +387,64 @@ def test_threat_feeds_on_refresh_updates_content_filter():
         content_filter.check("please hot_reload_pattern now")
 
 
+def test_threat_feeds_on_refresh_callback_errors_are_swallowed():
+    manager = ThreatFeedManager([{"url": "http://example.test/x.json", "scanner": "x"}])
+
+    def _boom() -> None:
+        raise RuntimeError("sync failed")
+
+    manager._on_refresh = _boom
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(
+            {"patterns": [r"(?i)ok"]}
+        ).encode()
+        manager.refresh_feed(manager._feeds[0])
+
+
+def test_threat_feeds_skips_oversized_remote_patterns():
+    huge = "a" * 600
+    manager = ThreatFeedManager([{"url": "http://example.test/big.json", "scanner": "x"}])
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(
+            {"patterns": [huge, r"(?i)small_ok"]}
+        ).encode()
+        manager.refresh_all()
+    assert manager.patterns_for("x") == [r"(?i)small_ok"]
+
+
+def test_inject_canary_snippet_appends_prompt_message_without_mutating_existing():
+    result = {
+        "result": {
+            "messages": [
+                {"role": "user", "content": '{"api_key":"secret"}'},
+            ]
+        }
+    }
+    out = _inject_canary_snippet_into_result(result, "[Bastion runtime canary: TOKEN]")
+    messages = out["result"]["messages"]
+    assert messages[0]["content"] == '{"api_key":"secret"}'
+    assert "TOKEN" in messages[-1]["content"]
+
+
+def test_build_middleware_threat_feed_wires_hot_reload(tmp_path):
+    cfg = BastionConfig(
+        audit=False,
+        prompt_guard=False,
+        pii=False,
+        rate_limit=False,
+        content_filter=True,
+        threat_feeds_enabled=True,
+        threat_feeds=[{"url": "http://127.0.0.1:9/rules.json", "scanner": "content_filter"}],
+    )
+    feed = json.dumps({"patterns": [r"(?i)wired_hot_reload"]}).encode()
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        urlopen.return_value.__enter__.return_value.read.return_value = feed
+        mw = build_middleware_from_config(cfg)
+    assert mw is not None
+    with pytest.raises(ContentFilterError):
+        mw.content_filter.check("wired_hot_reload please")
+
+
 def test_secret_redaction_strategies():
     assert apply_redaction_strategy("secret", strategy="remove") == ""
     assert apply_redaction_strategy("secret", strategy="replace") == "<REDACTED>"
