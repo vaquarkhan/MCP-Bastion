@@ -16,7 +16,7 @@ from mcp_bastion.errors import (
     CanaryExfiltrationError,
     LLMScannerBlockedError,
 )
-from mcp_bastion.middleware import MCPBastionMiddleware, _get_content_from_result
+from mcp_bastion.middleware import MCPBastionMiddleware
 from mcp_bastion.pillars.atr_rules import ATRRuleLoader
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
 from mcp_bastion.pillars.canary_goallock import CanaryGoalLock, generate_canary
