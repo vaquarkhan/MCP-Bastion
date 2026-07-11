@@ -70,6 +70,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # Generated / duplicate assets (keep committed images/ and docs/images/)
-assets/
+/assets/
 agent-transcripts/
 
