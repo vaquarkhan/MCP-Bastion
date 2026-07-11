@@ -590,7 +590,7 @@ def _build_chain(config: BastionConfig) -> Any:
     threat_feed_manager: ThreatFeedManager | None = None
     if config.threat_feeds_enabled and config.threat_feeds:
         threat_feed_manager = ThreatFeedManager(config.threat_feeds)
-        threat_feed_manager.start_background()
+        threat_feed_manager.refresh_all()
         denylist_patterns.extend(threat_feed_manager.patterns_for("content_filter"))
         threat_feed_extra_heuristics = threat_feed_manager.patterns_for("prompt_injection")
 
@@ -715,15 +715,32 @@ def _build_chain(config: BastionConfig) -> Any:
     if config.secrets_redact_patterns:
         secret_redactor = SecretPatternRedactor(config.secrets_redact_patterns)
 
+    prompt_guard_engine = PromptGuardEngine(
+        threshold=config.prompt_guard_threshold,
+        model_id=config.prompt_guard_model_id,
+        fail_open=config.prompt_guard_fail_open,
+        heuristic_fallback=config.prompt_guard_heuristic_fallback,
+        use_ungated_default=config.prompt_guard_use_ungated_default,
+        heuristic_extra_patterns=threat_feed_extra_heuristics or None,
+    )
+
+    if threat_feed_manager is not None:
+
+        def _sync_threat_feed_patterns() -> None:
+            merged_denylists = list(config.content_filter_denylist_patterns)
+            if atr_loader is not None:
+                merged_denylists.extend(atr_loader.denylist_patterns())
+            merged_denylists.extend(threat_feed_manager.patterns_for("content_filter"))
+            content_filter.update_denylist_patterns(merged_denylists)
+            prompt_guard_engine.update_heuristic_extra_patterns(
+                threat_feed_manager.patterns_for("prompt_injection")
+            )
+
+        threat_feed_manager._on_refresh = _sync_threat_feed_patterns
+        threat_feed_manager.start_background()
+
     bastion_mw = MCPBastionMiddleware(
-        prompt_guard=PromptGuardEngine(
-            threshold=config.prompt_guard_threshold,
-            model_id=config.prompt_guard_model_id,
-            fail_open=config.prompt_guard_fail_open,
-            heuristic_fallback=config.prompt_guard_heuristic_fallback,
-            use_ungated_default=config.prompt_guard_use_ungated_default,
-            heuristic_extra_patterns=threat_feed_extra_heuristics or None,
-        ),
+        prompt_guard=prompt_guard_engine,
         rate_limiter=TokenBucketRateLimiter(
             max_iterations=config.rate_limit_max_iterations,
             timeout_seconds=config.rate_limit_timeout_seconds,

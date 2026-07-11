@@ -323,7 +323,7 @@ middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</c
       <img src="assets/mcp-bastion-secret-redaction.png" alt="Secret pattern redaction on outbound tool results" class="w-full" loading="lazy">
     </div>
     <p class="text-sm text-slate-400 max-w-3xl mx-auto text-center mb-8">
-      The exfiltration canary injects a session token into <code class="text-indigo-300">prompts/get</code> and <code class="text-indigo-300">resources/read</code> responses, then blocks tool arguments that echo it back.
+      The exfiltration canary adds a <strong>separate trailing text block</strong> on <code class="text-indigo-300">prompts/get</code> and <code class="text-indigo-300">resources/read</code> (original JSON/code bodies stay intact), then blocks tool arguments that echo the session token.
       Host orchestrators can also read <code class="text-indigo-300">bastion_canary_snippet</code> from request metadata for custom system prompts.
       LLM scanner and ATR rules are opt-in; expect up to ~2.5s latency (scanner) or per-rule regex cost when enabled.
     </p>

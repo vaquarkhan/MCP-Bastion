@@ -13,6 +13,8 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 _SEVERITY_ORDER = ("informational", "low", "medium", "high", "critical")
+MAX_ATR_TEXT_LEN = 64_000
+MAX_ATR_PATTERN_LEN = 512
 
 
 def _severity_rank(level: str) -> int:
@@ -77,8 +79,12 @@ class ATRRuleLoader:
                 pattern_src = raw.get("pattern") or raw.get("detection", {}).get("pattern")
                 if not pattern_src:
                     continue
+                pattern_str = str(pattern_src)
+                if len(pattern_str) > MAX_ATR_PATTERN_LEN:
+                    logger.warning("atr_rules: skip oversized pattern in %s", path)
+                    continue
                 try:
-                    compiled = re.compile(str(pattern_src), re.IGNORECASE)
+                    compiled = re.compile(pattern_str, re.IGNORECASE)
                 except re.error as e:
                     logger.warning("atr_rules: bad pattern in %s: %s", path, e)
                     continue
@@ -96,7 +102,7 @@ class ATRRuleLoader:
         return self._rules
 
     def match(self, text: str) -> ATRRule | None:
-        if not text:
+        if not text or len(text) > MAX_ATR_TEXT_LEN:
             return None
         for rule in self.load():
             if rule.pattern.search(text):

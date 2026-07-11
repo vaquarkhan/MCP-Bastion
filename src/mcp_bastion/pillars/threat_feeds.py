@@ -11,9 +11,11 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from typing import Any
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
+
+MAX_FEED_PATTERN_LEN = 512
 
 
 class ThreatFeed:
@@ -30,7 +32,12 @@ class ThreatFeed:
 class ThreatFeedManager:
     """Background refresh of named scanner rule feeds."""
 
-    def __init__(self, feeds: list[dict[str, Any]]) -> None:
+    def __init__(
+        self,
+        feeds: list[dict[str, Any]],
+        *,
+        on_refresh: Callable[[], None] | None = None,
+    ) -> None:
         self._feeds = [
             ThreatFeed(
                 url=str(f["url"]),
@@ -43,6 +50,7 @@ class ThreatFeedManager:
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self._on_refresh = on_refresh
 
     def patterns_for(self, scanner: str) -> list[str]:
         with self._lock:
@@ -71,6 +79,9 @@ class ThreatFeedManager:
         # validate compile
         valid: list[str] = []
         for p in patterns:
+            if len(p) > MAX_FEED_PATTERN_LEN:
+                logger.warning("threat_feeds: skip oversized pattern from %s", feed.url)
+                continue
             try:
                 re.compile(p)
                 valid.append(p)
@@ -79,6 +90,11 @@ class ThreatFeedManager:
         with self._lock:
             feed.patterns = valid
         logger.info("threat_feeds: refreshed %d patterns from %s", len(valid), feed.url)
+        if self._on_refresh is not None:
+            try:
+                self._on_refresh()
+            except Exception as e:
+                logger.warning("threat_feeds: on_refresh callback failed: %s", e)
 
     def refresh_all(self) -> None:
         for feed in self._feeds:

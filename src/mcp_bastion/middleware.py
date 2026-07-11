@@ -369,7 +369,7 @@ def _set_content_in_result(result: Any, content: list[dict[str, Any]]) -> None:
 
 
 def _inject_canary_snippet_into_result(result: Any, snippet: str) -> Any:
-    """Append canary snippet to the first text block in an MCP surface response."""
+    """Add canary as a separate text block without mutating existing resource/prompt bodies."""
     payload = result
     wrapper: dict[str, Any] | None = None
     if isinstance(result, dict) and "result" in result:
@@ -378,15 +378,7 @@ def _inject_canary_snippet_into_result(result: Any, snippet: str) -> Any:
 
     if isinstance(payload, dict) and isinstance(payload.get("messages"), list):
         messages = [dict(m) if isinstance(m, dict) else {"role": "user", "content": str(m)} for m in payload["messages"]]
-        injected = False
-        for msg in messages:
-            content = msg.get("content")
-            if isinstance(content, str):
-                msg["content"] = f"{content}\n\n{snippet}"
-                injected = True
-                break
-        if not injected:
-            messages.append({"role": "user", "content": snippet})
+        messages.append({"role": "user", "content": snippet})
         updated = {**payload, "messages": messages}
         if wrapper is not None:
             return {**wrapper, "result": updated}
@@ -396,23 +388,10 @@ def _inject_canary_snippet_into_result(result: Any, snippet: str) -> Any:
     content = _get_content_from_result(result)
     if content is None:
         content = []
-    injected = False
-    new_content: list[dict[str, Any]] = []
-    for item in content:
-        if (
-            not injected
-            and isinstance(item, dict)
-            and item.get("type") == "text"
-            and "text" in item
-        ):
-            text = str(item["text"])
-            new_content.append({**item, "text": f"{text}\n\n{snippet}"})
-            injected = True
-        else:
-            new_content.append(item)
-    if not injected:
-        new_content.append({"type": "text", "text": snippet})
-    _set_content_in_result(result, new_content)
+    else:
+        content = [dict(item) if isinstance(item, dict) else {"type": "text", "text": str(item)} for item in content]
+    content.append({"type": "text", "text": snippet})
+    _set_content_in_result(result, content)
     return result
 
 

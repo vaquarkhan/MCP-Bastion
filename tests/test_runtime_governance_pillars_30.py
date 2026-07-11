@@ -15,10 +15,12 @@ from mcp_bastion.config import BastionConfig, build_middleware_from_config, load
 from mcp_bastion.errors import (
     ATRRuleMatchError,
     CanaryExfiltrationError,
+    ContentFilterError,
     LLMScannerBlockedError,
 )
 from mcp_bastion.middleware import MCPBastionMiddleware, _inject_canary_snippet_into_result
 from mcp_bastion.pillars.atr_rules import ATRRuleLoader, _severity_rank
+from mcp_bastion.pillars.content_filter import ContentFilter
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
 from mcp_bastion.pillars.canary_goallock import CanaryGoalLock, generate_canary
 from mcp_bastion.pillars.compliance_report import (
@@ -163,6 +165,19 @@ def test_atr_rules_missing_dir_and_corrupt_file(tmp_path):
     (rules_dir / "broken.yaml").write_text("::: not yaml", encoding="utf-8")
     loader = ATRRuleLoader(rules_dir)
     assert loader.load() == []
+
+
+def test_atr_rules_skips_oversized_pattern(tmp_path):
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    huge = "a" * 600
+    (rules_dir / "big.yaml").write_text(
+        f'- id: BIG\n  severity: high\n  pattern: "{huge}"\n',
+        encoding="utf-8",
+    )
+    loader = ATRRuleLoader(rules_dir)
+    assert loader.load() == []
+    assert loader.match("a" * 700) is None
 
 
 def test_atr_rules_without_pyyaml_returns_empty(tmp_path, monkeypatch):
@@ -329,6 +344,47 @@ def test_auto_repave_backend_fires_all_actions():
     actions = engine.record_detection("canary_detections")
     assert actions == ["rotate_canary", "reset_session_scope", "kill_sessions"]
     assert fired == ["rotate", "scope", "kill"]
+
+
+def test_auto_repave_concurrent_record_detection_counts_under_lock():
+    import threading
+
+    engine = AutoRepaveEngine(
+        triggers={"window_minutes": 10, "canary_detections": 10},
+        actions={"rotate_canary": True},
+        on_rotate_canary=lambda: None,
+    )
+    results: list[list[str]] = []
+    barrier = threading.Barrier(10)
+
+    def _record() -> None:
+        barrier.wait(timeout=2)
+        results.append(engine.record_detection("canary_detections"))
+
+    threads = [threading.Thread(target=_record) for _ in range(10)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=5)
+    assert sum(1 for r in results if r) == 1
+
+
+def test_threat_feeds_on_refresh_updates_content_filter():
+    feed_data = json.dumps({"patterns": [r"(?i)hot_reload_pattern"]}).encode()
+    content_filter = ContentFilter(denylist_patterns=[])
+    manager = ThreatFeedManager(
+        [{"url": "http://example.test/hot.json", "scanner": "content_filter", "interval_minutes": 60}]
+    )
+
+    def _sync() -> None:
+        content_filter.update_denylist_patterns(manager.patterns_for("content_filter"))
+
+    manager._on_refresh = _sync
+    with mock.patch("urllib.request.urlopen") as urlopen:
+        urlopen.return_value.__enter__.return_value.read.return_value = feed_data
+        manager.refresh_all()
+    with pytest.raises(ContentFilterError):
+        content_filter.check("please hot_reload_pattern now")
 
 
 def test_secret_redaction_strategies():
@@ -501,10 +557,11 @@ secrets:
 
 
 def test_inject_canary_snippet_into_resource_contents():
-    result = {"result": {"contents": [{"type": "text", "text": "resource body"}]}}
+    result = {"result": {"contents": [{"type": "text", "text": '{"key":"value"}'}]}}
     out = _inject_canary_snippet_into_result(result, "[canary: TOKEN]")
-    assert "TOKEN" in json.dumps(out)
-    assert "resource body" in json.dumps(out)
+    payload = out["result"]["contents"]
+    assert payload[0]["text"] == '{"key":"value"}'
+    assert "TOKEN" in payload[-1]["text"]
 
 
 @pytest.mark.asyncio

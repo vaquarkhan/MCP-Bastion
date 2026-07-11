@@ -35,9 +35,9 @@ All features are **opt-in** via `bastion.yaml`; defaults preserve existing 2.x b
   />
 </p>
 
-A per-session token is planted into **MCP surface responses** (`prompts/get`, `resources/read`) so models that read those surfaces may carry it forward. The same snippet is exposed on `tools/call` as `context.metadata["bastion_canary_snippet"]` for host integrations that assemble system prompts outside MCP. If tool-call arguments contain the active token, Bastion treats it as likely context exfiltration and raises **-32025**.
+A per-session token is planted for model context **without modifying existing resource or prompt bodies**. On `prompts/get` and `resources/read`, Bastion appends a **separate** trailing text block containing the canary (structured JSON/code/config in the original block stays parseable). The same snippet is exposed on `tools/call` as `context.metadata["bastion_canary_snippet"]` for host integrations that assemble system prompts outside MCP. If tool-call arguments contain the active token verbatim, Bastion treats it as likely context exfiltration and raises **-32025**.
 
-> **Host integrations:** Bastion sits at the MCP tool boundary, not inside the LLM prompt. For custom orchestrators, copy `bastion_canary_snippet` from request metadata into your system prompt if the model never calls `prompts/get` or `resources/read`.
+> **Honest limits:** Detection is substring-only (tripwire, not anti-exfil against encoding/splitting). Host orchestrators should copy `bastion_canary_snippet` into system prompts when the model never reads MCP surfaces.
 
 ```yaml
 canary_goallock:
@@ -57,8 +57,8 @@ canary_goallock:
   />
 </p>
 
-- **ATR rules:** YAML files under `atr-rules/` (see `sample-exfiltration.yaml`). Patterns merge into `content_filter` and can raise **-32027**.
-- **Threat feeds:** Optional background refresh from remote JSON pattern lists.
+- **ATR rules:** YAML files under `atr-rules/` (see `sample-exfiltration.yaml`). Patterns merge into `content_filter` and can raise **-32027**. Vet third-party rules; oversized patterns are skipped.
+- **Threat feeds:** Optional background refresh from remote JSON pattern lists; refreshed patterns are **hot-reloaded** into `content_filter` and PromptGuard heuristics without restart.
 - **Compliance reports:** Framework-mapped summaries from audit JSONL (evidence only, not certification).
 
 ```bash
@@ -120,9 +120,10 @@ When vendoring third-party rule packs, keep upstream `LICENSE` files in that dir
 
 ## Performance notes (opt-in pillars)
 
-- **LLM scanner:** When enabled and heuristics are uncertain, adds up to **2.5s** synchronous network latency per `tools/call` (fail-open on timeout).
-- **ATR rules:** Each enabled rule runs a regex scan on inbound tool text — consider consolidating rules or lowering rule count on hot paths.
+- **LLM scanner:** When enabled and heuristics are uncertain, adds up to **2.5s** synchronous network latency per `tools/call` (fail-open on timeout). The local judge prompt embeds inbound text — treat as defense-in-depth, not robust against prompt injection of the judge itself; missing `confidence` defaults to pass.
+- **ATR rules:** Each enabled rule runs a regex scan on inbound tool text (O(n) rules per call). Community/feed patterns are length-capped; Python `re` has no timeout — vet rules to avoid catastrophic backtracking (ReDoS).
 - **PromptGuard + LLM scanner:** When both are enabled, Bastion reuses the PromptGuard scan result for the LLM tier (no duplicate ML inference).
+- **Auto-repave:** Counter updates are mutex-protected in-process; multi-replica Redis backends should treat thresholds as best-effort until distributed atomic counters land.
 
 ## Error codes
 
