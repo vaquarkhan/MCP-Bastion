@@ -15,9 +15,9 @@ Workflows live under [`.github/workflows/`](../.github/workflows/). Highlights:
 
 - **Checkout** of the ref that triggered the run (`actions/checkout@v4`).
 - **TypeScript (monorepo):** `npm ci`, `npm run build`, `npm run test` (workspace tests).
-- **npm release (on version tags):** `npm publish --workspace=@mcp-bastion/core --provenance`  -  see [npm provenance](https://docs.npmjs.com/generating-provenance-statements) (binds the published package to this workflow run via OIDC).
+- **npm release (on version tags):** Prefer OIDC Trusted Publishing with `--provenance`. If `@mcp-bastion/core` does not exist yet, a one-time **`NPM_TOKEN`** bootstrap is required - see [PUBLISHING_NPM_AND_REGISTRY.md](PUBLISHING_NPM_AND_REGISTRY.md).
 - **Python:** `uv build` to produce wheels/sdists; **PyPI** publish uses **`pypa/gh-action-pypi-publish`** with **`id-token: write`** for [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (OIDC; no long-lived PyPI password in the workflow).
-- **MCP Registry (on tags):** publisher CLI with `github-oidc` login, as configured in that job.
+- **MCP Registry (on tags):** `mcp-publisher` **v1.7.9+** with `github-oidc` login (correct OIDC audience for production registry).
 
 ### `publish-integrations.yml` (integration packages)
 

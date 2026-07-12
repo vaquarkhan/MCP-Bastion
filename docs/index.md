@@ -70,6 +70,7 @@ Hub with all files: [Docs README](README.md).
 - [Detailed Tutorial](DETAILED_TUTORIAL.md)
 - [Policy as Code](POLICY_AS_CODE.md)
 - [CLI Reference](CLI.md)
+- [Publishing npm + MCP Registry](PUBLISHING_NPM_AND_REGISTRY.md)
 - [Finding taxonomy (ASI / MCP / LLM)](TAXONOMY.md)
 - [Public MCP census](census/README.md)
 - [LLM Integration](LLM_INTEGRATION.md)

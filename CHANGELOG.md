@@ -6,6 +6,12 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **MCP Registry publish:** pin `mcp-publisher` to **v1.7.9** (OIDC audience `https://registry.modelcontextprotocol.io`).
+- **npm publish workflow:** clear bootstrap path when `@mcp-bastion/core` is missing (requires one-time `NPM_TOKEN`); fail loudly instead of silent `continue-on-error`.
+- **Docs:** align DOCKER/SECURITY/ROADMAP/README current-release pins and widgets with **3.0.1**.
+
 ## [3.0.1] - 2026-07-12
 
 Patch release: client-side scan suite expansion (audit, schema, skills, OSV), taxonomy, and prior PromptGuard/scan polish. All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.0.1**.

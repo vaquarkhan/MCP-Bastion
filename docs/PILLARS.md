@@ -59,7 +59,8 @@ The following are **additionally** wired in `bastion.yaml` and `BastionConfig` (
 | **Audit JSONL (2.0.0)** | `audit.jsonl_path` | Append-only compliance log; **`mcp-bastion tail`** CLI. |
 | **Cost checkpoint (2.0.0)** | `cost_tracker.checkpoint_path` | Disk persistence for session totals across restarts (memory backend only). |
 | **Principal-keyed FinOps (2.0.0)** | `cost_tracker` + `agent_iam` / `edge_auth` | Session and daily caps aggregate by authenticated **`principal_id`** (not client-supplied `session_id` rotation). Set cost via `context.metadata["cost"]` on each tool call. |
-| **Runtime governance (3.0.0)** | `canary_goallock`, `atr_rules`, `llm_scanner`, `threat_feeds`, `auto_repave`, `secrets`, `mode` | Opt-in enterprise pillars: exfiltration canary, ATR YAML rules, local LLM scanner, threat feeds, auto-repave, secret redaction, observe mode. See [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md). Errors **-32025** … **-32027**. |
+| **Runtime governance (3.0.0+)** | `canary_goallock`, `atr_rules`, `llm_scanner`, `threat_feeds`, `auto_repave`, `secrets`, `mode` | Opt-in enterprise pillars: exfiltration canary, ATR YAML rules, local LLM scanner, threat feeds, auto-repave, secret redaction, observe mode. See [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md). Errors **-32025** … **-32027**. |
+| **Client-side scan suite (3.0.1)** | `mcp-bastion scan` / `audit` / `osv-scan` / `--skills` | Static schema preconditions, local risk audit, offline OSV, skill-file scanning. See [CLI.md](CLI.md), [TAXONOMY.md](TAXONOMY.md). |
 | Red-team / policy dev | `mcp_bastion redteam`, `policy_simulator` module | **redteam** harness; **policy_simulator** for dry-runs. |
 
 Supporting modules in `src/mcp_bastion/` and `pillars/`: e.g. `policy_simulator.py`, `redteam.py`, `tenant.py`, `governance_beacon.py`, `doctor.py`.

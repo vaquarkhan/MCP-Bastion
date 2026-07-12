@@ -7,6 +7,15 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish artifacts (npm / PyPI / MCP Registry) from this ref"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   build-and-publish:
@@ -14,13 +23,22 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # CRITICAL: This enables secure OIDC Trusted Publishing for PyPI, npm, and the MCP Registry
+      id-token: write # OIDC for PyPI, npm Trusted Publishing, MCP Registry
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+
+      - name: Decide whether to publish
+        id: pub
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ] || [ "${{ github.event.inputs.publish }}" = "true" ]; then
+            echo "do=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "do=false" >> "$GITHUB_OUTPUT"
+          fi
 
       # ==========================================
       # 1. TYPESCRIPT (npm) BUILD & PUBLISH
@@ -38,12 +56,27 @@ jobs:
           npm test --if-present
 
       - name: Publish to npm
-        if: github.ref_type == 'tag'
-        continue-on-error: true
+        if: steps.pub.outputs.do == 'true'
+        continue-on-error: false
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          set -euo pipefail
           npm install -g npm@latest
-          npm publish --workspace=@mcp-bastion/core --access public --provenance
-        # Uses OIDC Trusted Publishers. Configure at npmjs.com Package Settings Trusted Publishers
+          PKG="@mcp-bastion/core"
+          if npm view "$PKG" version >/dev/null 2>&1; then
+            echo "Package exists on npm - publishing with OIDC provenance (do not set NODE_AUTH_TOKEN)."
+            unset NODE_AUTH_TOKEN || true
+            npm publish --workspace="$PKG" --access public --provenance
+          elif [ -n "${NPM_TOKEN:-}" ]; then
+            echo "First-time / bootstrap publish via NPM_TOKEN (OIDC Trusted Publisher cannot create a new package)."
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> "$HOME/.npmrc"
+            npm publish --workspace="$PKG" --access public
+            echo "::notice title=npm bootstrap::Published $PKG. Configure Trusted Publisher at https://www.npmjs.com/package/$PKG/access then future tag publishes can omit NPM_TOKEN."
+          else
+            echo "::error title=npm publish blocked::$PKG is not on the registry yet. Add repo secret NPM_TOKEN (granular, read/write, bypass 2FA) for one bootstrap publish, then enable Trusted Publisher on npmjs.com for workflow publish-mcp.yml."
+            exit 1
+          fi
 
       # ==========================================
       # 2. PYTHON (PyPI) BUILD & PUBLISH
@@ -57,7 +90,7 @@ jobs:
         run: uv build
 
       - name: Publish distribution to PyPI
-        if: github.ref_type == 'tag'
+        if: steps.pub.outputs.do == 'true'
         continue-on-error: true
         uses: pypa/gh-action-pypi-publish@release/v1
         # Requires PyPI Trusted Publishers (OIDC). Set up at pypi.org
@@ -66,18 +99,21 @@ jobs:
       # 3. MCP REGISTRY PUBLISH
       # ==========================================
       - name: Download MCP Publisher CLI
-        if: github.ref_type == 'tag'
+        if: steps.pub.outputs.do == 'true'
         run: |
-          MCP_VER="v1.4.1"
+          # v1.4.1 requested legacy audience "mcp-registry"; production now expects
+          # https://registry.modelcontextprotocol.io (fixed in newer mcp-publisher).
+          MCP_VER="v1.7.9"
           OS=$(uname -s | tr '[:upper:]' '[:lower:]')
           ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
           curl -sSL -o mcp-publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_VER}/mcp-publisher_${OS}_${ARCH}.tar.gz"
           tar xzf mcp-publisher.tar.gz mcp-publisher
           chmod +x mcp-publisher
+          ./mcp-publisher --version || true
 
       - name: Publish to official MCP Registry
-        if: github.ref_type == 'tag'
-        continue-on-error: true
+        if: steps.pub.outputs.do == 'true'
+        continue-on-error: false
         run: |
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish
