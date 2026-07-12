@@ -2,7 +2,7 @@
 
 Optional **local** security + FinOps UI for MCP-Bastion. Additive panels on top of the classic runtime charts.
 
-**Highlights (3.1.1):** pre-deploy posture + Sonar-style prevalidation, **PMD-style how-to-fix** issue guides, OWASP heatmaps, attack matrix, **RBAC + governance tiles**, posture drift from audit JSONL, **token reduction & cost savings** (actual vs would-have-been), forensics with pillar provenance.
+**Highlights (3.1.2):** pre-deploy posture + Sonar-style prevalidation, **PMD-style how-to-fix** issue guides, OWASP heatmaps, attack matrix, **RBAC + governance tiles**, posture drift from audit JSONL, **token reduction & cost savings**, forensics master-detail (Trace / Reproduce side panel).
 
 Zero-infra: read-only over local artifacts + in-process metrics. No login, no DB, no cloud. See [docs/ZERO_INFRA_STRATEGY.md](../docs/ZERO_INFRA_STRATEGY.md).
 

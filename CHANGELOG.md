@@ -1,10 +1,19 @@
 ﻿# Changelog
 
-**Current release:** **3.1.1** (2026-07-12) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.1.1/) · [Docker `v3.1.1`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **3.1.2** (2026-07-12) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.1.2/) · [Docker `v3.1.2`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [3.1.2] - 2026-07-12
+
+Patch release: forensics master-detail UX — Trace / Reproduce live in a side panel (auto-select first row). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.1.2**.
+
+### Changed
+
+- **Blocked requests (forensics):** lean table + sticky Overview / Trace / Reproduce detail on wide screens; auto-selects the first row; JS self-heals stale HTML layouts.
+- Dashboard `ui_revision` `v37-forensics-autoselect`.
 
 ## [3.1.1] - 2026-07-12
 

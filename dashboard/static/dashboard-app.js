@@ -346,7 +346,112 @@
         + '</td>';
     }
 
+    function ensureForensicsMasterDetail() {
+      var card = document.getElementById('dash-forensics');
+      if (!card) return;
+      var desc = card.querySelector('.card-desc');
+      if (desc) {
+        desc.textContent = 'Select a row for Trace & Reproduce in the detail panel (wide screens). Filter the list by tenant; charts above stay all-tenant.';
+      }
+      var table = document.getElementById('blockedForensicsTable');
+      var tbody = document.getElementById('blockedForensicsBody');
+      if (!table || !tbody) return;
+      var thead = table.querySelector('thead tr');
+      if (thead) {
+        thead.innerHTML =
+          '<th>Time (UTC)</th><th>Tenant</th><th>Agent</th><th>Tool</th><th>Why</th><th>Reason</th>';
+      }
+      if (!document.getElementById('forensicsDetail')) {
+        var wrap = table.closest('.tool-table-wrap') || table.parentElement;
+        if (!wrap) return;
+        var layout = document.createElement('div');
+        layout.className = 'forensics-layout';
+        var list = document.createElement('div');
+        list.className = 'forensics-list';
+        wrap.parentNode.insertBefore(layout, wrap);
+        layout.appendChild(list);
+        list.appendChild(wrap);
+        var aside = document.createElement('aside');
+        aside.className = 'forensics-detail';
+        aside.id = 'forensicsDetail';
+        aside.setAttribute('aria-live', 'polite');
+        aside.innerHTML =
+          '<div class="forensics-detail-empty" id="forensicsDetailEmpty">'
+          + 'Select a blocked request to inspect pillar trace and reproduce steps.'
+          + '</div>'
+          + '<div id="forensicsDetailPanel" hidden>'
+          + '<div class="forensics-detail-head"><div>'
+          + '<h3 id="forensicsDetailTitle">—</h3>'
+          + '<p class="forensics-detail-meta" id="forensicsDetailMeta"></p>'
+          + '</div>'
+          + '<button type="button" class="btn-mini" id="forensicsDetailClear" title="Clear selection">Clear</button>'
+          + '</div>'
+          + '<div class="forensics-tabs" role="tablist" aria-label="Forensics detail">'
+          + '<button type="button" class="forensics-tab is-active" role="tab" data-fd-tab="overview" aria-selected="true">Overview</button>'
+          + '<button type="button" class="forensics-tab" role="tab" data-fd-tab="trace" aria-selected="false">Trace</button>'
+          + '<button type="button" class="forensics-tab" role="tab" data-fd-tab="reproduce" aria-selected="false">Reproduce</button>'
+          + '</div>'
+          + '<div class="forensics-detail-body" id="forensicsTabOverview" data-fd-pane="overview">'
+          + '<dl class="forensics-kv" id="forensicsOverviewKv"></dl><pre id="forensicsOverviewRaw"></pre></div>'
+          + '<div class="forensics-detail-body" id="forensicsTabTrace" data-fd-pane="trace" hidden>'
+          + '<p class="fd-hint">Pillar pipeline for this decision (blocked step last).</p>'
+          + '<ul class="trace-steps" id="forensicsTraceSteps"></ul>'
+          + '<pre id="forensicsTraceRaw" style="margin-top:10px;"></pre></div>'
+          + '<div class="forensics-detail-body" id="forensicsTabReproduce" data-fd-pane="reproduce" hidden>'
+          + '<p class="fd-hint">Not executed here. Copy into a shell after pointing at your MCP HTTP endpoint.</p>'
+          + '<pre id="forensicsReproduceBody"></pre></div>'
+          + '</div>';
+        layout.appendChild(aside);
+        if (!document.getElementById('forensics-md-style')) {
+          var st = document.createElement('style');
+          st.id = 'forensics-md-style';
+          st.textContent =
+            '.forensics-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);gap:14px;align-items:start;margin-top:4px}'
+            + '@media(max-width:1100px){.forensics-layout{grid-template-columns:1fr}}'
+            + '.forensics-list .tool-table tbody tr{cursor:pointer}'
+            + '.forensics-list .tool-table tbody tr.is-selected td{background:rgba(56,189,248,.14)}'
+            + '.forensics-list .tool-table tbody tr.is-selected td:first-child{box-shadow:inset 3px 0 0 var(--accent)}'
+            + '.forensics-detail{position:sticky;top:72px;border:1px solid var(--card-border);border-radius:12px;'
+            + 'background:rgba(15,23,42,.45);padding:12px 14px;min-height:280px;max-height:min(78vh,720px);'
+            + 'display:flex;flex-direction:column;overflow:hidden}'
+            + '.forensics-detail-empty{margin:auto;text-align:center;color:var(--muted);font-size:.85rem;padding:24px 12px}'
+            + '.forensics-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 10px;border-bottom:1px solid var(--card-border);padding-bottom:8px}'
+            + '.forensics-tab{padding:5px 12px;font-size:.72rem;font-weight:600;font-family:inherit;border-radius:6px;'
+            + 'border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer}'
+            + '.forensics-tab.is-active{color:var(--accent);background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.35)}'
+            + '.forensics-detail-body{flex:1;overflow:auto;font-size:.8rem;min-height:0}'
+            + '.forensics-detail-body[hidden]{display:none!important}'
+            + '.forensics-kv{display:grid;grid-template-columns:88px 1fr;gap:6px 10px;margin:0 0 12px;font-size:.78rem}'
+            + '.forensics-kv dt{color:var(--muted);margin:0}.forensics-kv dd{margin:0;word-break:break-word}'
+            + '.forensics-detail pre{margin:0;padding:10px;border-radius:8px;background:rgba(0,0,0,.28);'
+            + 'border:1px solid var(--card-border);font-size:.72rem;white-space:pre-wrap;word-break:break-word}'
+            + '.forensics-detail .fd-hint{font-size:.75rem;color:var(--muted);margin:0 0 8px}'
+            + '.forensics-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}'
+            + '.forensics-detail-head h3{margin:0;font-size:.95rem;font-weight:700}'
+            + '.forensics-detail-meta{font-size:.75rem;color:var(--muted);margin:4px 0 0}';
+          document.head.appendChild(st);
+        }
+      }
+    }
+
+    function wireForensicsDetailUi() {
+      document.querySelectorAll('.forensics-tab').forEach(function (btn) {
+        if (btn.getAttribute('data-fd-wired') === '1') return;
+        btn.setAttribute('data-fd-wired', '1');
+        btn.addEventListener('click', function () {
+          setForensicsDetailTab(btn.getAttribute('data-fd-tab') || 'overview');
+        });
+      });
+      var fdClear = document.getElementById('forensicsDetailClear');
+      if (fdClear && fdClear.getAttribute('data-fd-wired') !== '1') {
+        fdClear.setAttribute('data-fd-wired', '1');
+        fdClear.addEventListener('click', clearForensicsSelection);
+      }
+    }
+
     function renderForensicsRows() {
+      ensureForensicsMasterDetail();
+      wireForensicsDetailUi();
       var tbody = document.getElementById('blockedForensicsBody');
       var hint = document.getElementById('forensicsHint');
       if (!tbody) return;
@@ -389,6 +494,8 @@
       }).join('');
       if (keepIdx >= 0) {
         selectForensicsRow(keepIdx);
+      } else if (rows.length) {
+        selectForensicsRow(0);
       } else if (forensicsSelectedIdx >= 0) {
         clearForensicsSelection();
       }
@@ -567,8 +674,10 @@
           }
         });
       }
+      ensureForensicsMasterDetail();
       var fbody = document.getElementById('blockedForensicsBody');
-      if (fbody) {
+      if (fbody && fbody.getAttribute('data-fd-wired') !== '1') {
+        fbody.setAttribute('data-fd-wired', '1');
         fbody.addEventListener('click', function (e) {
           var tr = e.target && e.target.closest ? e.target.closest('tr[data-i]') : null;
           if (!tr) return;
@@ -584,13 +693,7 @@
           selectForensicsRow(parseInt(tr.getAttribute('data-i'), 10), { scrollDetail: true });
         });
       }
-      document.querySelectorAll('.forensics-tab').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          setForensicsDetailTab(btn.getAttribute('data-fd-tab') || 'overview');
-        });
-      });
-      var fdClear = document.getElementById('forensicsDetailClear');
-      if (fdClear) fdClear.addEventListener('click', clearForensicsSelection);
+      wireForensicsDetailUi();
       var tc = document.getElementById('traceModalClose');
       var rc = document.getElementById('replayModalClose');
       var idc = document.getElementById('issueDetailClose');
