@@ -73,8 +73,9 @@ SLIDES: list[dict[str, str]] = [
     {
         "id": "08-forensics",
         "title": "Forensics + why blocked",
-        "caption": "Pillar provenance, Details, reproduce helpers",
+        "caption": "Row list + side Trace / Reproduce detail (wide screen)",
         "anchor": "#dash-forensics",
+        "action": "select_forensics",
     },
     {
         "id": "09-agents",
@@ -316,6 +317,21 @@ async def capture() -> int:
                     except Exception:
                         pass
                     await page.wait_for_timeout(400)
+
+            if action == "select_forensics":
+                await page.evaluate(
+                    """() => {
+                      const row = document.querySelector('#blockedForensicsBody tr[data-i]');
+                      if (row) row.click();
+                      const tab = document.querySelector('.forensics-tab[data-fd-tab="trace"]');
+                      if (tab) tab.click();
+                    }"""
+                )
+                try:
+                    await page.wait_for_selector("#forensicsDetailPanel:not([hidden])", timeout=4000)
+                except Exception:
+                    pass
+                await page.wait_for_timeout(500)
 
             raw = raw_dir / f"{slide['id']}.png"
             await page.screenshot(path=str(raw), full_page=False)

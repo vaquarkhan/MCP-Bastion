@@ -5,6 +5,8 @@
     let lastBlockedIncidents = [];
     let lastForensicsRows = [];
     let forensicsTenantFilter = '';
+    let forensicsSelectedIdx = -1;
+    let forensicsDetailTab = 'overview';
     let lastSnapshotAt = 0;
     let lastMetricsSnapshot = null;
     let lastGovernanceConfig = null;
@@ -145,6 +147,28 @@
       if (b) b.classList.remove('open');
       closeIssueDetail();
     }
+    function buildReproduceText(inc) {
+      var bodyObj = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: { name: (inc && inc.tool) || 'unknown', arguments: {} },
+        id: (inc && inc.request_id) || '1'
+      };
+      var raw = JSON.stringify(bodyObj);
+      var _nl = String.fromCharCode(10);
+      var _tid = (inc && inc.tenant_id) || 'default';
+      return '1) Point MCP_HTTP_URL at your streamable HTTP MCP server.' + _nl +
+        '   export MCP_HTTP_URL=http://127.0.0.1:8080/mcp' + _nl +
+        _nl +
+        '2) Required header for this row:' + _nl +
+        '   X-Tenant-Id: ' + _tid + _nl +
+        _nl +
+        '3) JSON-RPC body:' + _nl +
+        raw + _nl +
+        _nl +
+        '4) Example curl (body is shell-quoted):' + _nl +
+        'curl -sS -X POST "$MCP_HTTP_URL" -H "Content-Type: application/json" -H "X-Tenant-Id: ' + _tid + '" --data-raw ' + JSON.stringify(raw);
+    }
     function openTraceModal(inc) {
       var payload = {
         trace_id: inc.trace_id,
@@ -153,6 +177,7 @@
         tool: inc.tool,
         reason: inc.reason,
         decision: 'blocked',
+        forensic_trace: inc.forensic_trace || [],
         middleware: [
           { name: 'audit_log', ms: 0.8 },
           { name: 'mcp_bastion', ms: 3.1, outcome: 'deny' },
@@ -166,32 +191,115 @@
       if (mo) mo.classList.add('open');
     }
     function openReplayModal(inc) {
-      var bodyObj = {
-        jsonrpc: '2.0',
-        method: 'tools/call',
-        params: { name: inc.tool || 'unknown', arguments: {} },
-        id: inc.request_id || '1'
-      };
-      var raw = JSON.stringify(bodyObj);
       var body = document.getElementById('replayModalBody');
       var mo = document.getElementById('replayModal');
-      if (body) {
-        var _nl = String.fromCharCode(10);
-        var _tid = inc.tenant_id || 'default';
-        body.textContent =
-          '1) Point MCP_HTTP_URL at your streamable HTTP MCP server.' + _nl +
-          '   export MCP_HTTP_URL=http://127.0.0.1:8080/mcp' + _nl +
-          _nl +
-          '2) Required header for this row:' + _nl +
-          '   X-Tenant-Id: ' + _tid + _nl +
-          _nl +
-          '3) JSON-RPC body:' + _nl +
-          raw + _nl +
-          _nl +
-          '4) Example curl (body is shell-quoted):' + _nl +
-          'curl -sS -X POST "$MCP_HTTP_URL" -H "Content-Type: application/json" -H "X-Tenant-Id: ' + _tid + '" --data-raw ' + JSON.stringify(raw);
-      }
+      if (body) body.textContent = buildReproduceText(inc);
       if (mo) mo.classList.add('open');
+    }
+    function setForensicsDetailTab(tab) {
+      forensicsDetailTab = tab || 'overview';
+      document.querySelectorAll('.forensics-tab').forEach(function (btn) {
+        var on = btn.getAttribute('data-fd-tab') === forensicsDetailTab;
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      document.querySelectorAll('[data-fd-pane]').forEach(function (pane) {
+        var show = pane.getAttribute('data-fd-pane') === forensicsDetailTab;
+        if (show) pane.removeAttribute('hidden');
+        else pane.setAttribute('hidden', '');
+      });
+    }
+    function clearForensicsSelection() {
+      forensicsSelectedIdx = -1;
+      var empty = document.getElementById('forensicsDetailEmpty');
+      var panel = document.getElementById('forensicsDetailPanel');
+      if (empty) empty.hidden = false;
+      if (panel) panel.hidden = true;
+      document.querySelectorAll('#blockedForensicsBody tr.is-selected').forEach(function (tr) {
+        tr.classList.remove('is-selected');
+      });
+    }
+    function selectForensicsRow(idx, opts) {
+      opts = opts || {};
+      var row = lastForensicsRows[idx];
+      if (!row) {
+        clearForensicsSelection();
+        return;
+      }
+      forensicsSelectedIdx = idx;
+      document.querySelectorAll('#blockedForensicsBody tr[data-i]').forEach(function (tr) {
+        tr.classList.toggle('is-selected', parseInt(tr.getAttribute('data-i'), 10) === idx);
+      });
+      var empty = document.getElementById('forensicsDetailEmpty');
+      var panel = document.getElementById('forensicsDetailPanel');
+      if (empty) empty.hidden = true;
+      if (panel) panel.hidden = false;
+      var title = document.getElementById('forensicsDetailTitle');
+      var meta = document.getElementById('forensicsDetailMeta');
+      var ts = '';
+      try {
+        ts = new Date(row.ts).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+      } catch (e0) { ts = String(row.ts || ''); }
+      if (title) title.textContent = row.tool || 'Blocked request';
+      if (meta) {
+        meta.textContent = [row.pillar || row.kind || 'policy', row.tenant_id || '', ts]
+          .filter(Boolean).join(' · ');
+      }
+      var kv = document.getElementById('forensicsOverviewKv');
+      if (kv) {
+        var pairs = [
+          ['Time', ts],
+          ['Tenant', row.tenant_id || '—'],
+          ['Agent', row.agent_id || '—'],
+          ['Tool', row.tool || '—'],
+          ['Pillar', row.pillar || row.kind || '—'],
+          ['Rule', row.rule || '—'],
+          ['Trace ID', row.trace_id || '—'],
+          ['Request', row.request_id || '—'],
+          ['Reason', row.reason || '—']
+        ];
+        kv.innerHTML = pairs.map(function (p) {
+          return '<dt>' + escapeHtml(p[0]) + '</dt><dd>' + escapeHtml(String(p[1])) + '</dd>';
+        }).join('');
+      }
+      var ovRaw = document.getElementById('forensicsOverviewRaw');
+      if (ovRaw) {
+        try { ovRaw.textContent = JSON.stringify(row, null, 2); }
+        catch (e1) { ovRaw.textContent = String(row); }
+      }
+      var stepsEl = document.getElementById('forensicsTraceSteps');
+      var steps = row.forensic_trace || [];
+      if (stepsEl) {
+        if (!steps.length) {
+          stepsEl.innerHTML = '<li class="muted">No pillar trace steps on this record yet.</li>';
+        } else {
+          stepsEl.innerHTML = steps.map(function (s) {
+            return '<li><span class="t-pillar">' + escapeHtml(s.pillar || s.status || 'step')
+              + '</span> <span class="muted">[' + escapeHtml(s.status || '') + ']</span>'
+              + '<div>' + escapeHtml(s.detail || '') + '</div></li>';
+          }).join('');
+        }
+      }
+      var trRaw = document.getElementById('forensicsTraceRaw');
+      if (trRaw) {
+        var payload = {
+          trace_id: row.trace_id,
+          request_id: row.request_id,
+          decision: 'blocked',
+          forensic_trace: steps,
+          recorded_at: row.ts
+        };
+        trRaw.textContent = JSON.stringify(payload, null, 2);
+      }
+      var repro = document.getElementById('forensicsReproduceBody');
+      if (repro) repro.textContent = buildReproduceText(row);
+      setForensicsDetailTab(opts.tab || forensicsDetailTab || 'overview');
+      if (opts.scrollDetail) {
+        var det = document.getElementById('forensicsDetail');
+        if (det && window.matchMedia('(max-width: 1100px)').matches) {
+          det.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
     }
     function updateTenantSelect() {
       var sel = document.getElementById('tenantFilter');
@@ -252,12 +360,16 @@
       if (hint) {
         hint.textContent = rows.length + ' row(s)'
           + (filter ? ' · tenant ' + filter : ' · all tenants')
-          + (filterDateFrom || filterDateTo ? ' · date filter on' : '');
+          + (filterDateFrom || filterDateTo ? ' · date filter on' : '')
+          + ' · click a row for Trace / Reproduce';
       }
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="muted">No blocks match this filter — try &ldquo;Show all&rdquo;, clear dates, or check that middleware is recording <code>blocked_incidents</code>.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">No blocks match this filter — try &ldquo;Show all&rdquo;, clear dates, or check that middleware is recording <code>blocked_incidents</code>.</td></tr>';
+        clearForensicsSelection();
         return;
       }
+      var keepIdx = forensicsSelectedIdx;
+      if (keepIdx < 0 || keepIdx >= rows.length) keepIdx = -1;
       tbody.innerHTML = rows.map(function (row, idx) {
         var ts = '';
         try {
@@ -265,24 +377,21 @@
         } catch (e1) { ts = String(row.ts || ''); }
         var tr = reasonCellHtml(row);
         var why = whyCellHtml(row);
-        return '<tr>'
+        var sel = idx === keepIdx ? ' class="is-selected"' : '';
+        return '<tr data-i="' + idx + '"' + sel + ' tabindex="0" role="button" aria-label="Inspect blocked request">'
           + '<td>' + escapeHtml(ts) + '</td>'
           + '<td>' + escapeHtml(row.tenant_id || '') + '</td>'
           + '<td>' + escapeHtml(row.agent_id || '-') + '</td>'
           + '<td>' + escapeHtml(row.tool || '') + '</td>'
           + why
           + tr
-          + '<td style="font-size:0.72rem;" title="' + escapeHtmlAttr(String(row.trace_id || '')) + '">'
-          + escapeHtml(String(row.trace_id || '').slice(0, 40)) + (String(row.trace_id || '').length > 40 ? '…' : '') + '</td>'
-          + '<td style="font-size:0.72rem;" title="' + escapeHtmlAttr(String(row.request_id || '')) + '">'
-          + escapeHtml(String(row.request_id || '').slice(0, 32)) + (String(row.request_id || '').length > 32 ? '…' : '') + '</td>'
-          + '<td><span class="btn-row-act">'
-          + '<button type="button" class="btn-mini" data-act="detail" data-i="' + idx + '">Details</button>'
-          + '<button type="button" class="btn-mini" data-act="trace" data-i="' + idx + '">View trace</button>'
-          + '<button type="button" class="btn-mini" data-act="replay" data-i="' + idx + '">Reproduce</button>'
-          + '</span></td>'
           + '</tr>';
       }).join('');
+      if (keepIdx >= 0) {
+        selectForensicsRow(keepIdx);
+      } else if (forensicsSelectedIdx >= 0) {
+        clearForensicsSelection();
+      }
     }
 
     function incidentInDateRange(row) {
@@ -454,40 +563,34 @@
             closeAlertMenu();
             closeForensicsModals();
             closeIssueDetail();
+            clearForensicsSelection();
           }
         });
       }
       var fbody = document.getElementById('blockedForensicsBody');
       if (fbody) {
         fbody.addEventListener('click', function (e) {
-          var t = e.target;
-          if (!t.getAttribute || !t.getAttribute('data-act')) return;
-          var idx = parseInt(t.getAttribute('data-i'), 10);
-          var row = lastForensicsRows[idx];
-          if (!row) return;
-          if (t.getAttribute('data-act') === 'detail') {
-            openIssueDetail(
-              'Blocked request detail',
-              (row.pillar || row.kind || '') + ' · ' + (row.tool || ''),
-              row.forensic_trace || [],
-              row
-            );
-          }
-          if (t.getAttribute('data-act') === 'trace') {
-            if (row.forensic_trace && row.forensic_trace.length) {
-              openIssueDetail(
-                'Pillar trace',
-                row.trace_id || '',
-                row.forensic_trace,
-                row
-              );
-            } else {
-              openTraceModal(row);
-            }
-          }
-          if (t.getAttribute('data-act') === 'replay') openReplayModal(row);
+          var tr = e.target && e.target.closest ? e.target.closest('tr[data-i]') : null;
+          if (!tr) return;
+          if (e.target.closest && e.target.closest('details, a, button, summary')) return;
+          var idx = parseInt(tr.getAttribute('data-i'), 10);
+          selectForensicsRow(idx, { scrollDetail: true });
+        });
+        fbody.addEventListener('keydown', function (e) {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          var tr = e.target && e.target.closest ? e.target.closest('tr[data-i]') : null;
+          if (!tr) return;
+          e.preventDefault();
+          selectForensicsRow(parseInt(tr.getAttribute('data-i'), 10), { scrollDetail: true });
         });
       }
+      document.querySelectorAll('.forensics-tab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setForensicsDetailTab(btn.getAttribute('data-fd-tab') || 'overview');
+        });
+      });
+      var fdClear = document.getElementById('forensicsDetailClear');
+      if (fdClear) fdClear.addEventListener('click', clearForensicsSelection);
       var tc = document.getElementById('traceModalClose');
       var rc = document.getElementById('replayModalClose');
       var idc = document.getElementById('issueDetailClose');
