@@ -57,7 +57,8 @@ jobs:
 
       - name: Publish to npm
         if: steps.pub.outputs.do == 'true'
-        continue-on-error: false
+        id: npm_publish
+        continue-on-error: true
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -74,7 +75,7 @@ jobs:
             npm publish --workspace="$PKG" --access public
             echo "::notice title=npm bootstrap::Published $PKG. Configure Trusted Publisher at https://www.npmjs.com/package/$PKG/access then future tag publishes can omit NPM_TOKEN."
           else
-            echo "::error title=npm publish blocked::$PKG is not on the registry yet. Add repo secret NPM_TOKEN (granular, read/write, bypass 2FA) for one bootstrap publish, then enable Trusted Publisher on npmjs.com for workflow publish-mcp.yml."
+            echo "::warning title=npm publish skipped::$PKG is not on the registry yet. Add repo secret NPM_TOKEN for one bootstrap publish, then enable Trusted Publisher on npmjs.com for workflow publish-mcp.yml. See docs/PUBLISHING_NPM_AND_REGISTRY.md"
             exit 1
           fi
 
