@@ -26,7 +26,7 @@ This page ties together **what MCP-Bastion does**, how it maps to the **industry
 | **Semantic cache** | Optional similarity-based caching for tool semantics. | Performance; pair with policy so cache does not bypass checks. |
 | **Audit logging** | Structured trail of decisions (allow/deny, reasons). | Evidence for SOC, compliance, and incident review. |
 | **Alerts** | Slack + generic webhooks with retry/backoff. | Real-time notification into chat or ticketing pipelines. |
-| **Dashboard + metrics API** | Live UI, JSON `/api/metrics`, Prometheus `/metrics`. | Operator and SOC visibility without extra agents. |
+| **Dashboard + metrics API** | Live UI; JSON `/api/metrics` (incl. FinOps `cost_reduction`); `/api/posture`, `/api/prevalidate`, `/api/issue-guide`; Prometheus `/metrics`. Local artifacts only. | Operator and SOC visibility without extra agents. |
 | **OpenTelemetry (optional)** | OTLP export for traces when enabled. | Drop into existing APM (Datadog, Honeycomb, Jaeger, AWS ADOT, etc.). |
 | **Semantic firewall / sensitive classifier / external policy** | Tool-sequence rules, optional business-content scoring, OPA/Cedar delegation. | Deeper policy and content governance; see [PILLARS.md](PILLARS.md#extended-request-path-and-policy-features-1016). |
 | **Multi-tenant, edge auth, allowlist, session scope, metadata guard** | Per-tenant configs, gateway token check, fixed tool lists, session tool caps, poisoned metadata handling. | Enterprise boundary hardening; JSON-RPC codes **-32010..-32016** for related denies. |

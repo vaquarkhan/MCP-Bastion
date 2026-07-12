@@ -4,6 +4,8 @@
 
 MCP-Bastion does **not** run login, store tenant databases, or require ClickHouse. It enforces **policy + live cost + attestation** on the MCP path using `bastion.yaml`, then exports proof to **your** SIEM, vault, and identity stack.
 
+The optional **local dashboard** is the same rule applied to UX: a **read-only** view over in-process `MetricsStore` plus files you already write (`.bastion/scan/*.json`, attestations, `bastion.yaml`). Issue guides are **bundled offline**; OWASP URLs are optional outbound links only. No dashboard DB, no login, no cloud control plane. See [dashboard/README.md](../dashboard/README.md).
+
 Competitive lens: neutralize **ThinkWatch-style gateway moats** (proxy boundary, per-user identity, SIEM, secrets) while keeping offensive wedges gateways **cannot** replicate (in-process cost policy, data-flow taint, attestation without infra).
 
 Status key: ✅ shipped · 🟡 partial · 🔜 planned

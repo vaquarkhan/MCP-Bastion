@@ -112,9 +112,12 @@ Run the metrics dashboard:
 ```bash
 mcp-bastion dashboard
 mcp-bastion dashboard --port 7000
+mcp-bastion dashboard --port 7000 --demo
 ```
 
 Requires: `pip install fastapi uvicorn` (or `pip install mcp-bastion-python[dashboard]`).
+
+**`--demo`** seeds sample metrics + posture findings so the UI is populated without live traffic. Posture / prevalidate panels also read `.bastion/scan/*.json` when present. See [dashboard/README.md](../dashboard/README.md).
 
 ### redteam
 

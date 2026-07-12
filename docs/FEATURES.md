@@ -288,6 +288,7 @@ middleware = MCPBastionMiddleware(..., shadow_mode=True)
 | Hot reload | `hot_reload` | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) |
 | Multi-tenant | `multi_tenant` | [USE_CASES.md](USE_CASES.md) |
 | OTEL / Prometheus | `telemetry`, dashboard | [OTEL.md](OTEL.md), [METRICS.md](METRICS.md) |
+| Local dashboard panels (3.1.0) | posture, prevalidate, issue guides, FinOps burn | [dashboard/README.md](../dashboard/README.md) |
 | Red-team harness | CLI | [REDTEAM.md](REDTEAM.md) |
 | Supply-chain doctor | CLI | [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md) |
 
