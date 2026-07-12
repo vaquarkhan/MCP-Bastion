@@ -4,7 +4,7 @@
 
 **Registry:** `ghcr.io` **·** **Tags:** `latest` is updated on each successful publish from a **`v*`** version tag; image digests and tag history are on each package’s **Versions** page.
 
-**Current release pin:** Dockerfiles use `ARG BASTION_VERSION=3.0.1`, which installs `mcp-bastion-python==3.1.1` inside the proxy image at build time (with PyPI CDN retries). The dashboard image copies `src/` from the repo.
+**Current release pin:** Dockerfiles use `ARG BASTION_VERSION=3.1.2`, which installs `mcp-bastion-python==3.1.2` inside the proxy image at build time (with PyPI CDN retries). The dashboard image copies `src/` from the repo.
 
 Images are built by [`.github/workflows/publish-docker.yml`](.github/workflows/publish-docker.yml) on each **`v*`** tag (and can be run manually with **Actions → Publish Docker**). For upstream releases:
 
@@ -13,11 +13,11 @@ Images are built by [`.github/workflows/publish-docker.yml`](.github/workflows/p
 | [`ghcr.io/vaquarkhan/mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy) | HTTP MCP entrypoint (see [Dockerfile](Dockerfile))  -  port `8080` |
 | [`ghcr.io/vaquarkhan/mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard) | Metrics dashboard  -  port `7000` |
 
-**Current release:** **3.0.1** (2026-07-12) - `pip install mcp-bastion-python==3.1.1`
+**Current release:** **3.1.2** (2026-07-12) - `pip install mcp-bastion-python==3.1.2`
 
 ```bash
-docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v3.1.1
-docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:v3.1.1
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v3.1.2
+docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:v3.1.2
 # :latest tracks the most recent v* tag publish
 # docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
 ```

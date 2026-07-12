@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: **`mcp-bastion-python==3.1.1`** ([PyPI](https://pypi.org/project/mcp-bastion-python/3.1.1/)) — local dashboard posture / issue guides / FinOps burn panels; see [CHANGELOG](../CHANGELOG.md).
+Current Python package release: **`mcp-bastion-python==3.1.2`** ([PyPI](https://pypi.org/project/mcp-bastion-python/3.1.2/)) — local dashboard posture / issue guides / FinOps / forensics detail; see [CHANGELOG](../CHANGELOG.md).
 
 ## Start here
 
