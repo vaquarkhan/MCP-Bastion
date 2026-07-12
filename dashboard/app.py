@@ -331,7 +331,7 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v35-forensics-detail",
+        "ui_revision": "v37-forensics-autoselect",
         "hint": "If this is missing, you are not hitting dashboard/app.py - check port and process.",
     }
 
@@ -3026,7 +3026,7 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script src="/static/dashboard-app.js?v=35-forensics-detail" charset="utf-8"></script>
+  <script src="/static/dashboard-app.js?v=37-forensics-autoselect" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>

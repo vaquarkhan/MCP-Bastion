@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-deepseek"
-version = "3.1.1"
+version = "3.1.2"
 description = "MCP-Bastion security middleware for DeepSeek AI. Prompt injection, PII, and rate-limit protection."
 readme = "README.md"
 license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
