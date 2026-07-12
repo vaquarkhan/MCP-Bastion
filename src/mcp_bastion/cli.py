@@ -382,37 +382,189 @@ def cmd_attest_export(
 
 
 def cmd_scan(
-    tools_json: str,
+    tools_json: str | None = None,
     *,
     baseline: str | None = None,
     output: str | None = None,
     output_format: str = "text",
     fail_on: str = "high",
+    schema_checks: bool = True,
+    skills: str | None = None,
 ) -> int:
-    """Static scan of MCP tool definitions (pre-deploy rug-pull / poisoning checks)."""
+    """Static scan of MCP tool definitions and/or agent skill files."""
     _configure_cli_logging()
     _ensure_src_on_path()
-    from mcp_bastion.static_scan import format_report_text, scan_tools_file
 
-    p = Path(tools_json)
-    if not p.is_file():
-        logger.error("Tools file not found: %s", tools_json)
+    if not tools_json and not skills:
+        logger.error("Provide a tools JSON path and/or --skills DIR")
         return 1
+
+    sections: list[str] = []
+    worst_findings = False
+    threshold = (fail_on or "high").strip().lower()
+    if threshold not in ("critical", "high", "medium", "low", "info", "none"):
+        logger.error("Invalid --fail-on severity: %s", fail_on)
+        return 1
+
+    if tools_json:
+        from mcp_bastion.static_scan import format_report_text, scan_tools_file
+
+        p = Path(tools_json)
+        if not p.is_file():
+            logger.error("Tools file not found: %s", tools_json)
+            return 1
+        try:
+            report = scan_tools_file(str(p), baseline_path=baseline, schema_checks=schema_checks)
+        except Exception as e:
+            logger.error("scan failed: %s", e)
+            return 1
+        fmt = (output_format or "text").strip().lower()
+        if fmt == "json":
+            sections.append(json.dumps({"type": "tools", **report.to_dict()}, indent=2))
+        else:
+            sections.append(format_report_text(report))
+        if threshold != "none" and report.findings_at_or_above(threshold):  # type: ignore[arg-type]
+            worst_findings = True
+
+    if skills:
+        from mcp_bastion.skill_scan import format_skill_report_text, scan_skills
+
+        try:
+            sreport = scan_skills(skills)
+        except Exception as e:
+            logger.error("skill scan failed: %s", e)
+            return 1
+        fmt = (output_format or "text").strip().lower()
+        if fmt == "json":
+            sections.append(json.dumps({"type": "skills", **sreport.to_dict()}, indent=2))
+        else:
+            sections.append(format_skill_report_text(sreport))
+        if threshold != "none" and sreport.findings_at_or_above(threshold):  # type: ignore[arg-type]
+            worst_findings = True
+
+    text = "\n\n".join(sections)
+    if output:
+        Path(output).write_text(text + ("\n" if not text.endswith("\n") else ""), encoding="utf-8")
+        logger.info("Wrote scan report: %s", output)
+    else:
+        print(text)
+
+    if worst_findings:
+        logger.error("Scan failed: findings at or above %s severity", threshold)
+        return 1
+    return 0
+
+
+def cmd_osv_refresh(
+    *,
+    ecosystem: str = "PyPI",
+    db_dir: str = ".osv",
+) -> int:
+    """Download local OSV vulnerability dump (opt-in, user-run)."""
+    _configure_cli_logging()
+    _ensure_src_on_path()
+    from mcp_bastion.pillars.osv_scan import refresh_osv_db
+
     try:
-        report = scan_tools_file(str(p), baseline_path=baseline)
+        dest = refresh_osv_db(ecosystem=ecosystem, db_dir=db_dir)
     except Exception as e:
-        logger.error("scan failed: %s", e)
+        logger.error("osv-refresh failed: %s", e)
+        return 1
+    logger.info("OSV DB refreshed: %s", dest)
+    print(f"OSV DB refreshed: {dest}")
+    return 0
+
+
+def cmd_osv_scan(
+    deps_file: str | None = None,
+    *,
+    package: list[str] | None = None,
+    db_dir: str = ".osv",
+    online: bool = False,
+    timeout_ms: int = 3000,
+    output: str | None = None,
+    output_format: str = "text",
+    fail_on: str = "high",
+) -> int:
+    """Offline-first OSV dependency CVE lookup (network only if --online)."""
+    _configure_cli_logging()
+    _ensure_src_on_path()
+    from mcp_bastion.pillars.osv_scan import (
+        format_osv_report_text,
+        parse_dep_specs,
+        parse_deps_file,
+        scan_dependencies,
+    )
+
+    deps = []
+    if deps_file:
+        p = Path(deps_file)
+        if not p.is_file():
+            logger.error("Deps file not found: %s", deps_file)
+            return 1
+        deps.extend(parse_deps_file(p))
+    if package:
+        deps.extend(parse_dep_specs(package))
+    if not deps:
+        logger.error("Provide a deps file and/or --package name==version")
+        return 1
+
+    report = scan_dependencies(
+        deps,
+        db_dir=db_dir,
+        online=online,
+        timeout_ms=timeout_ms,
+        enabled=True,
+    )
+    fmt = (output_format or "text").strip().lower()
+    text = json.dumps(report.to_dict(), indent=2) if fmt == "json" else format_osv_report_text(report)
+    if output:
+        Path(output).write_text(text + "\n", encoding="utf-8")
+        logger.info("Wrote OSV report: %s", output)
+    else:
+        print(text)
+
+    threshold = (fail_on or "high").strip().lower()
+    if threshold == "none":
+        return 0
+    rank = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
+    if threshold not in rank:
+        logger.error("Invalid --fail-on severity: %s", fail_on)
+        return 1
+    if any(rank.get(f.severity, 0) >= rank[threshold] for f in report.findings):
+        logger.error("OSV scan failed: findings at or above %s", threshold)
+        return 1
+    return 0
+
+
+def cmd_audit(
+    root: str | None = None,
+    *,
+    config_paths: list[str] | None = None,
+    output: str | None = None,
+    output_format: str = "text",
+    fail_on: str = "high",
+) -> int:
+    """Local MCP risk audit - configs, over-broad tools, standing credential smells."""
+    _configure_cli_logging()
+    _ensure_src_on_path()
+    from mcp_bastion.risk_audit import format_risk_audit_text, run_risk_audit
+
+    try:
+        report = run_risk_audit(root, extra_config_paths=config_paths)
+    except Exception as e:
+        logger.error("audit failed: %s", e)
         return 1
 
     fmt = (output_format or "text").strip().lower()
     if fmt == "json":
         text = json.dumps(report.to_dict(), indent=2)
     else:
-        text = format_report_text(report)
+        text = format_risk_audit_text(report)
 
     if output:
         Path(output).write_text(text + ("\n" if not text.endswith("\n") else ""), encoding="utf-8")
-        logger.info("Wrote scan report: %s", output)
+        logger.info("Wrote audit report: %s", output)
     else:
         print(text)
 
@@ -421,7 +573,7 @@ def cmd_scan(
         logger.error("Invalid --fail-on severity: %s", fail_on)
         return 1
     if threshold != "none" and report.findings_at_or_above(threshold):  # type: ignore[arg-type]
-        logger.error("Scan failed: findings at or above %s severity", threshold)
+        logger.error("Audit failed: findings at or above %s severity", threshold)
         return 1
     return 0
 
@@ -562,13 +714,22 @@ def main() -> int:
 
     scan_parser = sub.add_parser(
         "scan",
-        help="Static scan of MCP tool definitions (injection, secrets, homoglyphs, drift)",
+        help="Static scan of MCP tool definitions (injection, secrets, homoglyphs, drift, schema)",
     )
-    scan_parser.add_argument("tools_json", help="JSON file with tools list or {tools: [...]}")
+    scan_parser.add_argument(
+        "tools_json",
+        nargs="?",
+        default=None,
+        help="JSON file with tools list or {tools: [...]} (optional if --skills is set)",
+    )
     scan_parser.add_argument(
         "--baseline",
         "-b",
         help="Fingerprint JSON from mcp-bastion fingerprint (detect catalog drift)",
+    )
+    scan_parser.add_argument(
+        "--skills",
+        help="Scan agent skill files under DIR (SKILL.md / *.skill.md); offline opt-in",
     )
     scan_parser.add_argument("--output", "-o", help="Write report to file")
     scan_parser.add_argument(
@@ -583,10 +744,111 @@ def main() -> int:
         choices=("critical", "high", "medium", "low", "info", "none"),
         help="Exit 1 if any finding meets this severity (default high; none = always 0)",
     )
+    scan_parser.add_argument(
+        "--no-schema-checks",
+        action="store_true",
+        help="Disable structural inputSchema precondition checks (on by default within scan)",
+    )
     scan_parser.set_defaults(
         func=lambda **kw: cmd_scan(
             kw.get("tools_json"),
             baseline=kw.get("baseline"),
+            output=kw.get("output"),
+            output_format=kw.get("format", "text"),
+            fail_on=kw.get("fail_on", "high"),
+            schema_checks=not kw.get("no_schema_checks", False),
+            skills=kw.get("skills"),
+        )
+    )
+
+    osv_refresh = sub.add_parser(
+        "osv-refresh",
+        help="Download local OSV vulnerability dump (opt-in; offline scans use this)",
+    )
+    osv_refresh.add_argument("--ecosystem", default="PyPI", help="OSV ecosystem (default PyPI)")
+    osv_refresh.add_argument("--dir", dest="osv_dir", default=".osv", help="Local DB directory")
+    osv_refresh.set_defaults(
+        func=lambda **kw: cmd_osv_refresh(ecosystem=kw.get("ecosystem", "PyPI"), db_dir=kw.get("osv_dir", ".osv"))
+    )
+
+    osv_scan = sub.add_parser(
+        "osv-scan",
+        help="Offline-first OSV dependency CVE lookup (enable online with --online)",
+    )
+    osv_scan.add_argument(
+        "deps_file",
+        nargs="?",
+        default=None,
+        help="requirements-style file with name==version lines",
+    )
+    osv_scan.add_argument(
+        "--package",
+        "-p",
+        action="append",
+        dest="osv_packages",
+        help="Package spec name==version (repeatable)",
+    )
+    osv_scan.add_argument("--dir", dest="osv_dir", default=".osv", help="Local OSV DB directory")
+    osv_scan.add_argument(
+        "--online",
+        action="store_true",
+        help="Opt-in OSV querybatch (fail-open; sends package name+version only)",
+    )
+    osv_scan.add_argument("--timeout-ms", type=int, default=3000, help="Online timeout (default 3000)")
+    osv_scan.add_argument("--output", "-o", help="Write report to file")
+    osv_scan.add_argument("--format", choices=("text", "json"), default="text")
+    osv_scan.add_argument(
+        "--fail-on",
+        default="high",
+        choices=("critical", "high", "medium", "low", "info", "none"),
+    )
+    osv_scan.set_defaults(
+        func=lambda **kw: cmd_osv_scan(
+            kw.get("deps_file"),
+            package=kw.get("osv_packages"),
+            db_dir=kw.get("osv_dir", ".osv"),
+            online=bool(kw.get("online")),
+            timeout_ms=int(kw.get("timeout_ms") or 3000),
+            output=kw.get("output"),
+            output_format=kw.get("format", "text"),
+            fail_on=kw.get("fail_on", "high"),
+        )
+    )
+
+    audit_parser = sub.add_parser(
+        "audit",
+        help="Local MCP risk audit (client configs, over-broad tools, credential smells)",
+    )
+    audit_parser.add_argument(
+        "--root",
+        "-r",
+        default=".",
+        help="Directory to search for MCP client configs (default: cwd)",
+    )
+    audit_parser.add_argument(
+        "--config",
+        "-c",
+        action="append",
+        dest="audit_configs",
+        help="Extra MCP client config JSON path (repeatable)",
+    )
+    audit_parser.add_argument("--output", "-o", help="Write report to file")
+    audit_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Report format (default text)",
+    )
+    audit_parser.add_argument(
+        "--fail-on",
+        default="high",
+        choices=("critical", "high", "medium", "low", "info", "none"),
+        help="Exit 1 if any finding meets this severity (default high; none = always 0)",
+    )
+    audit_parser.set_defaults(
+        func=lambda **kw: cmd_audit(
+            root=kw.get("root"),
+            config_paths=kw.get("audit_configs"),
             output=kw.get("output"),
             output_format=kw.get("format", "text"),
             fail_on=kw.get("fail_on", "high"),

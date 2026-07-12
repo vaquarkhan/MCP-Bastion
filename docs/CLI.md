@@ -4,7 +4,10 @@ Developer CLI for validating config, running the server, the dashboard, and oper
 
 | Command | Purpose |
 |---------|---------|
-| **`scan`** | Static scan of MCP tool definitions (pre-deploy poisoning / drift) |
+| **`scan`** | Static scan of MCP tool definitions (pre-deploy poisoning / drift / schema) + optional `--skills` |
+| **`audit`** | Local MCP risk audit (client configs, over-broad tools, credential smells) |
+| **`osv-refresh`** | Download local OSV vulnerability dump (opt-in) |
+| **`osv-scan`** | Offline-first dependency CVE lookup (optional `--online`) |
 | `validate` | Check `bastion.yaml` / policy |
 | `serve` | Run the example MCP server with config |
 | `dashboard` | Metrics UI + `/api/metrics` |
@@ -36,11 +39,47 @@ mcp-bastion scan tools.json --baseline baseline.json
 
 # CI-friendly JSON + non-failing report
 mcp-bastion scan tools.json --format json -o report.json --fail-on none
+
+# Skill files (opt-in; SKILL.md / *.skill.md under a directory)
+mcp-bastion scan --skills ./skills/
 ```
 
-Checks: prompt-injection patterns in descriptions/schemas, credential-like material, code-exec patterns, homoglyph tool-name pairs, hidden Unicode, optional fingerprint drift. Letter grade **A–F** in output. Exit **1** when findings meet `--fail-on` (default `high`).
+Checks: prompt-injection patterns in descriptions/schemas, credential-like material, code-exec patterns, homoglyph tool-name pairs, hidden Unicode, optional fingerprint drift, and **structural inputSchema preconditions** (unbounded strings, free-form objects, unconstrained numerics). Schema checks are on by default within `scan`; disable with `--no-schema-checks`. Letter grade **A-F** in output. Exit **1** when findings meet `--fail-on` (default `high`).
 
 Sample fixtures: `examples/fixtures/tools-clean.json`, `tools-poisoned.json`.
+
+### osv-refresh / osv-scan
+
+Offline-first dependency CVE lookup via a local OSV dump. Network is opt-in only.
+
+```bash
+# User-run refresh (downloads ecosystem zip into .osv/)
+mcp-bastion osv-refresh --ecosystem PyPI --dir .osv
+
+# Scan requirements-style pins (local DB only by default)
+mcp-bastion osv-scan requirements-lock.txt
+mcp-bastion osv-scan -p demo-pkg==1.0.0 --dir .osv
+
+# Opt-in online querybatch (fail-open; package name+version only)
+mcp-bastion osv-scan -p demo-pkg==1.0.0 --online --timeout-ms 3000
+```
+
+### audit
+
+Local **MCP surface** risk audit - maps what client configs grant before you enforce policy. Client-side only: discovers MCP client JSON configs, over-broad tool grants (`*`), standing credential smells in `env` / headers, and filesystem-server hints. No network, no vault, no login server.
+
+```bash
+# Scan cwd (and common user MCP config locations)
+mcp-bastion audit
+
+# Project root + explicit config path
+mcp-bastion audit --root . --config .cursor/mcp.json
+
+# CI-friendly JSON (always exit 0)
+mcp-bastion audit --format json -o risk-audit.json --fail-on none
+```
+
+Letter grade **A-F**. Exit **1** when findings meet `--fail-on` (default `high`). Pair with `examples/bastion-filesystem-guards.yaml` when agents can reach local files.
 
 ### validate
 

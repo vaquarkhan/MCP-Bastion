@@ -43,6 +43,20 @@ FRAMEWORK_CONTROLS: dict[str, dict[str, list[str]]] = {
         "MAP-1": ["prompt_guard", "semantic_firewall", "sensitive_classifier"],
         "MANAGE-2": ["cost_tracker", "rate_limit", "auto_repave"],
     },
+    # OWASP Top 10 for Agentic Applications 2026 (ASI) - evidence mapping to pillars.
+    # Titles verified from OWASP GenAI Security Project (2025-12-09 announcement).
+    "asi": {
+        "ASI01": ["prompt_guard", "content_filter"],
+        "ASI02": ["argument_guards", "tool_allowlist", "rbac", "agent_iam"],
+        "ASI03": ["agent_iam", "edge_auth", "rbac"],
+        "ASI04": ["server_verification", "tool_metadata_fingerprint"],
+        "ASI05": ["content_filter", "argument_guards", "prompt_guard"],
+        "ASI06": ["semantic_firewall", "prompt_guard"],
+        "ASI07": ["edge_auth", "agent_iam"],
+        "ASI08": ["circuit_breaker", "rate_limit", "auto_repave"],
+        "ASI09": ["audit", "prompt_guard"],
+        "ASI10": ["agent_iam", "tool_allowlist", "auto_repave"],
+    },
 }
 
 

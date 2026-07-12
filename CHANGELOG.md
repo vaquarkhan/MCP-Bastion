@@ -1,16 +1,35 @@
 ﻿# Changelog
 
-**Current release:** **3.0.0** (2026-07-11) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.0.0/) · [Docker `v3.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **3.0.1** (2026-07-12) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.0.1/) · [Docker `v3.0.1`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [3.0.1] - 2026-07-12
+
+Patch release: client-side scan suite expansion (audit, schema, skills, OSV), taxonomy, and prior PromptGuard/scan polish. All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.0.1**.
+
+### Added
+
+- **`mcp-bastion audit`:** local MCP risk audit of client configs (over-broad tools, standing credential smells, filesystem-server hints). ASCII text + JSON; `--fail-on` for CI.
+- **Filesystem policy pack:** `examples/bastion-filesystem-guards.yaml` and `examples/filesystem_env_deny_demo.py` (allow README, deny `.env` / `.git/config`).
+- **`mcp-bastion scan` schema checks:** structural inputSchema preconditions (unbounded strings, free-form objects, unconstrained numerics). On by default within scan; `--no-schema-checks` to disable.
+- **`mcp-bastion scan --skills`:** offline agent skill file scanning (over-broad grants, credential path refs, name mismatch).
+- **`mcp-bastion osv-refresh` / `osv-scan`:** offline-first OSV dependency CVE lookup; online querybatch opt-in and fail-open.
+- **ASI taxonomy:** verified OWASP Agentic Top 10 (ASI01-10) tags in `taxonomy.py` + `report --framework asi` pillar mapping; JSON scan/audit findings include `taxonomy`.
+- **Docs:** [docs/TAXONOMY.md](docs/TAXONOMY.md), scan-suite graphic `images/mcp-bastion-scan-suite.png`.
+- **Census script:** `scripts/census_public_mcp.py` grades public/local tool catalogs into `docs/census/` (metadata only).
 
 ### Fixed
 
 - **PromptGuard default:** `use_ungated_default` now defaults to **true** (ProtectAI DeBERTa, no HF login). Gated Llama Prompt Guard remains opt-in. Fail-closed (`fail_open: false`) unchanged so missing ML still blocks unverified traffic.
 - **`mcp-bastion scan` output:** ASCII-only console strings (no em-dash/ellipsis mojibake on Windows cp1252).
 - **Compliance report:** SOC2/GDPR `pii_redaction` controls also count audit pillars named `pii` (legacy/simulators).
+
+### Changed
+
+- All **18 PyPI packages**, npm `@mcp-bastion/core`, Docker images, and MCP Registry bumped to **3.0.1**.
 
 ## [3.0.0] - 2026-07-11
 

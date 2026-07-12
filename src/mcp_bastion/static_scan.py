@@ -80,6 +80,11 @@ class ScanFinding:
         }
         if self.detail:
             out["detail"] = self.detail
+        from mcp_bastion.taxonomy import tags_for_check
+
+        tags = tags_for_check(self.check)
+        if tags:
+            out["taxonomy"] = tags
         return out
 
 
@@ -153,6 +158,8 @@ def _scan_tool_entry(
     *,
     content_filter: ContentFilter,
     prompt_guard: PromptGuardEngine,
+    schema_checks: bool = True,
+    risky_names: tuple[str, ...] | list[str] | None = None,
 ) -> list[ScanFinding]:
     name = str(entry.get("name") or "unknown").strip() or "unknown"
     text = tool_metadata_scan_text(entry)
@@ -211,6 +218,125 @@ def _scan_tool_entry(
             )
         )
 
+    if schema_checks:
+        findings.extend(_scan_input_schema(entry, name, risky_names=risky_names))
+
+    return findings
+
+
+_DEFAULT_RISKY_NAMES = ("cmd", "command", "path", "file", "url", "query", "sql", "script", "code")
+_SIZE_NAMES = ("limit", "count", "n", "size", "max", "offset", "timeout")
+_STRING_CONSTRAINTS = ("maxLength", "enum", "pattern", "const", "format")
+_NUMBER_CONSTRAINTS = ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "enum", "const")
+
+
+def _scan_input_schema(
+    entry: dict[str, Any],
+    name: str,
+    *,
+    risky_names: tuple[str, ...] | list[str] | None = None,
+) -> list[ScanFinding]:
+    """Flag schema shapes that precede RCE-class issues (static, offline)."""
+    findings: list[ScanFinding] = []
+    risky = tuple(n.lower() for n in (risky_names if risky_names is not None else _DEFAULT_RISKY_NAMES))
+    schema = entry.get("inputSchema") or entry.get("input_schema")
+
+    if schema is None:
+        findings.append(
+            ScanFinding(
+                tool=name,
+                check="missing_input_schema",
+                severity="medium",
+                message="Tool has no inputSchema (arguments unconstrained)",
+            )
+        )
+        return findings
+
+    if not isinstance(schema, dict):
+        findings.append(
+            ScanFinding(
+                tool=name,
+                check="invalid_input_schema",
+                severity="medium",
+                message="inputSchema is not a JSON object",
+            )
+        )
+        return findings
+
+    props = schema.get("properties")
+    if not isinstance(props, dict):
+        props = {}
+    required_raw = schema.get("required") or []
+    required = {str(x) for x in required_raw} if isinstance(required_raw, list) else set()
+    additional = schema.get("additionalProperties", True)
+
+    if not props and additional is not False:
+        findings.append(
+            ScanFinding(
+                tool=name,
+                check="weak_schema",
+                severity="medium",
+                message="Tool accepts free-form arguments (no properties, additionalProperties open)",
+            )
+        )
+
+    for pname, spec in props.items():
+        if not isinstance(spec, dict):
+            continue
+        pl = str(pname).lower()
+        is_risky = pl in risky
+        ptype = spec.get("type")
+
+        if ptype == "string" and not any(k in spec for k in _STRING_CONSTRAINTS):
+            findings.append(
+                ScanFinding(
+                    tool=name,
+                    check="unbounded_string",
+                    severity="high" if is_risky else "medium",
+                    message=(
+                        f"Unbounded string parameter '{pname}' "
+                        "(no maxLength/enum/pattern)"
+                    ),
+                )
+            )
+
+        if ptype in ("number", "integer") and pl in _SIZE_NAMES:
+            if not any(k in spec for k in _NUMBER_CONSTRAINTS):
+                findings.append(
+                    ScanFinding(
+                        tool=name,
+                        check="unconstrained_numeric",
+                        severity="medium",
+                        message=(
+                            f"Unconstrained numeric parameter '{pname}' "
+                            "(no minimum/maximum/enum)"
+                        ),
+                    )
+                )
+
+        if isinstance(ptype, str) and ptype == "object":
+            nested_props = spec.get("properties")
+            nested_add = spec.get("additionalProperties", True)
+            if (not isinstance(nested_props, dict) or not nested_props) and nested_add is not False:
+                findings.append(
+                    ScanFinding(
+                        tool=name,
+                        check="weak_schema",
+                        severity="medium",
+                        message=f"Object parameter '{pname}' is free-form (no properties)",
+                    )
+                )
+
+        if is_risky and pname not in required and str(pname) not in required:
+            findings.append(
+                ScanFinding(
+                    tool=name,
+                    check="risky_arg_optional",
+                    severity="low",
+                    message=f"Security-relevant parameter '{pname}' is not in required[]",
+                )
+            )
+
     return findings
 
 
@@ -220,11 +346,14 @@ def scan_tools(
     baseline_fingerprint: str | None = None,
     extra_heuristic_patterns: list[str] | None = None,
     denylist_patterns: list[str] | None = None,
+    schema_checks: bool = True,
+    risky_names: tuple[str, ...] | list[str] | None = None,
 ) -> ScanReport:
     """
     Scan a tools/list-style catalog offline.
 
     Uses heuristic injection detection and content_filter only (no ML, no network).
+    Schema precondition checks are on by default within scan (disable with schema_checks=False).
     """
     fp = fingerprint_tools(tools)
     baseline_match: bool | None = None
@@ -262,7 +391,13 @@ def scan_tools(
         if not isinstance(entry, dict):
             continue
         findings.extend(
-            _scan_tool_entry(entry, content_filter=content_filter, prompt_guard=prompt_guard)
+            _scan_tool_entry(
+                entry,
+                content_filter=content_filter,
+                prompt_guard=prompt_guard,
+                schema_checks=schema_checks,
+                risky_names=risky_names,
+            )
         )
 
     findings.extend(_find_homoglyph_pairs(tools))
@@ -276,6 +411,8 @@ def scan_tools_file(
     baseline_path: str | None = None,
     extra_heuristic_patterns: list[str] | None = None,
     denylist_patterns: list[str] | None = None,
+    schema_checks: bool = True,
+    risky_names: tuple[str, ...] | list[str] | None = None,
 ) -> ScanReport:
     tools = load_tools_from_json(path)
     baseline: str | None = None
@@ -286,6 +423,8 @@ def scan_tools_file(
         baseline_fingerprint=baseline,
         extra_heuristic_patterns=extra_heuristic_patterns,
         denylist_patterns=denylist_patterns,
+        schema_checks=schema_checks,
+        risky_names=risky_names,
     )
 
 
@@ -300,11 +439,20 @@ def format_report_text(report: ScanReport) -> str:
         lines.append(f"Baseline match: {'yes' if report.baseline_match else 'NO'}")
     lines.append("")
     if not report.findings:
-        lines.append("No findings - catalog looks clean under heuristic + content checks.")
+        lines.append("No findings - catalog looks clean under heuristic, content, and schema checks.")
         return "\n".join(lines)
     lines.append(f"Findings ({len(report.findings)}):")
     for f in report.findings:
-        lines.append(f"  [{f.severity.upper()}] {f.tool} - {f.check}: {f.message}")
+        tax = ""
+        try:
+            from mcp_bastion.taxonomy import tags_for_check
+
+            tags = tags_for_check(f.check)
+            if tags.get("asi"):
+                tax = f" [{', '.join(tags['asi'])}]"
+        except Exception:
+            tax = ""
+        lines.append(f"  [{f.severity.upper()}] {f.tool} - {f.check}: {f.message}{tax}")
         if f.detail:
             lines.append(f"           {f.detail}")
     return "\n".join(lines)

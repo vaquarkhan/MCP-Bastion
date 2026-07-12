@@ -70,6 +70,8 @@ Hub with all files: [Docs README](README.md).
 - [Detailed Tutorial](DETAILED_TUTORIAL.md)
 - [Policy as Code](POLICY_AS_CODE.md)
 - [CLI Reference](CLI.md)
+- [Finding taxonomy (ASI / MCP / LLM)](TAXONOMY.md)
+- [Public MCP census](census/README.md)
 - [LLM Integration](LLM_INTEGRATION.md)
 - [Metrics and Dashboard](METRICS.md)
 - [Security, OWASP MCP Top 10, observability, fleet rollout, SIEM audit](SECURITY_OBSERVABILITY.md)
