@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import zipfile
+from collections import defaultdict
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -981,30 +982,51 @@ def load_trends_from_audit(
     date_from: str | None = None,
     date_to: str | None = None,
 ) -> dict[str, Any]:
-    """Block-rate / PII trends from local audit JSONL (no DB)."""
+    """
+    Posture drift from local audit JSONL (no DB).
+
+    Returns daily series + summary KPIs (block-rate drift, top kinds/tools/pillars).
+    """
+    from mcp_bastion.pillars.metrics import MetricsStore
+
     path = audit_jsonl_path()
-    buckets: dict[str, dict[str, int]] = {}
+    empty = {
+        "path": str(path),
+        "present": False,
+        "days": [],
+        "summary": {},
+        "top_kinds": [],
+        "top_tools": [],
+        "top_pillars": [],
+        "recent_blocks": [],
+        "hint": f"No audit file at {path}. Enable audit.jsonl_path in bastion.yaml or set MCP_BASTION_AUDIT_PATH.",
+        "date_from": date_from,
+        "date_to": date_to,
+    }
     if not path.is_file():
-        return {
-            "path": str(path),
-            "present": False,
-            "days": [],
-            "hint": f"No audit file at {path}",
-            "date_from": date_from,
-            "date_to": date_to,
-        }
+        return empty
 
     df = _parse_day(date_from)
     dt = _parse_day(date_to)
+    buckets: dict[str, dict[str, Any]] = {}
+    kind_totals: dict[str, int] = defaultdict(int)
+    tool_totals: dict[str, int] = defaultdict(int)
+    pillar_totals: dict[str, int] = defaultdict(int)
+    recent_blocks: list[dict[str, Any]] = []
+    line_count = 0
+    parse_errors = 0
+
     try:
         with path.open(encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
+                line_count += 1
                 try:
                     row = json.loads(line)
                 except json.JSONDecodeError:
+                    parse_errors += 1
                     continue
                 if not isinstance(row, dict):
                     continue
@@ -1016,25 +1038,63 @@ def load_trends_from_audit(
                     continue
                 if dt and day > dt:
                     continue
-                b = buckets.setdefault(day, {"allowed": 0, "blocked": 0, "pii": 0})
+                b = buckets.setdefault(
+                    day,
+                    {
+                        "allowed": 0,
+                        "blocked": 0,
+                        "pii": 0,
+                        "latency_sum": 0.0,
+                        "latency_n": 0,
+                        "kinds": defaultdict(int),
+                        "tools": defaultdict(int),
+                    },
+                )
                 action = str(row.get("action") or "").upper()
+                tool = str(row.get("tool") or "unknown")
+                reason = str(row.get("reason") or "")
+                kind = MetricsStore._normalize_reason_kind(reason)
+                pillar = ""
+                for step in reversed(row.get("forensic_trace") or []):
+                    if isinstance(step, dict) and step.get("status") in ("blocked", "would_block"):
+                        pillar = str(step.get("pillar") or "")
+                        break
                 if action == "BLOCKED":
                     b["blocked"] += 1
+                    b["kinds"][kind] += 1
+                    b["tools"][tool] += 1
+                    kind_totals[kind] += 1
+                    tool_totals[tool] += 1
+                    if pillar:
+                        pillar_totals[pillar] += 1
+                    recent_blocks.append(
+                        {
+                            "ts": ts,
+                            "day": day,
+                            "tool": tool,
+                            "kind": kind,
+                            "pillar": pillar or kind,
+                            "reason": reason[:180],
+                            "latency_ms": row.get("latency_ms"),
+                        }
+                    )
                 elif action == "ALLOWED":
                     b["allowed"] += 1
                 pii = row.get("pii_redacted") or row.get("pii_count")
                 if isinstance(pii, int):
                     b["pii"] += pii
+                try:
+                    lat = float(row.get("latency_ms") or 0)
+                    if 0 < lat < 600_000:
+                        b["latency_sum"] += lat
+                        b["latency_n"] += 1
+                except (TypeError, ValueError):
+                    pass
     except Exception as e:
         logger.debug("audit trend read failed: %s", e)
-        return {
-            "path": str(path),
-            "present": False,
-            "days": [],
-            "hint": str(e),
-            "date_from": date_from,
-            "date_to": date_to,
-        }
+        out = dict(empty)
+        out["hint"] = str(e)
+        return out
 
     days_sorted = sorted(buckets.keys())
     if not df and not dt:
@@ -1042,22 +1102,96 @@ def load_trends_from_audit(
     series = []
     for d in days_sorted:
         b = buckets[d]
-        total = b["allowed"] + b["blocked"]
+        total = int(b["allowed"]) + int(b["blocked"])
+        lat_n = int(b["latency_n"] or 0)
         series.append(
             {
                 "day": d,
-                "allowed": b["allowed"],
-                "blocked": b["blocked"],
-                "pii": b["pii"],
+                "allowed": int(b["allowed"]),
+                "blocked": int(b["blocked"]),
+                "events": total,
+                "pii": int(b["pii"]),
                 "block_rate_pct": round(100.0 * b["blocked"] / total, 2) if total else 0.0,
+                "avg_latency_ms": round(b["latency_sum"] / lat_n, 2) if lat_n else None,
+                "top_kind": (
+                    max(b["kinds"].items(), key=lambda x: x[1])[0] if b["kinds"] else None
+                ),
+                "top_tool": (
+                    max(b["tools"].items(), key=lambda x: x[1])[0] if b["tools"] else None
+                ),
             }
         )
+
+    allowed = sum(d["allowed"] for d in series)
+    blocked = sum(d["blocked"] for d in series)
+    events = allowed + blocked
+    block_rate = round(100.0 * blocked / events, 2) if events else 0.0
+
+    # Drift: compare first half vs second half of the visible window
+    drift = "insufficient_data"
+    drift_delta_pp = 0.0
+    prior_rate = None
+    recent_rate = None
+    if len(series) >= 2:
+        mid = max(1, len(series) // 2)
+        first, second = series[:mid], series[mid:]
+        f_ev = sum(d["allowed"] + d["blocked"] for d in first)
+        s_ev = sum(d["allowed"] + d["blocked"] for d in second)
+        f_blk = sum(d["blocked"] for d in first)
+        s_blk = sum(d["blocked"] for d in second)
+        prior_rate = round(100.0 * f_blk / f_ev, 2) if f_ev else 0.0
+        recent_rate = round(100.0 * s_blk / s_ev, 2) if s_ev else 0.0
+        drift_delta_pp = round(recent_rate - prior_rate, 2)
+        if abs(drift_delta_pp) < 1.0:
+            drift = "stable"
+        elif drift_delta_pp > 0:
+            drift = "rising"
+        else:
+            drift = "falling"
+    elif len(series) == 1:
+        drift = "stable"
+        recent_rate = series[0]["block_rate_pct"]
+        prior_rate = recent_rate
+
+    def _top(counter: dict[str, int], n: int = 8) -> list[dict[str, Any]]:
+        items = sorted(counter.items(), key=lambda x: -x[1])[:n]
+        return [{"id": k, "count": v, "share_pct": round(100.0 * v / blocked, 1) if blocked else 0.0} for k, v in items]
+
+    try:
+        file_bytes = path.stat().st_size
+    except OSError:
+        file_bytes = 0
+
+    top_kinds = _top(kind_totals)
+    top_driver = top_kinds[0]["id"] if top_kinds else None
+
     return {
         "path": str(path),
         "present": True,
         "days": series,
+        "summary": {
+            "events": events,
+            "allowed": allowed,
+            "blocked": blocked,
+            "block_rate_pct": block_rate,
+            "pii_total": sum(d["pii"] for d in series),
+            "day_count": len(series),
+            "drift": drift,
+            "drift_delta_pp": drift_delta_pp,
+            "prior_block_rate_pct": prior_rate,
+            "recent_block_rate_pct": recent_rate,
+            "top_driver": top_driver,
+            "file_bytes": file_bytes,
+            "line_count": line_count,
+            "parse_errors": parse_errors,
+        },
+        "top_kinds": top_kinds,
+        "top_tools": _top(tool_totals),
+        "top_pillars": _top(pillar_totals),
+        "recent_blocks": list(reversed(recent_blocks[-12:])),
         "date_from": date_from,
         "date_to": date_to,
+        "hint": None,
     }
 
 

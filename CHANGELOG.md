@@ -1,10 +1,25 @@
 ﻿# Changelog
 
-**Current release:** **3.1.0** (2026-07-12) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.1.0/) · [Docker `v3.1.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **3.1.1** (2026-07-12) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.1.1/) · [Docker `v3.1.1`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [3.1.1] - 2026-07-12
+
+Patch release: complete dashboard tour captures (how-to-fix + FinOps + RBAC), posture-drift panel, and governance tiles for core policy pillars. All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.1.1**.
+
+### Added
+
+- **Posture drift panel:** daily allow/block charts, drift Δ, top kinds/tools, recent blocks from local audit JSONL (`/api/trends`).
+- **Governance tiles for core policy:** RBAC, prompt guard, rate limit, cost, PII, schema, content filter alongside Agent IAM / supply-chain / transport.
+- **12-slide tour GIF:** includes PMD-style **how to fix** modal and **token reduction / cost savings** FinOps panel; regenerate via `scripts/capture_dashboard_demo.py`.
+
+### Changed
+
+- Demo mode enables RBAC and common pillars so the board matches seeded blocks.
+- `dashboard/README.md` documents the full slide list and FinOps / issue-guide / RBAC surfaces.
 
 ## [3.1.0] - 2026-07-12
 

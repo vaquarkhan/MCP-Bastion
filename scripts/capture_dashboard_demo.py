@@ -39,45 +39,65 @@ SLIDES: list[dict[str, str]] = [
         "anchor": "#dash-posture",
     },
     {
-        "id": "03-owasp",
+        "id": "03-issue-guide",
+        "title": "How to fix (PMD-style guide)",
+        "caption": "Why it matters · remediation steps · Bastion knobs · OWASP refs",
+        "anchor": "#dash-posture",
+        "action": "open_issue_guide",
+    },
+    {
+        "id": "04-owasp",
         "title": "OWASP ASI / MCP / LLM coverage",
         "caption": "Agentic Top 10 heatmap with finding + block pressure",
         "anchor": "#dash-taxonomy",
+        "action": "close_modal",
     },
     {
-        "id": "04-attack",
+        "id": "05-attack",
         "title": "Live attack matrix",
         "caption": "What is under pressure right now, mapped to OWASP/ASI",
         "anchor": "#dash-attack",
     },
     {
-        "id": "05-compliance",
+        "id": "06-compliance",
         "title": "Compliance evidence & reports",
         "caption": "SOC2 / GDPR / ISO / NIST / ASI reports + evidence bundle",
         "anchor": "#dash-compliance",
     },
     {
-        "id": "06-governance",
-        "title": "Runtime governance",
-        "caption": "Agent IAM, server verification, transport hardening",
+        "id": "07-governance",
+        "title": "RBAC + runtime governance",
+        "caption": "RBAC, prompt guard, rate/cost, PII, Agent IAM, supply-chain",
         "anchor": "#dash-governance",
     },
     {
-        "id": "07-forensics",
+        "id": "08-forensics",
         "title": "Forensics + why blocked",
-        "caption": "Pillar provenance, PMD-style how-to-fix, reproduce helpers",
+        "caption": "Pillar provenance, Details, reproduce helpers",
         "anchor": "#dash-forensics",
     },
     {
-        "id": "08-finops",
-        "title": "Cost burn & reduction",
-        "caption": "Actual vs would-have-been cost/tokens + block avoidance graphs",
+        "id": "09-agents",
+        "title": "Agent IAM / confused-deputy",
+        "caption": "Denied-by-agent counts and per-agent tool scope map",
+        "anchor": "#dash-agents",
+    },
+    {
+        "id": "10-drift",
+        "title": "Posture drift (audit JSONL)",
+        "caption": "Daily allow/block, drift Δ, top drivers — local file only",
+        "anchor": "#dash-trends",
+    },
+    {
+        "id": "11-finops",
+        "title": "Token reduction & cost savings",
+        "caption": "Actual vs would-have-been · FinOps saved · avoided by blocks",
         "anchor": "#dash-finops",
     },
     {
-        "id": "09-traffic",
+        "id": "12-traffic",
         "title": "Traffic & block reasons",
-        "caption": "Allowed vs blocked time series and top tools",
+        "caption": "Allowed vs blocked time series, RBAC/injection mix, top tools",
         "anchor": "#dash-traffic",
     },
 ]
@@ -247,6 +267,15 @@ async def capture() -> int:
 
         annotated: list[Path] = []
         for slide in SLIDES:
+            action = slide.get("action") or ""
+            if action == "close_modal":
+                await page.evaluate(
+                    """() => {
+                      const m = document.getElementById('issueDetailModal');
+                      if (m) m.classList.remove('open');
+                    }"""
+                )
+                await page.wait_for_timeout(200)
             if slide.get("anchor"):
                 await page.evaluate(
                     """(sel) => {
@@ -261,12 +290,47 @@ async def capture() -> int:
             else:
                 await page.evaluate("() => window.scrollTo(0, 0)")
             await page.wait_for_timeout(700)
+
+            if action == "open_issue_guide":
+                # Open first prevalidate / posture "Why / how to fix" button
+                clicked = await page.evaluate(
+                    """() => {
+                      const btn = document.querySelector('#prevalidateBody [data-pv-i], #postureFindingsBody [data-finding-i], button.btn-linkish');
+                      if (!btn) return false;
+                      btn.click();
+                      return true;
+                    }"""
+                )
+                if clicked:
+                    try:
+                        await page.wait_for_selector("#issueDetailModal.open", timeout=4000)
+                        await page.wait_for_timeout(600)
+                        # Prefer guide content visible
+                        await page.wait_for_function(
+                            """() => {
+                              const g = document.getElementById('issueDetailGuide');
+                              return g && !g.hidden && (g.textContent || '').length > 40;
+                            }""",
+                            timeout=4000,
+                        )
+                    except Exception:
+                        pass
+                    await page.wait_for_timeout(400)
+
             raw = raw_dir / f"{slide['id']}.png"
             await page.screenshot(path=str(raw), full_page=False)
             ann = slides_dir / f"{slide['id']}.png"
             _annotate(raw, slide["title"], slide["caption"], ann)
             annotated.append(ann)
             print("slide", ann.name)
+
+            if action == "open_issue_guide":
+                await page.evaluate(
+                    """() => {
+                      const m = document.getElementById('issueDetailModal');
+                      if (m) m.classList.remove('open');
+                    }"""
+                )
 
         # Full-page overview (compressed later)
         full = raw_dir / "full-page.png"

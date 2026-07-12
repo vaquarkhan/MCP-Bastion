@@ -138,15 +138,20 @@ def test_compliance_and_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 def test_trends_and_onboarding(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     audit = tmp_path / "audit.jsonl"
     audit.write_text(
-        '{"timestamp":"2026-07-10T01:00:00Z","action":"BLOCKED"}\n'
-        '{"timestamp":"2026-07-10T02:00:00Z","action":"ALLOWED"}\n'
-        '{"timestamp":"2026-07-11T01:00:00Z","action":"ALLOWED"}\n',
+        '{"timestamp":"2026-07-10T01:00:00Z","action":"BLOCKED","tool":"web_search","reason":"rate limit: too many"}\n'
+        '{"timestamp":"2026-07-10T02:00:00Z","action":"ALLOWED","tool":"web_search"}\n'
+        '{"timestamp":"2026-07-11T01:00:00Z","action":"ALLOWED","tool":"read_file"}\n'
+        '{"timestamp":"2026-07-11T03:00:00Z","action":"BLOCKED","tool":"query_llm","reason":"injection: ignore previous"}\n',
         encoding="utf-8",
     )
     monkeypatch.setenv("MCP_BASTION_AUDIT_PATH", str(audit))
     trends = load_trends_from_audit(days=14)
     assert trends["present"] is True
     assert len(trends["days"]) >= 1
+    assert trends["summary"]["events"] >= 3
+    assert trends["summary"]["blocked"] >= 1
+    assert trends["top_kinds"]
+    assert trends["recent_blocks"]
     empty_scan = tmp_path / "noscan"
     empty_scan.mkdir()
     monkeypatch.setenv("MCP_BASTION_SCAN_DIR", str(empty_scan))

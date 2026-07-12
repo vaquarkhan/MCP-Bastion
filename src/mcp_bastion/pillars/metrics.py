@@ -230,10 +230,14 @@ class MetricsStore:
             return "replay"
         if "schema" in lower or "validation" in lower:
             return "schema_validation"
+        if "argument guard" in lower or "argument_guards" in lower:
+            return "argument_guards"
         if "agent" in lower and ("not permitted" in lower or "identity" in lower):
             return "agent_iam"
         if "checksum verification" in lower or "manifest signature" in lower:
             return "server_verification"
+        if "promptguard" in lower or "prompt guard" in lower or "ml model unavailable" in lower:
+            return "injection"
         return "other"
 
     @staticmethod
