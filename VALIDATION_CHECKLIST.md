@@ -82,7 +82,7 @@ Use the official MCP Inspector to validate JSON-RPC 2.0 and CallTool/ReadResourc
 # Python
 pip install mcp-bastion-python torch transformers presidio-analyzer presidio-anonymizer spacy
 # Optional: pin latest tested release
-pip install mcp-bastion-python==3.1.0
+pip install mcp-bastion-python==3.1.1
 python -m spacy download en_core_web_sm
 
 # Dev (for pytest async)

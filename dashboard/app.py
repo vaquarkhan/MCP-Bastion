@@ -57,12 +57,41 @@ def _load_demo_bastion_config() -> object:
     try:
         from mcp_bastion.config import load_config
 
-        return load_config()
+        cfg = load_config()
     except Exception as e:
         logger.debug("load_config for demo failed (%s); using defaults", e)
         from mcp_bastion.config import BastionConfig
 
-        return BastionConfig()
+        cfg = BastionConfig()
+    # Demo board should show RBAC + common pillars as enabled so tiles and seed blocks match.
+    if _demo_metrics_enabled():
+        for attr, val in (
+            ("rbac", True),
+            ("prompt_guard", True),
+            ("rate_limit", True),
+            ("pii", True),
+            ("cost_tracker", True),
+            ("schema_validation", True),
+            ("content_filter", True),
+            ("agent_iam_enabled", True),
+            ("server_verification_enabled", True),
+        ):
+            try:
+                setattr(cfg, attr, val)
+            except Exception:
+                pass
+        if not getattr(cfg, "agent_iam_agents", None):
+            try:
+                cfg.agent_iam_agents = [
+                    {
+                        "id": "support-bot",
+                        "allowed_tools": ["query_llm", "web_search", "read_file"],
+                        "blocked_tools": ["delete_repo"],
+                    }
+                ]
+            except Exception:
+                pass
+    return cfg
 
 
 def _governance_config_snapshot() -> dict:
@@ -104,6 +133,14 @@ def _governance_config_snapshot() -> dict:
             "tool_metadata_fingerprint": {
                 "enabled": bool(getattr(cfg, "tool_metadata_fingerprint_enabled", False)),
             },
+            # Core policy pillars (RBAC / injection / FinOps / PII) — same panel, same bastion.yaml
+            "rbac": {"enabled": bool(getattr(cfg, "rbac", False))},
+            "prompt_guard": {"enabled": bool(getattr(cfg, "prompt_guard", False))},
+            "rate_limit": {"enabled": bool(getattr(cfg, "rate_limit", False))},
+            "pii": {"enabled": bool(getattr(cfg, "pii", False))},
+            "cost_tracker": {"enabled": bool(getattr(cfg, "cost_tracker", False))},
+            "schema_validation": {"enabled": bool(getattr(cfg, "schema_validation", False))},
+            "content_filter": {"enabled": bool(getattr(cfg, "content_filter", False))},
         },
     }
 
@@ -294,7 +331,7 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v32-finops-avoidance-charts",
+        "ui_revision": "v34-tour-capture-rbac",
         "hint": "If this is missing, you are not hitting dashboard/app.py - check port and process.",
     }
 
@@ -1736,9 +1773,59 @@ DASHBOARD_HTML = """
     .spark-row { display: flex; align-items: flex-end; gap: 3px; height: 40px; margin-top: 8px; }
     .spark-bar {
       flex: 1;
-      background: rgba(251, 113, 133, 0.55);
-      border-radius: 2px 2px 0 0;
-      min-height: 2px;
+      min-width: 4px;
+      border-radius: 3px 3px 0 0;
+      background: linear-gradient(180deg, #fb7185, #be123c);
+      opacity: 0.85;
+    }
+    .drift-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0 14px;
+    }
+    @media (max-width: 900px) {
+      .drift-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .drift-kpi {
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(15, 23, 42, 0.28);
+    }
+    html[data-theme="light"] .drift-kpi { background: #f8fafc; }
+    .drift-kpi .dk-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .drift-kpi .dk-value {
+      margin-top: 4px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .drift-kpi .dk-sub { margin-top: 2px; font-size: 0.72rem; color: var(--muted); }
+    .drift-kpi.rising .dk-value { color: #fb7185; }
+    .drift-kpi.falling .dk-value { color: #34d399; }
+    .drift-kpi.stable .dk-value { color: #7dd3fc; }
+    .drift-charts {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 1100px) {
+      .drift-charts { grid-template-columns: 1fr; }
+    }
+    .drift-charts .chart-wrap.sm { height: 240px; }
+    .drift-path {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 10px;
+      word-break: break-all;
     }
     .why-cell { font-size: 0.72rem; max-width: 180px; }
     .why-cell .why-pillar { font-weight: 700; color: #7dd3fc; }
@@ -2314,6 +2401,7 @@ DASHBOARD_HTML = """
     <a href="#dash-governance">Runtime governance</a>
     <a href="#dash-alerts-insights">Alerts &amp; insights</a>
     <a href="#dash-forensics">Forensics</a>
+    <a href="#dash-trends">Posture drift</a>
     <a href="#dash-finops">Cost burn</a>
     <a href="#dash-traffic">Traffic</a>
     <a href="#dash-tools">Tool drill-down</a>
@@ -2443,8 +2531,8 @@ DASHBOARD_HTML = """
 
   <div class="card" id="dash-governance">
     <div class="card-head">
-      <h2>Runtime governance</h2>
-      <p class="card-desc">Zero-trust controls from <code>bastion.yaml</code> — Agent IAM, supply-chain verification, and transport hardening. Block counts refresh from live metrics.</p>
+      <h2>Runtime governance &amp; policy</h2>
+      <p class="card-desc">Zero-trust + core policy from <code>bastion.yaml</code> — Agent IAM, RBAC, prompt guard, rate/cost, PII, supply-chain, transport. Block counts refresh from live metrics.</p>
     </div>
     <div class="governance-grid" id="governanceGrid">
       <div class="gov-tile"><div class="gov-name">Loading…</div><div class="gov-state off">—</div></div>
@@ -2522,10 +2610,77 @@ DASHBOARD_HTML = """
   <div class="card" id="dash-trends">
     <div class="card-head">
       <h2>Posture drift (audit JSONL)</h2>
-      <p class="card-desc">Block-rate sparkline from the local audit file — no database.</p>
+      <p class="card-desc">Daily allow/block trend, drift direction, and top drivers from the local audit file — no database.</p>
     </div>
     <div id="trendHint" class="muted" style="font-size:0.8rem;"></div>
-    <div class="spark-row" id="trendSpark" aria-hidden="true"></div>
+    <div class="drift-kpis" id="driftKpis" hidden>
+      <div class="drift-kpi">
+        <div class="dk-label">Events in window</div>
+        <div class="dk-value" id="driftEvents">0</div>
+        <div class="dk-sub" id="driftEventsSub">allowed / blocked</div>
+      </div>
+      <div class="drift-kpi">
+        <div class="dk-label">Block rate</div>
+        <div class="dk-value" id="driftBlockRate">0%</div>
+        <div class="dk-sub" id="driftBlockRateSub">window average</div>
+      </div>
+      <div class="drift-kpi" id="driftDeltaTile">
+        <div class="dk-label">Drift (1st→2nd half)</div>
+        <div class="dk-value" id="driftDelta">0 pp</div>
+        <div class="dk-sub" id="driftDeltaSub">stable</div>
+      </div>
+      <div class="drift-kpi">
+        <div class="dk-label">Top driver</div>
+        <div class="dk-value" id="driftDriver" style="font-size:1rem;">—</div>
+        <div class="dk-sub" id="driftDriverSub">by blocked kind</div>
+      </div>
+    </div>
+    <div class="drift-charts" id="driftCharts" hidden>
+      <div>
+        <h3 style="font-size:0.85rem;margin:0 0 6px;">Allowed vs blocked by day</h3>
+        <div class="chart-wrap sm"><canvas id="chartDriftTraffic"></canvas></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.85rem;margin:0 0 6px;">Blocked by kind</h3>
+        <div class="chart-wrap sm"><canvas id="chartDriftKinds"></canvas></div>
+      </div>
+    </div>
+    <div class="spark-row" id="trendSpark" aria-label="Block-rate sparkline"></div>
+    <div class="tool-table-wrap" id="driftDailyWrap" hidden style="margin-top:12px;">
+      <h3 style="font-size:0.85rem;margin:0 0 6px;">Daily breakdown</h3>
+      <table class="tool-table" id="driftDailyTable">
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Events</th>
+            <th>Allowed</th>
+            <th>Blocked</th>
+            <th>Block %</th>
+            <th>Top kind</th>
+            <th>Top tool</th>
+            <th>Avg ms</th>
+          </tr>
+        </thead>
+        <tbody id="driftDailyBody"></tbody>
+      </table>
+    </div>
+    <div class="tool-table-wrap" id="driftRecentWrap" hidden style="margin-top:12px;">
+      <h3 style="font-size:0.85rem;margin:0 0 6px;">Recent blocked events</h3>
+      <table class="tool-table" id="driftRecentTable">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Kind</th>
+            <th>Pillar</th>
+            <th>Tool</th>
+            <th>Why</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="driftRecentBody"></tbody>
+      </table>
+    </div>
+    <div class="drift-path" id="trendPath"></div>
   </div>
 
   <div class="card">
@@ -2705,7 +2860,7 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script src="/static/dashboard-app.js?v=32-finops-charts" charset="utf-8"></script>
+  <script src="/static/dashboard-app.js?v=34-tour-rbac" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>

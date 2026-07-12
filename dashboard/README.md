@@ -1,17 +1,36 @@
 ﻿# MCP-Bastion Dashboard
 
-Optional **local** security + FinOps UI for MCP-Bastion. Additive panels on top of the classic runtime charts: **pre-deploy posture**, **OWASP heatmaps**, **attack matrix**, **dated compliance reports**, **token savings**, and forensics with pillar provenance.
+Optional **local** security + FinOps UI for MCP-Bastion. Additive panels on top of the classic runtime charts.
 
-Zero-infra guardrail: read-only over local artifacts + in-process metrics. No login, no DB, no cloud. See [docs/ZERO_INFRA_STRATEGY.md](../docs/ZERO_INFRA_STRATEGY.md).
+**Highlights (3.1.1):** pre-deploy posture + Sonar-style prevalidation, **PMD-style how-to-fix** issue guides, OWASP heatmaps, attack matrix, **RBAC + governance tiles**, posture drift from audit JSONL, **token reduction & cost savings** (actual vs would-have-been), forensics with pillar provenance.
+
+Zero-infra: read-only over local artifacts + in-process metrics. No login, no DB, no cloud. See [docs/ZERO_INFRA_STRATEGY.md](../docs/ZERO_INFRA_STRATEGY.md).
 
 ## Screenshots / tour
 
 <p align="center">
-  <img src="../images/mcp-bastion-dashboard-tour.gif" alt="Dashboard feature tour GIF" width="900" />
+  <img src="../images/mcp-bastion-dashboard-tour.gif" alt="Dashboard feature tour GIF — posture, how-to-fix, FinOps, RBAC" width="900" />
 </p>
 <p align="center">
   <img src="../images/mcp-bastion-dashboard.png" alt="Dashboard collage" width="900" />
 </p>
+
+### Tour slides (in the GIF)
+
+| # | Slide | What you see |
+|---|-------|----------------|
+| 01 | Overview | KPIs, posture grades, jump links |
+| 02 | Posture + prevalidation | A–F grades + Sonar-style issue list |
+| 03 | **How to fix** | PMD-style guide: why / fix steps / Bastion knobs / OWASP |
+| 04 | OWASP heatmaps | ASI / MCP / LLM tabs |
+| 05 | Attack matrix | Live pressure by category |
+| 06 | Compliance | Evidence reports + bundle |
+| 07 | **RBAC + governance** | RBAC, prompt guard, rate/cost, PII, Agent IAM, …
+| 08 | Forensics | Why blocked + Details / reproduce |
+| 09 | Agents | Confused-deputy denials + scope map |
+| 10 | Posture drift | Audit JSONL allow/block + drift Δ |
+| 11 | **Token & cost savings** | Actual vs would-have-been + charts |
+| 12 | Traffic | Time series + block reasons (incl. RBAC) |
 
 Regenerate captures (dashboard must be running with demo data):
 
@@ -35,14 +54,18 @@ python scripts/capture_dashboard_demo.py --gif-only --duration-ms 6000
 | Section | Purpose |
 |---------|---------|
 | **Date filters** | Scope forensics, trends, attack matrix, and report downloads |
-| **Security posture** | A-F grades from `mcp-bastion scan` / `scan --skills` / `osv-scan` / `audit` JSON |
+| **Security posture** | A–F grades from `mcp-bastion scan` / `scan --skills` / `osv-scan` / `audit` JSON |
+| **Static prevalidation** | Sonar-style issue list (`/api/prevalidate`) — not SonarQube |
+| **Issue guides** | PMD-style why / how to fix / Bastion knobs / OWASP refs (`/api/issue-guide`) |
 | **OWASP / ASI / MCP / LLM** | Coverage heatmaps (tabs); click a cell for sample findings |
 | **Live attack matrix** | Categories under pressure + intensity + OWASP tags + sample/trace |
 | **Compliance evidence** | Policy/attestation hashes; SOC2/GDPR/ISO/NIST/ASI report or zip bundle |
-| **Runtime governance** | Agent IAM, server verification, transport, stdio, fingerprint |
+| **Runtime governance & policy** | **RBAC**, prompt guard, rate limit, cost, PII, schema, content filter, Agent IAM, server verification, transport |
 | **KPIs + charts** | Requests, blocks, PII, cost, traffic, reasons, tools, latency |
-| **Cost burn & reduction** | Actual vs would-have-been spend/tokens; FinOps savings + block avoidance graphs; blocked-issue table |
-| **Forensics** | Why (pillar/rule), Details modal with trace, reproduce helpers |
+| **Cost burn & reduction** | Actual vs would-have-been spend/tokens; FinOps savings + **tokens avoided by blocks**; graphs + blocked-issue table |
+| **Posture drift** | Daily allow/block from audit JSONL, drift Δ, top drivers, recent blocks |
+| **Forensics** | Why (pillar/rule), Details modal with guide + trace, reproduce helpers |
+| **Agents** | Denied-by-agent + Agent IAM scope map |
 | **Alerts / insights** | Recent alerts (SSE push) + heuristic anomalies |
 | **Observe banner** | When `mode: observe`, shows would-have-blocked counts |
 
@@ -62,49 +85,44 @@ PYTHONPATH=src python dashboard/app.py
 mcp-bastion dashboard
 # while editing dashboard/app.py, auto-reload:
 mcp-bastion dashboard --reload --demo
-# same as: set MCP_BASTION_DASHBOARD_RELOAD=1
 ```
 
-Richer scripted demo (same seed + optional live background traffic): `PYTHONPATH=src python examples/dashboard_demo.py`
+Richer scripted demo: `PYTHONPATH=src python examples/dashboard_demo.py`
 
-Open [http://localhost:7000/](http://localhost:7000/) - the UI shows a **KPI summary strip** (totals, block %, top threat, active users) and loading guidance while metrics connect; **PII** charts use **severity-style** colors for entity types, and long **block reasons** are readable via tooltips / expand-in-place where applicable.
+Open [http://localhost:7000/](http://localhost:7000/).
 
-**If you see `{"detail":"Not Found"}`** on some URL, that response is from *a* FastAPI app, but not our route - wrong path, wrong port, or another process. Try [http://localhost:7000/api/health](http://localhost:7000/api/health) first: it must include `"service":"mcp-bastion-dashboard"` and `"ui_revision"`. Short diagnostic: [http://localhost:7000/meta](http://localhost:7000/meta).
+**If you see `{"detail":"Not Found"}`:** check [http://localhost:7000/api/health](http://localhost:7000/api/health) — must include `"service":"mcp-bastion-dashboard"` and `"ui_revision"`.
 
-**If the UI looks unchanged after editing `dashboard/app.py`:** the server only loads HTML at startup. Stop the process and start again, **or** run `mcp-bastion dashboard --reload` so `dashboard/` is watched. Always run from the **repository root** (the folder that contains `dashboard/`). Check `/meta` - `dashboard_app_py` must point at this repo's `dashboard/app.py`, and `ui_revision` should match the current code.
+**If the UI looks unchanged:** restart the dashboard (or `--reload`) and hard-refresh the browser. Check `/meta` for `ui_revision`.
 
-**If charts show all zeros:** the in-memory store is empty until middleware records traffic. Use **`mcp-bastion dashboard --demo`** or **`MCP_BASTION_DEMO=1`** to load the same rich seed as `examples/dashboard_demo.py`, or run the full `examples/dashboard_demo.py` process.
+**If charts show all zeros:** use `mcp-bastion dashboard --demo` or wire middleware to `MetricsStore`.
 
 ## Endpoints
 
 | URL | What it returns |
 |-----|-----------------|
 | GET / | Visual dashboard with charts |
-| GET /api/metrics | JSON: runtime KPIs plus `cost_reduction` (`tokens_saved`, `estimated_usd_saved`, `by_source`), `time_series`, `blocked_incidents`, … |
-| GET /api/posture | Pre-deploy grades (catalog / skills / OSV / risk audit) from `.bastion/scan/*.json` (override with `MCP_BASTION_SCAN_DIR`) |
-| GET /api/prevalidate | Sonar-style issue list + grades from the same local scan JSON (not SonarQube) |
-| GET /api/issue-guide?check=weak_schema | PMD-style rule card: why / how to fix / OWASP refs / bastion knobs |
-| GET /api/issue-guide?id=ASI02 | Same for an OWASP ASI / MCP / LLM id |
-| GET /api/taxonomy?framework=asi\|mcp\|llm | OWASP ASI / MCP / LLM Top 10 heatmap |
-| GET /api/attack-matrix?date_from=&date_to= | Live attack category matrix (blocks + finding pressure) |
-| GET /api/compliance | Last attestation + policy hash (local files under `.bastion/attestations/`, override `MCP_BASTION_ATTEST_DIR`) |
-| GET /api/compliance/report?framework=soc2\|gdpr\|iso27001\|nist_ai_rmf\|asi&date_from=&date_to= | Download markdown evidence report (not a certificate) |
-| GET /api/compliance/bundle?framework=…&date_from=&date_to= | Zip: report + attestation + `bastion.yaml` |
-| GET /api/observe | Observe-mode banner: `mode`, `would_have_blocked` |
-| GET /api/agents | Denied-by-agent counts + Agent IAM scope map |
-| GET /api/trends | Block-rate sparkline series from local audit JSONL |
-| GET /api/onboarding | First-run checklist when the board is empty |
-| GET /api/alerts/stream | SSE push for recent alerts (canary / auto-repave / observe) |
-| GET /api/health | `{"status":"ok","service":"mcp-bastion-dashboard","ui_revision":...}` |
-| GET /api/dashboard-meta | Same build info as health |
-| GET /meta | Same JSON (short URL) |
-| GET /metrics | Prometheus text format (Grafana/Datadog) |
+| GET /api/metrics | Runtime KPIs + `cost_reduction` (used/saved/avoided + would-have cost) + forensics |
+| GET /api/posture | Pre-deploy grades from `.bastion/scan/*.json` |
+| GET /api/prevalidate | Sonar-style issue list + grades |
+| GET /api/issue-guide?check=weak_schema | PMD-style rule card (or `?id=ASI02`) |
+| GET /api/taxonomy?framework=asi\|mcp\|llm | OWASP heatmaps |
+| GET /api/attack-matrix | Live attack categories |
+| GET /api/compliance | Attestation + policy hash |
+| GET /api/compliance/report | Evidence markdown download |
+| GET /api/compliance/bundle | Zip evidence bundle |
+| GET /api/observe | Observe-mode banner data |
+| GET /api/agents | Denied-by-agent + Agent IAM scope |
+| GET /api/governance | RBAC + core pillars + zero-trust feature flags |
+| GET /api/trends | Posture drift from audit JSONL |
+| GET /api/onboarding | First-run checklist |
+| GET /api/alerts/stream | SSE alerts |
+| GET /api/health | `ui_revision` + service id |
+| GET /metrics | Prometheus text |
 
 ## Pre-deploy panels (local artifacts only)
 
-The dashboard stays a **read-only view over files the CLI already writes**. No login, no DB, no cloud.
-
-1. **Security posture** — write scan JSON, then refresh:
+1. **Security posture / prevalidate** — write scan JSON, then refresh:
    ```bash
    mkdir -p .bastion/scan
    mcp-bastion scan tools.json --format json -o .bastion/scan/catalog.json
@@ -112,11 +130,12 @@ The dashboard stays a **read-only view over files the CLI already writes**. No l
    mcp-bastion osv-scan --format json -o .bastion/scan/osv.json
    mcp-bastion audit --format json -o .bastion/scan/risk-audit.json
    ```
-2. **OWASP heatmaps** — `taxonomy.py` + enabled pillars from `bastion.yaml` + recent metrics (`asi` / `mcp` / `llm` tabs).
-3. **Issue guides** — every finding/detail opens a PMD-style card (why it matters, how to fix, bastion.yaml knobs, OWASP reference links). Bundled in `issue_guides.py` — offline; links are optional browser opens.
-4. **Static prevalidation** — `/api/prevalidate` surfaces the same scan suite as a Sonar-like issue list on the dashboard (local JSON only; not a SonarQube install).
-5. **Compliance evidence** — drop attestation JSON under `.bastion/attestations/` (from `mcp-bastion attest export -o …`) and use the Generate / Download buttons (date-filtered).
-6. **Observe mode** — set `mode: observe` in `bastion.yaml`; the banner shows would-have-blocked counts from the in-process metrics store.
+2. **Issue guides** — click **Why / how to fix** on any finding (bundled in `issue_guides.py`).
+3. **OWASP heatmaps** — taxonomy + enabled pillars from `bastion.yaml`.
+4. **FinOps** — output budget / discovery filter / cache savings + estimated tokens avoided when Bastion blocks a call.
+5. **Posture drift** — enable `audit.jsonl_path` (or `MCP_BASTION_AUDIT_PATH`) for daily allow/block trends.
+6. **Compliance** — `mcp-bastion attest export -o .bastion/attestations/…`
+7. **Observe mode** — `mode: observe` in `bastion.yaml`.
 
 See [docs/ZERO_INFRA_STRATEGY.md](../docs/ZERO_INFRA_STRATEGY.md).
 

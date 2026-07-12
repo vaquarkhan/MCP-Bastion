@@ -840,6 +840,87 @@
         });
       }
 
+      var driftTrafficEl = document.getElementById('chartDriftTraffic');
+      if (driftTrafficEl) {
+        charts.driftTraffic = new Chart(driftTrafficEl, {
+          type: 'bar',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Allowed',
+                data: [],
+                backgroundColor: 'rgba(52, 211, 153, 0.75)',
+                borderRadius: 6,
+                stack: 'vol'
+              },
+              {
+                label: 'Blocked',
+                data: [],
+                backgroundColor: 'rgba(251, 113, 133, 0.8)',
+                borderRadius: 6,
+                stack: 'vol'
+              },
+              {
+                type: 'line',
+                label: 'Block %',
+                data: [],
+                yAxisID: 'y1',
+                borderColor: '#7dd3fc',
+                backgroundColor: 'rgba(125, 211, 252, 0.15)',
+                tension: 0.35,
+                borderWidth: 2,
+                pointRadius: 3,
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+              y: {
+                stacked: true,
+                beginAtZero: true,
+                grid: { color: 'rgba(148, 163, 184, 0.08)' },
+                ticks: { font: { size: 10 }, precision: 0 }
+              },
+              y1: {
+                position: 'right',
+                beginAtZero: true,
+                max: 100,
+                grid: { drawOnChartArea: false },
+                ticks: {
+                  font: { size: 10 },
+                  callback: function (v) { return v + '%'; }
+                }
+              }
+            },
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } }
+            }
+          }
+        });
+      }
+
+      var driftKindsEl = document.getElementById('chartDriftKinds');
+      if (driftKindsEl) {
+        charts.driftKinds = new Chart(driftKindsEl, {
+          type: 'doughnut',
+          data: { labels: [], datasets: [{ data: [], backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 6 }] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '55%',
+            plugins: {
+              legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
+            }
+          }
+        });
+      }
+
       applyChartTheme();
       return true;
     }
@@ -1082,6 +1163,7 @@
       if (!grid) return;
       var features = (cfg && cfg.features) || {};
       var blocks = (metrics && metrics.governance && metrics.governance.blocks) || {};
+      var byKind = (metrics && metrics.blocked_by_kind) || {};
       var govTotal = (metrics && metrics.governance && metrics.governance.total_blocks) || 0;
       function tile(name, enabled, meta) {
         return '<div class="gov-tile">'
@@ -1090,11 +1172,23 @@
           + (meta ? '<div class="gov-meta">' + escapeHtml(meta) + '</div>' : '')
           + '</div>';
       }
+      function kindMeta(enabled, kind, offMsg) {
+        if (!enabled) return offMsg;
+        var n = byKind[kind] || 0;
+        return n > 0 ? (n + ' block(s) this window') : 'On · no blocks yet';
+      }
       var iam = features.agent_iam || {};
       var sv = features.server_verification || {};
       var th = features.transport_hardening || {};
       var sg = features.stdio_guard || {};
       var tmf = features.tool_metadata_fingerprint || {};
+      var rbac = features.rbac || {};
+      var pg = features.prompt_guard || {};
+      var rl = features.rate_limit || {};
+      var pii = features.pii || {};
+      var cost = features.cost_tracker || {};
+      var schema = features.schema_validation || {};
+      var cf = features.content_filter || {};
       var iamMeta = iam.enabled
         ? (iam.agent_count || 0) + ' agent(s)' + (iam.isolate_sessions ? ' · sessions isolated' : '')
         : 'Confused-deputy protection disabled';
@@ -1112,6 +1206,13 @@
           + (th.require_loopback ? ' · loopback bind' : '')
         : 'HTTP hardening disabled';
       grid.innerHTML = [
+        tile('RBAC', !!rbac.enabled, kindMeta(!!rbac.enabled, 'rbac', 'Role allow/deny off')),
+        tile('Prompt guard', !!pg.enabled, kindMeta(!!pg.enabled, 'injection', 'Injection ML/heuristics off')),
+        tile('Rate limit', !!rl.enabled, kindMeta(!!rl.enabled, 'rate_limit', 'Session rate caps off')),
+        tile('Cost tracker', !!cost.enabled, kindMeta(!!cost.enabled, 'cost', 'USD budget gate off')),
+        tile('PII redaction', !!pii.enabled, pii.enabled ? ((metrics && metrics.pii_redacted_total) || 0) + ' entities redacted' : 'Presidio-style PII off'),
+        tile('Schema validation', !!schema.enabled, kindMeta(!!schema.enabled, 'schema_validation', 'Tool schema gate off')),
+        tile('Content filter', !!cf.enabled, kindMeta(!!cf.enabled, 'content_filter', 'Path/code filters off')),
         tile('Agent IAM', !!iam.enabled, iamMeta),
         tile('Server verification', !!sv.enabled, svMeta),
         tile('Transport hardening', !!th.enabled, thMeta),
@@ -1537,25 +1638,153 @@
       }).join('');
     }
 
+    var lastDrift = null;
+
     function renderTrends(data) {
+      lastDrift = data;
       var hint = document.getElementById('trendHint');
       var spark = document.getElementById('trendSpark');
+      var pathEl = document.getElementById('trendPath');
+      var kpis = document.getElementById('driftKpis');
+      var chartsWrap = document.getElementById('driftCharts');
+      var dailyWrap = document.getElementById('driftDailyWrap');
+      var recentWrap = document.getElementById('driftRecentWrap');
       if (!hint || !spark) return;
+
       if (!data || !data.present || !(data.days || []).length) {
-        hint.textContent = (data && data.hint) || 'No audit JSONL trends yet.';
+        hint.textContent = (data && data.hint) || 'No audit JSONL trends yet. Enable audit.jsonl_path or set MCP_BASTION_AUDIT_PATH.';
         spark.innerHTML = '';
+        if (pathEl) pathEl.textContent = (data && data.path) || '';
+        if (kpis) kpis.hidden = true;
+        if (chartsWrap) chartsWrap.hidden = true;
+        if (dailyWrap) dailyWrap.hidden = true;
+        if (recentWrap) recentWrap.hidden = true;
         return;
       }
-      var days = data.days;
-      hint.textContent = data.path + ' · ' + days.length + ' day(s)'
-        + ((data.date_from || data.date_to) ? (' · filtered') : '');
+
+      var days = data.days || [];
+      var sum = data.summary || {};
+      hint.textContent = '';
+      if (pathEl) {
+        var bits = [data.path || '', days.length + ' day(s)'];
+        if (sum.line_count) bits.push(sum.line_count + ' lines');
+        if (data.date_from || data.date_to) bits.push('date-filtered');
+        pathEl.textContent = bits.filter(Boolean).join(' · ');
+      }
+
+      if (kpis) {
+        kpis.hidden = false;
+        var setTxt = function (id, text) {
+          var el = document.getElementById(id);
+          if (el) el.textContent = text;
+        };
+        setTxt('driftEvents', String(sum.events || 0));
+        setTxt('driftEventsSub', (sum.allowed || 0) + ' allowed · ' + (sum.blocked || 0) + ' blocked');
+        setTxt('driftBlockRate', (sum.block_rate_pct != null ? sum.block_rate_pct : 0) + '%');
+        setTxt('driftBlockRateSub', 'window average');
+        var delta = Number(sum.drift_delta_pp || 0);
+        var drift = sum.drift || 'stable';
+        var deltaTile = document.getElementById('driftDeltaTile');
+        if (deltaTile) {
+          deltaTile.classList.remove('rising', 'falling', 'stable');
+          deltaTile.classList.add(drift === 'rising' || drift === 'falling' || drift === 'stable' ? drift : 'stable');
+        }
+        setTxt('driftDelta', (delta > 0 ? '+' : '') + delta + ' pp');
+        setTxt(
+          'driftDeltaSub',
+          drift + (sum.prior_block_rate_pct != null
+            ? (' · was ' + sum.prior_block_rate_pct + '% → ' + (sum.recent_block_rate_pct || 0) + '%')
+            : '')
+        );
+        setTxt('driftDriver', sum.top_driver || '—');
+        var topKind = (data.top_kinds && data.top_kinds[0]) || null;
+        setTxt('driftDriverSub', topKind
+          ? (topKind.count + ' blocks · ' + topKind.share_pct + '% of blocks')
+          : 'by blocked kind');
+      }
+
       var max = 1;
       days.forEach(function (d) { if ((d.block_rate_pct || 0) > max) max = d.block_rate_pct; });
       spark.innerHTML = days.map(function (d) {
-        var h = Math.max(2, Math.round(40 * (d.block_rate_pct || 0) / max));
+        var h = Math.max(2, Math.round(48 * (d.block_rate_pct || 0) / max));
         return '<div class="spark-bar" style="height:' + h + 'px" title="'
-          + escapeHtmlAttr(d.day + ': ' + d.block_rate_pct + '% block rate') + '"></div>';
+          + escapeHtmlAttr(d.day + ': ' + d.block_rate_pct + '% block · '
+            + d.blocked + ' blocked / ' + d.allowed + ' allowed') + '"></div>';
       }).join('');
+
+      if (chartsWrap) chartsWrap.hidden = false;
+      if (charts.driftTraffic) {
+        charts.driftTraffic.data.labels = days.map(function (d) { return d.day.slice(5); });
+        charts.driftTraffic.data.datasets[0].data = days.map(function (d) { return d.allowed || 0; });
+        charts.driftTraffic.data.datasets[1].data = days.map(function (d) { return d.blocked || 0; });
+        charts.driftTraffic.data.datasets[2].data = days.map(function (d) { return d.block_rate_pct || 0; });
+        charts.driftTraffic.update('none');
+      }
+      if (charts.driftKinds) {
+        var kinds = data.top_kinds || [];
+        if (!kinds.length) {
+          charts.driftKinds.data.labels = ['No blocks'];
+          charts.driftKinds.data.datasets[0].data = [1];
+          charts.driftKinds.data.datasets[0].backgroundColor = ['rgba(148, 163, 184, 0.25)'];
+        } else {
+          charts.driftKinds.data.labels = kinds.map(function (k) { return k.id; });
+          charts.driftKinds.data.datasets[0].data = kinds.map(function (k) { return k.count; });
+          charts.driftKinds.data.datasets[0].backgroundColor = kinds.map(function (_, i) {
+            return PALETTE[i % PALETTE.length];
+          });
+        }
+        charts.driftKinds.update('none');
+      }
+
+      var dailyBody = document.getElementById('driftDailyBody');
+      if (dailyWrap && dailyBody) {
+        dailyWrap.hidden = false;
+        dailyBody.innerHTML = days.map(function (d) {
+          return '<tr>'
+            + '<td>' + escapeHtml(d.day) + '</td>'
+            + '<td>' + (d.events || (d.allowed + d.blocked) || 0) + '</td>'
+            + '<td>' + (d.allowed || 0) + '</td>'
+            + '<td>' + (d.blocked || 0) + '</td>'
+            + '<td>' + (d.block_rate_pct || 0) + '%</td>'
+            + '<td>' + escapeHtml(d.top_kind || '—') + '</td>'
+            + '<td>' + escapeHtml(d.top_tool || '—') + '</td>'
+            + '<td>' + (d.avg_latency_ms != null ? d.avg_latency_ms : '—') + '</td>'
+            + '</tr>';
+        }).join('');
+      }
+
+      var recentBody = document.getElementById('driftRecentBody');
+      var recent = data.recent_blocks || [];
+      if (recentWrap && recentBody) {
+        if (!recent.length) {
+          recentWrap.hidden = true;
+        } else {
+          recentWrap.hidden = false;
+          recentBody.innerHTML = recent.map(function (r, idx) {
+            return '<tr>'
+              + '<td>' + escapeHtml(String(r.ts || '').slice(0, 19)) + '</td>'
+              + '<td>' + escapeHtml(r.kind || '') + '</td>'
+              + '<td>' + escapeHtml(r.pillar || '') + '</td>'
+              + '<td>' + escapeHtml(r.tool || '') + '</td>'
+              + '<td class="why-cell">' + escapeHtml(r.reason || '') + '</td>'
+              + '<td><button type="button" class="btn-linkish" data-drift-i="' + idx + '">Details</button></td>'
+              + '</tr>';
+          }).join('');
+          recentBody.querySelectorAll('[data-drift-i]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var i = parseInt(btn.getAttribute('data-drift-i'), 10);
+              var row = ((lastDrift && lastDrift.recent_blocks) || [])[i];
+              if (!row) return;
+              openIssueDetail(
+                'Audit block: ' + (row.kind || 'issue'),
+                (row.tool || '') + ' · ' + (row.pillar || ''),
+                [],
+                row
+              );
+            });
+          });
+        }
+      }
     }
 
     function renderOnboarding(data) {
