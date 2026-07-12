@@ -71,9 +71,16 @@ mcp-bastion serve --config bastion.yaml --http 8080
 # Proxy boundary mode (forwards to upstream MCP)
 mcp-bastion serve --config bastion.yaml --proxy http://127.0.0.1:9000/mcp --http 8080
 
-# Dashboard
-python dashboard/app.py
+# Dashboard (demo seed shows posture / FinOps / issue guides)
+mcp-bastion dashboard --port 7000 --demo
+# or: PYTHONPATH=src MCP_BASTION_DEMO=1 python dashboard/app.py
+
+# Feed local scan JSON into posture + prevalidate panels
+mkdir -p .bastion/scan
+mcp-bastion scan tools.json --format json -o .bastion/scan/catalog.json
 ```
+
+Layout notes for dashboard work: `dashboard/app.py` + `dashboard/static/dashboard-app.js`, local panels in `src/mcp_bastion/dashboard_local.py`, PMD-style guides in `src/mcp_bastion/issue_guides.py`. Capture tour GIF: `python scripts/capture_dashboard_demo.py` (dashboard must be running). Full UI reference: [dashboard/README.md](../dashboard/README.md).
 
 ## Working with policy
 
@@ -153,8 +160,8 @@ Before opening a PR ([CONTRIBUTING.md](../CONTRIBUTING.md)):
 ### Release steps
 
 1. Merge to `main` with CI green
-2. Bump all versions consistently (e.g. `2.0.1`)
-3. Update `CHANGELOG.md`
+2. Bump all versions consistently (e.g. `python scripts/bump_version.py 3.1.0 3.0.1`)
+3. Update `CHANGELOG.md` **and** narrative pins in README / DOCKER / SECURITY / ROADMAP (bump_version does **not** rewrite those markdown strings)
 4. Tag and push:
 
 ```bash

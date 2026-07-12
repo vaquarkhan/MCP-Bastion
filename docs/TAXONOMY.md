@@ -19,7 +19,7 @@ https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-ben
 | ASI09 | Human-Agent Trust Exploitation |
 | ASI10 | Rogue Agents |
 
-Source of truth for the check map: `src/mcp_bastion/taxonomy.py`.
+Source of truth for the check map: `src/mcp_bastion/taxonomy.py`. PMD-style remediation cards (why / how to fix / OWASP refs): `src/mcp_bastion/issue_guides.py` and dashboard `GET /api/issue-guide?check=weak_schema` or `?id=ASI02`.
 
 ```bash
 mcp-bastion scan tools.json --format json   # findings include taxonomy.asi / .mcp / .llm

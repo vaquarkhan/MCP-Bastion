@@ -76,8 +76,8 @@ Block or throttle **tool sequences** whose **projected cost** exceeds a threshol
 ### 3. Per-agent / per-tenant chargeback
 
 - Budgets keyed on authenticated `principal_id` (already shipped)
-- Dashboard: **showback** by agent, tenant, tool; **forecast** from burn rate
-- Export: CSV / JSON for FinOps teams; optional webhook to billing systems
+- Dashboard **3.1.0 (shipped):** actual vs would-have-been spend/tokens, FinOps savings by source, **tokens/$ avoided by blocks**, blocked-issues table ([dashboard/README.md](../dashboard/README.md))
+- Still planned: richer **forecast** / CSV export for FinOps teams; optional webhook to billing systems
 
 ---
 

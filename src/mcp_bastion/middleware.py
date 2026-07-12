@@ -657,6 +657,20 @@ class MCPBastionMiddleware(Middleware[Any]):
                     "truncated_items": summary.truncated_items,
                 },
             )
+            if summary.tokens_saved > 0:
+                try:
+                    from mcp_bastion.pillars.metrics import MetricsStore
+
+                    dims = context.metadata.get("cost_dimensions") or {}
+                    MetricsStore.get().record_tokens_saved(
+                        int(summary.tokens_saved),
+                        source="output_budget",
+                        provider=(dims.get("llm_provider") if isinstance(dims, dict) else None),
+                        model=(dims.get("llm_model") if isinstance(dims, dict) else None),
+                        as_output=True,
+                    )
+                except Exception:
+                    pass
             _set_content_in_result(result, new_content)
         return result
 
@@ -789,13 +803,41 @@ class MCPBastionMiddleware(Middleware[Any]):
             else:
                 hidden.append(name)
         if hidden:
+            # Rough catalog-token savings from tools not advertised to the agent.
+            tokens_saved = 0
+            try:
+                import json
+
+                from mcp_bastion.pillars.tokens import count_text_tokens
+
+                hidden_payload = []
+                for entry in tools:
+                    td = _tool_entry_to_dict(entry)
+                    if str(td.get("name") or "") in hidden:
+                        hidden_payload.append(td)
+                if hidden_payload:
+                    tokens_saved = max(0, count_text_tokens(json.dumps(hidden_payload)))
+            except Exception:
+                tokens_saved = max(0, len(hidden) * 80)
             context.metadata.setdefault("discovery_filter", {}).update(
                 {
                     "hidden_tools": hidden,
                     "original_count": len(tools),
                     "kept_count": len(kept),
+                    "tokens_saved": tokens_saved,
                 }
             )
+            if tokens_saved > 0:
+                try:
+                    from mcp_bastion.pillars.metrics import MetricsStore
+
+                    MetricsStore.get().record_tokens_saved(
+                        tokens_saved,
+                        source="discovery_filter",
+                        as_output=False,
+                    )
+                except Exception:
+                    pass
         if len(kept) == len(tools):
             return result
         return _set_tools_on_result(result, kept)
@@ -930,6 +972,20 @@ class MCPBastionMiddleware(Middleware[Any]):
                 }
             )
             _trace_append(trace, pillar=pillar, status="would_block", started=started, detail=str(error))
+            try:
+                from mcp_bastion.pillars.metrics import MetricsStore
+
+                tool = None
+                params = (context.message or {}).get("params") if isinstance(context.message, dict) else None
+                if isinstance(params, dict):
+                    tool = params.get("name")
+                MetricsStore.get().record_shadow_would_block(
+                    pillar=pillar,
+                    reason=str(error),
+                    tool=str(tool) if tool else None,
+                )
+            except Exception:
+                pass
             return
         _trace_append(trace, pillar=pillar, status="blocked", started=started, detail=str(error))
         method = str((context.message or {}).get("method") or "unknown")

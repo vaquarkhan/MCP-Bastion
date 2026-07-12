@@ -11,7 +11,7 @@
   />
 </p>
 
-[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/3.0.1/)
+[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/3.1.0/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
@@ -20,7 +20,7 @@
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**Current release: [3.0.1](https://pypi.org/project/mcp-bastion-python/3.0.1/)** · Docker `v3.0.1` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
+**Current release: [3.1.0](https://pypi.org/project/mcp-bastion-python/3.1.0/)** · Docker `v3.1.0` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
 
 **The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
 
@@ -107,16 +107,24 @@ mcp-bastion validate --config bastion.yaml
 <p align="center"><sub>Schema · Skills · OSV — offline by default; no login server; no phone-home</sub></p>
 
 <p align="center">
-  <a href="https://vimeo.com/1186084574" title="Watch MCP-Bastion dashboard demo on Vimeo">
+  <a href="images/mcp-bastion-dashboard-tour.gif" title="MCP-Bastion dashboard feature tour (GIF)">
     <img
-      src="images/mcp-bastion-dashboard.png"
-      alt="MCP-Bastion dashboard — live KPIs, block rate, PII redacted, cost, forensics, and alerts"
+      src="images/mcp-bastion-dashboard-tour.gif"
+      alt="MCP-Bastion dashboard tour — posture, prevalidation, OWASP, attack matrix, forensics, FinOps actual vs would-have-been"
       width="960"
       style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b; box-shadow:0 8px 32px rgba(15,23,42,0.35);"
     />
   </a>
 </p>
-<p align="center"><strong>Live governance dashboard</strong> — optional, local, demo-ready. <code>mcp-bastion dashboard --demo</code> · <a href="https://vimeo.com/1186084574">Watch demo</a></p>
+<p align="center">
+  <img
+    src="images/mcp-bastion-dashboard.png"
+    alt="MCP-Bastion dashboard collage — security posture, OWASP coverage, attack matrix, and runtime KPIs"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+<p align="center"><strong>Live security posture + runtime dashboard</strong> — local-only, zero infra. <code>mcp-bastion dashboard --demo</code> · <a href="dashboard/README.md">Dashboard docs</a> · <a href="https://vimeo.com/1186084574">Older Vimeo walkthrough</a></p>
 
 <p align="center">
   <img
@@ -164,7 +172,7 @@ Generate a manifest after a trusted build: `mcp-bastion manifest server.py pypro
 
 Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ENTERPRISE_RUNTIME_CONTROLS.md](docs/ENTERPRISE_RUNTIME_CONTROLS.md) (3.0 pillars)
 
-### Runtime governance pillars (3.0.0+, current **3.0.1**)
+### Runtime governance pillars (3.0.0+, current **3.1.0**)
 
 Opt-in enterprise controls for production MCP runtimes. All default **off** so 2.x behavior is unchanged until you enable them.
 
@@ -528,7 +536,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Audit logging** | Structured **allow/deny** decisions with **reason**, **tool**, **tenant_id**, **trace_id**, **request_id** - feed SOC / compliance. Optional **JSONL file sink** + **`mcp-bastion tail`**. |
 | **Alert sinks** | **Slack** incoming webhook; **generic HTTP** webhooks (PagerDuty, Teams, custom APIs); **multiple URLs**; **retry**, **backoff**, **timeout** in `bastion.yaml`. |
 | **In-memory metrics** | **Global MetricsStore**: requests, blocks, PII counts, cost, per-tool stats, latency samples, rolling **time series** buckets. |
-| **Real-time dashboard** | **Web UI** with a top **KPI summary** (totals, block %, top threat, active users/tenants), **traffic & block charts**, **blocked-by-reason/kind** (with readable reasons / tooltips), **PII by entity** (severity-style coloring, e.g. high-risk types emphasized), **top tools**, **cost by user**, **latency P50/P95/P99**, **forensics table** (tenant filter, trace/replay helpers), **recent alerts**, **insights & anomalies** (heuristic signals), **dark/light theme**, **Prometheus** `/metrics`, **JSON** `/api/metrics`, loading/empty guidance instead of a blank first paint. |
+| **Real-time dashboard** | **Local web UI** (additive panels): **pre-deploy posture grades** + **Sonar-style prevalidation** from `.bastion/scan/`, **PMD-style issue guides** (why / how to fix / OWASP), **OWASP ASI + MCP + LLM heatmaps**, **live attack matrix**, **compliance evidence + dated reports**, **date filters**, **observe-mode banner**, **agents / trends / onboarding**, **forensics with why/pillar/trace**, **FinOps cost burn** (actual vs would-have-been, tokens saved + avoided by blocks, charts), plus classic KPIs. **APIs:** `/api/metrics`, `/api/posture`, `/api/prevalidate`, `/api/issue-guide`, `/api/taxonomy`, `/api/attack-matrix`, `/api/compliance`. Dark/light theme. See [dashboard/README.md](dashboard/README.md). |
 | **OpenTelemetry** | Optional **OTLP** span export  -  `pip install mcp-bastion-python[otel]`  -  [docs/OTEL.md](docs/OTEL.md). |
 
 #### Policy, packaging & developer experience
@@ -544,35 +552,59 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 ### Real-Time Dashboard and Alerts
 
-The dashboard is **optional and local** — a polished storefront for governance metrics, not a mandatory multi-tenant control plane. Use it in demos, SOC review, and FinOps standups.
+The dashboard is **optional and local** — a read-only view over **runtime metrics + local scan/audit artifacts**. No login server, no cloud DB (see [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md)).
 
-**🎥 Demo (screen recording):** [Watch on Vimeo](https://vimeo.com/1186084574)  -  overview of the dashboard and metrics (link opens the player on Vimeo).
+**Feature tour (GIF):** posture + prevalidation → OWASP heatmaps → attack matrix → compliance → governance → forensics → FinOps actual vs would-have-been → traffic.
 
 <p align="center">
-  <a href="https://vimeo.com/1186084574" title="Watch MCP-Bastion dashboard demo on Vimeo">
-    <img
-      src="images/mcp-bastion-dashboard.png"
-      alt="MCP-Bastion dashboard  -  request KPIs, block rate, PII redacted, cost, top tools, and forensics"
-      width="920"
-      style="max-width:100%; height:auto; border-radius:12px; border:1px solid #e2e8f0;"
-    />
-  </a>
+  <img
+    src="images/mcp-bastion-dashboard-tour.gif"
+    alt="MCP-Bastion dashboard feature tour GIF"
+    width="920"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
 </p>
-<p align="center"><sub>Click the screenshot for the video demo · Seed demo data: <code>mcp-bastion dashboard --demo</code></sub></p>
+<p align="center">
+  <img
+    src="images/mcp-bastion-dashboard.png"
+    alt="MCP-Bastion dashboard collage — posture, OWASP, attack matrix, KPIs"
+    width="920"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+<p align="center"><sub>Regenerate captures: <code>mcp-bastion dashboard --demo</code> then <code>python scripts/capture_dashboard_demo.py</code> · Seed: <code>--demo</code></sub></p>
 
-Run the optional dashboard for a live view of requests, blocked count, PII redacted, cost, top tools, and recent alerts.
+#### What you get on the board
+
+| Area | Panels / actions |
+|------|------------------|
+| **Pre-deploy posture** | Letter grades **A–F** for catalog scan, skill scan, OSV, risk audit + combined grade (reads `.bastion/scan/*.json`) |
+| **Static prevalidation** | Sonar-style issue list from the same local JSON — not a SonarQube server (`/api/prevalidate`) |
+| **Issue guides** | PMD-style why / how to fix / Bastion knobs / OWASP refs on every finding (`/api/issue-guide`) |
+| **OWASP coverage** | Tabs for **ASI Top 10**, **MCP Top 10**, **LLM Top 10** — green/amber/grey heatmap with finding + block pressure |
+| **Live attack matrix** | Categories under pressure with intensity, share, top tool, OWASP tags, sample/trace drill-down |
+| **Compliance / reports** | Attestation + policy hash; generate **SOC2 / GDPR / ISO27001 / NIST AI RMF / ASI** evidence or zip (date-filtered) |
+| **Runtime** | KPIs, governance, alerts + SSE, insights, forensics (**Why** + Details), agents / trends / onboarding, traffic/latency/PII charts |
+| **FinOps** | Actual vs would-have-been spend/tokens; FinOps tokens saved; **tokens/$ avoided by blocks**; charts + blocked-issues table |
+| **Filters** | Date range + presets (forensics, trends, attack matrix, reports) |
 
 ```bash
-mcp-bastion dashboard --port 7000
+mcp-bastion dashboard --port 7000 --demo
 # or: PYTHONPATH=src python dashboard/app.py
 ```
 
 | URL | What it returns |
 |-----|-----------------|
-| [http://localhost:7000/](http://localhost:7000/) | Charts, KPIs, **forensics**, **insights & anomalies**, alerts, **tool drill-down** (signal vs global block rate), theme toggle |
-| [http://localhost:7000/api/metrics](http://localhost:7000/api/metrics) | JSON: `requests_total`, `blocked_total`, `blocked_pct`, `pii_redacted_total`, `cost_total`, `blocked_by_reason`, `blocked_by_kind`, `top_tools`, `tool_stats`, `cost_by_user`, `time_series`, `latency_ms`, `dashboard_insights`, `blocked_incidents`, `alerts`, … |
-| [http://localhost:7000/api/health](http://localhost:7000/api/health) | `{"status": "ok"}` |
-| [http://localhost:7000/metrics](http://localhost:7000/metrics) | Prometheus text format for Grafana/Datadog |
+| [http://localhost:7000/](http://localhost:7000/) | Full UI (posture, prevalidate, OWASP, attack matrix, FinOps, forensics, …) |
+| [http://localhost:7000/api/metrics](http://localhost:7000/api/metrics) | Runtime JSON (`cost_reduction`: used/saved/avoided + would-have cost) |
+| [http://localhost:7000/api/posture](http://localhost:7000/api/posture) | Scan / skill / OSV / risk-audit grades from local JSON |
+| [http://localhost:7000/api/prevalidate](http://localhost:7000/api/prevalidate) | Sonar-style issue list + grades (local scan suite) |
+| [http://localhost:7000/api/issue-guide?check=weak_schema](http://localhost:7000/api/issue-guide?check=weak_schema) | PMD-style rule card (or `?id=ASI02`) |
+| [http://localhost:7000/api/taxonomy](http://localhost:7000/api/taxonomy) | `?framework=asi\|mcp\|llm` heatmap |
+| [http://localhost:7000/api/attack-matrix](http://localhost:7000/api/attack-matrix) | Live attack categories (+ date filter) |
+| [http://localhost:7000/api/compliance/report](http://localhost:7000/api/compliance/report) | Evidence markdown (`framework`, `date_from`, `date_to`) |
+| [http://localhost:7000/api/health](http://localhost:7000/api/health) | Build / `ui_revision` |
+| [http://localhost:7000/metrics](http://localhost:7000/metrics) | Prometheus text |
 
 <p align="center">
   <img
@@ -584,9 +616,17 @@ mcp-bastion dashboard --port 7000
 </p>
 <p align="center"><sub><code>/api/metrics</code> JSON for Grafana, Datadog, or custom pollers</sub></p>
 
-*Dashboard: total requests, blocked count and %, PII redacted, cost; blocked-by-reason bars; top tools; cost by user; recent alerts  -  open [http://localhost:7000/](http://localhost:7000/) while `mcp-bastion dashboard` is running.*
+Feed scan/audit artifacts into the posture panels:
 
-- **Alerts:** Slack webhook and cost-threshold alerts. See [dashboard/README.md](dashboard/README.md).
+```bash
+mkdir -p .bastion/scan
+mcp-bastion scan tools.json --format json -o .bastion/scan/catalog.json
+mcp-bastion scan --skills ./skills --format json -o .bastion/scan/skills.json
+mcp-bastion osv-scan --format json -o .bastion/scan/osv.json
+mcp-bastion audit --format json -o .bastion/scan/risk-audit.json
+```
+
+- **Alerts:** Slack webhook and cost-threshold alerts. Full UI reference: [dashboard/README.md](dashboard/README.md).
 
 ### Documentation: Use Cases, Attacks, Metrics, Tutorials
 
@@ -755,7 +795,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pin a specific release (optional)
-pip install mcp-bastion-python==3.0.1
+pip install mcp-bastion-python==3.1.0
 ```
 
 **Prerequisites (recommended)**

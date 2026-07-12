@@ -39,6 +39,8 @@ try:
         HTMLResponse,
         JSONResponse,
         PlainTextResponse,
+        Response,
+        StreamingResponse,
     )
     from fastapi.staticfiles import StaticFiles
 except ImportError:
@@ -292,7 +294,7 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v26-governance-panel",
+        "ui_revision": "v32-finops-avoidance-charts",
         "hint": "If this is missing, you are not hitting dashboard/app.py - check port and process.",
     }
 
@@ -320,6 +322,308 @@ def governance_status():
             {"error": "governance_unavailable", "message": str(e)},
             status_code=500,
         )
+
+
+@app.get("/api/posture")
+def security_posture():
+    """Pre-deploy security posture grades from local scan JSON artifacts."""
+    try:
+        from mcp_bastion.dashboard_local import load_posture
+
+        return load_posture(demo=_demo_metrics_enabled())
+    except Exception as e:
+        logger.exception("Failed to load posture: %s", e)
+        return JSONResponse({"error": "posture_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/taxonomy")
+def taxonomy_heatmap(framework: str = "asi"):
+    """OWASP ASI / MCP / LLM Top 10 coverage from enabled pillars + local findings/blocks."""
+    try:
+        from mcp_bastion.dashboard_local import load_posture, load_taxonomy_coverage
+
+        m = _get_dashboard_metrics_dict()
+        posture = load_posture(demo=_demo_metrics_enabled())
+        return load_taxonomy_coverage(
+            posture=posture,
+            metrics=m,
+            config=_load_demo_bastion_config(),
+            framework=framework,
+        )
+    except Exception as e:
+        logger.exception("Failed to load taxonomy: %s", e)
+        return JSONResponse({"error": "taxonomy_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/attack-matrix")
+def attack_matrix(date_from: str | None = None, date_to: str | None = None):
+    """Live attack category matrix from blocks + pre-deploy finding pressure."""
+    try:
+        from mcp_bastion.dashboard_local import load_attack_matrix, load_posture
+
+        return load_attack_matrix(
+            metrics=_get_dashboard_metrics_dict(),
+            posture=load_posture(demo=_demo_metrics_enabled()),
+            date_from=date_from,
+            date_to=date_to,
+        )
+    except Exception as e:
+        logger.exception("Failed to load attack matrix: %s", e)
+        return JSONResponse({"error": "attack_matrix_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/issue-guide")
+def issue_guide(check: str | None = None, id: str | None = None):
+    """
+    PMD-style rule card: what/why/how-to-fix for a scan check or OWASP id.
+
+    Local knowledge only (no cloud). Optional refs are documentation links.
+    """
+    try:
+        from mcp_bastion.issue_guides import guide_for_check, guide_for_framework_id
+
+        if check:
+            g = guide_for_check(check)
+            if not g:
+                return JSONResponse({"error": "unknown_check", "check": check}, status_code=404)
+            return g
+        if id:
+            g = guide_for_framework_id(id)
+            if not g:
+                return JSONResponse({"error": "unknown_id", "id": id}, status_code=404)
+            return g
+        return JSONResponse(
+            {"error": "missing_param", "message": "Pass ?check=weak_schema or ?id=ASI02"},
+            status_code=400,
+        )
+    except Exception as e:
+        logger.exception("issue-guide failed: %s", e)
+        return JSONResponse({"error": "guide_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/prevalidate")
+def prevalidate_summary():
+    """
+    Sonar-like prevalidation summary from local scan artifacts (not a SonarQube server).
+
+    Surfaces grades + finding counts for CI/dashboard gates.
+    """
+    try:
+        from mcp_bastion.dashboard_local import load_posture
+        from mcp_bastion.issue_guides import enrich_finding_with_guide
+
+        posture = load_posture(demo=_demo_metrics_enabled())
+        issues = []
+        for kind, doc in (posture.get("checks") or {}).items():
+            if not doc.get("present"):
+                continue
+            for f in doc.get("findings") or []:
+                if not isinstance(f, dict):
+                    continue
+                enriched = enrich_finding_with_guide(f)
+                issues.append(
+                    {
+                        "source": kind,
+                        "check": enriched.get("check"),
+                        "severity": enriched.get("severity"),
+                        "message": enriched.get("message") or enriched.get("summary"),
+                        "tool": enriched.get("tool"),
+                        "taxonomy": enriched.get("taxonomy"),
+                        "guide": enriched.get("guide"),
+                    }
+                )
+        # Sort critical/high first
+        rank = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+        issues.sort(key=lambda x: (rank.get(str(x.get("severity") or "info").lower(), 9), str(x.get("check"))))
+        return {
+            "engine": "mcp-bastion-scan-suite",
+            "note": (
+                "Prevalidation from local mcp-bastion scan / skill / OSV / audit JSON — "
+                "Sonar-style issue list without running a SonarQube server."
+            ),
+            "combined_grade": posture.get("combined_grade"),
+            "checks": {
+                k: {
+                    "grade": v.get("grade"),
+                    "present": v.get("present"),
+                    "finding_count": v.get("finding_count"),
+                    "hint": v.get("hint"),
+                }
+                for k, v in (posture.get("checks") or {}).items()
+            },
+            "issue_count": len(issues),
+            "issues": issues[:200],
+            "demo": bool(posture.get("demo")),
+        }
+    except Exception as e:
+        logger.exception("prevalidate failed: %s", e)
+        return JSONResponse({"error": "prevalidate_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/compliance")
+def compliance_evidence():
+    """Local attestation + policy hash metadata (evidence, not a certificate)."""
+    try:
+        from mcp_bastion.dashboard_local import load_compliance
+
+        return load_compliance()
+    except Exception as e:
+        logger.exception("Failed to load compliance: %s", e)
+        return JSONResponse({"error": "compliance_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/compliance/report")
+def compliance_report(
+    framework: str = "soc2",
+    date_from: str | None = None,
+    date_to: str | None = None,
+):
+    """Generate a local compliance evidence markdown report."""
+    try:
+        from mcp_bastion.dashboard_local import generate_compliance_report_markdown
+
+        fw = (framework or "soc2").strip().lower()
+        body = generate_compliance_report_markdown(
+            framework=fw, date_from=date_from, date_to=date_to
+        )
+        return Response(
+            content=body,
+            media_type="text/markdown; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="bastion-{fw}-evidence.md"',
+            },
+        )
+    except Exception as e:
+        logger.exception("Failed to generate compliance report: %s", e)
+        return JSONResponse({"error": "report_failed", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/compliance/bundle")
+def compliance_bundle(
+    framework: str = "soc2",
+    date_from: str | None = None,
+    date_to: str | None = None,
+):
+    """Zip attestation + report + bastion.yaml (local evidence bundle)."""
+    try:
+        from mcp_bastion.dashboard_local import build_evidence_bundle_zip
+
+        fw = (framework or "soc2").strip().lower()
+        data = build_evidence_bundle_zip(
+            framework=fw, date_from=date_from, date_to=date_to
+        )
+        return Response(
+            content=data,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f'attachment; filename="bastion-evidence-{fw}.zip"',
+            },
+        )
+    except Exception as e:
+        logger.exception("Failed to build evidence bundle: %s", e)
+        return JSONResponse({"error": "bundle_failed", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/observe")
+def observe_status():
+    """Observe-mode banner data (mode + would-have-blocked count)."""
+    try:
+        from mcp_bastion.dashboard_local import load_observe_status
+
+        return load_observe_status(_get_dashboard_metrics_dict())
+    except Exception as e:
+        logger.exception("Failed to load observe status: %s", e)
+        return JSONResponse({"error": "observe_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/agents")
+def agent_identity_view():
+    """Confused-deputy view: denied-by-agent + IAM scope map."""
+    try:
+        from mcp_bastion.dashboard_local import load_agent_identity_view
+
+        return load_agent_identity_view(
+            _get_dashboard_metrics_dict(),
+            config=_load_demo_bastion_config(),
+        )
+    except Exception as e:
+        logger.exception("Failed to load agent view: %s", e)
+        return JSONResponse({"error": "agents_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/trends")
+def audit_trends(
+    days: int = 14,
+    date_from: str | None = None,
+    date_to: str | None = None,
+):
+    """Block-rate / PII trends from local audit JSONL."""
+    try:
+        from mcp_bastion.dashboard_local import load_trends_from_audit
+
+        return load_trends_from_audit(
+            days=max(1, min(int(days or 14), 90)),
+            date_from=date_from,
+            date_to=date_to,
+        )
+    except Exception as e:
+        logger.exception("Failed to load trends: %s", e)
+        return JSONResponse({"error": "trends_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/onboarding")
+def onboarding_checklist():
+    """Empty-state onboarding steps when no traffic/scan yet."""
+    try:
+        from mcp_bastion.dashboard_local import load_onboarding, load_posture
+
+        m = _get_dashboard_metrics_dict()
+        posture = load_posture(demo=False)
+        return load_onboarding(m, posture)
+    except Exception as e:
+        logger.exception("Failed to load onboarding: %s", e)
+        return JSONResponse({"error": "onboarding_unavailable", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/alerts/stream")
+async def alerts_sse():
+    """Server-Sent Events for recent alerts (canary / auto-repave / observe)."""
+    import asyncio
+
+    async def event_gen():
+        last_sig = ""
+        while True:
+            try:
+                m = MetricsStore.get().get_metrics()
+                alerts = m.get("alerts") or []
+                sig = json.dumps(alerts[-5:], default=str, separators=(",", ":"))
+                if sig != last_sig:
+                    last_sig = sig
+                    # Prefer canary / auto-repave / observe for SOC-feel push
+                    hot = [
+                        a
+                        for a in alerts
+                        if isinstance(a, dict)
+                        and any(
+                            k in str(a.get("kind") or "").lower()
+                            for k in ("canary", "repave", "observe", "exfil")
+                        )
+                    ]
+                    payload = hot[-8:] if hot else alerts[-8:]
+                    yield f"data: {json.dumps({'alerts': payload}, default=str)}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            await asyncio.sleep(2.0)
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.get("/api/dashboard-meta")
@@ -355,6 +659,18 @@ def prometheus_metrics():
         "# HELP mcp_bastion_cost_total Cost sum",
         "# TYPE mcp_bastion_cost_total gauge",
         f"mcp_bastion_cost_total {m.get('cost_total', 0)}",
+        "# HELP mcp_bastion_tokens_saved_total Tokens saved by FinOps pillars",
+        "# TYPE mcp_bastion_tokens_saved_total counter",
+        f"mcp_bastion_tokens_saved_total {m.get('tokens_saved_total', 0)}",
+        "# HELP mcp_bastion_tokens_avoided_by_blocks Estimated tokens never spent because requests were blocked",
+        "# TYPE mcp_bastion_tokens_avoided_by_blocks counter",
+        f"mcp_bastion_tokens_avoided_by_blocks {m.get('tokens_avoided_by_blocks', 0)}",
+        "# HELP mcp_bastion_estimated_usd_saved Estimated USD saved from token reduction",
+        "# TYPE mcp_bastion_estimated_usd_saved gauge",
+        f"mcp_bastion_estimated_usd_saved {m.get('estimated_usd_saved', 0)}",
+        "# HELP mcp_bastion_estimated_usd_avoided_by_blocks Estimated USD avoided by blocked requests",
+        "# TYPE mcp_bastion_estimated_usd_avoided_by_blocks gauge",
+        f"mcp_bastion_estimated_usd_avoided_by_blocks {m.get('estimated_usd_avoided_by_blocks', 0)}",
     ]
     gov = m.get("governance") or {}
     gov_blocks = gov.get("blocks") or {}
@@ -390,6 +706,10 @@ DASHBOARD_HTML = """
       document.documentElement.style.colorScheme = t === "light" ? "light" : "dark";
       var m = document.getElementById("metaColorScheme");
       if (m) m.setAttribute("content", t === "light" ? "light" : "dark");
+      // Apply as soon as body exists (also patched again on DOMContentLoaded).
+      document.addEventListener("DOMContentLoaded", function () {
+        if (document.body) document.body.setAttribute("data-theme", t);
+      });
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1180,6 +1500,53 @@ DASHBOARD_HTML = """
     .latency-row .num { font-size: 1.25rem; font-weight: 700; }
     .burn-text { font-size: 0.95rem; line-height: 1.6; color: var(--text); }
     .burn-text .muted { color: var(--muted); font-size: 0.8rem; }
+    .finops-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0 14px;
+    }
+    @media (max-width: 900px) {
+      .finops-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .finops-kpi {
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(15, 23, 42, 0.28);
+    }
+    html[data-theme="light"] .finops-kpi { background: #f8fafc; }
+    .finops-kpi .fk-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .finops-kpi .fk-value {
+      margin-top: 4px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .finops-kpi .fk-sub {
+      margin-top: 2px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .finops-kpi.saved .fk-value { color: #34d399; }
+    .finops-kpi.avoided .fk-value { color: #7dd3fc; }
+    .finops-kpi.would .fk-value { color: #fbbf24; }
+    .finops-charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 1100px) {
+      .finops-charts { grid-template-columns: 1fr; }
+    }
+    .finops-charts .chart-wrap.sm { height: 220px; }
     span.muted { color: var(--muted); font-size: 0.85rem; }
     p.muted { color: var(--muted); }
     .pillar-grid {
@@ -1277,6 +1644,287 @@ DASHBOARD_HTML = """
     .gov-tile .gov-meta {
       font-size: 0.68rem;
       color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+    .observe-banner {
+      display: none;
+      margin: 0 0 14px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      background: linear-gradient(90deg, rgba(251, 191, 36, 0.18), rgba(15, 23, 42, 0.35));
+      color: #fde68a;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .observe-banner.visible { display: block; }
+    html[data-theme="light"] .observe-banner {
+      background: linear-gradient(90deg, rgba(251, 191, 36, 0.28), rgba(255, 255, 255, 0.85));
+      color: #92400e;
+    }
+    .observe-banner .nudge {
+      font-weight: 500;
+      font-size: 0.85rem;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+    .onboarding-card { display: none; }
+    .onboarding-card.visible { display: block; }
+    .onboard-list { margin: 8px 0 0; padding-left: 1.2rem; }
+    .onboard-list li { margin: 6px 0; }
+    .onboard-list li.done { color: #86efac; text-decoration: line-through; }
+    html[data-theme="light"] .onboard-list li.done { color: #047857; }
+    .posture-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .grade-tile {
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.22);
+      transition: border-color 0.15s ease;
+    }
+    .grade-tile:hover, .grade-tile:focus { border-color: #38bdf8; outline: none; }
+    html[data-theme="light"] .grade-tile { background: rgba(248, 250, 252, 0.9); }
+    .grade-tile .g-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+    .grade-tile .g-letter {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .grade-tile .g-meta { font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+    .grade-A .g-letter { color: #86efac; }
+    .grade-B .g-letter { color: #a3e635; }
+    .grade-C .g-letter { color: #fbbf24; }
+    .grade-D .g-letter { color: #fb923c; }
+    .grade-F .g-letter { color: #fb7185; }
+    .grade-none .g-letter { color: var(--muted); font-size: 1.2rem; }
+    html[data-theme="light"] .grade-A .g-letter { color: #047857; }
+    .asi-heat {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    @media (max-width: 900px) {
+      .asi-heat { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .asi-cell {
+      border-radius: 8px;
+      padding: 10px 8px;
+      border: 1px solid var(--card-border);
+      min-height: 72px;
+      font-size: 0.72rem;
+      text-align: left;
+      color: inherit;
+      cursor: pointer;
+      font-family: inherit;
+      width: 100%;
+    }
+    .asi-cell .asi-id { font-weight: 800; letter-spacing: 0.04em; }
+    .asi-cell .asi-title { margin-top: 4px; color: var(--muted); line-height: 1.3; }
+    .asi-covered { background: rgba(52, 211, 153, 0.16); border-color: rgba(52, 211, 153, 0.35); }
+    .asi-findings { background: rgba(251, 191, 36, 0.16); border-color: rgba(251, 191, 36, 0.4); }
+    .asi-unaddressed { background: rgba(100, 116, 139, 0.12); }
+    .compliance-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .spark-row { display: flex; align-items: flex-end; gap: 3px; height: 40px; margin-top: 8px; }
+    .spark-bar {
+      flex: 1;
+      background: rgba(251, 113, 133, 0.55);
+      border-radius: 2px 2px 0 0;
+      min-height: 2px;
+    }
+    .why-cell { font-size: 0.72rem; max-width: 180px; }
+    .why-cell .why-pillar { font-weight: 700; color: #7dd3fc; }
+    html[data-theme="light"] .why-cell .why-pillar { color: #0369a1; }
+    .agent-scope { font-size: 0.75rem; margin-top: 8px; }
+    .agent-scope dt { font-weight: 700; margin-top: 6px; }
+    .agent-scope dd { margin: 2px 0 0 12px; color: var(--muted); }
+    .posture-findings { margin-top: 12px; display: none; }
+    .posture-findings.visible { display: block; }
+    .prevalidate-box {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.22);
+    }
+    html[data-theme="light"] .prevalidate-box { background: rgba(248, 250, 252, 0.9); }
+    .prevalidate-box .pv-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .prevalidate-box .pv-head strong { font-size: 0.9rem; }
+    .issue-guide {
+      margin: 12px 0;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.35);
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+    html[data-theme="light"] .issue-guide { background: #f1f5f9; }
+    .issue-guide h4 {
+      margin: 0 0 6px;
+      font-size: 0.95rem;
+    }
+    .issue-guide .ig-why { margin: 8px 0; color: var(--muted); }
+    .issue-guide ol {
+      margin: 6px 0 10px;
+      padding-left: 1.25rem;
+    }
+    .issue-guide ol li { margin: 4px 0; }
+    .issue-guide .ig-knobs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .issue-guide .ig-knob {
+      font-size: 0.72rem;
+      font-family: ui-monospace, monospace;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+      background: rgba(125, 211, 252, 0.12);
+    }
+    .issue-guide .ig-refs { margin: 8px 0 0; padding-left: 1.1rem; }
+    .issue-guide .ig-refs a { color: #7dd3fc; }
+    html[data-theme="light"] .issue-guide .ig-refs a { color: #0369a1; }
+    .issue-guide .ig-fw {
+      margin-top: 10px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .date-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.28);
+    }
+    html[data-theme="light"] .date-filter-bar {
+      background: rgba(248, 250, 252, 0.95);
+    }
+    .date-filter-bar label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .date-filter-bar input[type="date"],
+    .date-filter-bar select {
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--text);
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      min-width: 150px;
+    }
+    html[data-theme="light"] .date-filter-bar input[type="date"],
+    html[data-theme="light"] .date-filter-bar select {
+      background: #fff;
+    }
+    .tax-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 4px;
+    }
+    .tax-tab {
+      border: 1px solid var(--card-border);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tax-tab.active {
+      color: #0f172a;
+      background: #38bdf8;
+      border-color: #38bdf8;
+    }
+    html[data-theme="light"] .tax-tab.active {
+      color: #fff;
+      background: #0284c7;
+      border-color: #0284c7;
+    }
+    .attack-matrix-wrap { overflow-x: auto; margin-top: 8px; }
+    .attack-matrix {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    .attack-matrix th, .attack-matrix td {
+      border-bottom: 1px solid var(--card-border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .attack-matrix th { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .intensity {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .intensity-quiet { background: rgba(100,116,139,0.2); color: var(--muted); }
+    .intensity-watch { background: rgba(251,191,36,0.2); color: #fbbf24; }
+    .intensity-active { background: rgba(251,146,60,0.22); color: #fb923c; }
+    .intensity-hot { background: rgba(251,113,133,0.25); color: #fb7185; }
+    html[data-theme="light"] .intensity-watch { color: #92400e; }
+    html[data-theme="light"] .intensity-active { color: #c2410c; }
+    html[data-theme="light"] .intensity-hot { color: #be123c; }
+    .detail-modal-body {
+      max-height: min(70vh, 640px);
+      overflow: auto;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .trace-steps { margin: 10px 0 0; padding: 0; list-style: none; }
+    .trace-steps li {
+      border-left: 3px solid rgba(56,189,248,0.45);
+      padding: 6px 10px;
+      margin: 0 0 6px;
+      background: rgba(15,23,42,0.25);
+      border-radius: 0 8px 8px 0;
+    }
+    html[data-theme="light"] .trace-steps li { background: #f8fafc; }
+    .trace-steps .t-pillar { font-weight: 700; color: #7dd3fc; }
+    html[data-theme="light"] .trace-steps .t-pillar { color: #0369a1; }
+    .btn-linkish {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.78rem;
+      padding: 0;
+      text-decoration: underline;
+    }
       margin-top: 4px;
       line-height: 1.35;
     }
@@ -1623,11 +2271,50 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
+  <div class="observe-banner" id="observeBanner" role="status" aria-live="polite">
+    <div id="observeBannerTitle">OBSERVE MODE</div>
+    <div class="nudge" id="observeBannerNudge"></div>
+  </div>
+
+  <div class="card onboarding-card" id="onboardingCard">
+    <div class="card-head">
+      <h2>Get started</h2>
+      <p class="card-desc">First-run checklist — local files and middleware only (no cloud required).</p>
+    </div>
+    <ol class="onboard-list" id="onboardingList"></ol>
+  </div>
+
+  <div class="date-filter-bar" id="dateFilterBar" aria-label="Date and report filters">
+    <label>From
+      <input type="date" id="filterDateFrom" />
+    </label>
+    <label>To
+      <input type="date" id="filterDateTo" />
+    </label>
+    <label>Preset
+      <select id="filterPreset">
+        <option value="">Custom / all</option>
+        <option value="1">Last 24h (today)</option>
+        <option value="7">Last 7 days</option>
+        <option value="14" selected>Last 14 days</option>
+        <option value="30">Last 30 days</option>
+      </select>
+    </label>
+    <button type="button" class="btn-export" id="btnApplyFilters">Apply filters</button>
+    <button type="button" class="btn-ghost" id="btnClearFilters">Clear</button>
+    <span class="muted" id="filterHint" style="font-size:0.78rem;align-self:center;"></span>
+  </div>
+
   <nav class="dash-jump" aria-label="Jump to sections">
     <span class="jump-label">Jump</span>
+    <a href="#dash-posture">Security posture</a>
+    <a href="#dash-taxonomy">OWASP / ASI</a>
+    <a href="#dash-attack">Attack matrix</a>
+    <a href="#dash-compliance">Compliance</a>
     <a href="#dash-governance">Runtime governance</a>
     <a href="#dash-alerts-insights">Alerts &amp; insights</a>
     <a href="#dash-forensics">Forensics</a>
+    <a href="#dash-finops">Cost burn</a>
     <a href="#dash-traffic">Traffic</a>
     <a href="#dash-tools">Tool drill-down</a>
     <span class="jump-actions">
@@ -1646,15 +2333,111 @@ DASHBOARD_HTML = """
       <p class="insight-lede" style="margin-top:0">Use the same endpoints for automation, Grafana, Datadog, or custom UIs.</p>
       <div class="link-row">
         <a class="link-chip" href="/api/metrics" target="_blank" rel="noopener">JSON metrics</a>
-        <a class="link-chip" href="/metrics" target="_blank" rel="noopener">Prometheus</a>
-        <a class="link-chip" href="/meta" target="_blank" rel="noopener">Build meta</a>
-        <a class="link-chip" href="/api/governance" target="_blank" rel="noopener">Governance config</a>
+        <a class="link-chip" href="/api/posture" target="_blank" rel="noopener">Posture</a>
+        <a class="link-chip" href="/api/prevalidate" target="_blank" rel="noopener">Prevalidate</a>
+        <a class="link-chip" href="/api/issue-guide?check=weak_schema" target="_blank" rel="noopener">Issue guide</a>
+        <a class="link-chip" href="/api/taxonomy" target="_blank" rel="noopener">ASI taxonomy</a>
+        <a class="link-chip" href="/api/compliance" target="_blank" rel="noopener">Compliance</a>
+        <a class="link-chip" href="/api/governance" target="_blank" rel="noopener">Governance</a>
         <a class="link-chip" href="/api/health" target="_blank" rel="noopener">Health</a>
       </div>
     </div>
     <div class="insight-card">
       <h3>Top block categories</h3>
       <ul class="kind-list" id="kindPreview"><li class="muted">No blocks yet</li></ul>
+    </div>
+  </div>
+
+  <div class="card" id="dash-posture">
+    <div class="card-head">
+      <h2>Security posture <span class="muted" style="font-weight:600;font-size:0.85rem;">(pre-deploy)</span></h2>
+      <p class="card-desc">Letter grades from local scan JSON under <code>.bastion/scan/</code> — catalog, skills, OSV, and risk audit. Click a finding for OWASP-linked why/how-to-fix (PMD-style). Prevalidation below is the Sonar-style issue list from the same files — no SonarQube server.</p>
+    </div>
+    <div class="posture-grid" id="postureGrid">
+      <div class="grade-tile grade-none"><div class="g-label">Loading…</div><div class="g-letter">—</div></div>
+    </div>
+    <div class="posture-findings" id="postureFindings">
+      <h3 style="font-size:0.9rem;margin:0 0 8px;">Findings</h3>
+      <div class="tool-table-wrap">
+        <table class="tool-table" id="postureFindingsTable">
+          <thead><tr><th>Severity</th><th>Check</th><th>Message</th><th>OWASP / ASI</th><th>Detail</th></tr></thead>
+          <tbody id="postureFindingsBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="prevalidate-box" id="prevalidateBox">
+      <div class="pv-head">
+        <strong>Static prevalidation</strong>
+        <span class="muted" id="prevalidateNote">Sonar-style issue list from local mcp-bastion scans (not a SonarQube server).</span>
+      </div>
+      <div class="muted" id="prevalidateSummary" style="font-size:0.8rem;margin-bottom:8px;">Loading…</div>
+      <div class="tool-table-wrap">
+        <table class="tool-table" id="prevalidateTable">
+          <thead><tr><th>Severity</th><th>Source</th><th>Check</th><th>Message</th><th>Guide</th></tr></thead>
+          <tbody id="prevalidateBody"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="dash-taxonomy">
+    <div class="card-head">
+      <h2>OWASP / ASI coverage</h2>
+      <p class="card-desc">Switch frameworks: Agentic (ASI), MCP Top 10, and LLM Top 10. Green = control on, amber = findings/blocks, grey = not addressed. Click a cell for sample issues.</p>
+    </div>
+    <div class="tax-tabs" id="taxonomyTabs" role="tablist">
+      <button type="button" class="tax-tab active" data-fw="asi">ASI Top 10</button>
+      <button type="button" class="tax-tab" data-fw="mcp">MCP Top 10</button>
+      <button type="button" class="tax-tab" data-fw="llm">LLM Top 10</button>
+    </div>
+    <div class="asi-heat" id="asiHeatmap"></div>
+  </div>
+
+  <div class="card" id="dash-attack">
+    <div class="card-head">
+      <h2>Live attack matrix</h2>
+      <p class="card-desc" id="attackHeadline">Categories under pressure from runtime blocks, mapped to OWASP / ASI. Respects the date filter above.</p>
+    </div>
+    <div class="attack-matrix-wrap">
+      <table class="attack-matrix" id="attackMatrixTable">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Intensity</th>
+            <th>Blocks</th>
+            <th>Share</th>
+            <th>Top tool</th>
+            <th>OWASP / ASI</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="attackMatrixBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" id="dash-compliance">
+    <div class="card-head">
+      <h2>Compliance evidence</h2>
+      <p class="card-desc" id="complianceDisclaimer">Evidence to support an audit, not a certificate.</p>
+    </div>
+    <div class="governance-grid" id="complianceMeta">
+      <div class="gov-tile"><div class="gov-name">Policy hash</div><div class="gov-state off" id="compPolicyHash">—</div></div>
+      <div class="gov-tile"><div class="gov-name">Attestation</div><div class="gov-state off" id="compAttestHash">—</div></div>
+      <div class="gov-tile"><div class="gov-name">Generated</div><div class="gov-state off" id="compAttestTs">—</div></div>
+    </div>
+    <div class="date-filter-bar" style="margin-top:12px;margin-bottom:0;">
+      <label>Framework
+        <select id="reportFramework">
+          <option value="soc2">SOC 2 (evidence)</option>
+          <option value="gdpr">GDPR (evidence)</option>
+          <option value="iso27001">ISO 27001 (evidence)</option>
+          <option value="nist_ai_rmf">NIST AI RMF (evidence)</option>
+          <option value="asi">OWASP ASI Top 10 (evidence)</option>
+        </select>
+      </label>
+      <button type="button" class="btn-export" id="btnGenReport">Generate report</button>
+      <button type="button" class="btn-export" id="btnGenBundle">Download evidence bundle</button>
     </div>
   </div>
 
@@ -1672,7 +2455,7 @@ DASHBOARD_HTML = """
     <div class="kpi req"><h2>Requests</h2><div class="value" id="kpiReq">0</div><p class="kpi-foot">Allowed tool calls recorded in this process.</p></div>
     <div class="kpi block"><h2>Blocked</h2><div class="value" id="kpiBlocked">0</div><p class="kpi-foot">Denied by policy (rate limits, injection, RBAC, …).</p></div>
     <div class="kpi pii"><h2>PII redacted</h2><div class="value" id="kpiPii">0</div><p class="kpi-foot">Entities masked or removed by Presidio-style detection.</p></div>
-    <div class="kpi cost"><h2>Cost</h2><div class="value" id="kpiCost">$0.00</div><p class="kpi-foot">Cumulative tracked spend (when cost middleware is enabled).</p></div>
+    <div class="kpi cost"><h2>Cost</h2><div class="value" id="kpiCost">$0.00</div><p class="kpi-foot" id="kpiCostFoot">Cumulative tracked spend (when cost middleware is enabled).</p></div>
   </div>
 
   <div class="alerts-insights-row" id="dash-alerts-insights">
@@ -1696,7 +2479,7 @@ DASHBOARD_HTML = """
   <div class="card forensics-card" id="dash-forensics">
     <div class="card-head">
       <h2>Blocked requests (forensics)</h2>
-      <p class="card-desc">Per-decision rows with trace and request IDs. Charts above are all tenants; filter this table by tenant.</p>
+      <p class="card-desc">Per-decision rows with pillar + bastion.yaml rule provenance. Charts above are all tenants; filter this table by tenant.</p>
     </div>
     <div class="tenant-bar">
       <label for="tenantFilter">Tenant</label>
@@ -1715,6 +2498,7 @@ DASHBOARD_HTML = """
             <th>Tenant</th>
             <th>Agent</th>
             <th>Tool</th>
+            <th>Why</th>
             <th>Reason</th>
             <th>Trace</th>
             <th>Request</th>
@@ -1724,6 +2508,24 @@ DASHBOARD_HTML = """
         <tbody id="blockedForensicsBody"></tbody>
       </table>
     </div>
+  </div>
+
+  <div class="card" id="dash-agents">
+    <div class="card-head">
+      <h2>Agent identity / confused-deputy</h2>
+      <p class="card-desc">Denied-by-agent counts from forensics plus Agent IAM scope map from <code>bastion.yaml</code>.</p>
+    </div>
+    <div id="agentDeniedSummary" class="muted" style="font-size:0.85rem;">—</div>
+    <dl class="agent-scope" id="agentScopeMap"></dl>
+  </div>
+
+  <div class="card" id="dash-trends">
+    <div class="card-head">
+      <h2>Posture drift (audit JSONL)</h2>
+      <p class="card-desc">Block-rate sparkline from the local audit file — no database.</p>
+    </div>
+    <div id="trendHint" class="muted" style="font-size:0.8rem;"></div>
+    <div class="spark-row" id="trendSpark" aria-hidden="true"></div>
   </div>
 
   <div class="card">
@@ -1742,7 +2544,7 @@ DASHBOARD_HTML = """
     <div class="chart-wrap sm"><canvas id="chartBlockKinds"></canvas></div>
   </div>
 
-  <div class="charts-row" style="grid-template-columns: 1fr 1fr; margin-bottom: 18px;">
+  <div class="charts-row" style="grid-template-columns: 1fr; margin-bottom: 18px;">
     <div class="card" style="margin-bottom:0;">
       <h2>Latency (middleware)</h2>
       <div class="latency-row" id="latencyStats">
@@ -1752,10 +2554,75 @@ DASHBOARD_HTML = """
       </div>
       <p class="muted" style="margin:10px 0 0;font-size:0.75rem;" id="latSamples">0 samples</p>
     </div>
-    <div class="card" style="margin-bottom:0;">
-      <h2>Cost burn</h2>
-      <div id="costBurn" class="burn-text">$0.00 / hr projected · $0.00 / day</div>
-      <p class="muted" style="margin:8px 0 0;font-size:0.75rem;" id="burnWindow">Window elapsed: 0s</p>
+  </div>
+
+  <div class="card" id="dash-finops">
+    <div class="card-head">
+      <h2>Cost burn &amp; reduction</h2>
+      <p class="card-desc">Compare actual spend to what would have happened without Bastion blocks and FinOps caps. Graphs use pricing estimates (not invoices).</p>
+    </div>
+    <div id="costBurn" class="burn-text">$0.00 / hr projected · $0.00 / day</div>
+    <div class="finops-kpis">
+      <div class="finops-kpi">
+        <div class="fk-label">Actual spend</div>
+        <div class="fk-value" id="finopsActual">$0.00</div>
+        <div class="fk-sub" id="finopsUsed">0 tokens used</div>
+      </div>
+      <div class="finops-kpi would">
+        <div class="fk-label">If not blocked / capped</div>
+        <div class="fk-value" id="finopsWould">$0.00</div>
+        <div class="fk-sub" id="finopsWouldTok">0 tokens would-have</div>
+      </div>
+      <div class="finops-kpi saved">
+        <div class="fk-label">FinOps tokens saved</div>
+        <div class="fk-value" id="finopsSaved">0</div>
+        <div class="fk-sub" id="finopsSavedUsd">~$0.00 est.</div>
+      </div>
+      <div class="finops-kpi avoided">
+        <div class="fk-label">Avoided by blocks</div>
+        <div class="fk-value" id="finopsAvoided">0</div>
+        <div class="fk-sub" id="finopsAvoidedUsd">~$0.00 est.</div>
+      </div>
+    </div>
+    <div class="finops-charts">
+      <div>
+        <h3 style="font-size:0.85rem;margin:0 0 6px;">Tokens: used vs saved vs avoided</h3>
+        <div class="chart-wrap sm"><canvas id="chartTokensCompare"></canvas></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.85rem;margin:0 0 6px;">Cost: actual vs would-have-been</h3>
+        <div class="chart-wrap sm"><canvas id="chartCostCompare"></canvas></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.85rem;margin:0 0 6px;">Reduction by source</h3>
+        <div class="chart-wrap sm"><canvas id="chartSavingsSource"></canvas></div>
+      </div>
+    </div>
+    <div id="costReduction" class="burn-text" style="margin-top:4px;">
+      <strong>Tokens saved:</strong> <span id="tokensSaved">0</span>
+      <span class="muted"> · used <span id="tokensUsed">0</span></span>
+      <span class="muted"> · avoided by blocks <span id="tokensAvoided">0</span></span><br>
+      <strong>Est. $ saved (FinOps):</strong> <span id="usdSaved">$0.00</span>
+      <span class="muted"> · avoided <span id="usdAvoided">$0.00</span></span>
+      <span class="muted" id="savingsBySource"></span>
+    </div>
+    <p class="muted" style="margin:8px 0 0;font-size:0.75rem;" id="burnWindow">Window elapsed: 0s</p>
+    <h3 style="font-size:0.88rem;margin:14px 0 8px;">Blocked issues driving cost avoidance</h3>
+    <p class="muted" style="margin:0 0 8px;font-size:0.75rem;">What Bastion blocked, and the estimated tokens/$ that would have been spent if those calls reached the model.</p>
+    <div class="tool-table-wrap">
+      <table class="tool-table" id="costAvoidanceTable">
+        <thead>
+          <tr>
+            <th>Issue / kind</th>
+            <th>Tool</th>
+            <th>Why blocked</th>
+            <th>Est. tokens avoided</th>
+            <th>Est. $ avoided</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="costAvoidanceBody"><tr><td colspan="6" class="muted">No blocked issues yet.</td></tr></tbody>
+      </table>
     </div>
   </div>
 
@@ -1812,6 +2679,16 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
+  <div id="issueDetailModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="issueDetailTitle">
+    <div class="modal-box" style="max-width:720px;">
+      <button type="button" class="modal-close" id="issueDetailClose" aria-label="Close">&times;</button>
+      <h3 id="issueDetailTitle">Issue detail</h3>
+      <div id="issueDetailMeta" class="muted" style="font-size:0.8rem;margin:0 0 10px 0;"></div>
+      <div id="issueDetailGuide" class="issue-guide" hidden></div>
+      <ul class="trace-steps" id="issueDetailTrace"></ul>
+      <pre class="detail-modal-body" id="issueDetailBody"></pre>
+    </div>
+  </div>
   <div id="traceModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="traceModalTitle">
     <div class="modal-box">
       <button type="button" class="modal-close" id="traceModalClose" aria-label="Close">&times;</button>
@@ -1828,7 +2705,7 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script src="/static/dashboard-app.js?v=26-governance" charset="utf-8"></script>
+  <script src="/static/dashboard-app.js?v=32-finops-charts" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>

@@ -1,16 +1,28 @@
 ﻿# Changelog
 
-**Current release:** **3.0.1** (2026-07-12) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.0.1/) · [Docker `v3.0.1`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **3.1.0** (2026-07-12) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.1.0/) · [Docker `v3.1.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
-### Fixed
+## [3.1.0] - 2026-07-12
 
-- **MCP Registry publish:** pin `mcp-publisher` to **v1.7.9** (OIDC audience `https://registry.modelcontextprotocol.io`).
-- **npm publish workflow:** clear bootstrap path when `@mcp-bastion/core` is missing (requires one-time `NPM_TOKEN`); fail loudly instead of silent `continue-on-error`.
-- **Docs:** align DOCKER/SECURITY/ROADMAP/README current-release pins and widgets with **3.0.1**.
+Feature release: local dashboard posture / OWASP / FinOps panels, PMD-style issue guides, and Sonar-style prevalidation — still zero-infra (no DB, login, or cloud). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.1.0**.
+
+### Added
+
+- **Dashboard security posture:** letter grades from local `.bastion/scan/` JSON (catalog, skills, OSV, risk audit); demo seed via `MCP_BASTION_DEMO=1` / `--demo`.
+- **Static prevalidation:** `/api/prevalidate` — Sonar-style issue list from the same local scan artifacts (not SonarQube).
+- **Issue guides:** bundled PMD-style rule cards (`issue_guides.py`) with why / how to fix / Bastion knobs / OWASP refs; `/api/issue-guide?check=` or `?id=ASI02`; findings and taxonomy cells open the guide in the UI.
+- **OWASP heatmaps + attack matrix:** ASI / MCP / LLM tabs, live attack categories under pressure, compliance evidence reports + date filters, observe-mode banner, agents / trends / onboarding panels.
+- **FinOps cost burn & reduction:** actual vs would-have-been spend/tokens; tokens saved (output budget / discovery filter / cache); **tokens/$ avoided by blocks**; charts + blocked-issues table on the dashboard.
+- **Demo captures:** `scripts/capture_dashboard_demo.py` (9-slide tour GIF at ~5s/frame); assets under `images/mcp-bastion-dashboard*.png|gif`.
+
+### Changed
+
+- Dashboard remains a **read-only** view over in-process metrics + local files ([docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md), [dashboard/README.md](dashboard/README.md)).
+- Docs: README, developer guide, tutorials, FEATURES, METRICS, TAXONOMY, CLI, QUICK_START updated for 3.1.0 dashboard features.
 
 ## [3.0.1] - 2026-07-12
 
@@ -32,6 +44,8 @@ Patch release: client-side scan suite expansion (audit, schema, skills, OSV), ta
 - **PromptGuard default:** `use_ungated_default` now defaults to **true** (ProtectAI DeBERTa, no HF login). Gated Llama Prompt Guard remains opt-in. Fail-closed (`fail_open: false`) unchanged so missing ML still blocks unverified traffic.
 - **`mcp-bastion scan` output:** ASCII-only console strings (no em-dash/ellipsis mojibake on Windows cp1252).
 - **Compliance report:** SOC2/GDPR `pii_redaction` controls also count audit pillars named `pii` (legacy/simulators).
+- **MCP Registry publish:** pin `mcp-publisher` to **v1.7.9** (OIDC audience `https://registry.modelcontextprotocol.io`).
+- **npm publish workflow:** clear bootstrap path when `@mcp-bastion/core` is missing (requires one-time `NPM_TOKEN`); fail loudly instead of silent `continue-on-error`.
 
 ### Changed
 

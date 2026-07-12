@@ -50,3 +50,4 @@ Add **`mcp-bastion validate`** to every PR so policy stays valid in pipelines: [
 | Claude / OpenAI / Gemini configs | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) |
 | `bastion.yaml` reference | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) |
 | Production + SIEM | [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) |
+| Local dashboard (demo) | [dashboard/README.md](../dashboard/README.md) — `mcp-bastion dashboard --demo` |

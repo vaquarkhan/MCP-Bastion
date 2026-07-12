@@ -313,6 +313,22 @@ def make_audit_export_callback(
             store.record_tool_latency_ms(tool, latency)
         except (TypeError, ValueError):
             pass  # missing or non-numeric latency on synthetic entries
+        try:
+            tu = int(getattr(entry, "tokens_used", 0) or 0)
+            if tu > 0:
+                store.record_tokens_used(tu)
+        except (TypeError, ValueError):
+            pass
+        # Finops savings may be attached on metadata via forensic/replay payloads in future;
+        # also accept optional tokens_saved on the entry if present.
+        try:
+            saved = getattr(entry, "tokens_saved", None)
+            if saved is None and isinstance(getattr(entry, "cost_dimensions", None), dict):
+                saved = entry.cost_dimensions.get("tokens_saved")
+            if saved:
+                store.record_tokens_saved(int(saved), source="audit")
+        except (TypeError, ValueError):
+            pass
         if entry.action == "ALLOWED":
             store.record_request(tool, user, tenant=tenant)
             if behavior_fingerprint:
@@ -324,6 +340,9 @@ def make_audit_export_callback(
                 tool,
                 tenant=tenant,
                 agent_id=getattr(entry, "agent_id", None),
+                trace_id=getattr(entry, "request_id", None),
+                request_id=getattr(entry, "request_id", None),
+                forensic_trace=getattr(entry, "forensic_trace", None) or None,
             )
             notify_audit_entry(entry.action, tool, reason, sinks, on_events)
 

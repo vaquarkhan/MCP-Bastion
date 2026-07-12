@@ -159,6 +159,32 @@ Examples of open-source MCP servers you might host yourself:
 
 ---
 
+## Tutorial 5: Local dashboard (posture, issue guides, FinOps)
+
+Zero-infra: the dashboard reads **in-process metrics** plus optional files under `.bastion/scan/` — no cloud DB.
+
+```bash
+pip install "mcp-bastion-python[dashboard]"
+mcp-bastion dashboard --port 7000 --demo
+```
+
+Open [http://localhost:7000/](http://localhost:7000/):
+
+1. **Security posture** — letter grades from scan JSON; click a finding → **Why / how to fix** (PMD-style + OWASP).
+2. **Static prevalidation** — Sonar-style issue list (`/api/prevalidate`) from the same files.
+3. **Cost burn & reduction** — actual vs would-have-been tokens/$; blocked-issues table for what Bastion stopped.
+4. Write real artifacts (instead of `--demo`):
+
+```bash
+mkdir -p .bastion/scan
+mcp-bastion scan tools.json --format json -o .bastion/scan/catalog.json
+mcp-bastion audit --format json -o .bastion/scan/risk-audit.json
+```
+
+Details: [dashboard/README.md](../dashboard/README.md) · [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md).
+
+---
+
 ## Summary
 
 | Scenario | Approach |

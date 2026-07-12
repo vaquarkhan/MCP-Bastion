@@ -7,6 +7,8 @@ title: MCP-Bastion Docs
 
 Secure MCP servers with local-first middleware for prompt injection defense, PII redaction, rate/cost controls, audit, and observability.
 
+**3.1.0 dashboard:** local posture grades, Sonar-style prevalidation, PMD-style issue guides, and FinOps actual vs would-have-been — see [dashboard/README.md](../dashboard/README.md).
+
 ## Why teams adopt MCP-Bastion
 
 MCP-Bastion helps teams ship AI agents faster without exposing enterprise systems to uncontrolled tool execution.

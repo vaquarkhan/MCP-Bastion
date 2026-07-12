@@ -142,12 +142,22 @@ def seed_metrics(rng: random.Random, config: BastionConfig | None = None) -> Non
             continue
         for _ in range(rng.randint(4, 14)):
             nblk += 1
+            agent = "support-bot" if "Agent '" in reason else ""
             store.record_blocked(
                 reason,
                 _demo_tool(tool),
                 tenant_id=tenant,
+                agent_id=agent,
                 trace_id=f"trc-seed-{nblk:04d}",
                 request_id=f"req-seed-{nblk:04d}",
+                forensic_trace=[
+                    {"pillar": "audit_log", "status": "allowed", "detail": "request accepted"},
+                    {
+                        "pillar": kind if kind != "other" else "policy",
+                        "status": "blocked",
+                        "detail": reason[:200],
+                    },
+                ],
             )
 
     if _demo_kind_allowed(cfg, "rate_limit") and cfg.rate_limit:
@@ -159,6 +169,9 @@ def seed_metrics(rng: random.Random, config: BastionConfig | None = None) -> Non
                 tenant_id=tenant,
                 trace_id=f"trc-seed-{nblk:04d}",
                 request_id=f"req-seed-{nblk:04d}",
+                forensic_trace=[
+                    {"pillar": "rate_limiter", "status": "blocked", "detail": "rate limit: too many requests"},
+                ],
             )
 
     if _demo_kind_allowed(cfg, "cost") and cfg.cost_tracker:
@@ -173,6 +186,9 @@ def seed_metrics(rng: random.Random, config: BastionConfig | None = None) -> Non
                 tenant_id=tenant,
                 trace_id=f"trc-seed-{nblk:04d}",
                 request_id=f"req-seed-{nblk:04d}",
+                forensic_trace=[
+                    {"pillar": "cost_tracker", "status": "blocked", "detail": "Cost budget exceeded for session"},
+                ],
             )
 
     if cfg.pii:
@@ -212,6 +228,30 @@ def seed_metrics(rng: random.Random, config: BastionConfig | None = None) -> Non
             },
             tenant=tenant,
         )
+
+    # FinOps / cost-reduction demo: tokens saved by output budget + discovery filter.
+    store.record_tokens_used(1_250_000)
+    store.record_tokens_saved(
+        420_000,
+        source="output_budget",
+        provider="openai",
+        model="gpt-4o-mini",
+        as_output=True,
+    )
+    store.record_tokens_saved(
+        95_000,
+        source="discovery_filter",
+        provider="openai",
+        model="gpt-4o-mini",
+        as_output=False,
+    )
+    store.record_tokens_saved(
+        38_000,
+        source="semantic_cache",
+        provider="openai",
+        model="gpt-4o-mini",
+        as_output=True,
+    )
 
     for _ in range(520):
         store.record_latency_ms(rng.uniform(4.0, 14.0))

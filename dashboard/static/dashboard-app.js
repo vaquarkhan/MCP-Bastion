@@ -10,6 +10,12 @@
     let lastGovernanceConfig = null;
     let freshnessTimerStarted = false;
     let dashboardReadyFired = false;
+    let filterDateFrom = '';
+    let filterDateTo = '';
+    let taxonomyFramework = 'asi';
+    let lastAttackMatrix = null;
+    let lastPostureFindings = [];
+    let lastTaxonomyCells = [];
 
     function initChartDefaults() {
       if (typeof Chart === 'undefined') return false;
@@ -26,9 +32,10 @@
       var dark = theme === 'dark';
       var btn = document.getElementById('themeToggle');
       if (!btn) return;
-      btn.textContent = dark ? 'Switch to light theme' : 'Switch to dark theme';
+      // Label shows current theme + action (avoids "says light but looks dark" confusion).
+      btn.textContent = dark ? 'Theme: Dark (switch to Light)' : 'Theme: Light (switch to Dark)';
       btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
-      btn.title = dark ? 'Use light background and UI colors' : 'Use dark background and UI colors';
+      btn.title = dark ? 'Currently dark. Click for light theme.' : 'Currently light. Click for dark theme.';
     }
     function syncBodyThemeAttr() {
       var theme = document.documentElement.getAttribute('data-theme');
@@ -136,6 +143,7 @@
       var b = document.getElementById('replayModal');
       if (a) a.classList.remove('open');
       if (b) b.classList.remove('open');
+      closeIssueDetail();
     }
     function openTraceModal(inc) {
       var payload = {
@@ -217,20 +225,37 @@
       return '<td class="reason-cell" title="' + escapeHtmlAttr(fullR) + '">' + escapeHtml(fullR) + '</td>';
     }
 
+    function whyCellHtml(row) {
+      var pillar = row.pillar || row.kind || '';
+      var rule = row.rule || '';
+      if (!pillar && !rule) {
+        return '<td class="why-cell muted">—</td>';
+      }
+      var tip = (pillar ? ('Pillar: ' + pillar) : '') + (rule ? (' · ' + rule) : '');
+      return '<td class="why-cell" title="' + escapeHtmlAttr(tip) + '">'
+        + (pillar ? '<span class="why-pillar">' + escapeHtml(String(pillar)) + '</span>' : '')
+        + (rule ? '<div class="muted">' + escapeHtml(String(rule).slice(0, 80)) + '</div>' : '')
+        + '</td>';
+    }
+
     function renderForensicsRows() {
       var tbody = document.getElementById('blockedForensicsBody');
       var hint = document.getElementById('forensicsHint');
       if (!tbody) return;
       var filter = forensicsTenantFilter || '';
       var rows = (lastBlockedIncidents || []).filter(function (i) {
-        return !filter || i.tenant_id === filter;
+        if (filter && i.tenant_id !== filter) return false;
+        if (!incidentInDateRange(i)) return false;
+        return true;
       });
       lastForensicsRows = rows;
       if (hint) {
-        hint.textContent = rows.length + ' row(s)' + (filter ? ' · tenant ' + filter : ' · all tenants');
+        hint.textContent = rows.length + ' row(s)'
+          + (filter ? ' · tenant ' + filter : ' · all tenants')
+          + (filterDateFrom || filterDateTo ? ' · date filter on' : '');
       }
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="muted">No blocks match this filter — try &ldquo;Show all&rdquo; or check that middleware is recording <code>blocked_incidents</code>.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="muted">No blocks match this filter — try &ldquo;Show all&rdquo;, clear dates, or check that middleware is recording <code>blocked_incidents</code>.</td></tr>';
         return;
       }
       tbody.innerHTML = rows.map(function (row, idx) {
@@ -239,22 +264,150 @@
           ts = new Date(row.ts).toISOString().replace('T', ' ').slice(0, 19);
         } catch (e1) { ts = String(row.ts || ''); }
         var tr = reasonCellHtml(row);
+        var why = whyCellHtml(row);
         return '<tr>'
           + '<td>' + escapeHtml(ts) + '</td>'
           + '<td>' + escapeHtml(row.tenant_id || '') + '</td>'
-          + '<td>' + escapeHtml(row.agent_id || '—') + '</td>'
+          + '<td>' + escapeHtml(row.agent_id || '-') + '</td>'
           + '<td>' + escapeHtml(row.tool || '') + '</td>'
+          + why
           + tr
           + '<td style="font-size:0.72rem;" title="' + escapeHtmlAttr(String(row.trace_id || '')) + '">'
           + escapeHtml(String(row.trace_id || '').slice(0, 40)) + (String(row.trace_id || '').length > 40 ? '…' : '') + '</td>'
           + '<td style="font-size:0.72rem;" title="' + escapeHtmlAttr(String(row.request_id || '')) + '">'
           + escapeHtml(String(row.request_id || '').slice(0, 32)) + (String(row.request_id || '').length > 32 ? '…' : '') + '</td>'
           + '<td><span class="btn-row-act">'
+          + '<button type="button" class="btn-mini" data-act="detail" data-i="' + idx + '">Details</button>'
           + '<button type="button" class="btn-mini" data-act="trace" data-i="' + idx + '">View trace</button>'
           + '<button type="button" class="btn-mini" data-act="replay" data-i="' + idx + '">Reproduce</button>'
           + '</span></td>'
           + '</tr>';
       }).join('');
+    }
+
+    function incidentInDateRange(row) {
+      if (!filterDateFrom && !filterDateTo) return true;
+      var day = String(row.ts || '').slice(0, 10);
+      if (!day) return true;
+      if (filterDateFrom && day < filterDateFrom) return false;
+      if (filterDateTo && day > filterDateTo) return false;
+      return true;
+    }
+
+    function openIssueDetail(title, meta, traceSteps, rawObj) {
+      var modal = document.getElementById('issueDetailModal');
+      var tEl = document.getElementById('issueDetailTitle');
+      var mEl = document.getElementById('issueDetailMeta');
+      var trEl = document.getElementById('issueDetailTrace');
+      var bEl = document.getElementById('issueDetailBody');
+      if (!modal) return;
+      if (tEl) tEl.textContent = title || 'Issue detail';
+      if (mEl) mEl.textContent = meta || '';
+      if (trEl) {
+        var steps = traceSteps || [];
+        if (!steps.length) {
+          trEl.innerHTML = '<li class="muted">No pillar trace steps on this record yet.</li>';
+        } else {
+          trEl.innerHTML = steps.map(function (s) {
+            return '<li><span class="t-pillar">' + escapeHtml(s.pillar || s.status || 'step')
+              + '</span> <span class="muted">[' + escapeHtml(s.status || '') + ']</span>'
+              + '<div>' + escapeHtml(s.detail || '') + '</div></li>';
+          }).join('');
+        }
+      }
+      if (bEl) {
+        try {
+          bEl.textContent = JSON.stringify(rawObj || {}, null, 2);
+        } catch (e) {
+          bEl.textContent = String(rawObj || '');
+        }
+      }
+      fillIssueGuide(rawObj);
+      modal.classList.add('open');
+    }
+
+    function paintIssueGuide(guide) {
+      var gEl = document.getElementById('issueDetailGuide');
+      if (!gEl) return;
+      if (!guide) {
+        gEl.hidden = true;
+        gEl.innerHTML = '';
+        return;
+      }
+      var name = guide.name || guide.title || guide.check || guide.id || 'Issue guide';
+      var summary = guide.summary || '';
+      var why = guide.why || '';
+      var fixes = guide.fix || [];
+      var knobs = guide.bastion || [];
+      var refs = guide.refs || [];
+      var fws = guide.frameworks || [];
+      var html = '<h4>' + escapeHtml(name) + '</h4>';
+      if (summary) html += '<p style="margin:0 0 6px;">' + escapeHtml(summary) + '</p>';
+      if (why) html += '<p class="ig-why"><strong>Why it matters:</strong> ' + escapeHtml(why) + '</p>';
+      if (fixes.length) {
+        html += '<strong>How to fix</strong><ol>'
+          + fixes.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('')
+          + '</ol>';
+      }
+      if (knobs.length) {
+        html += '<div><strong>Bastion controls</strong></div><div class="ig-knobs">'
+          + knobs.map(function (k) { return '<span class="ig-knob">' + escapeHtml(k) + '</span>'; }).join('')
+          + '</div>';
+      }
+      if (fws.length) {
+        html += '<div class="ig-fw"><strong>OWASP / framework:</strong> '
+          + fws.map(function (f) {
+            return escapeHtml((f.id || '') + (f.title ? (' — ' + f.title) : ''));
+          }).join('; ')
+          + '</div>';
+      }
+      if (refs.length) {
+        html += '<strong>References</strong><ul class="ig-refs">'
+          + refs.map(function (r) {
+            var t = r.title || r.url || 'Reference';
+            var u = r.url || '';
+            if (u) {
+              return '<li><a href="' + escapeHtmlAttr(u) + '" target="_blank" rel="noopener">'
+                + escapeHtml(t) + '</a></li>';
+            }
+            return '<li>' + escapeHtml(t) + '</li>';
+          }).join('')
+          + '</ul>';
+      }
+      gEl.innerHTML = html;
+      gEl.hidden = false;
+    }
+
+    function fillIssueGuide(rawObj) {
+      var gEl = document.getElementById('issueDetailGuide');
+      if (!gEl) return;
+      var guide = rawObj && rawObj.guide;
+      if (guide) {
+        paintIssueGuide(guide);
+        return;
+      }
+      var check = rawObj && (rawObj.check || rawObj.rule);
+      var id = rawObj && rawObj.id;
+      var q = null;
+      if (check) q = '/api/issue-guide?check=' + encodeURIComponent(String(check));
+      else if (id && /^(ASI|MCP|LLM)\d+/i.test(String(id))) {
+        q = '/api/issue-guide?id=' + encodeURIComponent(String(id));
+      }
+      if (!q) {
+        paintIssueGuide(null);
+        return;
+      }
+      gEl.hidden = false;
+      gEl.innerHTML = '<p class="muted" style="margin:0;">Loading guide…</p>';
+      fetch(q, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (g) { paintIssueGuide(g); })
+        .catch(function () { paintIssueGuide(null); });
+    }
+
+    function closeIssueDetail() {
+      var modal = document.getElementById('issueDetailModal');
+      if (modal) modal.classList.remove('open');
     }
     function renderForensics(incidents) {
       lastBlockedIncidents = incidents || [];
@@ -300,6 +453,7 @@
           if (e.key === 'Escape') {
             closeAlertMenu();
             closeForensicsModals();
+            closeIssueDetail();
           }
         });
       }
@@ -311,18 +465,44 @@
           var idx = parseInt(t.getAttribute('data-i'), 10);
           var row = lastForensicsRows[idx];
           if (!row) return;
-          if (t.getAttribute('data-act') === 'trace') openTraceModal(row);
+          if (t.getAttribute('data-act') === 'detail') {
+            openIssueDetail(
+              'Blocked request detail',
+              (row.pillar || row.kind || '') + ' · ' + (row.tool || ''),
+              row.forensic_trace || [],
+              row
+            );
+          }
+          if (t.getAttribute('data-act') === 'trace') {
+            if (row.forensic_trace && row.forensic_trace.length) {
+              openIssueDetail(
+                'Pillar trace',
+                row.trace_id || '',
+                row.forensic_trace,
+                row
+              );
+            } else {
+              openTraceModal(row);
+            }
+          }
           if (t.getAttribute('data-act') === 'replay') openReplayModal(row);
         });
       }
       var tc = document.getElementById('traceModalClose');
       var rc = document.getElementById('replayModalClose');
+      var idc = document.getElementById('issueDetailClose');
       if (tc) tc.addEventListener('click', closeForensicsModals);
       if (rc) rc.addEventListener('click', closeForensicsModals);
+      if (idc) idc.addEventListener('click', closeIssueDetail);
       var tm = document.getElementById('traceModal');
       var rm = document.getElementById('replayModal');
+      var idm = document.getElementById('issueDetailModal');
       if (tm) tm.addEventListener('click', function (e) { if (e.target === tm) closeForensicsModals(); });
       if (rm) rm.addEventListener('click', function (e) { if (e.target === rm) closeForensicsModals(); });
+      if (idm) idm.addEventListener('click', function (e) { if (e.target === idm) closeIssueDetail(); });
+      wireDateFilters();
+      wireTaxonomyTabs();
+      wireReportActions();
       var tap = document.getElementById('tenantApply');
       var tcl = document.getElementById('tenantClear');
       if (tap) {
@@ -568,6 +748,98 @@
           }
         }
       });
+
+      var tokEl = document.getElementById('chartTokensCompare');
+      if (tokEl) {
+        charts.tokensCompare = new Chart(tokEl, {
+          type: 'bar',
+          data: {
+            labels: ['Used', 'Saved (FinOps)', 'Avoided (blocks)'],
+            datasets: [{
+              label: 'Tokens',
+              data: [0, 0, 0],
+              backgroundColor: [
+                'rgba(148, 163, 184, 0.75)',
+                'rgba(52, 211, 153, 0.85)',
+                'rgba(125, 211, 252, 0.85)'
+              ],
+              borderRadius: 8,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(148, 163, 184, 0.08)' },
+                ticks: { font: { size: 10 }, callback: function (v) { return formatTokenCount(v); } }
+              },
+              x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+          }
+        });
+      }
+
+      var costCmpEl = document.getElementById('chartCostCompare');
+      if (costCmpEl) {
+        charts.costCompare = new Chart(costCmpEl, {
+          type: 'bar',
+          data: {
+            labels: ['Actual spend', 'If not blocked / capped'],
+            datasets: [{
+              label: 'USD',
+              data: [0, 0],
+              backgroundColor: [
+                'rgba(251, 191, 36, 0.85)',
+                'rgba(251, 113, 133, 0.75)'
+              ],
+              borderRadius: 8,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(148, 163, 184, 0.08)' },
+                ticks: { font: { size: 10 }, callback: function (v) { return '$' + Number(v).toFixed(2); } }
+              },
+              x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+          }
+        });
+      }
+
+      var savEl = document.getElementById('chartSavingsSource');
+      if (savEl) {
+        charts.savingsSource = new Chart(savEl, {
+          type: 'doughnut',
+          data: { labels: [], datasets: [{ data: [], backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 6 }] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '58%',
+            plugins: {
+              legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    var v = ctx.raw || 0;
+                    return ' ' + ctx.label + ': ' + formatTokenCount(v) + ' tok';
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
       applyChartTheme();
       return true;
     }
@@ -653,6 +925,91 @@
         charts.cost.data.datasets[0].data = entries.map((e) => e[1]);
       }
       charts.cost.update('none');
+    }
+
+    var lastCostAvoidanceIssues = [];
+
+    function updateFinopsCharts(cr) {
+      cr = cr || {};
+      var used = Number(cr.tokens_used || 0);
+      var saved = Number(cr.tokens_saved || 0);
+      var avoided = Number(cr.tokens_avoided_by_blocks || 0);
+      if (charts.tokensCompare) {
+        charts.tokensCompare.data.datasets[0].data = [used, saved, avoided];
+        charts.tokensCompare.update('none');
+      }
+      var actual = Number(cr.cost_actual_usd != null ? cr.cost_actual_usd : 0);
+      var would = Number(cr.cost_if_unblocked_usd != null ? cr.cost_if_unblocked_usd : actual);
+      if (charts.costCompare) {
+        charts.costCompare.data.datasets[0].data = [actual, would];
+        charts.costCompare.update('none');
+      }
+      if (charts.savingsSource) {
+        var labels = [];
+        var data = [];
+        var bySrc = cr.by_source || {};
+        Object.keys(bySrc).forEach(function (k) {
+          var tok = Number((bySrc[k] && bySrc[k].tokens) || 0);
+          if (tok > 0) {
+            labels.push(k);
+            data.push(tok);
+          }
+        });
+        var byKind = cr.by_block_kind || {};
+        Object.keys(byKind).forEach(function (k) {
+          var tok = Number((byKind[k] && byKind[k].tokens) || 0);
+          if (tok > 0) {
+            labels.push('block:' + k);
+            data.push(tok);
+          }
+        });
+        if (!labels.length) {
+          charts.savingsSource.data.labels = ['No reduction yet'];
+          charts.savingsSource.data.datasets[0].data = [1];
+          charts.savingsSource.data.datasets[0].backgroundColor = ['rgba(148, 163, 184, 0.25)'];
+        } else {
+          charts.savingsSource.data.labels = labels;
+          charts.savingsSource.data.datasets[0].data = data;
+          charts.savingsSource.data.datasets[0].backgroundColor = labels.map(function (_, i) {
+            return PALETTE[i % PALETTE.length];
+          });
+        }
+        charts.savingsSource.update('none');
+      }
+    }
+
+    function renderCostAvoidance(issues) {
+      lastCostAvoidanceIssues = issues || [];
+      var body = document.getElementById('costAvoidanceBody');
+      if (!body) return;
+      if (!lastCostAvoidanceIssues.length) {
+        body.innerHTML = '<tr><td colspan="6" class="muted">No blocked issues yet — blocks will appear here with estimated avoided tokens/$.</td></tr>';
+        return;
+      }
+      body.innerHTML = lastCostAvoidanceIssues.map(function (iss, idx) {
+        return '<tr>'
+          + '<td><strong>' + escapeHtml(iss.kind || iss.pillar || 'block') + '</strong></td>'
+          + '<td>' + escapeHtml(iss.tool || '') + '</td>'
+          + '<td class="why-cell">' + escapeHtml(iss.reason || '') + '</td>'
+          + '<td>' + escapeHtml(formatTokenCount(iss.estimated_tokens_avoided || 0)) + '</td>'
+          + '<td>$' + Number(iss.estimated_usd_avoided || 0).toFixed(4) + '</td>'
+          + '<td><button type="button" class="btn-linkish" data-ca-i="' + idx + '">Details</button></td>'
+          + '</tr>';
+      }).join('');
+      body.querySelectorAll('[data-ca-i]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var i = parseInt(btn.getAttribute('data-ca-i'), 10);
+          var iss = lastCostAvoidanceIssues[i];
+          if (!iss) return;
+          openIssueDetail(
+            'Blocked: ' + (iss.kind || 'issue'),
+            (iss.tool || '') + ' · avoided ~' + formatTokenCount(iss.estimated_tokens_avoided || 0)
+              + ' / $' + Number(iss.estimated_usd_avoided || 0).toFixed(4),
+            [],
+            iss
+          );
+        });
+      });
     }
 
     function piiBarColorForEntity(label) {
@@ -772,6 +1129,496 @@
       } catch (e) {
         console.warn('fetchGovernanceConfig', e);
         return null;
+      }
+    }
+
+    var lastPosture = null;
+    var POSTURE_LABELS = {
+      catalog: 'Catalog scan',
+      skills: 'Skills scan',
+      osv: 'Dependencies (OSV)',
+      risk_audit: 'Risk audit',
+      combined: 'Combined posture'
+    };
+
+    function renderPosture(data) {
+      lastPosture = data;
+      var grid = document.getElementById('postureGrid');
+      if (!grid) return;
+      var checks = (data && data.checks) || {};
+      var order = ['combined', 'catalog', 'skills', 'osv', 'risk_audit'];
+      var tiles = order.map(function (key) {
+        var c = key === 'combined'
+          ? { present: !!(data && data.combined_grade), grade: data && data.combined_grade, finding_count: null, hint: data && data.empty ? 'Run mcp-bastion scan … -o .bastion/scan/catalog.json' : null }
+          : (checks[key] || {});
+        var grade = c.grade || null;
+        var cls = grade ? ('grade-' + grade) : 'grade-none';
+        var letter = grade || (c.hint ? '—' : '—');
+        var meta = '';
+        if (key === 'combined' && data && data.demo) meta = 'Demo sample';
+        else if (c.present && c.finding_count != null) meta = c.finding_count + ' finding(s)';
+        else if (c.hint) meta = String(c.hint).slice(0, 90);
+        else meta = 'No artifact';
+        return '<button type="button" class="grade-tile ' + cls + '" data-posture-kind="' + key + '" title="' + escapeHtmlAttr(c.path || c.hint || '') + '">'
+          + '<div class="g-label">' + escapeHtml(POSTURE_LABELS[key] || key) + '</div>'
+          + '<div class="g-letter">' + escapeHtml(String(letter)) + '</div>'
+          + '<div class="g-meta">' + escapeHtml(meta) + '</div>'
+          + '</button>';
+      });
+      grid.innerHTML = tiles.join('');
+      grid.querySelectorAll('[data-posture-kind]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          showPostureFindings(btn.getAttribute('data-posture-kind'));
+        });
+      });
+    }
+
+    function showPostureFindings(kind) {
+      var wrap = document.getElementById('postureFindings');
+      var body = document.getElementById('postureFindingsBody');
+      if (!wrap || !body || !lastPosture) return;
+      if (kind === 'combined') kind = 'catalog';
+      var c = (lastPosture.checks || {})[kind];
+      var findings = (c && c.findings) || [];
+      lastPostureFindings = findings;
+      wrap.classList.add('visible');
+      if (!findings.length) {
+        body.innerHTML = '<tr><td colspan="5" class="muted">' + escapeHtml((c && c.hint) || 'No findings in this artifact.') + '</td></tr>';
+        return;
+      }
+      body.innerHTML = findings.map(function (f, idx) {
+        var tags = [];
+        if (f.taxonomy) {
+          ['asi', 'mcp', 'llm'].forEach(function (k) {
+            if (f.taxonomy[k] && f.taxonomy[k].length) tags = tags.concat(f.taxonomy[k]);
+          });
+        }
+        return '<tr>'
+          + '<td>' + escapeHtml(f.severity || '') + '</td>'
+          + '<td>' + escapeHtml(f.check || '') + '</td>'
+          + '<td>' + escapeHtml(f.message || f.summary || '') + '</td>'
+          + '<td>' + escapeHtml(tags.join(', ')) + '</td>'
+          + '<td><button type="button" class="btn-linkish" data-finding-i="' + idx + '">Why / how to fix</button></td>'
+          + '</tr>';
+      }).join('');
+      body.querySelectorAll('[data-finding-i]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var i = parseInt(btn.getAttribute('data-finding-i'), 10);
+          var f = lastPostureFindings[i];
+          if (!f) return;
+          openIssueDetail(
+            'Scan finding: ' + (f.check || 'issue'),
+            (f.severity || '') + (f.tool ? (' · tool ' + f.tool) : ''),
+            [],
+            f
+          );
+        });
+      });
+    }
+
+    var lastPrevalidate = null;
+    function renderPrevalidate(data) {
+      lastPrevalidate = data;
+      var sum = document.getElementById('prevalidateSummary');
+      var body = document.getElementById('prevalidateBody');
+      var note = document.getElementById('prevalidateNote');
+      if (note && data && data.note) note.textContent = data.note;
+      if (sum) {
+        if (!data) {
+          sum.textContent = 'Prevalidation unavailable';
+        } else {
+          var parts = ['Combined grade: ' + (data.combined_grade || '—'), (data.issue_count || 0) + ' issue(s)'];
+          if (data.demo) parts.push('demo sample');
+          sum.textContent = parts.join(' · ');
+        }
+      }
+      if (!body) return;
+      var issues = (data && data.issues) || [];
+      if (!issues.length) {
+        body.innerHTML = '<tr><td colspan="5" class="muted">No scan findings yet. Run mcp-bastion scan / osv-scan / audit into .bastion/scan/.</td></tr>';
+        return;
+      }
+      body.innerHTML = issues.slice(0, 40).map(function (iss, idx) {
+        return '<tr>'
+          + '<td>' + escapeHtml(iss.severity || '') + '</td>'
+          + '<td>' + escapeHtml(iss.source || '') + '</td>'
+          + '<td>' + escapeHtml(iss.check || '') + '</td>'
+          + '<td>' + escapeHtml(iss.message || '') + '</td>'
+          + '<td><button type="button" class="btn-linkish" data-pv-i="' + idx + '">Why / how to fix</button></td>'
+          + '</tr>';
+      }).join('');
+      body.querySelectorAll('[data-pv-i]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var i = parseInt(btn.getAttribute('data-pv-i'), 10);
+          var iss = ((lastPrevalidate && lastPrevalidate.issues) || [])[i];
+          if (!iss) return;
+          openIssueDetail(
+            'Prevalidate: ' + (iss.check || 'issue'),
+            (iss.severity || '') + ' · ' + (iss.source || ''),
+            [],
+            iss
+          );
+        });
+      });
+    }
+
+    function renderTaxonomy(data) {
+      var el = document.getElementById('asiHeatmap');
+      if (!el) return;
+      var cells = (data && data.cells) || [];
+      lastTaxonomyCells = cells;
+      if (!cells.length) {
+        el.innerHTML = '<div class="muted">Taxonomy unavailable</div>';
+        return;
+      }
+      el.innerHTML = cells.map(function (c, idx) {
+        var st = c.status || 'unaddressed';
+        var tip = (c.pillars || []).join(', ') || 'No pillar enabled';
+        if ((c.checks || []).length) tip += ' · checks: ' + c.checks.join(', ');
+        if (c.finding_hits) tip += ' · findings ' + c.finding_hits;
+        if (c.block_hits) tip += ' · blocks ' + c.block_hits;
+        return '<button type="button" class="asi-cell asi-' + escapeHtml(st) + '" data-tax-i="' + idx + '" title="' + escapeHtmlAttr(tip) + '">'
+          + '<div class="asi-id">' + escapeHtml(c.id) + '</div>'
+          + '<div class="asi-title">' + escapeHtml(c.title || '') + '</div>'
+          + '<div class="muted" style="margin-top:4px;">F:' + (c.finding_hits || 0) + ' B:' + (c.block_hits || 0) + '</div>'
+          + '</button>';
+      }).join('');
+      el.querySelectorAll('[data-tax-i]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var i = parseInt(btn.getAttribute('data-tax-i'), 10);
+          var c = lastTaxonomyCells[i];
+          if (!c) return;
+          openIssueDetail(
+            c.id + ' - ' + (c.title || ''),
+            'status=' + (c.status || '') + ' · pillars=' + ((c.pillars || []).join(', ') || 'none'),
+            [],
+            c
+          );
+        });
+      });
+    }
+
+    function renderAttackMatrix(data) {
+      lastAttackMatrix = data;
+      var body = document.getElementById('attackMatrixBody');
+      var head = document.getElementById('attackHeadline');
+      if (head && data && data.headline) head.textContent = data.headline + ' (local metrics only).';
+      if (!body) return;
+      var rows = (data && data.rows) || [];
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="7" class="muted">No attack categories yet.</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map(function (r, idx) {
+        var tags = []
+          .concat(r.asi || [])
+          .concat(r.mcp || [])
+          .concat(r.llm || [])
+          .slice(0, 6)
+          .join(', ');
+        return '<tr>'
+          + '<td><strong>' + escapeHtml(r.label || r.kind) + '</strong></td>'
+          + '<td><span class="intensity intensity-' + escapeHtml(r.intensity || 'quiet') + '">'
+          + escapeHtml(r.intensity || 'quiet') + '</span></td>'
+          + '<td>' + (r.count || 0) + '</td>'
+          + '<td>' + (r.share_pct || 0) + '%</td>'
+          + '<td>' + escapeHtml(r.top_tool || '-') + '</td>'
+          + '<td style="font-size:0.72rem;">' + escapeHtml(tags || '-') + '</td>'
+          + '<td><button type="button" class="btn-linkish" data-attack-i="' + idx + '">Samples / trace</button></td>'
+          + '</tr>';
+      }).join('');
+      body.querySelectorAll('[data-attack-i]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var i = parseInt(btn.getAttribute('data-attack-i'), 10);
+          var r = (lastAttackMatrix && lastAttackMatrix.rows || [])[i];
+          if (!r) return;
+          var sample = (r.samples && r.samples[0]) || null;
+          openIssueDetail(
+            'Attack category: ' + (r.label || r.kind),
+            (r.count || 0) + ' blocks · intensity ' + (r.intensity || 'quiet'),
+            (sample && sample.forensic_trace) || [],
+            r
+          );
+        });
+      });
+    }
+
+    function renderCompliance(data) {
+      if (!data) return;
+      var d = document.getElementById('complianceDisclaimer');
+      if (d && data.disclaimer) d.textContent = data.disclaimer;
+      var ph = document.getElementById('compPolicyHash');
+      var ah = document.getElementById('compAttestHash');
+      var ts = document.getElementById('compAttestTs');
+      var hash = data.policy_hash || (data.attestation && data.attestation.policy_hash);
+      if (ph) {
+        ph.textContent = hash ? String(hash).slice(0, 16) + '…' : 'No bastion.yaml found';
+        ph.className = 'gov-state ' + (hash ? 'on' : 'off');
+        ph.title = hash || '';
+      }
+      var att = data.attestation;
+      if (ah) {
+        var ahash = att && att.attestation_hash;
+        ah.textContent = ahash ? String(ahash).slice(0, 16) + '…' : 'No attestation file yet';
+        ah.className = 'gov-state ' + (ahash ? 'on' : 'off');
+        ah.title = (att && att.path) || '';
+      }
+      if (ts) {
+        ts.textContent = (att && att.generated_at) ? String(att.generated_at).slice(0, 19) : '-';
+        ts.className = 'gov-state ' + (att && att.generated_at ? 'on' : 'off');
+      }
+      var sel = document.getElementById('reportFramework');
+      if (sel && data.frameworks && data.frameworks.length && !sel.getAttribute('data-filled')) {
+        sel.innerHTML = data.frameworks.map(function (f) {
+          return '<option value="' + escapeHtmlAttr(f.id) + '">' + escapeHtml(f.label) + '</option>';
+        }).join('');
+        sel.setAttribute('data-filled', '1');
+      }
+    }
+
+    function dateQuery() {
+      var q = [];
+      if (filterDateFrom) q.push('date_from=' + encodeURIComponent(filterDateFrom));
+      if (filterDateTo) q.push('date_to=' + encodeURIComponent(filterDateTo));
+      return q.length ? ('?' + q.join('&')) : '';
+    }
+
+    function isoDayOffset(daysBack) {
+      var d = new Date();
+      d.setUTCDate(d.getUTCDate() - daysBack);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function applyPreset(days) {
+      if (!days) return;
+      filterDateTo = isoDayOffset(0);
+      filterDateFrom = isoDayOffset(Math.max(0, parseInt(days, 10) - 1));
+      var a = document.getElementById('filterDateFrom');
+      var b = document.getElementById('filterDateTo');
+      if (a) a.value = filterDateFrom;
+      if (b) b.value = filterDateTo;
+    }
+
+    function wireDateFilters() {
+      var preset = document.getElementById('filterPreset');
+      var apply = document.getElementById('btnApplyFilters');
+      var clear = document.getElementById('btnClearFilters');
+      if (preset) {
+        // default 14d window for trends/matrix
+        if (preset.value === '14') applyPreset(14);
+        preset.addEventListener('change', function () {
+          if (preset.value) applyPreset(preset.value);
+        });
+      }
+      if (apply) {
+        apply.addEventListener('click', function () {
+          var a = document.getElementById('filterDateFrom');
+          var b = document.getElementById('filterDateTo');
+          filterDateFrom = a && a.value ? a.value : '';
+          filterDateTo = b && b.value ? b.value : '';
+          var hint = document.getElementById('filterHint');
+          if (hint) {
+            hint.textContent = (filterDateFrom || filterDateTo)
+              ? ('Filter: ' + (filterDateFrom || '…') + ' → ' + (filterDateTo || '…'))
+              : 'No date filter';
+          }
+          renderForensicsRows();
+          refreshLocalPanels();
+        });
+      }
+      if (clear) {
+        clear.addEventListener('click', function () {
+          filterDateFrom = '';
+          filterDateTo = '';
+          var a = document.getElementById('filterDateFrom');
+          var b = document.getElementById('filterDateTo');
+          var p = document.getElementById('filterPreset');
+          if (a) a.value = '';
+          if (b) b.value = '';
+          if (p) p.value = '';
+          var hint = document.getElementById('filterHint');
+          if (hint) hint.textContent = 'No date filter';
+          renderForensicsRows();
+          refreshLocalPanels();
+        });
+      }
+      // Apply default preset once on load
+      if (preset && preset.value === '14') {
+        var hint0 = document.getElementById('filterHint');
+        if (hint0) hint0.textContent = 'Filter: last 14 days';
+      }
+    }
+
+    function wireTaxonomyTabs() {
+      var tabs = document.getElementById('taxonomyTabs');
+      if (!tabs) return;
+      tabs.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.getAttribute || !t.getAttribute('data-fw')) return;
+        taxonomyFramework = t.getAttribute('data-fw');
+        tabs.querySelectorAll('.tax-tab').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-fw') === taxonomyFramework);
+        });
+        fetch('/api/taxonomy?framework=' + encodeURIComponent(taxonomyFramework), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) { if (d) renderTaxonomy(d); })
+          .catch(function () {});
+      });
+    }
+
+    function wireReportActions() {
+      var gen = document.getElementById('btnGenReport');
+      var bun = document.getElementById('btnGenBundle');
+      function buildUrl(base) {
+        var fwEl = document.getElementById('reportFramework');
+        var fw = (fwEl && fwEl.value) || 'soc2';
+        var q = ['framework=' + encodeURIComponent(fw)];
+        if (filterDateFrom) q.push('date_from=' + encodeURIComponent(filterDateFrom));
+        if (filterDateTo) q.push('date_to=' + encodeURIComponent(filterDateTo));
+        return base + '?' + q.join('&');
+      }
+      if (gen) {
+        gen.addEventListener('click', function () {
+          window.location.href = buildUrl('/api/compliance/report');
+        });
+      }
+      if (bun) {
+        bun.addEventListener('click', function () {
+          window.location.href = buildUrl('/api/compliance/bundle');
+        });
+      }
+    }
+
+    function renderObserve(data) {
+      var banner = document.getElementById('observeBanner');
+      if (!banner) return;
+      if (data && data.observe) {
+        banner.classList.add('visible');
+        var title = document.getElementById('observeBannerTitle');
+        var nudge = document.getElementById('observeBannerNudge');
+        var n = data.would_have_blocked || 0;
+        if (title) {
+          title.textContent = 'OBSERVE MODE - ' + n + ' request' + (n === 1 ? '' : 's') + ' would have been blocked';
+        }
+        if (nudge) nudge.textContent = data.nudge || 'Ready to enforce? Set mode: enforce in bastion.yaml.';
+      } else {
+        banner.classList.remove('visible');
+      }
+    }
+
+    function renderAgents(data) {
+      var sum = document.getElementById('agentDeniedSummary');
+      var map = document.getElementById('agentScopeMap');
+      if (!sum || !map) return;
+      if (!data || !data.agent_iam_enabled) {
+        sum.textContent = 'Agent IAM is off - enable agent_iam in bastion.yaml to see denied-by-agent and scope map.';
+        map.innerHTML = '';
+        return;
+      }
+      var denied = data.denied_by_agent || [];
+      if (!denied.length) {
+        sum.textContent = 'Agent IAM on - no agent denials in this window (total_denied=' + (data.total_denied || 0) + ')';
+      } else {
+        sum.textContent = 'Denied-by-agent: ' + denied.map(function (d) {
+          return d.agent_id + '=' + d.denied;
+        }).join(', ');
+      }
+      var scopes = data.scope_map || [];
+      if (!scopes.length) {
+        map.innerHTML = '<div class="muted">No agents configured under agent_iam.agents</div>';
+        return;
+      }
+      map.innerHTML = scopes.map(function (a) {
+        var allow = (a.allowed_tools || []).slice(0, 12).join(', ') || '-';
+        var deny = (a.denied_tools || []).slice(0, 12).join(', ') || '-';
+        return '<dt>' + escapeHtml(a.agent_id || '?') + '</dt>'
+          + '<dd>allow: ' + escapeHtml(allow) + '</dd>'
+          + '<dd>block: ' + escapeHtml(deny) + '</dd>';
+      }).join('');
+    }
+
+    function renderTrends(data) {
+      var hint = document.getElementById('trendHint');
+      var spark = document.getElementById('trendSpark');
+      if (!hint || !spark) return;
+      if (!data || !data.present || !(data.days || []).length) {
+        hint.textContent = (data && data.hint) || 'No audit JSONL trends yet.';
+        spark.innerHTML = '';
+        return;
+      }
+      var days = data.days;
+      hint.textContent = data.path + ' · ' + days.length + ' day(s)'
+        + ((data.date_from || data.date_to) ? (' · filtered') : '');
+      var max = 1;
+      days.forEach(function (d) { if ((d.block_rate_pct || 0) > max) max = d.block_rate_pct; });
+      spark.innerHTML = days.map(function (d) {
+        var h = Math.max(2, Math.round(40 * (d.block_rate_pct || 0) / max));
+        return '<div class="spark-bar" style="height:' + h + 'px" title="'
+          + escapeHtmlAttr(d.day + ': ' + d.block_rate_pct + '% block rate') + '"></div>';
+      }).join('');
+    }
+
+    function renderOnboarding(data) {
+      var card = document.getElementById('onboardingCard');
+      var list = document.getElementById('onboardingList');
+      if (!card || !list) return;
+      if (!data || !data.show) {
+        card.classList.remove('visible');
+        return;
+      }
+      card.classList.add('visible');
+      list.innerHTML = (data.steps || []).map(function (s) {
+        return '<li class="' + (s.done ? 'done' : '') + '">' + escapeHtml(s.label || '') + '</li>';
+      }).join('');
+    }
+
+    async function refreshLocalPanels() {
+      try {
+        var dq = dateQuery();
+        var taxQ = '?framework=' + encodeURIComponent(taxonomyFramework || 'asi');
+        var results = await Promise.all([
+          fetch('/api/posture', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/taxonomy' + taxQ, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/compliance', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/observe', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/agents', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/trends' + dq, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/onboarding', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/attack-matrix' + dq, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/prevalidate', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+        ]);
+        if (results[0]) renderPosture(results[0]);
+        if (results[1]) renderTaxonomy(results[1]);
+        if (results[2]) renderCompliance(results[2]);
+        if (results[3]) renderObserve(results[3]);
+        if (results[4]) renderAgents(results[4]);
+        if (results[5]) renderTrends(results[5]);
+        if (results[6]) renderOnboarding(results[6]);
+        if (results[7]) renderAttackMatrix(results[7]);
+        if (results[8]) renderPrevalidate(results[8]);
+      } catch (e) {
+        console.warn('refreshLocalPanels', e);
+      }
+    }
+
+    var alertsSseStarted = false;
+    function startAlertsSse() {
+      if (alertsSseStarted || typeof EventSource === 'undefined') return;
+      alertsSseStarted = true;
+      try {
+        var es = new EventSource('/api/alerts/stream');
+        es.onmessage = function (ev) {
+          try {
+            var payload = JSON.parse(ev.data || '{}');
+            if (payload.alerts && payload.alerts.length) {
+              var node = document.getElementById('alerts');
+              if (node) node.innerHTML = buildAlertsInnerHtml(payload.alerts, { includeTs: true });
+            }
+          } catch (e1) {}
+        };
+        es.onerror = function () { /* keep open; browser reconnects */ };
+      } catch (e) {
+        console.warn('alerts SSE unavailable', e);
       }
     }
 
@@ -1006,6 +1853,13 @@
       }
     }
 
+    function formatTokenCount(n) {
+      var x = Number(n) || 0;
+      if (x >= 1e6) return (x / 1e6).toFixed(2) + 'M';
+      if (x >= 1e3) return (x / 1e3).toFixed(1) + 'k';
+      return String(Math.round(x));
+    }
+
     function escapeHtml(s) {
       return String(s)
         .replace(/&/g, '&amp;')
@@ -1097,6 +1951,57 @@
       document.getElementById('kpiPii').textContent = d.pii_redacted_total ?? 0;
       document.getElementById('kpiCost').textContent =
         '$' + Number(d.cost_total ?? 0).toFixed(2);
+      var cr = d.cost_reduction || {};
+      var savedTok = Number(cr.tokens_saved != null ? cr.tokens_saved : (d.tokens_saved_total || 0));
+      var usedTok = Number(cr.tokens_used != null ? cr.tokens_used : (d.tokens_used_total || 0));
+      var avoidedTok = Number(cr.tokens_avoided_by_blocks != null ? cr.tokens_avoided_by_blocks : (d.tokens_avoided_by_blocks || 0));
+      var savedUsd = Number(cr.estimated_usd_saved != null ? cr.estimated_usd_saved : (d.estimated_usd_saved || 0));
+      var avoidedUsd = Number(cr.estimated_usd_avoided_by_blocks != null ? cr.estimated_usd_avoided_by_blocks : (d.estimated_usd_avoided_by_blocks || 0));
+      var wouldTok = Number(cr.tokens_would_have_used != null ? cr.tokens_would_have_used : (usedTok + savedTok + avoidedTok));
+      var actualUsd = Number(cr.cost_actual_usd != null ? cr.cost_actual_usd : (d.cost_total || 0));
+      var wouldUsd = Number(cr.cost_if_unblocked_usd != null ? cr.cost_if_unblocked_usd : (actualUsd + savedUsd + avoidedUsd));
+      var kpiFoot = document.getElementById('kpiCostFoot');
+      if (kpiFoot) {
+        if (savedTok > 0 || avoidedTok > 0 || savedUsd > 0 || avoidedUsd > 0) {
+          kpiFoot.textContent = 'Saved ~' + formatTokenCount(savedTok)
+            + ' · avoided ~' + formatTokenCount(avoidedTok)
+            + ' (~$' + (savedUsd + avoidedUsd).toFixed(2) + ' est.)';
+        } else {
+          kpiFoot.textContent = 'Cumulative tracked spend (when cost middleware is enabled).';
+        }
+      }
+      var setTxt = function (id, text) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+      setTxt('tokensSaved', formatTokenCount(savedTok));
+      setTxt('tokensUsed', formatTokenCount(usedTok));
+      setTxt('tokensAvoided', formatTokenCount(avoidedTok));
+      setTxt('usdSaved', '$' + savedUsd.toFixed(4));
+      setTxt('usdAvoided', '$' + avoidedUsd.toFixed(4));
+      setTxt('finopsActual', '$' + actualUsd.toFixed(4));
+      setTxt('finopsUsed', formatTokenCount(usedTok) + ' tokens used');
+      setTxt('finopsWould', '$' + wouldUsd.toFixed(4));
+      setTxt('finopsWouldTok', formatTokenCount(wouldTok) + ' tokens would-have');
+      setTxt('finopsSaved', formatTokenCount(savedTok));
+      setTxt('finopsSavedUsd', '~$' + savedUsd.toFixed(4) + ' est.');
+      setTxt('finopsAvoided', formatTokenCount(avoidedTok));
+      setTxt('finopsAvoidedUsd', '~$' + avoidedUsd.toFixed(4) + ' est.');
+      var srcEl = document.getElementById('savingsBySource');
+      if (srcEl) {
+        var by = cr.by_source || {};
+        var parts = Object.keys(by).map(function (k) {
+          var row = by[k] || {};
+          return k + '=' + formatTokenCount(row.tokens || 0);
+        });
+        var byKind = cr.by_block_kind || {};
+        Object.keys(byKind).forEach(function (k) {
+          var row = byKind[k] || {};
+          if (row.tokens) parts.push('block:' + k + '=' + formatTokenCount(row.tokens));
+        });
+        srcEl.textContent = parts.length ? (' · by source: ' + parts.join(', ')) : '';
+      }
+      renderCostAvoidance(cr.blocked_issues || []);
 
       var lm = d.latency_ms || {};
       document.getElementById('latP50').textContent = (lm.p50 != null) ? lm.p50 : '0';
@@ -1134,6 +2039,7 @@
         updateTools(d.top_tools);
         updateCost(d.cost_by_user);
         updatePiiEntity(d.pii_by_entity);
+        updateFinopsCharts(d.cost_reduction || {});
         updatePillarHealth(d.pillar_health);
         updateGovernancePanel(lastGovernanceConfig, d);
         updateToolTable(d.tool_stats, d);
@@ -1149,7 +2055,7 @@
     function applyServerBootstrapMetrics() {
       var el = document.getElementById('mcp-bastion-bootstrap-json');
       if (!el) return;
-      var raw = (el.textContent || '').replace(/^\\s+|\\s+$/g, '');
+      var raw = (el.textContent || '').replace(/^\s+|\s+$/g, '');
       if (!raw) return;
       try {
         var d = JSON.parse(raw);
@@ -1176,6 +2082,10 @@
         lastGovernanceConfig = await fetchGovernanceConfig();
       }, 30000);
     })();
+
+    refreshLocalPanels();
+    setInterval(refreshLocalPanels, 15000);
+    startAlertsSse();
 
     (async function poll() {
       try {

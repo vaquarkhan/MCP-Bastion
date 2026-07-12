@@ -246,14 +246,17 @@ Keep this terminal open. You should see startup logs and no immediate crash.
 Open a second terminal (same repo + same virtual environment), then run:
 
 ```bash
-mcp-bastion dashboard --port 7000
+mcp-bastion dashboard --port 7000 --demo
 ```
 
 Open browser:
 
-- `http://localhost:7000/` (UI dashboard)
-- `http://localhost:7000/api/metrics` (JSON)
+- `http://localhost:7000/` (UI: posture, prevalidate, OWASP, FinOps, forensics)
+- `http://localhost:7000/api/metrics` (JSON — includes `cost_reduction` used/saved/avoided)
+- `http://localhost:7000/api/posture` / `/api/prevalidate` / `/api/issue-guide?check=weak_schema`
 - `http://localhost:7000/metrics` (Prometheus text)
+
+Optional: write scan JSON under `.bastion/scan/` so posture/prevalidate use real artifacts (see [dashboard/README.md](../dashboard/README.md)).
 
 ---
 

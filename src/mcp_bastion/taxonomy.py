@@ -69,15 +69,51 @@ ASI_TITLES: dict[str, str] = {
     "ASI10": "Rogue Agents",
 }
 
+# OWASP LLM Top 10 (labels used in docs / scan taxonomy).
+LLM_TITLES: dict[str, str] = {
+    "LLM01": "Prompt Injection",
+    "LLM02": "Sensitive Information Disclosure",
+    "LLM03": "Supply Chain",
+    "LLM04": "Data and Model Poisoning",
+    "LLM05": "Improper Output Handling",
+    "LLM06": "Excessive Agency",
+    "LLM07": "System Prompt Leakage",
+    "LLM08": "Vector and Embedding Weaknesses",
+    "LLM09": "Misinformation",
+    "LLM10": "Unbounded Consumption",
+}
+
+# OWASP MCP Top 10 (aligns with README control table).
+MCP_TITLES: dict[str, str] = {
+    "MCP01": "Token / Secret Exposure",
+    "MCP02": "Privilege / Filesystem Abuse",
+    "MCP03": "Tool Poisoning / Shadow Tools",
+    "MCP04": "Metadata / Fingerprint Drift",
+    "MCP05": "Unsafe Tool Execution Surface",
+    "MCP06": "Over-Permissioned Tool Grants",
+    "MCP07": "Context / Session Confusion",
+    "MCP08": "Insecure Configuration / Parse Failures",
+    "MCP09": "Shadow / Untracked MCP Servers",
+    "MCP10": "Insufficient Monitoring / Audit Gap",
+}
+
 
 def tags_for_check(check: str) -> dict[str, list[str]]:
     return dict(TAXONOMY.get(check, {}))
 
 
 def enrich_finding(finding: dict[str, Any]) -> dict[str, Any]:
-    """Attach taxonomy tags to a finding dict (non-mutating copy)."""
+    """Attach taxonomy tags + PMD-style guide to a finding dict (non-mutating copy)."""
     out = dict(finding)
     tags = tags_for_check(str(finding.get("check") or ""))
     if tags:
         out["taxonomy"] = tags
+    try:
+        from mcp_bastion.issue_guides import guide_for_check
+
+        guide = guide_for_check(str(finding.get("check") or ""))
+        if guide:
+            out["guide"] = guide
+    except Exception:
+        pass
     return out

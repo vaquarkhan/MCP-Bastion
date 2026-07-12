@@ -22,6 +22,26 @@ FORENSIC_EVENT_CAP = 500
 ANOMALY_EVENT_CAP = 200
 BLOCKED_INCIDENT_CAP = 48
 
+# Estimated LLM tokens avoided when a request is blocked (never reaches the model).
+# Used for FinOps "would-have-cost" projections — not measured billing.
+_BLOCK_AVOIDANCE_TOKENS: dict[str, int] = {
+    "injection": 2400,
+    "prompt_injection": 2400,
+    "jailbreak": 2400,
+    "pii": 900,
+    "rate_limit": 1400,
+    "cost": 4000,
+    "rbac": 1600,
+    "agent_iam": 1600,
+    "server_verification": 800,
+    "schema": 700,
+    "schema_validation": 700,
+    "content_filter": 1200,
+    "replay": 1100,
+    "circuit_breaker": 2000,
+    "other": 1500,
+}
+
 
 @dataclass
 class DashboardMetrics:
@@ -37,12 +57,43 @@ class DashboardMetrics:
     cost_by_user: dict[str, float] = field(default_factory=lambda: defaultdict(float))
     pii_by_entity: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     alerts: list[dict[str, Any]] = field(default_factory=list)
+    shadow_would_block_total: int = 0
+    tokens_used_total: int = 0
+    tokens_saved_total: int = 0
+    estimated_usd_saved: float = 0.0
+    tokens_avoided_by_blocks: int = 0
+    estimated_usd_avoided_by_blocks: float = 0.0
+    avoidance_by_kind: dict[str, dict[str, float]] = field(
+        default_factory=lambda: defaultdict(lambda: {"tokens": 0.0, "usd": 0.0, "count": 0.0})
+    )
+    savings_by_source: dict[str, dict[str, float]] = field(
+        default_factory=lambda: defaultdict(lambda: {"tokens": 0.0, "usd": 0.0})
+    )
     window_start: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         reason_sum = sum(self.blocked_by_reason.values())
         # Ensure total is at least sum of reasons (avoids display mismatch if multiple paths record)
         blocked = max(self.blocked_total, reason_sum)
+        by_src = {
+            k: {"tokens": int(v.get("tokens", 0)), "usd": round(float(v.get("usd", 0.0)), 6)}
+            for k, v in self.savings_by_source.items()
+        }
+        by_kind = {
+            k: {
+                "tokens": int(v.get("tokens", 0)),
+                "usd": round(float(v.get("usd", 0.0)), 6),
+                "count": int(v.get("count", 0)),
+            }
+            for k, v in self.avoidance_by_kind.items()
+        }
+        used = int(self.tokens_used_total)
+        saved = int(self.tokens_saved_total)
+        avoided = int(self.tokens_avoided_by_blocks)
+        usd_saved = float(self.estimated_usd_saved)
+        usd_avoided = float(self.estimated_usd_avoided_by_blocks)
+        cost_actual = float(self.cost_total)
+        cost_if_unblocked = cost_actual + usd_saved + usd_avoided
         return {
             "requests_total": self.requests_total,
             "blocked_total": blocked,
@@ -55,6 +106,29 @@ class DashboardMetrics:
             "top_tools": dict(sorted(self.top_tools.items(), key=lambda x: -x[1])[:10]),
             "cost_by_user": dict(sorted(self.cost_by_user.items(), key=lambda x: -x[1])[:10]),
             "alerts": self.alerts[-10:],
+            "shadow_would_block_total": self.shadow_would_block_total,
+            "tokens_used_total": used,
+            "tokens_saved_total": saved,
+            "tokens_avoided_by_blocks": avoided,
+            "estimated_usd_saved": round(usd_saved, 4),
+            "estimated_usd_avoided_by_blocks": round(usd_avoided, 4),
+            "cost_reduction": {
+                "tokens_used": used,
+                "tokens_saved": saved,
+                "tokens_avoided_by_blocks": avoided,
+                "tokens_would_have_used": used + saved + avoided,
+                "estimated_usd_saved": round(usd_saved, 4),
+                "estimated_usd_avoided_by_blocks": round(usd_avoided, 4),
+                "cost_actual_usd": round(cost_actual, 4),
+                "cost_if_unblocked_usd": round(cost_if_unblocked, 4),
+                "by_source": by_src,
+                "by_block_kind": by_kind,
+                "note": (
+                    "Tokens saved = FinOps pillars (output budget / discovery filter / cache). "
+                    "Tokens avoided = estimated LLM work never run because Bastion blocked the request. "
+                    "USD figures are pricing estimates, not an invoice."
+                ),
+            },
             "window_start": self.window_start,
         }
 
@@ -282,6 +356,27 @@ class MetricsStore:
             if user:
                 pass  # cost_by_user updated by record_cost
 
+    @staticmethod
+    def _estimate_block_avoidance(kind: str) -> tuple[int, float]:
+        """Estimate tokens + USD avoided when a call never reaches the LLM."""
+        tokens = int(_BLOCK_AVOIDANCE_TOKENS.get(kind) or _BLOCK_AVOIDANCE_TOKENS["other"])
+        try:
+            from mcp_bastion.pillars.pricing import estimate_llm_usd
+
+            usd = float(
+                estimate_llm_usd(
+                    provider="openai",
+                    model="gpt-4o-mini",
+                    input_tokens=int(tokens * 0.65),
+                    output_tokens=int(tokens * 0.35),
+                )
+            )
+            if usd <= 0:
+                usd = tokens * 0.40 / 1_000_000.0
+        except Exception:
+            usd = tokens * 0.40 / 1_000_000.0
+        return tokens, float(usd)
+
     def record_blocked(
         self,
         reason: str,
@@ -292,6 +387,10 @@ class MetricsStore:
         trace_id: str | None = None,
         request_id: str | None = None,
         agent_id: str | None = None,
+        pillar: str | None = None,
+        rule: str | None = None,
+        policy_source: str | None = None,
+        forensic_trace: list[dict[str, Any]] | None = None,
     ) -> None:
         tnt = tenant_id or tenant
         with self._lock:
@@ -305,6 +404,25 @@ class MetricsStore:
             if tnt:
                 self._tenant_blocked[str(tnt)] += 1
             self._bump_time_bucket(blocked=1)
+            avoided_tok, avoided_usd = self._estimate_block_avoidance(kind)
+            self._metrics.tokens_avoided_by_blocks += avoided_tok
+            self._metrics.estimated_usd_avoided_by_blocks += avoided_usd
+            av = self._metrics.avoidance_by_kind[kind]
+            av["tokens"] = float(av.get("tokens", 0)) + avoided_tok
+            av["usd"] = float(av.get("usd", 0)) + avoided_usd
+            av["count"] = float(av.get("count", 0)) + 1
+            prov_pillar = pillar
+            prov_rule = rule
+            prov_source = policy_source or "bastion.yaml"
+            if not prov_pillar and forensic_trace:
+                for step in reversed(forensic_trace):
+                    if isinstance(step, dict) and step.get("status") in ("blocked", "would_block"):
+                        prov_pillar = step.get("pillar")
+                        break
+            if not prov_pillar:
+                prov_pillar = kind if kind != "other" else None
+            if not prov_rule:
+                prov_rule = f"{prov_pillar or kind} / bastion.yaml"
             self._blocked_incidents.append(
                 {
                     "ts": datetime.now(timezone.utc).isoformat(),
@@ -314,8 +432,50 @@ class MetricsStore:
                     "reason": (reason or "")[:2000],
                     "trace_id": trace_id or f"trc-{uuid.uuid4().hex[:20]}",
                     "request_id": request_id or f"req-{uuid.uuid4().hex[:16]}",
+                    "kind": kind,
+                    "pillar": prov_pillar or "",
+                    "rule": (prov_rule or "")[:500],
+                    "policy_source": prov_source,
+                    "estimated_tokens_avoided": avoided_tok,
+                    "estimated_usd_avoided": round(avoided_usd, 6),
+                    "forensic_trace": [
+                        {
+                            "pillar": str(s.get("pillar") or ""),
+                            "status": str(s.get("status") or ""),
+                            "detail": str(s.get("detail") or s.get("reason") or "")[:400],
+                            "ms": s.get("ms") or s.get("elapsed_ms"),
+                        }
+                        for s in (forensic_trace or [])[-24:]
+                        if isinstance(s, dict)
+                    ],
                 }
             )
+
+    def record_shadow_would_block(
+        self,
+        *,
+        pillar: str | None = None,
+        reason: str | None = None,
+        tool: str | None = None,
+    ) -> None:
+        """Count observe-mode (shadow) violations that would have been blocked."""
+        with self._lock:
+            self._metrics.shadow_would_block_total += 1
+            if reason:
+                kind = self._normalize_reason_kind(reason)
+                msg = f"[observe] would block ({pillar or kind}): {(reason or '')[:180]}"
+                self._metrics.alerts.append(
+                    {
+                        "ts": datetime.now(timezone.utc).isoformat(),
+                        "kind": "observe_would_block",
+                        "message": msg,
+                        "severity": "warning",
+                        "pillar": pillar or kind,
+                        "tool": tool or "",
+                    }
+                )
+                if len(self._metrics.alerts) > 50:
+                    self._metrics.alerts = self._metrics.alerts[-50:]
 
     def record_pii_redacted(self, count: int = 1) -> None:
         with self._lock:
@@ -624,6 +784,47 @@ class MetricsStore:
                 if d:
                     self._cost_by_dataset[str(d)] += amount
 
+    def record_tokens_used(self, tokens: int) -> None:
+        if tokens <= 0:
+            return
+        with self._lock:
+            self._metrics.tokens_used_total += int(tokens)
+
+    def record_tokens_saved(
+        self,
+        tokens: int,
+        *,
+        source: str = "output_budget",
+        provider: str | None = None,
+        model: str | None = None,
+        as_output: bool = True,
+    ) -> None:
+        """Accumulate FinOps token savings (output budget, discovery filter, etc.)."""
+        n = int(tokens or 0)
+        if n <= 0:
+            return
+        try:
+            from mcp_bastion.pillars.pricing import estimate_llm_usd
+
+            usd = estimate_llm_usd(
+                provider=provider or "openai",
+                model=model or "gpt-4o-mini",
+                input_tokens=0 if as_output else n,
+                output_tokens=n if as_output else 0,
+            )
+            # Fallback when provider/model unknown: ~gpt-4o-mini output rate
+            if usd <= 0:
+                usd = n * 0.60 / 1_000_000.0
+        except Exception:
+            usd = n * 0.60 / 1_000_000.0
+        src = (source or "other").strip() or "other"
+        with self._lock:
+            self._metrics.tokens_saved_total += n
+            self._metrics.estimated_usd_saved += float(usd)
+            bucket = self._metrics.savings_by_source[src]
+            bucket["tokens"] = float(bucket.get("tokens", 0)) + n
+            bucket["usd"] = float(bucket.get("usd", 0)) + float(usd)
+
     def add_alert(self, kind: str, message: str, severity: str = "warning") -> None:
         with self._lock:
             self._metrics.alerts.append({
@@ -733,6 +934,23 @@ class MetricsStore:
                 + int(blk_kinds.get("server_verification", 0)),
             }
             d["blocked_incidents"] = list(reversed(self._blocked_incidents))
+            # Recent blocked issues for FinOps panel (what was blocked + estimated avoidance)
+            cr = d.get("cost_reduction") or {}
+            samples = []
+            for inc in list(reversed(self._blocked_incidents))[:12]:
+                samples.append(
+                    {
+                        "ts": inc.get("ts"),
+                        "kind": inc.get("kind"),
+                        "pillar": inc.get("pillar"),
+                        "tool": inc.get("tool"),
+                        "reason": (inc.get("reason") or "")[:180],
+                        "estimated_tokens_avoided": inc.get("estimated_tokens_avoided"),
+                        "estimated_usd_avoided": inc.get("estimated_usd_avoided"),
+                    }
+                )
+            cr["blocked_issues"] = samples
+            d["cost_reduction"] = cr
             d["dashboard_insights"] = self._build_dashboard_insights()
             d["forensic_recent_blocked"] = self._build_forensic_list(
                 list(self._forensic_events),
