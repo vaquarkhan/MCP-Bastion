@@ -20,3 +20,18 @@
 Pinned `mcp-publisher` **v1.4.1** requested audience `mcp-registry`. Production registry now expects `https://registry.modelcontextprotocol.io`. The workflow pins **v1.7.9** (or newer) so `mcp-publisher login github-oidc` succeeds.
 
 Requires `permissions: id-token: write` (already set).
+
+## MCP Registry `server.json` packages
+
+The registry validates that every package listed in `server.json` exists on its registry.
+Until `@mcp-bastion/core` is published to npm, `server.json` lists **only** the PyPI package.
+After npm bootstrap, add:
+
+```json
+{
+  "registryType": "npm",
+  "identifier": "@mcp-bastion/core",
+  "version": "3.0.1",
+  "transport": { "type": "stdio" }
+}
+```

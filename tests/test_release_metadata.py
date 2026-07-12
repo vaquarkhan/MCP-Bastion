@@ -27,8 +27,12 @@ def test_server_json_version_matches_pyproject():
     data = json.loads(raw)
     assert data.get("version") == _pyproject_version()
     pkgs = data.get("packages") or []
+    assert pkgs, "server.json must list at least one package"
     for p in pkgs:
         assert p.get("version") == _pyproject_version(), f"package version mismatch: {p}"
+    # PyPI entry is required; npm entry is optional until @mcp-bastion/core is published.
+    types = {p.get("registryType") for p in pkgs}
+    assert "pypi" in types
 
 
 def test_citation_cff_version_matches_pyproject():

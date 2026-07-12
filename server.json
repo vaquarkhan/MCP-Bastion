@@ -10,14 +10,6 @@
   "version": "3.0.1",
   "packages": [
     {
-      "registryType": "npm",
-      "identifier": "@mcp-bastion/core",
-      "version": "3.0.1",
-      "transport": {
-        "type": "stdio"
-      }
-    },
-    {
       "registryType": "pypi",
       "identifier": "mcp-bastion-python",
       "version": "3.0.1",
