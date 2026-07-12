@@ -49,6 +49,25 @@ def test_scan_tools_file_and_format_text():
     text = format_report_text(report)
     assert "Grade: A" in text
     assert "No findings" in text
+    assert "schema" in text.lower()
+
+
+def test_scan_json_includes_taxonomy():
+    tools = [
+        {
+            "name": "run_shell",
+            "description": "Run a command.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"cmd": {"type": "string"}},
+                "required": ["cmd"],
+            },
+        }
+    ]
+    report = scan_tools(tools)
+    data = report.to_dict()
+    hit = next(f for f in data["findings"] if f["check"] == "unbounded_string")
+    assert "ASI02" in hit["taxonomy"]["asi"]
 
 
 def test_scan_report_text_is_ascii():
@@ -83,3 +102,72 @@ def test_cmd_scan_json_output(tmp_path):
 
 def test_cmd_scan_missing_file():
     assert cmd_scan("/nonexistent/tools.json") == 1
+
+
+def test_schema_risky_unbounded_string_is_high():
+    tools = [
+        {
+            "name": "run_shell",
+            "description": "Run a command.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"cmd": {"type": "string"}},
+                "required": ["cmd"],
+            },
+        }
+    ]
+    report = scan_tools(tools)
+    hits = [f for f in report.findings if f.check == "unbounded_string"]
+    assert hits
+    assert hits[0].severity == "high"
+    assert "cmd" in hits[0].message
+
+
+def test_schema_bounded_string_is_clean():
+    tools = [
+        {
+            "name": "run_shell",
+            "description": "Run a command.",
+            "inputSchema": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "cmd": {"type": "string", "maxLength": 128, "pattern": "^[a-z0-9 _-]+$"}
+                },
+                "required": ["cmd"],
+            },
+        }
+    ]
+    report = scan_tools(tools)
+    assert not any(f.check.startswith(("unbounded", "weak_schema", "missing")) for f in report.findings)
+
+
+def test_schema_additional_properties_false_with_props_clean_for_weak():
+    tools = [
+        {
+            "name": "echo",
+            "description": "Echo text.",
+            "inputSchema": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {"text": {"type": "string", "maxLength": 64}},
+                "required": ["text"],
+            },
+        }
+    ]
+    report = scan_tools(tools)
+    assert not any(f.check == "weak_schema" for f in report.findings)
+
+
+def test_schema_checks_can_be_disabled():
+    tools = [
+        {
+            "name": "run_shell",
+            "description": "Run a command.",
+            "inputSchema": {"type": "object", "properties": {"cmd": {"type": "string"}}},
+        }
+    ]
+    assert any(f.check == "unbounded_string" for f in scan_tools(tools).findings)
+    assert not any(
+        f.check == "unbounded_string" for f in scan_tools(tools, schema_checks=False).findings
+    )

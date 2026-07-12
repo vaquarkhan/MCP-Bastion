@@ -37,20 +37,40 @@
 
 | Phase | What | Command |
 |-------|------|---------|
-| **Scan** | Static tool-definition checks before deploy (injection in descriptions, secrets, homoglyphs, fingerprint drift) | `mcp-bastion scan tools.json` |
+| **Scan** | Static tool-definition checks before deploy (injection, secrets, homoglyphs, fingerprint drift, schema preconditions) | `mcp-bastion scan tools.json` |
+| **Audit** | Local MCP client-config risk report (over-broad tools, standing credentials, filesystem servers) | `mcp-bastion audit` |
 | **Test** | Integrated red-team harness against your `bastion.yaml` policy | `mcp-bastion redteam` |
 | **Enforce** | Runtime middleware on every MCP method | `secure_fastmcp(mcp)` or `bastion.yaml` |
+
+**`scan` vs `audit` — different inputs, different questions**
+
+| | **`mcp-bastion scan`** | **`mcp-bastion audit`** |
+|---|------------------------|-------------------------|
+| **Looks at** | A **tool catalog** (`tools.json` / `tools/list` export) | **MCP client configs** on disk (`mcp.json`, Claude Desktop config, etc.) |
+| **Asks** | “Is this **tool metadata** poisoned or drifted?” | “What can agents **already reach** on this machine?” |
+| **Finds** | Injection in descriptions, secrets in schemas, homoglyphs, fingerprint drift, weak/unbounded inputSchema shapes | Over-broad tool grants (`*`), standing credentials in `env`, filesystem-server hints |
+| **When** | Before you ship or attach a server’s tools (CI / pre-deploy) | Before you tighten policy on a laptop or workspace (local hygiene) |
+
+They complement each other: **audit** the host surface, then **scan** the tools you attach. Neither replaces runtime **enforce**.
+
+`mcp-bastion scan` also accepts `--skills DIR` for offline agent skill-file checks. Dependency CVEs: `mcp-bastion osv-refresh` then `mcp-bastion osv-scan` (local DB default; `--online` opt-in, fail-open).
 
 ```bash
 # 1. Scan a tools/list export (or hand-authored catalog) — client-side, no cloud
 mcp-bastion scan examples/fixtures/tools-poisoned.json
 mcp-bastion fingerprint tools.json -o baseline.json
 mcp-bastion scan tools.json --baseline baseline.json --format json -o report.json
+mcp-bastion scan --skills ./skills/
+
+# 1b. Audit local MCP client configs (what agents can already reach)
+mcp-bastion audit --root .
+mcp-bastion audit --format json -o risk-audit.json --fail-on none
 
 # 2. Test policy effectiveness
 mcp-bastion redteam --config bastion.yaml
 
-# 3. Enforce at runtime
+# 3. Enforce at runtime (filesystem path guards when agents can read local files)
+#    merge examples/bastion-filesystem-guards.yaml into bastion.yaml
 mcp-bastion validate --config bastion.yaml
 ```
 
@@ -63,6 +83,26 @@ mcp-bastion validate --config bastion.yaml
   />
 </p>
 <p align="center"><sub><code>mcp-bastion scan</code> — client-side static scanner; no cloud, no ML download</sub></p>
+
+<p align="center">
+  <img
+    src="images/mcp-bastion-audit-cli.png"
+    alt="mcp-bastion audit CLI — local MCP risk audit of client configs, over-broad tools, and standing credentials"
+    width="920"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+<p align="center"><sub><code>mcp-bastion audit</code> — map the local MCP surface before you enforce; no network, no vault</sub></p>
+
+<p align="center">
+  <img
+    src="images/mcp-bastion-scan-suite.png"
+    alt="MCP-Bastion client-side scan suite — schema preconditions, skill files, OSV dependency CVE lookup"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+<p align="center"><sub>Schema · Skills · OSV — offline by default; no login server; no phone-home</sub></p>
 
 <p align="center">
   <a href="https://vimeo.com/1186084574" title="Watch MCP-Bastion dashboard demo on Vimeo">
@@ -496,7 +536,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Policy-as-code** | Single **`bastion.yaml`**: toggles for all request-path controls plus audit, alerts, and hot reload ([docs/PILLARS.md](docs/PILLARS.md)); load via `load_config` / `build_middleware_from_config`. |
 | **Hot reload** | Optional **reload `bastion.yaml` on change** without restarting the MCP server ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)). |
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
-| **CLI** | **`mcp-bastion scan`**, **`validate`**, **`redteam`**, **`manifest`**, **`attest export`**, **`serve`**, **`dashboard`**, **`doctor`**, **`tail`**  -  [docs/CLI.md](docs/CLI.md). |
+| **CLI** | **`mcp-bastion scan`**, **`audit`**, **`validate`**, **`redteam`**, **`manifest`**, **`attest export`**, **`serve`**, **`dashboard`**, **`doctor`**, **`tail`**  -  [docs/CLI.md](docs/CLI.md). |
 | **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
 | **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard)  -  [DOCKER.md](DOCKER.md). **Prebuilt images (GHCR):** [`mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy), [`mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)  -  published on each `v*` tag ([publish-docker.yml](.github/workflows/publish-docker.yml)). |
 
@@ -624,6 +664,8 @@ Tip: set `hot_reload.enabled: true` in `bastion.yaml` to apply policy changes wi
 ### CLI for developers
 
 ```bash
+mcp-bastion audit                 # local MCP client-config risk report
+mcp-bastion scan tools.json       # static tool-definition scan
 mcp-bastion validate              # validate bastion.yaml
 mcp-bastion serve --http 8080     # run MCP server with config
 mcp-bastion dashboard --port 7000 # run metrics dashboard
@@ -711,7 +753,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pin a specific release (optional)
-pip install mcp-bastion-python==3.0.0
+pip install mcp-bastion-python==3.0.1
 ```
 
 **Prerequisites (recommended)**

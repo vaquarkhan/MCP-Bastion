@@ -53,6 +53,7 @@ bastion.local.yaml
 
 # Local runtime artifacts
 .bastion/
+.osv/
 audit.jsonl
 report.md
 *.tmp

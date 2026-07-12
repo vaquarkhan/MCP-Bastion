@@ -5,8 +5,13 @@
       "description": "Search internal documentation by keyword.",
       "inputSchema": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "query": { "type": "string", "description": "Search query" }
+          "query": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "Search query"
+          }
         },
         "required": ["query"]
       }
@@ -16,8 +21,13 @@
       "description": "Return ticket status for a support case ID.",
       "inputSchema": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "ticket_id": { "type": "string" }
+          "ticket_id": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          }
         },
         "required": ["ticket_id"]
       }

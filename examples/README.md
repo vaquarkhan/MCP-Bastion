@@ -21,6 +21,8 @@ All Python files in this folder:
 | `examples/llm_grok_example.py` | Grok (xAI, HTTP only) |
 | `examples/server_with_config.py` | Policy-as-code (bastion.yaml) |
 | `examples/bastion-runtime-governance-3.0.yaml` | Sample config for 3.0 runtime governance pillars |
+| `examples/bastion-filesystem-guards.yaml` | Path/credential denies (`.env`, `.git/config`, keys, shell patterns) + secret redaction |
+| `examples/filesystem_env_deny_demo.py` | Proof: allow README, deny `.env` / `.git/config` with filesystem guards |
 | `examples/fixtures/tools-clean.json` | Clean tool catalog for `mcp-bastion scan` demos |
 | `examples/fixtures/tools-poisoned.json` | Poisoned catalog (injection, homoglyph, secrets) for scan demos |
 | `examples/ci/README.md` | CI: copy-paste workflow to validate `bastion.yaml` in your repository |

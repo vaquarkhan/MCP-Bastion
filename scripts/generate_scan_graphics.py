@@ -90,7 +90,7 @@ def generate_scan_test_enforce_banner(path: Path) -> None:
 
     draw.text(
         (w // 2, h - 70),
-        "pip install mcp-bastion-python==3.0.0",
+        "pip install mcp-bastion-python==3.0.1",
         font=_font(28),
         fill=MUTED,
         anchor="mm",
@@ -114,14 +114,15 @@ def generate_scan_cli_graphic(path: Path) -> None:
     lines = [
         ("MCP-Bastion static tool scan", WHITE, True),
         ("Tools: 3", MUTED, False),
-        ("Fingerprint (sha256): a3f8…", MUTED, False),
+        ("Fingerprint (sha256): a3f8...", MUTED, False),
         ("Grade: F", (248, 113, 113), True),
         ("", WHITE, False),
-        ("Findings (4):", WHITE, True),
-        ("[CRITICAL] run_shell — injection_heuristic", (248, 113, 113), False),
-        ("[CRITICAL] run_shell — content_filter: API key material", (248, 113, 113), False),
-        ("[HIGH] read_file — homoglyph: read_fi1e typosquat", TEST, False),
-        ("[LOW] run_shell — empty_description rug-pull risk", MUTED, False),
+        ("Findings (5):", WHITE, True),
+        ("[CRITICAL] run_shell - injection_heuristic", (248, 113, 113), False),
+        ("[CRITICAL] run_shell - content_filter: API key material", (248, 113, 113), False),
+        ("[HIGH] read_file - homoglyph: read_fi1e typosquat", TEST, False),
+        ("[HIGH] run_shell - unbounded_string (cmd)", TEST, False),
+        ("[LOW] run_shell - empty_description rug-pull risk", MUTED, False),
     ]
     for text, color, bold in lines:
         if not text:
@@ -136,7 +137,7 @@ def generate_scan_cli_graphic(path: Path) -> None:
         "Injection in tool metadata",
         "Secrets & code-exec patterns",
         "Homoglyph / typosquat pairs",
-        "Hidden Unicode characters",
+        "Schema preconditions",
         "Fingerprint drift vs baseline",
     ]
     cy = 330
@@ -151,13 +152,120 @@ def generate_scan_cli_graphic(path: Path) -> None:
     print(f"Wrote {path}")
 
 
+def generate_audit_cli_graphic(path: Path) -> None:
+    w, h = 1600, 900
+    img = Image.new("RGB", (w, h), BG)
+    draw = ImageDraw.Draw(img)
+
+    _rounded_rect(draw, (60, 60, w - 60, h - 60), 24, (24, 33, 58), outline=(51, 65, 85), width=2)
+    draw.text((100, 100), "mcp-bastion audit", font=_font(36, True), fill=TEST)
+    draw.text((100, 155), "--root . --format text", font=_font(26), fill=MUTED)
+
+    y = 220
+    lines = [
+        ("MCP-Bastion local risk audit", WHITE, True),
+        ("Configs scanned: 2", MUTED, False),
+        ("MCP servers found: 3", MUTED, False),
+        ("Grade: D", (248, 113, 113), True),
+        ("", WHITE, False),
+        ("Findings (3):", WHITE, True),
+        ("[HIGH] standing_credential - API key in mcp.json env", (248, 113, 113), False),
+        ("[HIGH] over_permissioned_tools - allowedTools: *", (248, 113, 113), False),
+        ("[INFO] filesystem_server - enable path guards", SCAN, False),
+    ]
+    for text, color, bold in lines:
+        if not text:
+            y += 12
+            continue
+        draw.text((120, y), text, font=_font(28 if bold else 24, bold), fill=color)
+        y += 46 if bold else 40
+
+    _rounded_rect(draw, (980, 220, 1500, 760), 20, (15, 23, 42), outline=TEST, width=3)
+    draw.text((1240, 270), "CHECKS", font=_font(34, True), fill=TEST, anchor="mm")
+    checks = [
+        "MCP client config discovery",
+        "Standing credentials in env",
+        "Over-broad tool grants (*)",
+        "Filesystem server hints",
+        "Shell launcher smells",
+    ]
+    cy = 330
+    for c in checks:
+        draw.text((1020, cy), f"+  {c}", font=_font(24), fill=ENFORCE)
+        cy += 52
+
+    draw.text((1240, 820), "Local only · No network · No vault", font=_font(22), fill=MUTED, anchor="mm")
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(path, "PNG", optimize=True)
+    print(f"Wrote {path}")
+
+
+def generate_scan_suite_graphic(path: Path) -> None:
+    """Banner for schema + skills + OSV offline suite (zero-infra)."""
+    w, h = 1920, 900
+    img = Image.new("RGB", (w, h), BG)
+    draw = ImageDraw.Draw(img)
+
+    for i in range(h):
+        t = i / h
+        r = int(BG[0] + (BG2[0] - BG[0]) * t * 0.5)
+        g = int(BG[1] + (BG2[1] - BG[1]) * t * 0.5)
+        b = int(BG[2] + (BG2[2] - BG[2]) * t * 0.5)
+        draw.line([(0, i), (w, i)], fill=(r, g, b))
+
+    draw.text((w // 2, 90), "MCP-BASTION", font=_font(36, True), fill=MUTED, anchor="mm")
+    draw.text((w // 2, 170), "CLIENT-SIDE SCAN SUITE", font=_font(72, True), fill=WHITE, anchor="mm")
+    draw.text(
+        (w // 2, 250),
+        "Schema preconditions · Skill files · OSV deps  |  offline by default",
+        font=_font(28),
+        fill=ACCENT,
+        anchor="mm",
+    )
+
+    cards = [
+        ("SCHEMA", "mcp-bastion scan", "Unbounded strings · weak schemas", SCAN),
+        ("SKILLS", "scan --skills", "Grants · credential refs · name lie", TEST),
+        ("OSV", "osv-scan / osv-refresh", "Local CVE DB · online opt-in", ENFORCE),
+    ]
+    card_w, card_h = 520, 380
+    gap = 60
+    total = len(cards) * card_w + (len(cards) - 1) * gap
+    x0 = (w - total) // 2
+    y0 = 340
+    for idx, (title, cmd, desc, color) in enumerate(cards):
+        x = x0 + idx * (card_w + gap)
+        _rounded_rect(draw, (x, y0, x + card_w, y0 + card_h), 28, (24, 33, 58), outline=color, width=4)
+        draw.rectangle((x, y0, x + card_w, y0 + 12), fill=color)
+        draw.text((x + card_w // 2, y0 + 90), title, font=_font(56, True), fill=color, anchor="mm")
+        draw.text((x + card_w // 2, y0 + 190), cmd, font=_font(26, True), fill=WHITE, anchor="mm")
+        draw.text((x + card_w // 2, y0 + 280), desc, font=_font(24), fill=MUTED, anchor="mm")
+
+    draw.text(
+        (w // 2, h - 60),
+        "Zero-infra library  ·  No login server  ·  No phone-home by default",
+        font=_font(26),
+        fill=MUTED,
+        anchor="mm",
+    )
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(path, "PNG", optimize=True)
+    print(f"Wrote {path}")
+
+
 def sync_assets() -> None:
     pairs = [
         ("mcp-bastion-scan-test-enforce.png",),
         ("mcp-bastion-scan-cli.png",),
+        ("mcp-bastion-audit-cli.png",),
+        ("mcp-bastion-scan-suite.png",),
     ]
     for (name,) in pairs:
         src = IMAGES / name
+        if not src.exists():
+            continue
         for dest_dir in (DOCS_IMAGES, SITE_ASSETS):
             dest_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dest_dir / name)
@@ -175,6 +283,8 @@ def main() -> None:
     IMAGES.mkdir(parents=True, exist_ok=True)
     generate_scan_test_enforce_banner(IMAGES / "mcp-bastion-scan-test-enforce.png")
     generate_scan_cli_graphic(IMAGES / "mcp-bastion-scan-cli.png")
+    generate_audit_cli_graphic(IMAGES / "mcp-bastion-audit-cli.png")
+    generate_scan_suite_graphic(IMAGES / "mcp-bastion-scan-suite.png")
     sync_assets()
 
 

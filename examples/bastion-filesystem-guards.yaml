@@ -1,0 +1,75 @@
+# MCP-Bastion filesystem / credential path guards
+# Copy or merge into bastion.yaml when agents can reach local files or shell-like tools.
+# Uses existing pillars only - no new runtime identity plane.
+
+mode: enforce
+
+content_filter:
+  enabled: true
+  block_code_execution: true
+  block_file_paths: true
+  block_urls: false
+  block_secrets: true
+  denylist_patterns:
+    # Credential and VCS metadata paths
+    - "(?i)(?:^|[/\\\\])\\.env(?:\\.|$|[/\\\\])"
+    - "(?i)(?:^|[/\\\\])\\.git(?:[/\\\\]|$)"
+    - "(?i)(?:^|[/\\\\])\\.git[/\\\\]config"
+    - "(?i)id_rsa|id_ed25519|\\.pem$"
+    - "(?i)aws_credentials|\\.aws[/\\\\]credentials"
+    - "(?i)\\.npmrc|\\.docker[/\\\\]config\\.json"
+
+argument_guards:
+  enabled: true
+  rules:
+    - name: block_env_file_read
+      match: "*"
+      arg: "$..*"
+      pattern: "(?i)(?:^|[/\\\\])\\.env(?:\\.|$|[/\\\\]|\\s|$)"
+      action: block
+    - name: block_git_config_read
+      match: "*"
+      arg: "$..*"
+      pattern: "(?i)(?:^|[/\\\\])\\.git[/\\\\]config"
+      action: block
+    - name: block_ssh_private_key_path
+      match: "*"
+      arg: "$..*"
+      pattern: "(?i)(?:^|[/\\\\])id_rsa|(?:^|[/\\\\])id_ed25519|\\.pem$"
+      action: block
+    - name: block_shell_metachar_command
+      match: "*shell*"
+      arg: "$..*"
+      pattern: "(?i)(rm\\s+-rf|curl\\s+[^\\n]*\\|\\s*(?:ba)?sh|wget\\s+[^\\n]*\\|\\s*(?:ba)?sh)"
+      action: block
+    - name: block_shell_metachar_any
+      match: "*exec*"
+      arg: "$..*"
+      pattern: "(?i)(rm\\s+-rf|/bin/(?:ba)?sh\\s+-c)"
+      action: block
+
+prompt_guard:
+  enabled: false
+  # Keep this pack focused on path/credential denies. Enable PromptGuard in your
+  # main bastion.yaml (use_ungated_default: true) when you want ML/heuristic scanning.
+
+tool_allowlist:
+  enabled: false
+  # Prefer an explicit allowlist in production, e.g.:
+  # tools: ["read_text_file", "list_directory", "directory_tree"]
+
+secrets:
+  redact_patterns:
+    - rule: "AKIA[0-9A-Z]{16}"
+      strategy: mask
+    - rule: "sk-(?:live|proj|ant|test)-[A-Za-z0-9]{20,}"
+      strategy: mask
+    - rule: "-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
+      strategy: remove
+
+response_scan:
+  enabled: true
+
+audit:
+  enabled: true
+  jsonl_path: .bastion/audit.jsonl
