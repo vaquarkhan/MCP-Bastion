@@ -516,6 +516,34 @@ def test_compliance_report_counts_total_events_control(tmp_path):
     assert "**all audit events**: 1 related audit events" in md
 
 
+def test_compliance_pii_alias_counts_short_and_full_pillar_names(tmp_path):
+    """Audit may use pillar 'pii' (legacy/sim) or 'pii_redaction' (middleware)."""
+    audit = tmp_path / "audit.jsonl"
+    audit.write_text(
+        json.dumps(
+            {
+                "timestamp": "2026-01-01T00:00:00Z",
+                "action": "ALLOW",
+                "forensic_trace": [{"pillar": "pii", "status": "ok"}],
+            }
+        )
+        + "\n"
+        + json.dumps(
+            {
+                "timestamp": "2026-01-02T00:00:00Z",
+                "action": "ALLOW",
+                "forensic_trace": [{"pillar": "pii_redaction", "status": "ok"}],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    md = generate_report_markdown(framework="soc2", audit_path=audit, version="3.0.0")
+    assert "**pii_redaction**: 2 related audit events" in md
+    gdpr = generate_report_markdown(framework="gdpr", audit_path=audit, version="3.0.0")
+    assert "**pii_redaction**: 2 related audit events" in gdpr
+
+
 def test_compliance_summarize_skips_blank_and_invalid_lines(tmp_path):
     audit = tmp_path / "audit.jsonl"
     audit.write_text(

@@ -51,6 +51,17 @@ def test_scan_tools_file_and_format_text():
     assert "No findings" in text
 
 
+def test_scan_report_text_is_ascii():
+    """Console-safe: no em-dash/ellipsis that mojibake on Windows cp1252."""
+    tools = json.loads((FIXTURES / "tools-poisoned.json").read_text(encoding="utf-8"))["tools"]
+    report = scan_tools(tools)
+    text = format_report_text(report)
+    text.encode("ascii")
+    assert "—" not in text
+    assert "–" not in text
+    assert "…" not in text
+
+
 def test_cmd_scan_clean_exits_zero(tmp_path, capsys):
     path = FIXTURES / "tools-clean.json"
     assert cmd_scan(str(path), fail_on="high") == 0

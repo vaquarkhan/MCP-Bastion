@@ -68,7 +68,7 @@ class BastionConfig:
     prompt_guard_threshold: float = 0.85
     prompt_guard_fail_open: bool = False
     prompt_guard_heuristic_fallback: bool = True
-    prompt_guard_model_id: str = "meta-llama/Llama-Prompt-Guard-2-86M"
+    prompt_guard_model_id: str = "ProtectAI/deberta-v3-base-prompt-injection-v2"
     pii: bool = True
     rate_limit: bool = True
     rate_limit_max_iterations: int = 15
@@ -108,7 +108,7 @@ class BastionConfig:
     cost_checkpoint_path: str | None = None
     cost_policy_enabled: bool = False
     cost_policy_config: dict[str, Any] = field(default_factory=dict)
-    prompt_guard_use_ungated_default: bool = False
+    prompt_guard_use_ungated_default: bool = True
     boundary_mode_enabled: bool = False
     governance_attestation_enabled: bool = True
     identity_adapter_enabled: bool = False
@@ -321,8 +321,10 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         prompt_guard_threshold=float(pg.get("threshold", 0.85)),
         prompt_guard_fail_open=bool(pg.get("fail_open", False)),
         prompt_guard_heuristic_fallback=bool(pg.get("heuristic_fallback", True)),
-        prompt_guard_use_ungated_default=bool(pg.get("use_ungated_default", False)),
-        prompt_guard_model_id=str(pg.get("model_id", "meta-llama/Llama-Prompt-Guard-2-86M")),
+        prompt_guard_use_ungated_default=bool(pg.get("use_ungated_default", True)),
+        prompt_guard_model_id=str(
+            pg.get("model_id", "ProtectAI/deberta-v3-base-prompt-injection-v2")
+        ),
         pii=data.get("pii", {}).get("enabled", True),
         rate_limit=data.get("rate_limit", {}).get("enabled", True),
         rate_limit_max_iterations=data.get("rate_limit", {}).get("max_iterations", 15),

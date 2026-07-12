@@ -1,7 +1,8 @@
 """
-Prompt injection detection via Llama Prompt Guard 2 + regex heuristics.
+Prompt injection detection via ML classifier + regex heuristics.
 
-Primary: meta-llama/Llama-Prompt-Guard-2-86M (gated — requires Hugging Face access).
+Default ML model: ProtectAI/deberta-v3-base-prompt-injection-v2 (ungated, no HF login).
+Optional: meta-llama/Llama-Prompt-Guard-2-86M when use_ungated_default=false (HF gated).
 Fallback: regex heuristics catch obvious jailbreak strings only (not novel injection).
 Heuristic mode is not a substitute for ML scoring or argument_guards.
 Default posture: fail-closed on ML errors (blocks request unless fail_open=True).
@@ -40,7 +41,7 @@ class PromptGuardEngine:
         fail_open: bool = False,
         heuristic_fallback: bool = True,
         heuristic_extra_patterns: list[str] | None = None,
-        use_ungated_default: bool = False,
+        use_ungated_default: bool = True,
     ) -> None:
         self.threshold = threshold
         self.temperature = temperature
@@ -162,13 +163,16 @@ class PromptGuardEngine:
             self._ml_unavailable_reason = str(e)
             if self.fail_open:
                 logger.warning(
-                    "PromptGuard ML unavailable (%s) and fail_open=True — allowing unverified request.",
+                    "PromptGuard ML unavailable (%s) and fail_open=True - allowing unverified request.",
                     e,
                 )
                 return False
             raise PromptGuardUnavailableError(
                 "Request blocked: PromptGuard ML model unavailable. "
-                f"Accept access at {HF_ACCESS_URL}, authenticate with Hugging Face "
-                "(`huggingface-cli login`), or set prompt_guard.fail_open: true for dev only. "
+                "Default model is ungated ProtectAI/deberta-v3-base-prompt-injection-v2 "
+                "(pip install transformers torch). "
+                f"If using gated Llama Prompt Guard, accept access at {HF_ACCESS_URL} and "
+                "`huggingface-cli login`, or set prompt_guard.use_ungated_default: true. "
+                "Dev-only: prompt_guard.fail_open: true. "
                 f"Underlying error: {e}"
             ) from e

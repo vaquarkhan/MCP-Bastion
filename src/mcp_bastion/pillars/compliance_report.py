@@ -18,6 +18,12 @@ DISCLAIMER = (
 
 # Pillar names align with forensic_trace[].pillar values written by middleware.
 # Use _total_events for controls that map to overall audit coverage.
+# Aliases: audit/simulators may emit short names (e.g. "pii") vs middleware "pii_redaction".
+PILLAR_ALIASES: dict[str, frozenset[str]] = {
+    "pii_redaction": frozenset({"pii_redaction", "pii"}),
+    "pii": frozenset({"pii_redaction", "pii"}),
+}
+
 FRAMEWORK_CONTROLS: dict[str, dict[str, list[str]]] = {
     "soc2": {
         "CC6.1": ["rbac", "agent_iam", "edge_auth", "tool_allowlist"],
@@ -130,7 +136,9 @@ def summarize_audit_log(
 def _pillar_event_count(summary: dict[str, Any], pillar_name: str) -> int:
     if pillar_name == "_total_events":
         return int(summary["total_events"])
-    return int(summary["pillars"].get(pillar_name, 0))
+    aliases = PILLAR_ALIASES.get(pillar_name, frozenset({pillar_name}))
+    pillars = summary.get("pillars") or {}
+    return sum(int(pillars.get(alias, 0)) for alias in aliases)
 
 
 def generate_report_markdown(

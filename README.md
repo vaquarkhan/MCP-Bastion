@@ -724,7 +724,7 @@ pip install mcp-bastion-python==3.0.0
   (adds `pyyaml`; otherwise you may get `ImportError` when loading policy files).
 - **Prompt injection (PromptGuard):** two layers:
   1. **Regex heuristics** (always on) block obvious jailbreak strings such as “ignore previous instructions”  -  no model download required.
-  2. **Meta Llama Prompt Guard 2** (`meta-llama/Llama-Prompt-Guard-2-86M`) is a **gated** Hugging Face model. Request access, then run `huggingface-cli login`. Without ML, obvious attacks are still blocked; unverified payloads are **blocked** when `fail_open: false` (default). Run `mcp-bastion doctor` to verify ML availability.
+  2. **ML classifier (default ungated):** `ProtectAI/deberta-v3-base-prompt-injection-v2` via `use_ungated_default: true` (no Hugging Face login). Optional gated upgrade: set `use_ungated_default: false` and use `meta-llama/Llama-Prompt-Guard-2-86M` after `huggingface-cli login`. Unverified payloads are **blocked** when `fail_open: false` (default). Run `mcp-bastion doctor` to verify ML availability.
 
 The PyPI wheel ships the full `mcp_bastion` tree (including `config`, `cli`, `otel`, dashboard metrics, and alert sinks). If you use an older wheel that omits modules, upgrade to the current release.
 

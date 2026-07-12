@@ -152,8 +152,8 @@ class PromptGuardUnavailableError(MCPBastionError):
         self,
         message: str = (
             "Request blocked: PromptGuard ML model unavailable. "
-            "Configure Hugging Face access for meta-llama/Llama-Prompt-Guard-2-86M "
-            "or enable heuristic-only dev mode."
+            "Install transformers/torch for ProtectAI/deberta-v3-base-prompt-injection-v2 "
+            "(default ungated model), or configure Hugging Face access for the gated Llama model."
         ),
     ) -> None:
         super().__init__(message, code=-32018)

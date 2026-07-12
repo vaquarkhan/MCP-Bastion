@@ -92,7 +92,7 @@ class ScanReport:
 
     @property
     def grade(self) -> str:
-        """Letter grade A–F from worst finding severity."""
+        """Letter grade A-F from worst finding severity."""
         if not self.findings:
             return "A"
         worst = max(_SEVERITY_RANK[f.severity] for f in self.findings)
@@ -239,7 +239,7 @@ def scan_tools(
                     check="fingerprint_drift",
                     severity="high",
                     message="Tool catalog fingerprint does not match baseline",
-                    detail=f"expected={baseline_fingerprint[:16]}… actual={fp[:16]}…",
+                    detail=f"expected={baseline_fingerprint[:16]}... actual={fp[:16]}...",
                 )
             )
 
@@ -255,7 +255,7 @@ def scan_tools(
         heuristic_fallback=True,
         heuristic_extra_patterns=extra_heuristic_patterns,
     )
-    # Static scan never loads ML — heuristics only.
+    # Static scan never loads ML - heuristics only.
     prompt_guard._model = None  # type: ignore[attr-defined]
 
     for entry in tools:
@@ -300,11 +300,11 @@ def format_report_text(report: ScanReport) -> str:
         lines.append(f"Baseline match: {'yes' if report.baseline_match else 'NO'}")
     lines.append("")
     if not report.findings:
-        lines.append("No findings — catalog looks clean under heuristic + content checks.")
+        lines.append("No findings - catalog looks clean under heuristic + content checks.")
         return "\n".join(lines)
     lines.append(f"Findings ({len(report.findings)}):")
     for f in report.findings:
-        lines.append(f"  [{f.severity.upper()}] {f.tool} — {f.check}: {f.message}")
+        lines.append(f"  [{f.severity.upper()}] {f.tool} - {f.check}: {f.message}")
         if f.detail:
             lines.append(f"           {f.detail}")
     return "\n".join(lines)

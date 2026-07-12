@@ -14,13 +14,14 @@ prompt_guard:
   threshold: 0.85
   heuristic_fallback: true
   fail_open: false
-  use_ungated_default: false   # true = ProtectAI DeBERTa (no HF gate)
+  use_ungated_default: true    # ProtectAI DeBERTa (no HF gate); default
+  # model_id: meta-llama/Llama-Prompt-Guard-2-86M  # only when use_ungated_default: false
 ```
 
 - **Enable:** `prompt_guard.enabled: true`
 - **Error code:** -32001
 - **CLI:** `mcp-bastion redteam` for harness scores ([REDTEAM.md](REDTEAM.md))
-- **Tip:** Set `fail_open: false` in production; use `use_ungated_default: true` if you cannot access gated Hugging Face models.
+- **Tip:** Default ML model is ungated (`use_ungated_default: true`). Keep `fail_open: false` in production. Set `use_ungated_default: false` only if you intentionally use gated Llama Prompt Guard + HF login.
 
 ### 2. PII redaction (`pii`)
 

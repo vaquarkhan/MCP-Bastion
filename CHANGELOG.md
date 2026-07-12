@@ -6,6 +6,12 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **PromptGuard default:** `use_ungated_default` now defaults to **true** (ProtectAI DeBERTa, no HF login). Gated Llama Prompt Guard remains opt-in. Fail-closed (`fail_open: false`) unchanged so missing ML still blocks unverified traffic.
+- **`mcp-bastion scan` output:** ASCII-only console strings (no em-dash/ellipsis mojibake on Windows cp1252).
+- **Compliance report:** SOC2/GDPR `pii_redaction` controls also count audit pillars named `pii` (legacy/simulators).
+
 ## [3.0.0] - 2026-07-11
 
 Feature release: runtime governance pillars for production MCP deployments. All new controls are opt-in via `bastion.yaml`.

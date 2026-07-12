@@ -9,8 +9,10 @@ prompt_guard:
   threshold: 0.85
   heuristic_fallback: true   # blocks obvious jailbreaks without ML (always on by default)
   fail_open: false         # when ML unavailable: block unverified payloads (dev: set true)
-  use_ungated_default: false  # true → ProtectAI/deberta-v3-base-prompt-injection-v2 (no HF gate)
-  # Requires Hugging Face access to gated model meta-llama/Llama-Prompt-Guard-2-86M + `huggingface-cli login`
+  # Default: ungated ProtectAI model (no Hugging Face login). Works out of the box with transformers+torch.
+  use_ungated_default: true
+  # Optional gated Llama model: set use_ungated_default: false and model_id below, then `huggingface-cli login`
+  # model_id: meta-llama/Llama-Prompt-Guard-2-86M
 
 pii:
   enabled: true
