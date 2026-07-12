@@ -9,8 +9,13 @@ Zero-infra: read-only over local artifacts + in-process metrics. No login, no DB
 ## Screenshots / tour
 
 <p align="center">
-  <img src="../images/mcp-bastion-dashboard-tour.gif" alt="Dashboard feature tour GIF — posture, how-to-fix, FinOps, RBAC" width="900" />
+  <img src="../images/mcp-bastion-dashboard-tour.gif" alt="Dashboard feature tour GIF: posture, how-to-fix, FinOps, RBAC" width="900" style="max-width:100%; height:auto;" />
 </p>
+<p align="center"><sub>Feature tour</sub></p>
+<p align="center">
+  <img src="../images/deshboard-walkthrow.gif" alt="Dashboard walkthrough GIF" width="900" style="max-width:100%; height:auto;" />
+</p>
+<p align="center"><sub>Dashboard walkthrough</sub></p>
 <p align="center">
   <img src="../images/mcp-bastion-dashboard.png" alt="Dashboard collage" width="900" />
 </p>

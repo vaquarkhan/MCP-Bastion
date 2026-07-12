@@ -110,12 +110,24 @@ mcp-bastion validate --config bastion.yaml
   <a href="images/mcp-bastion-dashboard-tour.gif" title="MCP-Bastion dashboard feature tour (GIF)">
     <img
       src="images/mcp-bastion-dashboard-tour.gif"
-      alt="MCP-Bastion dashboard tour — posture, prevalidation, OWASP, attack matrix, forensics, FinOps actual vs would-have-been"
+      alt="MCP-Bastion dashboard tour: posture, prevalidation, OWASP, attack matrix, forensics, FinOps actual vs would-have-been"
       width="960"
       style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b; box-shadow:0 8px 32px rgba(15,23,42,0.35);"
     />
   </a>
 </p>
+<p align="center"><sub>Feature tour</sub></p>
+<p align="center">
+  <a href="images/deshboard-walkthrow.gif" title="MCP-Bastion dashboard walkthrough (GIF)">
+    <img
+      src="images/deshboard-walkthrow.gif"
+      alt="MCP-Bastion dashboard walkthrough GIF"
+      width="960"
+      style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b; box-shadow:0 8px 32px rgba(15,23,42,0.35);"
+    />
+  </a>
+</p>
+<p align="center"><sub>Dashboard walkthrough</sub></p>
 <p align="center">
   <img
     src="images/mcp-bastion-dashboard.png"
@@ -564,6 +576,16 @@ The dashboard is **optional and local** — a read-only view over **runtime metr
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
 </p>
+<p align="center"><sub>Feature tour</sub></p>
+<p align="center">
+  <img
+    src="images/deshboard-walkthrow.gif"
+    alt="MCP-Bastion dashboard walkthrough GIF"
+    width="920"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+<p align="center"><sub>Dashboard walkthrough</sub></p>
 <p align="center">
   <img
     src="images/mcp-bastion-dashboard.png"
