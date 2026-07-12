@@ -331,7 +331,7 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v34-tour-capture-rbac",
+        "ui_revision": "v35-forensics-detail",
         "hint": "If this is missing, you are not hitting dashboard/app.py - check port and process.",
     }
 
@@ -2012,8 +2012,137 @@ DASHBOARD_HTML = """
       padding: 0;
       text-decoration: underline;
     }
+    .forensics-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+      gap: 14px;
+      align-items: start;
       margin-top: 4px;
-      line-height: 1.35;
+    }
+    @media (max-width: 1100px) {
+      .forensics-layout { grid-template-columns: 1fr; }
+    }
+    .forensics-list .tool-table-wrap { margin-top: 0; }
+    .forensics-list .tool-table tbody tr {
+      cursor: pointer;
+    }
+    .forensics-list .tool-table tbody tr:hover td {
+      background: rgba(56, 189, 248, 0.06);
+    }
+    .forensics-list .tool-table tbody tr.is-selected td {
+      background: rgba(56, 189, 248, 0.14);
+    }
+    .forensics-list .tool-table tbody tr.is-selected td:first-child {
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+    .forensics-detail {
+      position: sticky;
+      top: 72px;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.45);
+      padding: 12px 14px 14px;
+      min-height: 280px;
+      max-height: min(78vh, 720px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    html[data-theme="light"] .forensics-detail {
+      background: #f8fafc;
+    }
+    .forensics-detail-empty {
+      margin: auto;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 24px 12px;
+      line-height: 1.5;
+    }
+    .forensics-detail-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .forensics-detail-head h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .forensics-detail-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin: 4px 0 0;
+      line-height: 1.4;
+    }
+    .forensics-tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin: 0 0 10px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 8px;
+    }
+    .forensics-tab {
+      padding: 5px 12px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .forensics-tab:hover { color: var(--text); }
+    .forensics-tab.is-active {
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+    html[data-theme="light"] .forensics-tab.is-active {
+      color: #0369a1;
+    }
+    .forensics-detail-body {
+      flex: 1;
+      overflow: auto;
+      font-size: 0.8rem;
+      min-height: 0;
+    }
+    .forensics-detail-body[hidden] { display: none !important; }
+    .forensics-kv {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 6px 10px;
+      margin: 0 0 12px;
+      font-size: 0.78rem;
+    }
+    .forensics-kv dt { color: var(--muted); margin: 0; }
+    .forensics-kv dd { margin: 0; word-break: break-word; }
+    .forensics-detail .trace-steps { margin-top: 0; }
+    .forensics-detail pre {
+      margin: 0;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--card-border);
+      font-size: 0.72rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: none;
+    }
+    html[data-theme="light"] .forensics-detail pre {
+      background: #fff;
+    }
+    .forensics-detail .fd-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin: 0 0 8px;
+      line-height: 1.4;
     }
     .tool-table-wrap {
       overflow-x: auto;
@@ -2041,6 +2170,10 @@ DASHBOARD_HTML = """
       max-width: 260px;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .forensics-list .tool-table td.reason-cell {
+      white-space: normal;
+      max-width: 220px;
     }
     .tenant-bar {
       display: flex;
@@ -2567,7 +2700,7 @@ DASHBOARD_HTML = """
   <div class="card forensics-card" id="dash-forensics">
     <div class="card-head">
       <h2>Blocked requests (forensics)</h2>
-      <p class="card-desc">Per-decision rows with pillar + bastion.yaml rule provenance. Charts above are all tenants; filter this table by tenant.</p>
+      <p class="card-desc">Select a row for Trace &amp; Reproduce in the detail panel (wide screens). Filter the list by tenant; charts above stay all-tenant.</p>
     </div>
     <div class="tenant-bar">
       <label for="tenantFilter">Tenant</label>
@@ -2578,23 +2711,56 @@ DASHBOARD_HTML = """
       <button type="button" class="btn-ghost" id="tenantClear">Show all</button>
       <span class="muted" id="forensicsHint" style="font-size:0.8rem;"></span>
     </div>
-    <div class="tool-table-wrap">
-      <table class="tool-table" id="blockedForensicsTable">
-        <thead>
-          <tr>
-            <th>Time (UTC)</th>
-            <th>Tenant</th>
-            <th>Agent</th>
-            <th>Tool</th>
-            <th>Why</th>
-            <th>Reason</th>
-            <th>Trace</th>
-            <th>Request</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="blockedForensicsBody"></tbody>
-      </table>
+    <div class="forensics-layout">
+      <div class="forensics-list">
+        <div class="tool-table-wrap">
+          <table class="tool-table" id="blockedForensicsTable">
+            <thead>
+              <tr>
+                <th>Time (UTC)</th>
+                <th>Tenant</th>
+                <th>Agent</th>
+                <th>Tool</th>
+                <th>Why</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody id="blockedForensicsBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <aside class="forensics-detail" id="forensicsDetail" aria-live="polite">
+        <div class="forensics-detail-empty" id="forensicsDetailEmpty">
+          Select a blocked request to inspect pillar trace and reproduce steps.
+        </div>
+        <div id="forensicsDetailPanel" hidden>
+          <div class="forensics-detail-head">
+            <div>
+              <h3 id="forensicsDetailTitle">—</h3>
+              <p class="forensics-detail-meta" id="forensicsDetailMeta"></p>
+            </div>
+            <button type="button" class="btn-mini" id="forensicsDetailClear" title="Clear selection">Clear</button>
+          </div>
+          <div class="forensics-tabs" role="tablist" aria-label="Forensics detail">
+            <button type="button" class="forensics-tab is-active" role="tab" data-fd-tab="overview" aria-selected="true">Overview</button>
+            <button type="button" class="forensics-tab" role="tab" data-fd-tab="trace" aria-selected="false">Trace</button>
+            <button type="button" class="forensics-tab" role="tab" data-fd-tab="reproduce" aria-selected="false">Reproduce</button>
+          </div>
+          <div class="forensics-detail-body" id="forensicsTabOverview" data-fd-pane="overview">
+            <dl class="forensics-kv" id="forensicsOverviewKv"></dl>
+            <pre id="forensicsOverviewRaw"></pre>
+          </div>
+          <div class="forensics-detail-body" id="forensicsTabTrace" data-fd-pane="trace" hidden>
+            <p class="fd-hint">Pillar pipeline for this decision (blocked step last).</p>
+            <ul class="trace-steps" id="forensicsTraceSteps"></ul>
+            <pre id="forensicsTraceRaw" style="margin-top:10px;"></pre>
+          </div>
+          <div class="forensics-detail-body" id="forensicsTabReproduce" data-fd-pane="reproduce" hidden>
+            <p class="fd-hint">Not executed here. Copy into a shell after pointing at your MCP HTTP endpoint.</p>
+            <pre id="forensicsReproduceBody"></pre>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 
@@ -2860,7 +3026,7 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script src="/static/dashboard-app.js?v=34-tour-rbac" charset="utf-8"></script>
+  <script src="/static/dashboard-app.js?v=35-forensics-detail" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>

@@ -26,7 +26,7 @@ Zero-infra: read-only over local artifacts + in-process metrics. No login, no DB
 | 05 | Attack matrix | Live pressure by category |
 | 06 | Compliance | Evidence reports + bundle |
 | 07 | **RBAC + governance** | RBAC, prompt guard, rate/cost, PII, Agent IAM, …
-| 08 | Forensics | Why blocked + Details / reproduce |
+| 08 | Forensics | Row list + side Trace / Reproduce detail |
 | 09 | Agents | Confused-deputy denials + scope map |
 | 10 | Posture drift | Audit JSONL allow/block + drift Δ |
 | 11 | **Token & cost savings** | Actual vs would-have-been + charts |
@@ -64,7 +64,7 @@ python scripts/capture_dashboard_demo.py --gif-only --duration-ms 6000
 | **KPIs + charts** | Requests, blocks, PII, cost, traffic, reasons, tools, latency |
 | **Cost burn & reduction** | Actual vs would-have-been spend/tokens; FinOps savings + **tokens avoided by blocks**; graphs + blocked-issue table |
 | **Posture drift** | Daily allow/block from audit JSONL, drift Δ, top drivers, recent blocks |
-| **Forensics** | Why (pillar/rule), Details modal with guide + trace, reproduce helpers |
+| **Forensics** | Why (pillar/rule); click a row → side detail (Overview / Trace / Reproduce) on wide screens |
 | **Agents** | Denied-by-agent + Agent IAM scope map |
 | **Alerts / insights** | Recent alerts (SSE push) + heuristic anomalies |
 | **Observe banner** | When `mode: observe`, shows would-have-blocked counts |
