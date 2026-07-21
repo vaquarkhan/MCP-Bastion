@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: **`mcp-bastion-python==3.1.2`** ([PyPI](https://pypi.org/project/mcp-bastion-python/3.1.2/)) — local dashboard posture / issue guides / FinOps / forensics detail; see [CHANGELOG](../CHANGELOG.md).
+Current Python package release: **`mcp-bastion-python==3.2.0`** ([PyPI](https://pypi.org/project/mcp-bastion-python/)) — hybrid stateful/stateless MCP transport; see [CHANGELOG](../CHANGELOG.md).
 
 ## Start here
 
@@ -23,6 +23,8 @@ Current Python package release: **`mcp-bastion-python==3.1.2`** ([PyPI](https://
 | [TAXONOMY.md](TAXONOMY.md) | ASI / MCP / LLM finding tags |
 | [BENCHMARKS.md](BENCHMARKS.md) | **Measured** RBAC matrix, output-budget reduction, discovery filter, lexical cache - pytest + `scripts/generate_benchmark_report.py` |
 | [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) | **2.0.0:** full MCP method guards + Redis `state_backend` for multi-replica deploys |
+| [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) | **Opt-in:** stateful + stateless MCP transport, discovery card, agent stability |
+| [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) | **Tutorial:** proxy, discovery, curl examples, Redis scaling |
 | [REDTEAM.md](REDTEAM.md) | Interpreting harness scores; **`mcp-bastion redteam`** |
 | [Advanced_Tutorials.md](Advanced_Tutorials.md) | Index of deeper docs (points to **DETAILED_TUTORIAL**, **TUTORIALS**, **PILLARS**, …) |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI (`validate`, `serve`, `serve --proxy`, `attest export`, …) |

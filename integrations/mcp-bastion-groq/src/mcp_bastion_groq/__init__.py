@@ -1,4 +1,4 @@
 """MCP-Bastion security integration for Groq."""
-__version__ = "3.1.2"
+__version__ = "3.2.0"
 from mcp_bastion_groq.middleware import SecureGroq
 __all__ = ["SecureGroq"]

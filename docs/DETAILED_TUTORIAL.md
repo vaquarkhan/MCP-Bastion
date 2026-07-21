@@ -406,6 +406,7 @@ pytest
 
 ## 14) Next docs to read
 
+- [Hybrid transport tutorial](HYBRID_TRANSPORT_TUTORIAL.md) — stateful + stateless MCP on one proxy
 - [Policy as Code](POLICY_AS_CODE.md)
 - [CLI Reference](CLI.md)
 - [LLM Integration](LLM_INTEGRATION.md)

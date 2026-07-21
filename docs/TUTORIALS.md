@@ -185,6 +185,36 @@ Details: [dashboard/README.md](../dashboard/README.md) · [ZERO_INFRA_STRATEGY.m
 
 ---
 
+## Tutorial 6: Hybrid stateful / stateless MCP transport
+
+Prepare for **stateless MCP** (explicit state handles, per-request protocol version) while keeping **legacy session clients** working on the same proxy.
+
+**Step 1.** Copy the sample config:
+
+```bash
+cp examples/bastion-hybrid-transport.yaml bastion.yaml
+mcp-bastion validate --config bastion.yaml
+```
+
+**Step 2.** Run upstream MCP on loopback, then the Bastion proxy:
+
+```bash
+mcp-bastion serve --http 9000 --host 127.0.0.1
+mcp-bastion serve --proxy http://127.0.0.1:9000/mcp --http 8080 --config bastion.yaml
+```
+
+**Step 3.** Discover capabilities without an initialize handshake:
+
+```bash
+curl -s http://127.0.0.1:8080/.well-known/mcp.json | jq .
+```
+
+**Step 4.** Send stateful (session header) and stateless (state handle) tool calls — both paths share the same `bastion.yaml` pillars.
+
+Full walkthrough with curl examples, Redis scaling, and agent stability: **[HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md)** · architecture: [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md).
+
+---
+
 ## Summary
 
 | Scenario | Approach |
@@ -192,5 +222,6 @@ Details: [dashboard/README.md](../dashboard/README.md) · [ZERO_INFRA_STRATEGY.m
 | Your own Python MCP server | Add `MCPBastionMiddleware` + `compose_middleware` (or `build_middleware_from_config()`). |
 | Your own TypeScript MCP server | Use `wrapWithMcpBastion(server, options)`. |
 | Third-party / GitHub / open-source MCP server | Run a Bastion-wrapped proxy that forwards to the upstream server, or run a wrapper process that injects middleware if the server supports it. |
+| Stateless MCP + legacy sessions (same proxy) | Enable `mcp_transport` in `bastion.yaml`; use `serve --proxy` + discovery card. [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) |
 
 For more examples, see [examples/README.md](../examples/README.md), [SETUP_GUIDE.md](../SETUP_GUIDE.md), and [LLM_INTEGRATION.md](LLM_INTEGRATION.md) for client-side (OpenAI, Claude, etc.) setup.

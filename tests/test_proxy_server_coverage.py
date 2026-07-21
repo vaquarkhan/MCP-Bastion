@@ -214,3 +214,200 @@ def test_run_proxy_http_invokes_uvicorn(tmp_path, monkeypatch):
 
 def test_guarded_methods_set():
     assert "tools/call" in GUARDED_METHODS
+
+
+@pytest.mark.asyncio
+async def test_proxy_asgi_serves_discovery_card(tmp_path):
+    cfg_path = tmp_path / "bastion.yaml"
+    cfg_path.write_text(
+        """
+prompt_guard:
+  enabled: false
+audit:
+  enabled: false
+mcp_transport:
+  enabled: true
+  discovery:
+    enabled: true
+    card:
+      name: test-discovery-server
+      version: "9.9.9"
+""",
+        encoding="utf-8",
+    )
+    app = build_proxy_asgi_app("http://127.0.0.1:9000/mcp", config_path=str(cfg_path))
+    sent: list[dict] = []
+
+    async def send(msg):
+        sent.append(msg)
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    await app(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/.well-known/mcp.json",
+            "headers": [],
+            "query_string": b"",
+        },
+        receive,
+        send,
+    )
+    assert sent[0]["status"] == 200
+    payload = json.loads(sent[1]["body"].decode("utf-8"))
+    assert payload["name"] == "test-discovery-server"
+    assert payload["version"] == "9.9.9"
+    assert payload["bastion"]["hybridTransport"] is True
+
+
+@pytest.mark.asyncio
+async def test_proxy_asgi_discovery_disabled_forwards(tmp_path):
+    cfg_path = tmp_path / "bastion.yaml"
+    cfg_path.write_text(
+        "prompt_guard:\n  enabled: false\naudit:\n  enabled: false\n",
+        encoding="utf-8",
+    )
+    app = build_proxy_asgi_app("http://127.0.0.1:9000/mcp", config_path=str(cfg_path))
+    sent: list[dict] = []
+
+    async def send(msg):
+        sent.append(msg)
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    with mock.patch(
+        "mcp_bastion.proxy_server._upstream_request",
+        return_value=(404, [], b"not found"),
+    ) as upstream:
+        await app(
+            {
+                "type": "http",
+                "method": "GET",
+                "path": "/.well-known/mcp.json",
+                "headers": [],
+                "query_string": b"",
+            },
+            receive,
+            send,
+        )
+    assert upstream.called
+    assert sent[0]["status"] == 404
+
+
+@pytest.mark.asyncio
+async def test_proxy_asgi_discovery_post_returns_405(tmp_path):
+    cfg_path = tmp_path / "bastion.yaml"
+    cfg_path.write_text(
+        """
+mcp_transport:
+  discovery:
+    enabled: true
+prompt_guard:
+  enabled: false
+audit:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    app = build_proxy_asgi_app("http://127.0.0.1:9000/mcp", config_path=str(cfg_path))
+    sent: list[dict] = []
+
+    async def send(msg):
+        sent.append(msg)
+
+    async def receive():
+        return {"type": "http.request", "body": b"{}", "more_body": False}
+
+    await app(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/.well-known/mcp.json",
+            "headers": [],
+            "query_string": b"",
+        },
+        receive,
+        send,
+    )
+    assert sent[0]["status"] == 405
+
+
+@pytest.mark.asyncio
+async def test_proxy_asgi_serves_well_known_mcp_path(tmp_path):
+    cfg_path = tmp_path / "bastion.yaml"
+    cfg_path.write_text(
+        """
+mcp_transport:
+  discovery:
+    enabled: true
+prompt_guard:
+  enabled: false
+audit:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    app = build_proxy_asgi_app("http://127.0.0.1:9000/mcp", config_path=str(cfg_path))
+    sent: list[dict] = []
+
+    async def send(msg):
+        sent.append(msg)
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    await app(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/.well-known/mcp",
+            "headers": [],
+            "query_string": b"",
+        },
+        receive,
+        send,
+    )
+    assert sent[0]["status"] == 200
+    assert b"protocolVersions" in sent[1]["body"]
+
+
+@pytest.mark.asyncio
+async def test_proxy_discovery_cache_control_header(tmp_path):
+    cfg_path = tmp_path / "bastion.yaml"
+    cfg_path.write_text(
+        """
+mcp_transport:
+  discovery:
+    enabled: true
+prompt_guard:
+  enabled: false
+audit:
+  enabled: false
+""",
+        encoding="utf-8",
+    )
+    app = build_proxy_asgi_app("http://127.0.0.1:9000/mcp", config_path=str(cfg_path))
+    sent: list[dict] = []
+
+    async def send(msg):
+        sent.append(msg)
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    await app(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/.well-known/mcp.json",
+            "headers": [],
+            "query_string": b"",
+        },
+        receive,
+        send,
+    )
+    headers = dict(sent[0]["headers"])
+    assert headers.get(b"cache-control") == b"public, max-age=300"

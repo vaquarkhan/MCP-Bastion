@@ -235,3 +235,27 @@ class ATRRuleMatchError(MCPBastionError):
 
     def __init__(self, message: str = "Request blocked: ATR threat rule matched") -> None:
         super().__init__(message, code=-32027)
+
+
+class ProtocolVersionError(MCPBastionError):
+    """Raised when a stateless request declares an unsupported MCP protocol version."""
+
+    def __init__(self, message: str = "Request blocked: unsupported MCP protocol version") -> None:
+        super().__init__(message, code=-32028)
+
+
+class InvalidStateHandleError(MCPBastionError):
+    """Raised when an explicit state handle is missing or fails validation."""
+
+    def __init__(self, message: str = "Request blocked: invalid MCP state handle") -> None:
+        super().__init__(message, code=-32029)
+
+
+class AgentLoopDetectedError(MCPBastionError):
+    """Raised when agent stability monitor detects a repetitive tool-output loop."""
+
+    def __init__(
+        self,
+        message: str = "Request blocked: repetitive agent tool loop detected",
+    ) -> None:
+        super().__init__(message, code=-32030)

@@ -147,6 +147,16 @@ mcp-bastion validate --config bastion.yaml
   />
 </p>
 
+<p align="center">
+  <img
+    src="images/mcp-bastion-hybrid-transport.svg"
+    alt="MCP-Bastion hybrid stateful and stateless MCP transport with discovery, Redis-backed FinOps keys, and agent stability"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+<p align="center"><strong>Hybrid stateful / stateless MCP</strong> — opt-in <code>mcp_transport</code> for SEP-2575 readiness without breaking legacy sessions. <a href="docs/HYBRID_MCP_TRANSPORT.md">Hybrid transport docs</a></p>
+
 ## Why MCP-Bastion? (Solving the 2026 MCP Security Crisis)
 
 As noted in the NSA's recent Cybersecurity Information Sheet on MCP security and the OWASP MCP Top 10, traditional AppSec tools cannot secure agentic workflows. The gap is **runtime governance** and the **confused deputy problem**: multiple AI agents sharing one MCP server with no native identity boundary. Public registry typosquatting and unverified servers have made supply-chain verification a board-level concern.
@@ -525,6 +535,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Agent IAM (Confused Deputy)** | Bind **API tokens** to **agent identities**; per-agent `allowed_tools` / `blocked_tools`, **resource URI** allow/block, optional rate limits  -  stops a support bot from calling admin tools or reading secret resources. See [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md). |
 | **Full MCP surface guards (2.0.0)** | **`resources/read`**, **`prompts/get`**, **`sampling/createMessage`**, **`elicitation/create`**  -  same inbound/outbound pillars as tool calls (not only `tools/call`). [docs/MCP_SURFACE_AND_SCALE.md](docs/MCP_SURFACE_AND_SCALE.md) |
 | **Distributed state (2.0.0)** | **`state_backend: redis`**  -  shared rate limits, replay nonces, cost caps, session scope across replicas. `pip install mcp-bastion-python[redis]` |
+| **Hybrid MCP transport (opt-in)** | **`mcp_transport`**  -  stateful sessions **and** stateless explicit state handles; per-request protocol version; proxy discovery card; agent stability monitor. [docs/HYBRID_MCP_TRANSPORT.md](docs/HYBRID_MCP_TRANSPORT.md) |
 | **Server verification (supply chain)** | SHA-256 **manifest checksums** verified at startup and on every `tools/call`; `mcp-bastion manifest` generates trusted manifests after a signed-off build. |
 | **RBAC** | **Tool-level** allow/deny by **role** (from request metadata); **fnmatch globs** (`read_*`) with specificity-aware matching in `bastion.yaml`. **Pair with Agent IAM or edge auth**  -  alone, roles are only as trustworthy as whatever sets `metadata["role"]`. [Live matrix →](docs/BENCHMARKS.md#rbac-tool-level-opt-in) |
 | **Argument guards (2.0.0)** | **JSONPath + regex** block/redact on `tools/call` arguments before schema validation  -  stops shell injection and secret exfil in argv-style payloads. |

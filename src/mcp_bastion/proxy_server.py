@@ -16,6 +16,8 @@ from typing import Any
 
 from mcp_bastion.base import MiddlewareContext
 from mcp_bastion.config import build_middleware_from_config, load_config
+from mcp_bastion.discovery_card import card_from_config, discovery_response_body, is_discovery_path
+from mcp_bastion.mcp_transport import ingest_http_headers
 from mcp_bastion.transport_hardening import TransportHardeningMiddleware, transport_config_from_bastion
 
 logger = logging.getLogger(__name__)
@@ -90,6 +92,7 @@ async def _guard_request(
     session_id: str | None,
     request_id: str | None,
     metadata: dict[str, Any],
+    headers: list[tuple[str, str]] | None = None,
 ) -> bytes | None:
     """Return JSON-RPC error body if middleware blocks; None if allowed (forward upstream)."""
     try:
@@ -108,6 +111,7 @@ async def _guard_request(
         session_id=session_id or "proxy-session",
         metadata=dict(metadata),
     )
+    ingest_http_headers(ctx, headers or [])
 
     async def _noop_handler(c: MiddlewareContext[Any]) -> Any:
         if method == "tools/call":
@@ -149,6 +153,25 @@ def build_proxy_asgi_app(
         headers = [(k.decode("latin-1"), v.decode("latin-1")) for k, v in headers_raw]
         query = scope.get("query_string", b"").decode("latin-1")
         path = scope.get("path", "/mcp")
+        if getattr(cfg, "mcp_transport_discovery_enabled", False) and is_discovery_path(path):
+            if method.upper() == "GET":
+                body = discovery_response_body(card_from_config(cfg))
+                await send(
+                    {
+                        "type": "http.response.start",
+                        "status": 200,
+                        "headers": [
+                            (b"content-type", b"application/json"),
+                            (b"cache-control", b"public, max-age=300"),
+                        ],
+                    }
+                )
+                await send({"type": "http.response.body", "body": body})
+                return
+            await send({"type": "http.response.start", "status": 405, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+            return
+
         base = upstream.rsplit("/mcp", 1)[0] if "/mcp" in upstream else upstream
         url = upstream if path == "/mcp" else f"{base}{path}"
         if query:
@@ -159,13 +182,12 @@ def build_proxy_asgi_app(
         request_id = None
         for k, v in headers:
             kl = k.lower()
+            metadata[kl] = v
             if kl == "mcp-session-id":
                 session_id = v
             if kl == "x-request-id":
                 request_id = v
-            if kl.startswith("x-bastion-") or kl.startswith("x-bastion-"):
-                metadata[k] = v
-            if kl in ("x-bastion-principal", "x-bastion-role", "authorization"):
+            if kl.startswith("x-bastion-") or kl == "authorization":
                 metadata[k] = v
 
         body = b""
@@ -178,6 +200,7 @@ def build_proxy_asgi_app(
                     session_id=session_id,
                     request_id=request_id,
                     metadata=metadata,
+                    headers=headers,
                 )
                 if blocked is not None:
                     await send(

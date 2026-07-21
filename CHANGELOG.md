@@ -1,10 +1,26 @@
 ﻿# Changelog
 
-**Current release:** **3.1.2** (2026-07-12) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.1.2/) · [Docker `v3.1.2`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **3.2.0** (2026-07-21) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.2.0/) · [Docker `v3.2.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [3.2.0] - 2026-07-21
+
+Feature release: hybrid **stateful / stateless MCP transport** for SEP-2575 readiness — opt-in, backward compatible. All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.2.0**.
+
+### Added
+
+- **Hybrid stateful / stateless MCP transport (`mcp_transport`):** opt-in identity layer for legacy `MCP-Session-Id` and stateless explicit state handles. Per-request protocol version validation, deterministic FinOps keys, HTTP proxy discovery card (`/.well-known/mcp.json`), and agent stability monitor (`inject` / `block` / `warn`).
+- **Docs:** [docs/HYBRID_MCP_TRANSPORT.md](docs/HYBRID_MCP_TRANSPORT.md), [docs/HYBRID_TRANSPORT_TUTORIAL.md](docs/HYBRID_TRANSPORT_TUTORIAL.md), architecture diagram `images/mcp-bastion-hybrid-transport.svg`.
+- **Example:** [examples/bastion-hybrid-transport.yaml](examples/bastion-hybrid-transport.yaml).
+- **Tests:** unit + E2E coverage for transport modes, discovery, proxy discovery, agent stability middleware wiring.
+
+### Changed
+
+- **`bastion.yaml.example`:** documents `mcp_transport` block (default OFF).
+- Tutorial 6 in [docs/TUTORIALS.md](docs/TUTORIALS.md); [docs/Advanced_Tutorials.md](docs/Advanced_Tutorials.md) index restored.
 
 ## [3.1.2] - 2026-07-12
 

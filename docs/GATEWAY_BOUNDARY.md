@@ -30,6 +30,7 @@ agent_iam:
 4. **TLS termination**  -  Caddy/nginx in front; see [../deploy/docker-compose.proxy.yml](../deploy/docker-compose.proxy.yml) and [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md).
 5. **NetworkPolicy / security groups**  -  allow ingress to proxy port only; deny direct routes to upstream MCP port.
 6. **No alternate transports**  -  if upstream offers stdio + HTTP, disable or firewall the path that skips Bastion.
+7. **Stateless readiness (opt-in)**  -  enable `mcp_transport.discovery` on the proxy so orchestrators can `GET /.well-known/mcp.json` without hitting upstream. See [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md).
 
 ## Docker quick start (boundary)
 
@@ -50,6 +51,7 @@ Clients must send the edge token in request metadata (`bastion_edge_token` by de
 ## Related docs
 
 - [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md)
+- [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md)
 - [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md)
 - [BENCHMARKS.md](BENCHMARKS.md)  -  FinOps and injection efficacy benchmarks
 - [ROADMAP.md](ROADMAP.md) P2 (OIDC JWT, hardened `mcp-bastion serve`)

@@ -17,6 +17,7 @@ from typing import Any
 from mcp_bastion.base import CallNext, Middleware, MiddlewareContext
 from mcp_bastion.errors import (
     AgentAccessDeniedError,
+    AgentLoopDetectedError,
     ArgumentGuardError,
     ATRRuleMatchError,
     AuthenticationError,
@@ -24,9 +25,11 @@ from mcp_bastion.errors import (
     CanaryExfiltrationError,
     ExternalPolicyDeniedError,
     GroundingViolationError,
+    InvalidStateHandleError,
     LLMScannerBlockedError,
     PromptInjectionError,
     PromptGuardUnavailableError,
+    ProtocolVersionError,
     RateLimitExceededError,
     SensitiveContentError,
     ServerVerificationError,
@@ -61,11 +64,13 @@ from mcp_bastion.pillars.semantic_cache import SemanticCache
 from mcp_bastion.pillars.sensitive_classifier import SensitiveContentClassifier
 from mcp_bastion.pillars.semantic_firewall import SemanticFirewall
 from mcp_bastion.pillars.state_backend import MemoryStateBackend, StateBackend
+from mcp_bastion.pillars.agent_stability import AgentStabilityMonitor
 from mcp_bastion.pillars.atr_rules import ATRRuleLoader
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
 from mcp_bastion.pillars.canary_goallock import CanaryGoalLock
 from mcp_bastion.pillars.llm_scanner import LLMScanner
 from mcp_bastion.pillars.secret_redaction import SecretPatternRedactor
+from mcp_bastion.mcp_transport import McpTransportConfig, apply_mcp_transport
 from mcp_bastion.tenant import resolve_tenant_id
 
 logger = logging.getLogger(__name__)
@@ -514,6 +519,10 @@ class MCPBastionMiddleware(Middleware[Any]):
         enable_auto_repave: bool = False,
         secret_redactor: SecretPatternRedactor | None = None,
         enable_secret_redaction: bool = False,
+        mcp_transport_config: McpTransportConfig | None = None,
+        agent_stability: AgentStabilityMonitor | None = None,
+        enable_agent_stability: bool = False,
+        agent_stability_on_detect: str = "inject",
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -595,6 +604,10 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.enable_auto_repave = enable_auto_repave and auto_repave is not None
         self.secret_redactor = secret_redactor
         self.enable_secret_redaction = enable_secret_redaction and secret_redactor is not None
+        self.mcp_transport_config = mcp_transport_config or McpTransportConfig()
+        self.agent_stability = agent_stability
+        self.enable_agent_stability = enable_agent_stability and agent_stability is not None
+        self.agent_stability_on_detect = (agent_stability_on_detect or "inject").strip().lower()
         self._governance = SessionGovernanceRecorder.get()
 
         if self.enable_tool_metadata_guard and not self.enable_content_filter and not self.enable_prompt_guard:
@@ -626,6 +639,94 @@ class MCPBastionMiddleware(Middleware[Any]):
         context.metadata["_budget_principal"] = principal_id
         context.metadata["_budget_tenant"] = tenant_id
         return principal_id, tenant_id
+
+    def _semantic_cache_scope(self, context: MiddlewareContext[Any], tenant_id: str) -> str:
+        return str(context.metadata.get("_mcp_transport_scope") or tenant_id)
+
+    def _resolve_rate_session(
+        self,
+        context: MiddlewareContext[Any],
+        session_id: str | None,
+        agent_policy: Any,
+    ) -> str:
+        if agent_policy is not None and self.agent_iam is not None:
+            base = f"principal:agent:{agent_policy.agent_id}"
+        else:
+            base = context.metadata.get("_budget_principal") or session_id or "default"
+        transport_key = context.metadata.get("_mcp_rate_limit_key")
+        if self.mcp_transport_config.enabled and transport_key:
+            return str(transport_key)
+        return str(base)
+
+    def _apply_mcp_transport_context(
+        self,
+        context: MiddlewareContext[Any],
+        *,
+        tenant_id: str,
+        trace: list[dict[str, Any]],
+    ) -> None:
+        if not self.mcp_transport_config.enabled:
+            return
+        started = time.perf_counter()
+        try:
+            principal_id, _ = self._finops_keys(context)
+            apply_mcp_transport(
+                context,
+                self.mcp_transport_config,
+                principal_id=principal_id,
+                tenant_id=tenant_id,
+            )
+            _trace_append(
+                trace,
+                pillar="mcp_transport",
+                status=str(context.metadata.get("mcp_transport_mode") or "ok"),
+                started=started,
+            )
+        except (ProtocolVersionError, InvalidStateHandleError) as e:
+            self._handle_violation(
+                context=context, trace=trace, pillar="mcp_transport", started=started, error=e
+            )
+
+    def _apply_agent_stability_to_result(
+        self,
+        context: MiddlewareContext[Any],
+        result: Any,
+        *,
+        trace: list[dict[str, Any]],
+    ) -> Any:
+        if not self.enable_agent_stability or self.agent_stability is None or result is None:
+            return result
+        scope = str(
+            context.metadata.get("_mcp_rate_limit_key")
+            or context.session_id
+            or context.metadata.get("tenant_id")
+            or "default"
+        )
+        observation = _extract_text_from_value(result)
+        started = time.perf_counter()
+        check = self.agent_stability.check_and_record(scope, observation)
+        if not check.repetitive:
+            _trace_append(trace, pillar="agent_stability", status="ok", started=started)
+            return result
+        detail = f"similarity={check.similarity:.2f} repeats={check.repeats}"
+        mode = self.agent_stability_on_detect
+        if mode == "block":
+            self._handle_violation(
+                context=context,
+                trace=trace,
+                pillar="agent_stability",
+                started=started,
+                error=AgentLoopDetectedError(
+                    f"Repetitive agent tool loop detected ({detail})"
+                ),
+            )
+        if mode == "inject":
+            result = AgentStabilityMonitor.inject_hint_into_result(result)
+            _trace_append(trace, pillar="agent_stability", status="inject", started=started, detail=detail)
+        else:
+            context.metadata.setdefault("agent_stability", {})["repetitive"] = True
+            _trace_append(trace, pillar="agent_stability", status="warn", started=started, detail=detail)
+        return result
 
     def _apply_output_budget_to_result(
         self,
@@ -1147,6 +1248,8 @@ class MCPBastionMiddleware(Middleware[Any]):
         tenant_id = resolve_tenant_id(context, self.default_tenant_id)
         context.metadata["tenant_id"] = tenant_id
         trace: list[dict[str, Any]] = context.metadata.setdefault("pillar_trace", [])
+        self._apply_mcp_transport_context(context, tenant_id=tenant_id, trace=trace)
+        session_id = context.session_id or session_id
         surface_key = method.replace("/", "_")
 
         context.metadata["forensic_request"] = {
@@ -1215,12 +1318,11 @@ class MCPBastionMiddleware(Middleware[Any]):
         if self.enable_rate_limit:
             started = time.perf_counter()
             limiter = self.rate_limiter
-            rate_session = context.metadata.get("_budget_principal") or session_id
+            rate_session = self._resolve_rate_session(context, session_id, agent_policy)
             if agent_policy is not None and self.agent_iam is not None:
                 agent_limiter = self.agent_iam.rate_limiter_for(agent_policy)
                 if agent_limiter is not None:
                     limiter = agent_limiter
-                rate_session = f"principal:agent:{agent_policy.agent_id}"
             check = limiter.check_iteration(
                 request_id=request_id,
                 session_id=rate_session,
@@ -1339,6 +1441,8 @@ class MCPBastionMiddleware(Middleware[Any]):
         context.metadata["tenant_id"] = tenant_id
         tool_name = _get_tool_name_from_params(params)
         trace: list[dict[str, Any]] = context.metadata.setdefault("pillar_trace", [])
+        self._apply_mcp_transport_context(context, tenant_id=tenant_id, trace=trace)
+        session_id = context.session_id or session_id
 
         safe_msg = _safe_forensic_value(msg.root if hasattr(msg, "root") else msg)
         context.metadata["forensic_request"] = {
@@ -1569,7 +1673,7 @@ class MCPBastionMiddleware(Middleware[Any]):
                 except json.JSONDecodeError:
                     arguments = {"raw": arguments}
             query = _extract_text_from_value(arguments)
-            cached = self.semantic_cache.get(tool_name, query, scope=tenant_id)
+            cached = self.semantic_cache.get(tool_name, query, scope=self._semantic_cache_scope(context, tenant_id))
             if cached is not None:
                 _trace_append(trace, pillar="semantic_cache_get", status="cache_hit", started=started)
                 self._enforce_session_tool_scope(
@@ -1609,12 +1713,11 @@ class MCPBastionMiddleware(Middleware[Any]):
         if self.enable_rate_limit:
             started = time.perf_counter()
             limiter = self.rate_limiter
-            rate_session = context.metadata.get("_budget_principal") or session_id
+            rate_session = self._resolve_rate_session(context, session_id, agent_policy)
             if agent_policy is not None and self.agent_iam is not None:
                 agent_limiter = self.agent_iam.rate_limiter_for(agent_policy)
                 if agent_limiter is not None:
                     limiter = agent_limiter
-                rate_session = f"principal:agent:{agent_policy.agent_id}"
             check = limiter.check_iteration(
                 request_id=request_id,
                 session_id=rate_session,
@@ -1827,7 +1930,7 @@ class MCPBastionMiddleware(Middleware[Any]):
             started = time.perf_counter()
             arguments = params.get("arguments") or params
             query = _extract_text_from_value(arguments)
-            self.semantic_cache.set(tool_name, query, result, scope=tenant_id)
+            self.semantic_cache.set(tool_name, query, result, scope=self._semantic_cache_scope(context, tenant_id))
             _trace_append(trace, pillar="semantic_cache_set", status="ok", started=started)
 
         if self.enable_cost_attribution:
@@ -1872,6 +1975,8 @@ class MCPBastionMiddleware(Middleware[Any]):
                 self._handle_violation(
                     context=context, trace=trace, pillar="response_scan", started=started, error=e
                 )
+
+        result = self._apply_agent_stability_to_result(context, result, trace=trace)
 
         context.metadata["forensic_response"] = _safe_forensic_value(result)
 

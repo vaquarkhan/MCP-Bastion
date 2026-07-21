@@ -242,6 +242,34 @@ policy_engine:
     policies_dir: ./policies/cedar
     schema: ./policies/cedar/schema.cedarschema
 
+# Hybrid stateful / stateless MCP transport (opt-in; default OFF).
+# Prepares for stateless MCP (SEP-2575) while preserving legacy session-based clients.
+# See docs/HYBRID_MCP_TRANSPORT.md
+mcp_transport:
+  enabled: false
+  mode: auto   # auto | stateful | stateless
+  state_handle:
+    param_names: [state_handle, mcp_state_handle, stateHandle, mcpStateHandle]
+    header_names: [mcp-state-handle, x-mcp-state-handle]
+    required_in_stateless: false
+    min_length: 16
+  protocol:
+    enabled: false
+    header: MCP-Protocol-Version
+    allowed_versions: ["2024-11-05", "2025-03-26"]
+    default_version: "2024-11-05"
+  discovery:
+    enabled: false   # HTTP proxy only: GET /.well-known/mcp.json
+    card:
+      name: mcp-bastion-protected
+      version: "1.0.0"
+  stability:
+    enabled: false
+    window_size: 5
+    repeat_threshold: 3
+    similarity_threshold: 0.92
+    on_detect: inject   # inject | block | warn
+
 # Horizontal scaling: share rate limits, replay nonces, cost budgets, and session scope
 # across workers/replicas (requires pip install mcp-bastion-python[redis]).
 state_backend:

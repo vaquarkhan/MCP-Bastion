@@ -37,6 +37,8 @@ from mcp_bastion.pillars.agent_iam import AgentIAM, parse_agent_policies
 from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine, parse_guard_rules
 from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.state_backend import build_state_backend
+from mcp_bastion.pillars.agent_stability import AgentStabilityMonitor
+from mcp_bastion.mcp_transport import mcp_transport_config_from_bastion
 from mcp_bastion.pillars.atr_rules import ATRRuleLoader
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
 from mcp_bastion.pillars.canary_goallock import CanaryGoalLock
@@ -191,6 +193,33 @@ class BastionConfig:
     state_backend: str = "memory"
     state_backend_redis_url: str = "redis://127.0.0.1:6379/0"
     state_backend_key_prefix: str = "mcp-bastion"
+    # Hybrid MCP transport (stateful + stateless) — opt-in, default off
+    mcp_transport_enabled: bool = False
+    mcp_transport_mode: str = "auto"
+    mcp_transport_state_handle_params: list[str] = field(
+        default_factory=lambda: ["state_handle", "mcp_state_handle", "stateHandle", "mcpStateHandle"]
+    )
+    mcp_transport_state_handle_headers: list[str] = field(
+        default_factory=lambda: ["mcp-state-handle", "x-mcp-state-handle"]
+    )
+    mcp_transport_state_handle_metadata_keys: list[str] = field(
+        default_factory=lambda: ["state_handle", "mcp_state_handle", "stateHandle"]
+    )
+    mcp_transport_require_handle: bool = False
+    mcp_transport_handle_min_length: int = 16
+    mcp_transport_protocol_enabled: bool = False
+    mcp_transport_protocol_header: str = "MCP-Protocol-Version"
+    mcp_transport_allowed_versions: list[str] = field(
+        default_factory=lambda: ["2024-11-05", "2025-03-26"]
+    )
+    mcp_transport_default_version: str = "2024-11-05"
+    mcp_transport_discovery_enabled: bool = False
+    mcp_transport_discovery_card: dict[str, Any] = field(default_factory=dict)
+    agent_stability_enabled: bool = False
+    agent_stability_window_size: int = 5
+    agent_stability_repeat_threshold: int = 3
+    agent_stability_similarity_threshold: float = 0.92
+    agent_stability_on_detect: str = "inject"  # inject | block | warn
     # Runtime governance pillars (3.0+)
     canary_goallock_enabled: bool = False
     canary_token_prefix: str = "BASTION-CANARY-"
@@ -297,6 +326,8 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     tmf = data.get("tool_metadata_fingerprint", {}) or {}
     sess = data.get("session_limits", {}) or {}
     sb = data.get("state_backend", {}) or {}
+    mcp_t = data.get("mcp_transport", {}) or {}
+    mcp_stability = mcp_t.get("stability", {}) or {}
     ag = data.get("argument_guards", {}) or {}
     audit_cfg = data.get("audit", {}) or {}
     sc = data.get("sensitive_classifier", {}) or {}
@@ -459,6 +490,59 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         state_backend=str(sb.get("type", sb.get("backend", "memory"))),
         state_backend_redis_url=str(sb.get("redis_url", os.environ.get("BASTION_REDIS_URL", "redis://127.0.0.1:6379/0"))),
         state_backend_key_prefix=str(sb.get("key_prefix", "mcp-bastion")),
+        mcp_transport_enabled=bool(mcp_t.get("enabled", False)),
+        mcp_transport_mode=str(mcp_t.get("mode", "auto")),
+        mcp_transport_state_handle_params=list(
+            mcp_t.get("state_handle", {}).get("param_names", mcp_t.get("state_handle_params", []))
+        )
+        if isinstance(mcp_t.get("state_handle"), dict) or isinstance(mcp_t.get("state_handle_params"), list)
+        else ["state_handle", "mcp_state_handle", "stateHandle", "mcpStateHandle"],
+        mcp_transport_state_handle_headers=list(
+            mcp_t.get("state_handle", {}).get("header_names", mcp_t.get("state_handle_headers", []))
+        )
+        if isinstance(mcp_t.get("state_handle"), dict) or isinstance(mcp_t.get("state_handle_headers"), list)
+        else ["mcp-state-handle", "x-mcp-state-handle"],
+        mcp_transport_state_handle_metadata_keys=list(
+            mcp_t.get("state_handle", {}).get("metadata_keys", mcp_t.get("state_handle_metadata_keys", []))
+        )
+        if isinstance(mcp_t.get("state_handle"), dict)
+        or isinstance(mcp_t.get("state_handle_metadata_keys"), list)
+        else ["state_handle", "mcp_state_handle", "stateHandle"],
+        mcp_transport_require_handle=bool(
+            mcp_t.get("state_handle", {}).get("required_in_stateless", mcp_t.get("require_state_handle", False))
+        )
+        if isinstance(mcp_t.get("state_handle"), dict)
+        else bool(mcp_t.get("require_state_handle", False)),
+        mcp_transport_handle_min_length=int(
+            mcp_t.get("state_handle", {}).get("min_length", mcp_t.get("handle_min_length", 16))
+        )
+        if isinstance(mcp_t.get("state_handle"), dict)
+        else int(mcp_t.get("handle_min_length", 16)),
+        mcp_transport_protocol_enabled=bool(mcp_t.get("protocol", {}).get("enabled", mcp_t.get("protocol_enabled", False)))
+        if isinstance(mcp_t.get("protocol"), dict)
+        else bool(mcp_t.get("protocol_enabled", False)),
+        mcp_transport_protocol_header=str(
+            mcp_t.get("protocol", {}).get("header", mcp_t.get("protocol_header", "MCP-Protocol-Version"))
+        ),
+        mcp_transport_allowed_versions=list(
+            mcp_t.get("protocol", {}).get("allowed_versions", mcp_t.get("allowed_protocol_versions", []))
+        )
+        if isinstance(mcp_t.get("protocol"), dict) or isinstance(mcp_t.get("allowed_protocol_versions"), list)
+        else ["2024-11-05", "2025-03-26"],
+        mcp_transport_default_version=str(
+            mcp_t.get("protocol", {}).get("default_version", mcp_t.get("default_protocol_version", "2024-11-05"))
+        ),
+        mcp_transport_discovery_enabled=bool(mcp_t.get("discovery", {}).get("enabled", mcp_t.get("discovery_enabled", False)))
+        if isinstance(mcp_t.get("discovery"), dict)
+        else bool(mcp_t.get("discovery_enabled", False)),
+        mcp_transport_discovery_card=dict(mcp_t.get("discovery", {}).get("card", mcp_t.get("discovery_card", {})))
+        if isinstance(mcp_t.get("discovery"), dict)
+        else dict(mcp_t.get("discovery_card", {})),
+        agent_stability_enabled=bool(mcp_stability.get("enabled", mcp_t.get("agent_stability_enabled", False))),
+        agent_stability_window_size=int(mcp_stability.get("window_size", 5)),
+        agent_stability_repeat_threshold=int(mcp_stability.get("repeat_threshold", 3)),
+        agent_stability_similarity_threshold=float(mcp_stability.get("similarity_threshold", 0.92)),
+        agent_stability_on_detect=str(mcp_stability.get("on_detect", "inject")),
         canary_goallock_enabled=bool(cg.get("enabled", False)),
         canary_token_prefix=str(cg.get("token_prefix", "BASTION-CANARY-")),
         canary_rotate_on_detection=bool(cg.get("rotate_on_detection", True)),
@@ -635,6 +719,15 @@ def _build_chain(config: BastionConfig) -> Any:
         redis_url=config.state_backend_redis_url,
         key_prefix=config.state_backend_key_prefix,
     )
+    mcp_transport_cfg = mcp_transport_config_from_bastion(config)
+    agent_stability_monitor = None
+    if config.agent_stability_enabled:
+        agent_stability_monitor = AgentStabilityMonitor(
+            window_size=config.agent_stability_window_size,
+            repeat_threshold=config.agent_stability_repeat_threshold,
+            similarity_threshold=config.agent_stability_similarity_threshold,
+            backend=state_backend,
+        )
     shared_backend = state_backend if config.state_backend.strip().lower() == "redis" else None
 
     agent_iam: AgentIAM | None = None
@@ -835,6 +928,10 @@ def _build_chain(config: BastionConfig) -> Any:
         enable_auto_repave=config.auto_repave_enabled and auto_repave is not None,
         secret_redactor=secret_redactor,
         enable_secret_redaction=secret_redactor is not None,
+        mcp_transport_config=mcp_transport_cfg,
+        agent_stability=agent_stability_monitor,
+        enable_agent_stability=config.agent_stability_enabled and agent_stability_monitor is not None,
+        agent_stability_on_detect=config.agent_stability_on_detect,
         shadow_mode=config.bastion_mode == "observe",
     )
     if config.governance_registry_url:

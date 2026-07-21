@@ -29,7 +29,7 @@ Use the row that matches **who runs the MCP server** and **what you can change**
 | **Claude Desktop, Cursor, ChatGPT MCP, etc. (stdio)** | MCP config runs **a command**; point it at the entrypoint that **starts your server with Bastion** (e.g. your `python my_server.py` that builds middleware). | **MCP client JSON:** `command` / `args` / `cwd` / `env`. Examples: [LLM_INTEGRATION.md](LLM_INTEGRATION.md). |
 | **HTTP MCP clients** | Your server listens on **your** host; middleware runs **inside** that server (or behind a reverse proxy you control that still terminates at your wrapped app). | Base URL is **your** deployed server (e.g. `https://your-org/mcp`), which you built with Bastion wired in. |
 | **LangChain, LlamaIndex, OpenAI Agents, …** | Use the **`mcp-bastion-*` integration** packages where they wrap the provider path, **or** run an MCP server with Bastion and point the agent at that server. | Per **integration** `README` under `integrations/`; each stack has its own connection settings. |
-| **Third-party / vendor MCP you cannot fork** | **Proxy boundary:** clients reach only the Bastion proxy; upstream MCP binds to loopback. See [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md). | [deploy/docker-compose.proxy.yml](../deploy/docker-compose.proxy.yml) + `edge_auth`; see [TUTORIALS.md](TUTORIALS.md) (Tutorial 3, Option B). |
+| **Third-party / vendor MCP you cannot fork** | **Proxy boundary:** clients reach only the Bastion proxy; upstream MCP binds to loopback. See [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md). | [deploy/docker-compose.proxy.yml](../deploy/docker-compose.proxy.yml) + `edge_auth`; [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) for stateless + discovery. |
 
 **LangChain / LlamaIndex / Claude Desktop** are **clients or frameworks**; they connect to the MCP server **you** run - wire Bastion into that server, then point the client at it (stdio or **your** HTTPS URL).
 
@@ -45,6 +45,7 @@ If clients use a **single MCP HTTPS URL**, that endpoint should be **your** depl
 
 - [LLM_INTEGRATION.md](LLM_INTEGRATION.md)  -  concrete MCP client configs (OpenAI, Claude, Gemini, …)  
 - [TUTORIALS.md](TUTORIALS.md)  -  FastMCP, TypeScript, third-party / proxy patterns  
+- [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md)  -  stateful + stateless MCP on one proxy  
 - [POLICY_AS_CODE.md](POLICY_AS_CODE.md)  -  `bastion.yaml`  
 - [PILLARS.md](PILLARS.md)  -  what the runtime implements  
 - [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md)  -  mandatory proxy hop vs in-process middleware  

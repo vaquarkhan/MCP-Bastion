@@ -34,6 +34,8 @@ middleware = build_middleware_from_config()
 
 Register `middleware` on your MCP server’s request path (see [TUTORIALS.md](TUTORIALS.md)). Adjust knobs only in YAML.
 
+**HTTP proxy + stateless MCP:** see [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) (`serve --proxy`, discovery card, `mcp_transport` block).
+
 ---
 
 ## Path C  -  CI gate (machine-scale adoption)

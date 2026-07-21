@@ -275,6 +275,7 @@ middleware = MCPBastionMiddleware(..., shadow_mode=True)
 | Cost-aware policy | `cost_policy` | [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) |
 | Governance attestation | `mcp-bastion attest export` | [CLI.md](CLI.md) |
 | Boundary mode | `boundary_mode`, `serve --proxy` | [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) |
+| Hybrid MCP transport | `mcp_transport` | [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) |
 | BYOI identity | `identity_adapter` | [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) |
 | Secrets resolver | `secrets` | [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) |
 | Syslog SIEM | `telemetry.sinks` | [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) |

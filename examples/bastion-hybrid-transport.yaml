@@ -1,0 +1,60 @@
+# Hybrid stateful / stateless MCP transport (opt-in).
+# Copy to bastion.yaml and enable when preparing for stateless MCP clients.
+# Full walkthrough: docs/HYBRID_TRANSPORT_TUTORIAL.md
+
+audit:
+  enabled: true
+  jsonl_path: .bastion/audit.jsonl
+
+prompt_guard:
+  enabled: true
+  heuristic_fallback: true
+
+pii:
+  enabled: false
+
+rate_limit:
+  enabled: true
+  max_iterations: 30
+  timeout_seconds: 120
+
+# Required for load-balanced / multi-replica stateless traffic
+state_backend:
+  type: memory   # production: redis + pip install mcp-bastion-python[redis]
+  redis_url: redis://127.0.0.1:6379/0
+  key_prefix: mcp-bastion
+
+mcp_transport:
+  enabled: true
+  mode: auto
+
+  state_handle:
+    param_names: [state_handle, mcp_state_handle]
+    header_names: [mcp-state-handle, x-mcp-state-handle]
+    required_in_stateless: false
+    min_length: 16
+
+  protocol:
+    enabled: true
+    header: MCP-Protocol-Version
+    allowed_versions: ["2024-11-05", "2025-03-26"]
+    default_version: "2024-11-05"
+
+  discovery:
+    enabled: true
+    card:
+      name: acme-protected-mcp
+      version: "1.0.0"
+      protocolVersions: ["2024-11-05", "2025-03-26"]
+
+  stability:
+    enabled: true
+    window_size: 5
+    repeat_threshold: 3
+    similarity_threshold: 0.92
+    on_detect: inject
+
+edge_auth:
+  enabled: false
+
+mode: enforce

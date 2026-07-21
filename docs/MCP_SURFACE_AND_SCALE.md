@@ -99,8 +99,26 @@ Config and doctor wiring:
 PYTHONPATH=src python -m pytest tests/test_config.py tests/test_doctor.py -k "state_backend" -v
 ```
 
+## Hybrid stateful / stateless transport (opt-in)
+
+For upcoming **stateless MCP** clients (explicit state handles, per-request protocol version), enable `mcp_transport` so Bastion resolves the correct FinOps / rate-limit key for both legacy sessions and stateless traffic.
+
+<p align="center">
+  <img
+    src="../images/mcp-bastion-hybrid-transport.svg"
+    alt="Hybrid MCP transport architecture"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+
+**Default OFF** — existing deployments unchanged. Pair with `state_backend: redis` when load-balancing stateless requests.
+
+Full guide: [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md)
+
 ## Related docs
 
+- [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md)  -  stateful + stateless identity, discovery, stability
 - [PILLARS.md](PILLARS.md)  -  pillar ↔ `bastion.yaml` mapping
 - [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md)  -  Agent IAM & server verification
 - [ROADMAP.md](ROADMAP.md)  -  shipped vs pending

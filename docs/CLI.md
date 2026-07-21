@@ -103,7 +103,12 @@ mcp-bastion serve --config bastion.yaml --http 9000
 
 # Boundary mode: same bastion.yaml, forward to upstream MCP (loopback only)
 mcp-bastion serve --proxy http://127.0.0.1:9000/mcp --http 8080 --config bastion.yaml
+
+# With hybrid transport: enable mcp_transport.discovery in bastion.yaml, then:
+curl -s http://127.0.0.1:8080/.well-known/mcp.json
 ```
+
+See [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) for stateful + stateless clients on one proxy.
 
 ### dashboard
 

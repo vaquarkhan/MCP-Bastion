@@ -97,5 +97,7 @@ middleware = build_middleware_from_config()
 | audit | enabled | Audit log + metrics |
 | alerts | slack_webhook, webhook_url, webhooks, alert_on, retry_attempts, retry_backoff_seconds, retry_backoff_max_seconds, timeout_seconds | Slack/generic webhook(s), alert kinds, and retry/backoff policy |
 | hot_reload | enabled, poll_seconds | Reload `bastion.yaml` in process without restart |
+| mcp_transport | enabled, mode, state_handle, protocol, discovery, stability | Hybrid stateful/stateless identity (opt-in). See [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) |
+| state_backend | type, redis_url, key_prefix | Shared Redis state for multi-replica deploys |
 
 Install PyYAML for YAML loading: `pip install pyyaml`.
