@@ -1,5 +1,5 @@
 """
-stdio stdout guard — blocks non-JSON-RPC lines on MCP stdio transport.
+stdio stdout guard - blocks non-JSON-RPC lines on MCP stdio transport.
 
 Mitigates dependency code printing to stdout and impersonating the MCP server.
 Install via install_stdio_guard() before mcp.run() when stdio_guard is enabled.

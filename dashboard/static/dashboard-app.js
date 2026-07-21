@@ -249,14 +249,14 @@
       if (kv) {
         var pairs = [
           ['Time', ts],
-          ['Tenant', row.tenant_id || '—'],
-          ['Agent', row.agent_id || '—'],
-          ['Tool', row.tool || '—'],
-          ['Pillar', row.pillar || row.kind || '—'],
-          ['Rule', row.rule || '—'],
-          ['Trace ID', row.trace_id || '—'],
-          ['Request', row.request_id || '—'],
-          ['Reason', row.reason || '—']
+          ['Tenant', row.tenant_id || '-'],
+          ['Agent', row.agent_id || '-'],
+          ['Tool', row.tool || '-'],
+          ['Pillar', row.pillar || row.kind || '-'],
+          ['Rule', row.rule || '-'],
+          ['Trace ID', row.trace_id || '-'],
+          ['Request', row.request_id || '-'],
+          ['Reason', row.reason || '-']
         ];
         kv.innerHTML = pairs.map(function (p) {
           return '<dt>' + escapeHtml(p[0]) + '</dt><dd>' + escapeHtml(String(p[1])) + '</dd>';
@@ -337,7 +337,7 @@
       var pillar = row.pillar || row.kind || '';
       var rule = row.rule || '';
       if (!pillar && !rule) {
-        return '<td class="why-cell muted">—</td>';
+        return '<td class="why-cell muted">-</td>';
       }
       var tip = (pillar ? ('Pillar: ' + pillar) : '') + (rule ? (' · ' + rule) : '');
       return '<td class="why-cell" title="' + escapeHtmlAttr(tip) + '">'
@@ -381,7 +381,7 @@
           + '</div>'
           + '<div id="forensicsDetailPanel" hidden>'
           + '<div class="forensics-detail-head"><div>'
-          + '<h3 id="forensicsDetailTitle">—</h3>'
+          + '<h3 id="forensicsDetailTitle">-</h3>'
           + '<p class="forensics-detail-meta" id="forensicsDetailMeta"></p>'
           + '</div>'
           + '<button type="button" class="btn-mini" id="forensicsDetailClear" title="Clear selection">Clear</button>'
@@ -469,7 +469,7 @@
           + ' · click a row for Trace / Reproduce';
       }
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="muted">No blocks match this filter — try &ldquo;Show all&rdquo;, clear dates, or check that middleware is recording <code>blocked_incidents</code>.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">No blocks match this filter - try &ldquo;Show all&rdquo;, clear dates, or check that middleware is recording <code>blocked_incidents</code>.</td></tr>';
         clearForensicsSelection();
         return;
       }
@@ -573,7 +573,7 @@
       if (fws.length) {
         html += '<div class="ig-fw"><strong>OWASP / framework:</strong> '
           + fws.map(function (f) {
-            return escapeHtml((f.id || '') + (f.title ? (' — ' + f.title) : ''));
+            return escapeHtml((f.id || '') + (f.title ? (' - ' + f.title) : ''));
           }).join('; ')
           + '</div>';
       }
@@ -1193,7 +1193,7 @@
     function updateTools(obj) {
       const entries = Object.entries(obj || {}).slice(0, 8);
       if (!entries.length) {
-        charts.tools.data.labels = ['—'];
+        charts.tools.data.labels = ['-'];
         charts.tools.data.datasets[0].data = [0];
       } else {
         charts.tools.data.labels = entries.map((e) => e[0]);
@@ -1205,7 +1205,7 @@
     function updateCost(obj) {
       const entries = Object.entries(obj || {}).slice(0, 8);
       if (!entries.length) {
-        charts.cost.data.labels = ['—'];
+        charts.cost.data.labels = ['-'];
         charts.cost.data.datasets[0].data = [0];
       } else {
         charts.cost.data.labels = entries.map((e) => e[0]);
@@ -1270,7 +1270,7 @@
       var body = document.getElementById('costAvoidanceBody');
       if (!body) return;
       if (!lastCostAvoidanceIssues.length) {
-        body.innerHTML = '<tr><td colspan="6" class="muted">No blocked issues yet — blocks will appear here with estimated avoided tokens/$.</td></tr>';
+        body.innerHTML = '<tr><td colspan="6" class="muted">No blocked issues yet - blocks will appear here with estimated avoided tokens/$.</td></tr>';
         return;
       }
       body.innerHTML = lastCostAvoidanceIssues.map(function (iss, idx) {
@@ -1460,7 +1460,7 @@
           : (checks[key] || {});
         var grade = c.grade || null;
         var cls = grade ? ('grade-' + grade) : 'grade-none';
-        var letter = grade || (c.hint ? '—' : '—');
+        var letter = grade || (c.hint ? '-' : '-');
         var meta = '';
         if (key === 'combined' && data && data.demo) meta = 'Demo sample';
         else if (c.present && c.finding_count != null) meta = c.finding_count + ' finding(s)';
@@ -1534,7 +1534,7 @@
         if (!data) {
           sum.textContent = 'Prevalidation unavailable';
         } else {
-          var parts = ['Combined grade: ' + (data.combined_grade || '—'), (data.issue_count || 0) + ' issue(s)'];
+          var parts = ['Combined grade: ' + (data.combined_grade || '-'), (data.issue_count || 0) + ' issue(s)'];
           if (data.demo) parts.push('demo sample');
           sum.textContent = parts.join(' · ');
         }
@@ -1902,7 +1902,7 @@
             ? (' · was ' + sum.prior_block_rate_pct + '% → ' + (sum.recent_block_rate_pct || 0) + '%')
             : '')
         );
-        setTxt('driftDriver', sum.top_driver || '—');
+        setTxt('driftDriver', sum.top_driver || '-');
         var topKind = (data.top_kinds && data.top_kinds[0]) || null;
         setTxt('driftDriverSub', topKind
           ? (topKind.count + ' blocks · ' + topKind.share_pct + '% of blocks')
@@ -1952,9 +1952,9 @@
             + '<td>' + (d.allowed || 0) + '</td>'
             + '<td>' + (d.blocked || 0) + '</td>'
             + '<td>' + (d.block_rate_pct || 0) + '%</td>'
-            + '<td>' + escapeHtml(d.top_kind || '—') + '</td>'
-            + '<td>' + escapeHtml(d.top_tool || '—') + '</td>'
-            + '<td>' + (d.avg_latency_ms != null ? d.avg_latency_ms : '—') + '</td>'
+            + '<td>' + escapeHtml(d.top_kind || '-') + '</td>'
+            + '<td>' + escapeHtml(d.top_tool || '-') + '</td>'
+            + '<td>' + (d.avg_latency_ms != null ? d.avg_latency_ms : '-') + '</td>'
             + '</tr>';
         }).join('');
       }
@@ -2068,12 +2068,12 @@
       var kinds = d.blocked_by_kind || {};
       var entries = Object.entries(kinds).filter(function (x) { return (x[1] || 0) > 0; });
       if (!entries.length) {
-        return { text: '—', title: 'No categorized blocks yet — traffic will appear as policies trigger.' };
+        return { text: '-', title: 'No categorized blocks yet - traffic will appear as policies trigger.' };
       }
       entries.sort(function (a, b) { return b[1] - a[1]; });
       return {
         text: kindLabel(entries[0][0]) + ' (' + entries[0][1] + ')',
-        title: 'Dominant block kind: ' + kindLabel(entries[0][0]) + ' — hover charts below for the full mix.',
+        title: 'Dominant block kind: ' + kindLabel(entries[0][0]) + ' - hover charts below for the full mix.',
       };
     }
 
@@ -2213,7 +2213,7 @@
         }
       } catch (e) {
         console.error(e);
-        flashPollStatus('Export failed — see console.');
+        flashPollStatus('Export failed - see console.');
       }
     }
 
@@ -2254,7 +2254,7 @@
         }).join(', ');
         var sig = toolSignal(s, gbp);
         var tbp = Number(s.blocked_pct || 0);
-        var reasonsFull = reasons || '—';
+        var reasonsFull = reasons || '-';
         return '<tr>'
           + '<td>' + escapeHtml(tool) + '</td>'
           + '<td><span class="signal-badge ' + sig.cls + '">' + escapeHtml(sig.label) + '</span></td>'
@@ -2363,8 +2363,8 @@
           ir.innerHTML = pass + '<span class="unit">%</span>';
           iv.textContent = total.toLocaleString() + ' total invocations (' + req.toLocaleString() + ' allowed · ' + blk.toLocaleString() + ' blocked).';
         } else {
-          ir.textContent = '—';
-          iv.textContent = 'No traffic yet — route MCP tool calls through middleware that writes to this MetricsStore.';
+          ir.textContent = '-';
+          iv.textContent = 'No traffic yet - route MCP tool calls through middleware that writes to this MetricsStore.';
         }
       }
 
@@ -2534,13 +2534,13 @@
           render(d);
         } catch (re) {
           console.error('dashboard render:', re);
-          if (ps) ps.textContent = 'Partial update — see console (render error).';
+          if (ps) ps.textContent = 'Partial update - see console (render error).';
         }
       } catch (e) {
         console.error(e);
         var ps = document.getElementById('pollStatus');
         if (ps) {
-          ps.textContent = 'Metrics unavailable — open http://127.0.0.1:' + (window.location.port || '7000') + '/api/metrics in this machine (try 127.0.0.1 if localhost fails).';
+          ps.textContent = 'Metrics unavailable - open http://127.0.0.1:' + (window.location.port || '7000') + '/api/metrics in this machine (try 127.0.0.1 if localhost fails).';
         }
       }
       setTimeout(poll, 2000);

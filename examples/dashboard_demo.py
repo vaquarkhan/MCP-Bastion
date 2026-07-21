@@ -2,17 +2,17 @@
 """
 MCP-Bastion dashboard with rich dummy metrics (run from repo root OR from this folder).
 
-  Option A — repo root (recommended):
+  Option A - repo root (recommended):
     Windows:  set PYTHONPATH=src && python examples/dashboard_demo.py
     Unix:     PYTHONPATH=src python examples/dashboard_demo.py
 
-  Option B — examples folder (no PYTHONPATH needed; paths are fixed automatically):
+  Option B - examples folder (no PYTHONPATH needed; paths are fixed automatically):
     cd examples
     python dashboard_demo.py
 
 Requires: pip install fastapi uvicorn
 
-Open http://127.0.0.1:PORT/ — if the page loads but metrics fail, use 127.0.0.1 instead of localhost.
+Open http://127.0.0.1:PORT/ - if the page loads but metrics fail, use 127.0.0.1 instead of localhost.
 """
 
 from __future__ import annotations
@@ -72,7 +72,7 @@ def main() -> int:
     parser.add_argument(
         "--host",
         default="127.0.0.1",
-        help="Bind address (default 127.0.0.1 — use 0.0.0.0 for LAN)",
+        help="Bind address (default 127.0.0.1 - use 0.0.0.0 for LAN)",
     )
     parser.add_argument("--port", "-p", type=int, default=7000, help="First port to try (default 7000)")
     parser.add_argument(

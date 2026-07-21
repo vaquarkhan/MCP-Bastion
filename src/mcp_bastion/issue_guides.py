@@ -30,7 +30,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["prompt_guard", "semantic_firewall", "content_filter", "agent_iam"],
         "refs": [
             {
-                "title": "OWASP Top 10 for Agentic Applications — ASI01",
+                "title": "OWASP Top 10 for Agentic Applications - ASI01",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -46,7 +46,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["schema_validation", "argument_guards", "agent_iam", "rbac", "content_filter"],
         "refs": [
             {
-                "title": "OWASP Agentic Top 10 — ASI02 Tool Misuse",
+                "title": "OWASP Agentic Top 10 - ASI02 Tool Misuse",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -62,7 +62,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["agent_iam", "rbac", "edge_auth"],
         "refs": [
             {
-                "title": "OWASP Agentic Top 10 — ASI03 Identity and Privilege Abuse",
+                "title": "OWASP Agentic Top 10 - ASI03 Identity and Privilege Abuse",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -78,7 +78,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["server_verification", "tool_metadata_fingerprint", "tool_metadata_guard"],
         "refs": [
             {
-                "title": "OWASP Agentic Top 10 — ASI04 Supply Chain",
+                "title": "OWASP Agentic Top 10 - ASI04 Supply Chain",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -94,7 +94,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["content_filter", "stdio_guard", "argument_guards", "agent_iam"],
         "refs": [
             {
-                "title": "OWASP Agentic Top 10 — ASI05 Unexpected Code Execution",
+                "title": "OWASP Agentic Top 10 - ASI05 Unexpected Code Execution",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -110,7 +110,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["pii", "semantic_firewall", "canary_goallock", "sensitive_classifier"],
         "refs": [
             {
-                "title": "OWASP Agentic Top 10 — ASI06 Memory and Context Poisoning",
+                "title": "OWASP Agentic Top 10 - ASI06 Memory and Context Poisoning",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -126,7 +126,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["transport_hardening", "replay_guard", "edge_auth", "agent_iam"],
         "refs": [
             {
-                "title": "OWASP Agentic Top 10 — ASI07 Inter-Agent Communication",
+                "title": "OWASP Agentic Top 10 - ASI07 Inter-Agent Communication",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -142,7 +142,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["rate_limit", "circuit_breaker", "cost_tracker", "auto_repave"],
         "refs": [
             {
-                "title": "OWASP Agentic Top 10 — ASI08 Cascading Failures",
+                "title": "OWASP Agentic Top 10 - ASI08 Cascading Failures",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -157,7 +157,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["canary_goallock", "audit", "prompt_guard"],
         "refs": [
             {
-                "title": "OWASP Agentic Top 10 — ASI09 Human-Agent Trust",
+                "title": "OWASP Agentic Top 10 - ASI09 Human-Agent Trust",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -173,7 +173,7 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["agent_iam", "tool_allowlist", "auto_repave"],
         "refs": [
             {
-                "title": "OWASP Agentic Top 10 — ASI10 Rogue Agents",
+                "title": "OWASP Agentic Top 10 - ASI10 Rogue Agents",
                 "url": "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/",
             }
         ],
@@ -183,32 +183,32 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "why": "Classic LLM Top 10 entry; still the #1 agent breakout technique.",
         "fix": ["Enable prompt_guard", "Sanitize tool outputs before re-prompting", "Prefer structured tool I/O over free text"],
         "bastion": ["prompt_guard", "semantic_firewall"],
-        "refs": [{"title": "OWASP LLM Top 10 — LLM01", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
+        "refs": [{"title": "OWASP LLM Top 10 - LLM01", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
     },
     "LLM02": {
         "summary": "Sensitive information disclosure via model outputs or tool responses.",
         "why": "PII and secrets in context become training/leak surfaces.",
         "fix": ["Enable pii redaction", "secrets.redact_patterns", "response_scan where needed"],
         "bastion": ["pii", "secrets"],
-        "refs": [{"title": "OWASP LLM Top 10 — LLM02", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
+        "refs": [{"title": "OWASP LLM Top 10 - LLM02", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
     },
     "LLM03": {
         "summary": "Supply-chain weaknesses in models, plugins, or MCP packages.",
         "fix": ["server_verification", "osv-scan in CI", "pin versions"],
         "bastion": ["server_verification"],
-        "refs": [{"title": "OWASP LLM Top 10 — LLM03", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
+        "refs": [{"title": "OWASP LLM Top 10 - LLM03", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
     },
     "LLM06": {
         "summary": "Excessive agency: model granted tools beyond the task.",
         "fix": ["agent_iam allowlists", "rbac", "discovery_filter"],
         "bastion": ["agent_iam", "rbac", "discovery_filter"],
-        "refs": [{"title": "OWASP LLM Top 10 — LLM06", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
+        "refs": [{"title": "OWASP LLM Top 10 - LLM06", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
     },
     "LLM10": {
         "summary": "Unbounded consumption: token/cost/rate exhaustion.",
         "fix": ["rate_limit", "cost_tracker", "output_budget"],
         "bastion": ["rate_limit", "cost_tracker", "output_budget"],
-        "refs": [{"title": "OWASP LLM Top 10 — LLM10", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
+        "refs": [{"title": "OWASP LLM Top 10 - LLM10", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
     },
     "MCP01": {
         "summary": "Token/secret exposure through MCP configs or tool outputs.",
@@ -277,7 +277,7 @@ CHECK_GUIDES: dict[str, dict[str, Any]] = {
     },
     "unbounded_string": {
         "name": "Unbounded string argument",
-        "summary": "String args lack maxLength — agents can pass megabyte payloads.",
+        "summary": "String args lack maxLength - agents can pass megabyte payloads.",
         "fix": [
             "Add maxLength (and pattern where possible) to inputSchema properties.",
             "Enable output_budget / rate_limit to contain blast radius.",
@@ -295,7 +295,7 @@ CHECK_GUIDES: dict[str, dict[str, Any]] = {
     },
     "missing_input_schema": {
         "name": "Missing inputSchema",
-        "summary": "Tool advertises no input contract — runtime cannot validate.",
+        "summary": "Tool advertises no input contract - runtime cannot validate.",
         "fix": ["Publish a JSON Schema inputSchema for every tool.", "Fail CI if scan grade worse than B."],
         "severity_hint": "high",
     },
@@ -307,13 +307,13 @@ CHECK_GUIDES: dict[str, dict[str, Any]] = {
     },
     "unconstrained_numeric": {
         "name": "Unconstrained numeric argument",
-        "summary": "Numbers lack minimum/maximum — enables resource exhaustion.",
+        "summary": "Numbers lack minimum/maximum - enables resource exhaustion.",
         "fix": ["Add minimum/maximum (and multipleOf if needed).", "Pair with rate_limit token budgets."],
         "severity_hint": "medium",
     },
     "risky_arg_optional": {
         "name": "Risky optional argument",
-        "summary": "Dangerous parameters (cmd, path, url, code) are optional — easy to smuggle.",
+        "summary": "Dangerous parameters (cmd, path, url, code) are optional - easy to smuggle.",
         "fix": ["Make risky args required with strict patterns, or remove them.", "Enable argument_guards."],
         "severity_hint": "high",
     },
@@ -325,7 +325,7 @@ CHECK_GUIDES: dict[str, dict[str, Any]] = {
     },
     "fingerprint_drift": {
         "name": "Tool catalog fingerprint drift",
-        "summary": "Catalog changed vs baseline fingerprint — possible supply-chain change.",
+        "summary": "Catalog changed vs baseline fingerprint - possible supply-chain change.",
         "fix": ["Diff tools against last approved catalog.", "Update signed baseline only after review."],
         "severity_hint": "high",
     },
@@ -365,7 +365,7 @@ CHECK_GUIDES: dict[str, dict[str, Any]] = {
     },
     "credential_env_ref": {
         "name": "Credential via env reference",
-        "summary": "Config points at a secret-bearing env var — review scope.",
+        "summary": "Config points at a secret-bearing env var - review scope.",
         "fix": ["Ensure env is injected only in trusted runtimes; prefer short-lived tokens."],
         "severity_hint": "medium",
     },

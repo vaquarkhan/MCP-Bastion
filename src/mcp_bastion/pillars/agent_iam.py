@@ -2,7 +2,7 @@
 Agent Identity & Access Management (IAM) for MCP-Bastion.
 
 Maps API tokens to agent identities and enforces per-agent tool allow/block lists
-and optional rate limits — solves the Confused Deputy problem for multi-agent MCP servers.
+and optional rate limits - solves the Confused Deputy problem for multi-agent MCP servers.
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ def parse_agent_policies(
         elif entry.get("token"):
             token = _resolve_token(str(entry["token"]))
         if not token:
-            logger.warning("agent_iam: skipping agent %s — token/token_env not set", agent_id)
+            logger.warning("agent_iam: skipping agent %s - token/token_env not set", agent_id)
             continue
 
         allowed_raw = entry.get("allowed_tools")

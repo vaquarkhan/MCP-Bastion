@@ -1,5 +1,5 @@
 """
-Agent stability monitor — detect repetitive tool-output loops (infinite agentic loops).
+Agent stability monitor - detect repetitive tool-output loops (infinite agentic loops).
 
 Uses a sliding window of normalized observation fingerprints stored in the
 pluggable StateBackend so detection works across stateless, load-balanced requests

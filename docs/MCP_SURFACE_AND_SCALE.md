@@ -112,7 +112,7 @@ For upcoming **stateless MCP** clients (explicit state handles, per-request prot
   />
 </p>
 
-**Default OFF** — existing deployments unchanged. Pair with `state_backend: redis` when load-balancing stateless requests.
+**Default OFF** - existing deployments unchanged. Pair with `state_backend: redis` when load-balancing stateless requests.
 
 Full guide: [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md)
 

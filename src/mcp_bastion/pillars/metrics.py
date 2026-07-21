@@ -23,7 +23,7 @@ ANOMALY_EVENT_CAP = 200
 BLOCKED_INCIDENT_CAP = 48
 
 # Estimated LLM tokens avoided when a request is blocked (never reaches the model).
-# Used for FinOps "would-have-cost" projections — not measured billing.
+# Used for FinOps "would-have-cost" projections - not measured billing.
 _BLOCK_AVOIDANCE_TOKENS: dict[str, int] = {
     "injection": 2400,
     "prompt_injection": 2400,
@@ -656,7 +656,7 @@ class MetricsStore:
                         "severity": "warning",
                         "code": "high_block_share",
                         "title": "Elevated block share",
-                        "detail": f"{share * 100:.1f}% of invocations blocked — review policies, tenants, and top tools.",
+                        "detail": f"{share * 100:.1f}% of invocations blocked - review policies, tenants, and top tools.",
                     }
                 )
 
@@ -670,7 +670,7 @@ class MetricsStore:
                         "severity": "info",
                         "code": "latency_tail",
                         "title": "Latency tail vs median",
-                        "detail": f"P95 {p95:.1f} ms vs P50 {p50:.1f} ms — inspect slow tools and upstream MCP latency.",
+                        "detail": f"P95 {p95:.1f} ms vs P50 {p50:.1f} ms - inspect slow tools and upstream MCP latency.",
                     }
                 )
 
@@ -685,7 +685,7 @@ class MetricsStore:
                         "severity": "warning",
                         "code": "blocked_spike",
                         "title": "Blocked traffic spike",
-                        "detail": "Recent 30s buckets show more blocks than the prior window — possible abuse or misconfiguration.",
+                        "detail": "Recent 30s buckets show more blocks than the prior window - possible abuse or misconfiguration.",
                     }
                 )
 
@@ -699,7 +699,7 @@ class MetricsStore:
                         "severity": "warning",
                         "code": "tool_hot",
                         "title": f'Tool "{tname}" is denial-heavy',
-                        "detail": f"{bp:.0f}% blocked ({s.get('blocked', 0)} / {tot}) — check RBAC, rate limits, and reasons column.",
+                        "detail": f"{bp:.0f}% blocked ({s.get('blocked', 0)} / {tot}) - check RBAC, rate limits, and reasons column.",
                     }
                 )
                 break
@@ -720,7 +720,7 @@ class MetricsStore:
                     "code": "governance_blocks",
                     "title": "Runtime governance denials",
                     "detail": (
-                        f"{gov_blocks} blocks from zero-trust controls — "
+                        f"{gov_blocks} blocks from zero-trust controls - "
                         + ", ".join(parts)
                         + ". Review agent policies, manifest checksums, and confused-deputy patterns."
                     ),
@@ -736,7 +736,7 @@ class MetricsStore:
                         "severity": "info",
                         "code": "cost_run",
                         "title": "Sustained cost burn",
-                        "detail": f"~${per_h:.2f}/hr implied from this metrics window — align with FinOps budgets.",
+                        "detail": f"~${per_h:.2f}/hr implied from this metrics window - align with FinOps budgets.",
                     }
                 )
 
@@ -748,7 +748,7 @@ class MetricsStore:
                         "severity": "info",
                         "code": "pii_dense",
                         "title": "High PII touch rate",
-                        "detail": f"{m.pii_redacted_total} redactions vs {req} allowed calls — validate detectors and data minimization.",
+                        "detail": f"{m.pii_redacted_total} redactions vs {req} allowed calls - validate detectors and data minimization.",
                     }
                 )
 
@@ -761,7 +761,7 @@ class MetricsStore:
                         "severity": "info",
                         "code": "kind_skew",
                         "title": f'Blocks skew toward "{top_kind}"',
-                        "detail": f"{100 * top_n / max(blk, 1):.0f}% of blocks share one category — tune rules if unintended.",
+                        "detail": f"{100 * top_n / max(blk, 1):.0f}% of blocks share one category - tune rules if unintended.",
                     }
                 )
 

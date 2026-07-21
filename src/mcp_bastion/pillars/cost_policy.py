@@ -124,7 +124,7 @@ class CostPolicyEngine:
             elif rule.action == ACTION_REQUIRE_APPROVAL:
                 if not metadata.get(self.approval_metadata_key):
                     raise CostPolicyApprovalRequiredError(
-                        f"Request blocked: session spend at {pct:.1f}% of budget — "
+                        f"Request blocked: session spend at {pct:.1f}% of budget - "
                         f"approval required ({self.approval_metadata_key})"
                     )
                 fired.append("require_approval:granted")

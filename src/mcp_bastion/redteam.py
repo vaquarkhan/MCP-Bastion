@@ -209,7 +209,7 @@ async def run_redteam(config_path: str | None = None) -> dict[str, Any]:
     if guard_unavail_total > 0:
         interpretation.append(
             f"{guard_unavail_total} block(s) are PromptGuard ML unavailable (fail-closed), "
-            "not policy effectiveness — use score_intended_blocked_pct for control coverage."
+            "not policy effectiveness - use score_intended_blocked_pct for control coverage."
         )
     if intended_total == 0 and blocked_total > 0 and guard_unavail_total == blocked_total:
         interpretation.append(

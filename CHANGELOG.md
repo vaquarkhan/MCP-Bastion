@@ -8,7 +8,7 @@ All notable changes to this project are documented in this file.
 
 ## [3.3.0] - 2026-07-21
 
-Minor release: **behavioral fingerprinting** middleware pillar — **opt-in, default OFF** (no breaking changes). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.3.0**.
+Minor release: **behavioral fingerprinting** middleware pillar - **opt-in, default OFF** (no breaking changes). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.3.0**.
 
 ### Added
 
@@ -22,7 +22,7 @@ Minor release: **behavioral fingerprinting** middleware pillar — **opt-in, def
 
 ## [3.2.0] - 2026-07-21
 
-Feature release: hybrid **stateful / stateless MCP transport** for SEP-2575 readiness — opt-in, backward compatible. All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.2.0**.
+Feature release: hybrid **stateful / stateless MCP transport** for SEP-2575 readiness - opt-in, backward compatible. All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.2.0**.
 
 ### Added
 
@@ -38,7 +38,7 @@ Feature release: hybrid **stateful / stateless MCP transport** for SEP-2575 read
 
 ## [3.1.2] - 2026-07-12
 
-Patch release: forensics master-detail UX — Trace / Reproduce live in a side panel (auto-select first row). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.1.2**.
+Patch release: forensics master-detail UX - Trace / Reproduce live in a side panel (auto-select first row). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.1.2**.
 
 ### Changed
 
@@ -62,12 +62,12 @@ Patch release: complete dashboard tour captures (how-to-fix + FinOps + RBAC), po
 
 ## [3.1.0] - 2026-07-12
 
-Feature release: local dashboard posture / OWASP / FinOps panels, PMD-style issue guides, and Sonar-style prevalidation — still zero-infra (no DB, login, or cloud). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.1.0**.
+Feature release: local dashboard posture / OWASP / FinOps panels, PMD-style issue guides, and Sonar-style prevalidation - still zero-infra (no DB, login, or cloud). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.1.0**.
 
 ### Added
 
 - **Dashboard security posture:** letter grades from local `.bastion/scan/` JSON (catalog, skills, OSV, risk audit); demo seed via `MCP_BASTION_DEMO=1` / `--demo`.
-- **Static prevalidation:** `/api/prevalidate` — Sonar-style issue list from the same local scan artifacts (not SonarQube).
+- **Static prevalidation:** `/api/prevalidate` - Sonar-style issue list from the same local scan artifacts (not SonarQube).
 - **Issue guides:** bundled PMD-style rule cards (`issue_guides.py`) with why / how to fix / Bastion knobs / OWASP refs; `/api/issue-guide?check=` or `?id=ASI02`; findings and taxonomy cells open the guide in the UI.
 - **OWASP heatmaps + attack matrix:** ASI / MCP / LLM tabs, live attack categories under pressure, compliance evidence reports + date filters, observe-mode banner, agents / trends / onboarding panels.
 - **FinOps cost burn & reduction:** actual vs would-have-been spend/tokens; tokens saved (output budget / discovery filter / cache); **tokens/$ avoided by blocks**; charts + blocked-issues table on the dashboard.

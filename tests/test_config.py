@@ -409,7 +409,7 @@ audit:
         build_sb.return_value = fake
         mw = build_middleware_from_config(load_config(str(yaml_path)))
         build_sb.assert_called_once()
-        # Inner bastion middleware is second in compose when audit disabled — unwrap composed chain
+        # Inner bastion middleware is second in compose when audit disabled - unwrap composed chain
         assert mw is not None
 
 

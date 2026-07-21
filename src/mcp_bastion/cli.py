@@ -187,7 +187,7 @@ def cmd_dashboard(
             "or run: mcp-bastion dashboard --reload"
         )
     bind_host = (os.environ.get("MCP_BASTION_DASHBOARD_HOST") or "0.0.0.0").strip() or "0.0.0.0"
-    logger.info("Open http://%s:%s/meta — check ui_revision matches your tree.", bind_host, port)
+    logger.info("Open http://%s:%s/meta - check ui_revision matches your tree.", bind_host, port)
     uvicorn.run(
         "dashboard.app:app",
         host=bind_host,

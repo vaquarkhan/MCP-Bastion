@@ -36,7 +36,7 @@ def test_server_verifier_rechecks_when_forced(tmp_path):
     verifier = ServerVerifier({"server.py": good}, base_path=tmp_path, on_mismatch="block")
     verifier.ensure_ok()
     f.write_text("v2-tampered\n", encoding="utf-8")
-    verifier.ensure_ok()  # cached — still passes
+    verifier.ensure_ok()  # cached - still passes
     with pytest.raises(ServerVerificationError):
         verifier.ensure_ok(force=True)
 

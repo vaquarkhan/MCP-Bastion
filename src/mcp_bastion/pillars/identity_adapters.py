@@ -1,7 +1,7 @@
 """
 Bring-Your-Own-Identity (BYOI): consume gateway-stamped principals without running login.
 
-Bastion does NOT validate OAuth flows — it trusts claims/headers your edge gateway
+Bastion does NOT validate OAuth flows - it trusts claims/headers your edge gateway
 or SSO proxy already authenticated. Enables per-principal RBAC, caps, and attestation
 without becoming an auth server.
 """
@@ -49,7 +49,7 @@ class IdentityAdapterConfig:
 
 
 def _decode_jwt_payload_unverified(token: str) -> dict[str, Any]:
-    """Parse JWT payload (no signature verify — gateway already authenticated)."""
+    """Parse JWT payload (no signature verify - gateway already authenticated)."""
     parts = token.strip().split(".")
     if len(parts) < 2:
         raise ValueError("invalid JWT structure")

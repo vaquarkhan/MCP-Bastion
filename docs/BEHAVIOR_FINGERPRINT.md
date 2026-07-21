@@ -1,6 +1,6 @@
 # Behavioral fingerprinting (3.3.0+)
 
-Per-agent **tool baseline learning** with drift and rate-spike detection. Opt-in middleware pillar — **default OFF** so existing deployments behave exactly as before.
+Per-agent **tool baseline learning** with drift and rate-spike detection. Opt-in middleware pillar - **default OFF** so existing deployments behave exactly as before.
 
 ## Non-breaking defaults
 
@@ -37,5 +37,5 @@ Pair with global `mode: observe` to dry-run block policies without denying traff
 
 ## Related
 
-- [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) — moat #3 positioning
-- [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) — Redis `state_backend`
+- [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) - moat #3 positioning
+- [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) - Redis `state_backend`

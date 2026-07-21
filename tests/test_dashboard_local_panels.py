@@ -188,7 +188,7 @@ def test_dashboard_api_routes_importable():
 
     # Avoid demo seed side effects fighting tests: still OK for route presence.
     mod = importlib.util.module_from_spec(spec)
-    # Running app.py as module executes lifespan setup — may be heavy.
+    # Running app.py as module executes lifespan setup - may be heavy.
     # Instead check route strings in source.
     text = app_path.read_text(encoding="utf-8")
     for path in (

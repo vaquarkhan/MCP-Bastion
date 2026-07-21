@@ -1,5 +1,5 @@
 """
-Pluggable secrets resolver — BYO vault without Bastion storing credentials.
+Pluggable secrets resolver - BYO vault without Bastion storing credentials.
 
 Reference secrets in bastion.yaml; resolve at runtime from env, Vault, AWS SM, etc.
 Default provider is ``env`` (stdlib only). Cloud vaults ship as optional extras.
@@ -51,7 +51,7 @@ class SecretsResolver(ABC):
             return AwsSecretsResolver(config)
         if provider in ("gcp_sm", "gcp", "gcp_secret_manager"):
             return GcpSecretsResolver(config)
-        logger.warning("unknown secrets provider %r — falling back to env", provider)
+        logger.warning("unknown secrets provider %r - falling back to env", provider)
         return EnvSecretsResolver()
 
 
@@ -67,7 +67,7 @@ class EnvSecretsResolver(SecretsResolver):
 
 
 class VaultSecretsResolver(SecretsResolver):
-    """HashiCorp Vault — requires optional ``hvac`` and ``VAULT_ADDR`` / ``VAULT_TOKEN``."""
+    """HashiCorp Vault - requires optional ``hvac`` and ``VAULT_ADDR`` / ``VAULT_TOKEN``."""
 
     def __init__(self, config: SecretsConfig) -> None:
         self.config = config
@@ -87,7 +87,7 @@ class VaultSecretsResolver(SecretsResolver):
 
 
 class AwsSecretsResolver(SecretsResolver):
-    """AWS Secrets Manager — requires ``boto3``."""
+    """AWS Secrets Manager - requires ``boto3``."""
 
     def __init__(self, config: SecretsConfig) -> None:
         self.config = config
@@ -103,7 +103,7 @@ class AwsSecretsResolver(SecretsResolver):
 
 
 class GcpSecretsResolver(SecretsResolver):
-    """GCP Secret Manager — requires ``google-cloud-secret-manager``."""
+    """GCP Secret Manager - requires ``google-cloud-secret-manager``."""
 
     def __init__(self, config: SecretsConfig) -> None:
         self.config = config

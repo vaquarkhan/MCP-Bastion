@@ -1,5 +1,5 @@
 """
-MCP HTTP proxy — same bastion.yaml enforcement, boundary deployment shape.
+MCP HTTP proxy - same bastion.yaml enforcement, boundary deployment shape.
 
 Forwards streamable-HTTP MCP to an upstream URL while running configured middleware
 on guarded JSON-RPC methods (tools/call, resources/read, etc.).

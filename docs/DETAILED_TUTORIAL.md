@@ -252,7 +252,7 @@ mcp-bastion dashboard --port 7000 --demo
 Open browser:
 
 - `http://localhost:7000/` (UI: posture, prevalidate, OWASP, FinOps, forensics)
-- `http://localhost:7000/api/metrics` (JSON — includes `cost_reduction` used/saved/avoided)
+- `http://localhost:7000/api/metrics` (JSON - includes `cost_reduction` used/saved/avoided)
 - `http://localhost:7000/api/posture` / `/api/prevalidate` / `/api/issue-guide?check=weak_schema`
 - `http://localhost:7000/metrics` (Prometheus text)
 
@@ -406,7 +406,7 @@ pytest
 
 ## 14) Next docs to read
 
-- [Hybrid transport tutorial](HYBRID_TRANSPORT_TUTORIAL.md) — stateful + stateless MCP on one proxy
+- [Hybrid transport tutorial](HYBRID_TRANSPORT_TUTORIAL.md) - stateful + stateless MCP on one proxy
 - [Policy as Code](POLICY_AS_CODE.md)
 - [CLI Reference](CLI.md)
 - [LLM Integration](LLM_INTEGRATION.md)

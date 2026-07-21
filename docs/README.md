@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: **`mcp-bastion-python==3.3.0`** ([PyPI](https://pypi.org/project/mcp-bastion-python/)) — behavioral fingerprinting (opt-in) + hybrid MCP transport; see [CHANGELOG](../CHANGELOG.md).
+Current Python package release: **`mcp-bastion-python==3.3.0`** ([PyPI](https://pypi.org/project/mcp-bastion-python/)) - behavioral fingerprinting (opt-in) + hybrid MCP transport; see [CHANGELOG](../CHANGELOG.md).
 
 ## Start here
 
@@ -18,7 +18,7 @@ Current Python package release: **`mcp-bastion-python==3.3.0`** ([PyPI](https://
 | [RUNTIME_GOVERNANCE.md](RUNTIME_GOVERNANCE.md) | Agent IAM, server verification, supply-chain checks |
 | [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md) | **3.0+** runtime governance pillars (canary, ATR, LLM scanner, threat feeds, auto-repave, secret redaction) |
 | [PILLARS.md](PILLARS.md) | Canonical mapping: base controls, **extended** policy features (1.0.16+), FinOps/context pillars (1.0.17+), runtime governance (1.0.18+, shipped in **2.0.0**), **enterprise controls (3.0.0+)**, scan suite / audit (**3.0.1**), dashboard panels (**3.1.0**), `bastion.yaml` ↔ dashboard |
-| [../dashboard/README.md](../dashboard/README.md) | **Local dashboard (3.1.0)** — posture, prevalidate, issue guides, FinOps actual vs would-have-been |
+| [../dashboard/README.md](../dashboard/README.md) | **Local dashboard (3.1.0)** - posture, prevalidate, issue guides, FinOps actual vs would-have-been |
 | [PUBLISHING_NPM_AND_REGISTRY.md](PUBLISHING_NPM_AND_REGISTRY.md) | npm bootstrap + MCP Registry OIDC publisher pin |
 | [TAXONOMY.md](TAXONOMY.md) | ASI / MCP / LLM finding tags |
 | [BENCHMARKS.md](BENCHMARKS.md) | **Measured** RBAC matrix, output-budget reduction, discovery filter, lexical cache - pytest + `scripts/generate_benchmark_report.py` |

@@ -620,7 +620,7 @@ class MCPBastionMiddleware(Middleware[Any]):
 
         if self.enable_tool_metadata_guard and not self.enable_content_filter and not self.enable_prompt_guard:
             raise BastionConfigError(
-                "tool_metadata_guard is enabled but both content_filter and prompt_guard are disabled — "
+                "tool_metadata_guard is enabled but both content_filter and prompt_guard are disabled - "
                 "enable at least one metadata scanner or disable tool_metadata_guard"
             )
 

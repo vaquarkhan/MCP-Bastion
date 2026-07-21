@@ -2,7 +2,7 @@
 
 Optional **local** security + FinOps UI for MCP-Bastion. Additive panels on top of the classic runtime charts.
 
-**Highlights (3.2.0):** pre-deploy posture + Sonar-style prevalidation, **PMD-style how-to-fix** issue guides, OWASP heatmaps, attack matrix, **RBAC + governance tiles**, posture drift from audit JSONL, **token reduction & cost savings**, forensics master-detail (Trace / Reproduce side panel). Hybrid MCP transport is middleware/proxy (not a dashboard panel) — see [docs/HYBRID_MCP_TRANSPORT.md](../docs/HYBRID_MCP_TRANSPORT.md).
+**Highlights (3.2.0):** pre-deploy posture + Sonar-style prevalidation, **PMD-style how-to-fix** issue guides, OWASP heatmaps, attack matrix, **RBAC + governance tiles**, posture drift from audit JSONL, **token reduction & cost savings**, forensics master-detail (Trace / Reproduce side panel). Hybrid MCP transport is middleware/proxy (not a dashboard panel) - see [docs/HYBRID_MCP_TRANSPORT.md](../docs/HYBRID_MCP_TRANSPORT.md).
 
 Zero-infra: read-only over local artifacts + in-process metrics. No login, no DB, no cloud. See [docs/ZERO_INFRA_STRATEGY.md](../docs/ZERO_INFRA_STRATEGY.md).
 
@@ -60,7 +60,7 @@ python scripts/capture_dashboard_demo.py --gif-only --duration-ms 6000
 |---------|---------|
 | **Date filters** | Scope forensics, trends, attack matrix, and report downloads |
 | **Security posture** | A–F grades from `mcp-bastion scan` / `scan --skills` / `osv-scan` / `audit` JSON |
-| **Static prevalidation** | Sonar-style issue list (`/api/prevalidate`) — not SonarQube |
+| **Static prevalidation** | Sonar-style issue list (`/api/prevalidate`) - not SonarQube |
 | **Issue guides** | PMD-style why / how to fix / Bastion knobs / OWASP refs (`/api/issue-guide`) |
 | **OWASP / ASI / MCP / LLM** | Coverage heatmaps (tabs); click a cell for sample findings |
 | **Live attack matrix** | Categories under pressure + intensity + OWASP tags + sample/trace |
@@ -96,7 +96,7 @@ Richer scripted demo: `PYTHONPATH=src python examples/dashboard_demo.py`
 
 Open [http://localhost:7000/](http://localhost:7000/).
 
-**If you see `{"detail":"Not Found"}`:** check [http://localhost:7000/api/health](http://localhost:7000/api/health) — must include `"service":"mcp-bastion-dashboard"` and `"ui_revision"`.
+**If you see `{"detail":"Not Found"}`:** check [http://localhost:7000/api/health](http://localhost:7000/api/health) - must include `"service":"mcp-bastion-dashboard"` and `"ui_revision"`.
 
 **If the UI looks unchanged:** restart the dashboard (or `--reload`) and hard-refresh the browser. Check `/meta` for `ui_revision`.
 
@@ -127,7 +127,7 @@ Open [http://localhost:7000/](http://localhost:7000/).
 
 ## Pre-deploy panels (local artifacts only)
 
-1. **Security posture / prevalidate** — write scan JSON, then refresh:
+1. **Security posture / prevalidate** - write scan JSON, then refresh:
    ```bash
    mkdir -p .bastion/scan
    mcp-bastion scan tools.json --format json -o .bastion/scan/catalog.json
@@ -135,12 +135,12 @@ Open [http://localhost:7000/](http://localhost:7000/).
    mcp-bastion osv-scan --format json -o .bastion/scan/osv.json
    mcp-bastion audit --format json -o .bastion/scan/risk-audit.json
    ```
-2. **Issue guides** — click **Why / how to fix** on any finding (bundled in `issue_guides.py`).
-3. **OWASP heatmaps** — taxonomy + enabled pillars from `bastion.yaml`.
-4. **FinOps** — output budget / discovery filter / cache savings + estimated tokens avoided when Bastion blocks a call.
-5. **Posture drift** — enable `audit.jsonl_path` (or `MCP_BASTION_AUDIT_PATH`) for daily allow/block trends.
-6. **Compliance** — `mcp-bastion attest export -o .bastion/attestations/…`
-7. **Observe mode** — `mode: observe` in `bastion.yaml`.
+2. **Issue guides** - click **Why / how to fix** on any finding (bundled in `issue_guides.py`).
+3. **OWASP heatmaps** - taxonomy + enabled pillars from `bastion.yaml`.
+4. **FinOps** - output budget / discovery filter / cache savings + estimated tokens avoided when Bastion blocks a call.
+5. **Posture drift** - enable `audit.jsonl_path` (or `MCP_BASTION_AUDIT_PATH`) for daily allow/block trends.
+6. **Compliance** - `mcp-bastion attest export -o .bastion/attestations/…`
+7. **Observe mode** - `mode: observe` in `bastion.yaml`.
 
 See [docs/ZERO_INFRA_STRATEGY.md](../docs/ZERO_INFRA_STRATEGY.md).
 

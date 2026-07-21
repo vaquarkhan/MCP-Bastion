@@ -161,7 +161,7 @@ Examples of open-source MCP servers you might host yourself:
 
 ## Tutorial 5: Local dashboard (posture, issue guides, FinOps)
 
-Zero-infra: the dashboard reads **in-process metrics** plus optional files under `.bastion/scan/` — no cloud DB.
+Zero-infra: the dashboard reads **in-process metrics** plus optional files under `.bastion/scan/` - no cloud DB.
 
 ```bash
 pip install "mcp-bastion-python[dashboard]"
@@ -170,9 +170,9 @@ mcp-bastion dashboard --port 7000 --demo
 
 Open [http://localhost:7000/](http://localhost:7000/):
 
-1. **Security posture** — letter grades from scan JSON; click a finding → **Why / how to fix** (PMD-style + OWASP).
-2. **Static prevalidation** — Sonar-style issue list (`/api/prevalidate`) from the same files.
-3. **Cost burn & reduction** — actual vs would-have-been tokens/$; blocked-issues table for what Bastion stopped.
+1. **Security posture** - letter grades from scan JSON; click a finding → **Why / how to fix** (PMD-style + OWASP).
+2. **Static prevalidation** - Sonar-style issue list (`/api/prevalidate`) from the same files.
+3. **Cost burn & reduction** - actual vs would-have-been tokens/$; blocked-issues table for what Bastion stopped.
 4. Write real artifacts (instead of `--demo`):
 
 ```bash
@@ -209,7 +209,7 @@ mcp-bastion serve --proxy http://127.0.0.1:9000/mcp --http 8080 --config bastion
 curl -s http://127.0.0.1:8080/.well-known/mcp.json | jq .
 ```
 
-**Step 4.** Send stateful (session header) and stateless (state handle) tool calls — both paths share the same `bastion.yaml` pillars.
+**Step 4.** Send stateful (session header) and stateless (state handle) tool calls - both paths share the same `bastion.yaml` pillars.
 
 Full walkthrough with curl examples, Redis scaling, and agent stability: **[HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md)** · architecture: [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md).
 

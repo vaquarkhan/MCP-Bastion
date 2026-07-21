@@ -1,7 +1,7 @@
 """
 Resolve FinOps budget principals for rate/cost caps.
 
-Client-supplied session_id must not be the sole key for spend caps — otherwise
+Client-supplied session_id must not be the sole key for spend caps - otherwise
 rotating session_id bypasses denial-of-wallet limits.
 """
 

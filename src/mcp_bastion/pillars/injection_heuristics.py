@@ -2,7 +2,7 @@
 Shared regex heuristics for prompt-injection patterns.
 
 Used by PromptGuard (when the ML model is unavailable) and ResponseInjectionScanner.
-No ML dependencies — blocks obvious jailbreak strings out of the box.
+No ML dependencies - blocks obvious jailbreak strings out of the box.
 """
 
 from __future__ import annotations

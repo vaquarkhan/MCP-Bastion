@@ -135,7 +135,7 @@ def run_output_budget_benchmarks(
 def run_lexical_cache_benchmarks(
     similarity_threshold: float = 0.9,
 ) -> dict[str, Any]:
-    """Lexical (Jaccard) cache — not embedding-based semantic search."""
+    """Lexical (Jaccard) cache - not embedding-based semantic search."""
     cache = SemanticCache(similarity_threshold=similarity_threshold)
     cached_query = "find all customers in the database"
     cache.set("search", cached_query, {"hit": True, "rows": 42})
@@ -179,7 +179,7 @@ def run_discovery_filter_estimate(
     def tool_schema(name: str) -> dict[str, Any]:
         return {
             "name": name,
-            "description": f"Tool {name} for benchmark — reads or writes resources.",
+            "description": f"Tool {name} for benchmark - reads or writes resources.",
             "inputSchema": {
                 "type": "object",
                 "properties": {"q": {"type": "string", "description": "Query parameter"}},

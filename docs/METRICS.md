@@ -56,7 +56,7 @@ Run `mcp-bastion dashboard --port 7000` and open http://localhost:7000/. You get
 ### From the API
 
 - **JSON metrics:** `GET http://localhost:7000/api/metrics` returns the same data as the dashboard in JSON (e.g. for custom dashboards or automation). Includes `cost_reduction` (`tokens_used`, `tokens_saved`, `tokens_avoided_by_blocks`, `cost_actual_usd`, `cost_if_unblocked_usd`, `by_source`, `by_block_kind`, `blocked_issues`).
-- **Local posture / guides:** `/api/posture`, `/api/prevalidate`, `/api/issue-guide` — read-only over `.bastion/scan` + bundled guides ([dashboard/README.md](../dashboard/README.md)).
+- **Local posture / guides:** `/api/posture`, `/api/prevalidate`, `/api/issue-guide` - read-only over `.bastion/scan` + bundled guides ([dashboard/README.md](../dashboard/README.md)).
 - **Prometheus:** `GET http://localhost:7000/metrics` exposes Prometheus format so you can scrape with Grafana/Datadog and set alerts (e.g. on `blocked_total` or `blocked_pct`).
 
 ### From OpenTelemetry

@@ -1,5 +1,5 @@
 """
-Per-agent behavioral fingerprinting — learn tool baselines, detect drift and rate spikes.
+Per-agent behavioral fingerprinting - learn tool baselines, detect drift and rate spikes.
 
 Opt-in via bastion.yaml ``behavior_fingerprint``. Uses pluggable StateBackend so
 baselines sync across replicas when combined with ``state_backend: redis``.

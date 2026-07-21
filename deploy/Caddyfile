@@ -1,4 +1,4 @@
-# Reference reverse proxy for MCP HTTP — blocks direct browser CSRF to localhost MCP.
+# Reference reverse proxy for MCP HTTP - blocks direct browser CSRF to localhost MCP.
 # Upstream MCP must bind 127.0.0.1 only; inject auth token in gateway layer for production.
 
 :8443 {

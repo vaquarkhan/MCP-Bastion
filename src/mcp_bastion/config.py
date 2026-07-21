@@ -201,7 +201,7 @@ class BastionConfig:
     state_backend: str = "memory"
     state_backend_redis_url: str = "redis://127.0.0.1:6379/0"
     state_backend_key_prefix: str = "mcp-bastion"
-    # Hybrid MCP transport (stateful + stateless) — opt-in, default off
+    # Hybrid MCP transport (stateful + stateless) - opt-in, default off
     mcp_transport_enabled: bool = False
     mcp_transport_mode: str = "auto"
     mcp_transport_state_handle_params: list[str] = field(
@@ -256,20 +256,20 @@ def validate_bastion_config(config: BastionConfig) -> None:
 
     if config.tool_metadata_guard_enabled and not config.content_filter and not config.prompt_guard:
         raise BastionConfigError(
-            "tool_metadata_guard.enabled requires content_filter.enabled or prompt_guard.enabled — "
+            "tool_metadata_guard.enabled requires content_filter.enabled or prompt_guard.enabled - "
             "enable at least one metadata scanner or disable tool_metadata_guard"
         )
 
     if config.rbac and config.rbac_require_authenticated_identity:
         if not config.agent_iam_enabled and not config.edge_auth_enabled:
             raise BastionConfigError(
-                "rbac.enabled with require_authenticated_identity requires agent_iam or edge_auth — "
+                "rbac.enabled with require_authenticated_identity requires agent_iam or edge_auth - "
                 "otherwise callers can self-assert metadata.role"
             )
 
     if config.boundary_mode_enabled and not config.edge_auth_enabled and not config.agent_iam_enabled:
         raise BastionConfigError(
-            "boundary_mode.enabled requires edge_auth or agent_iam — proxy boundary must authenticate clients"
+            "boundary_mode.enabled requires edge_auth or agent_iam - proxy boundary must authenticate clients"
         )
 
     if config.cost_policy_enabled and not config.cost_tracker:
@@ -805,7 +805,7 @@ def _build_chain(config: BastionConfig) -> Any:
 
     if config.schema_validation and not config.schema_validation_schemas:
         logger.warning(
-            "schema_validation enabled but schema_validation.schemas is empty in bastion.yaml — "
+            "schema_validation enabled but schema_validation.schemas is empty in bastion.yaml - "
             "enforcement is a no-op until tool schemas are configured"
         )
     schema_validator = SchemaValidator(config.schema_validation_schemas)

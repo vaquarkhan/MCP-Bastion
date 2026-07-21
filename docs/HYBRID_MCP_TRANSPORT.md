@@ -24,7 +24,7 @@ MCP is evolving from **session-coupled** transports toward **stateless, per-requ
 
 | Principle | What it means |
 |-----------|----------------|
-| **Opt-in** | `mcp_transport.enabled: false` by default — existing `bastion.yaml` files behave exactly as before. |
+| **Opt-in** | `mcp_transport.enabled: false` by default - existing `bastion.yaml` files behave exactly as before. |
 | **Middleware, not gateway** | Bastion **consumes** identity signals (session ID or explicit state handle). It does **not** mint MCP server state, host edge WASM ML stacks, or replace a full SaaS API gateway. |
 | **Pairs with Redis** | Stateless load balancing needs shared counters. Use `state_backend: redis` so rate limits, cost caps, replay nonces, and agent-stability windows sync across replicas. |
 | **Proxy discovery is optional** | `GET /.well-known/mcp.json` is served only when discovery is enabled on the **HTTP proxy** path (`mcp-bastion serve --proxy`). |
@@ -105,7 +105,7 @@ When `stability.enabled: true`, Bastion tracks recent tool **outputs** per scope
 | `block` | Raise `AgentLoopDetectedError` (`-32030`) |
 | `warn` | Stamp metadata only; allow the response |
 
-This complements (does not replace) **token-bucket rate limits** and **cost caps** — blunt financial guardrails plus early oscillation detection.
+This complements (does not replace) **token-bucket rate limits** and **cost caps** - blunt financial guardrails plus early oscillation detection.
 
 ## Error codes
 
@@ -124,7 +124,7 @@ These belong in dedicated edge/gateway products, not this library:
 - MCP state-handle **minting** or server-side session registries
 - DNS TXT discovery (Bastion serves HTTP server cards on the proxy only)
 
-Bastion already provides **local** PromptGuard, Presidio PII, lexical semantic cache/firewall, and Redis-backed FinOps — the hybrid transport layer wires them to the correct **identity key** for stateless traffic.
+Bastion already provides **local** PromptGuard, Presidio PII, lexical semantic cache/firewall, and Redis-backed FinOps - the hybrid transport layer wires them to the correct **identity key** for stateless traffic.
 
 ## Code references
 
@@ -138,11 +138,11 @@ Bastion already provides **local** PromptGuard, Presidio PII, lexical semantic c
 
 ## Related docs
 
-- [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) — step-by-step proxy walkthrough
-- [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) — full MCP method guards + Redis
-- [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) — mandatory proxy deployment
-- [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) — FinOps token buckets
-- [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) — library vs gateway boundary
+- [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) - step-by-step proxy walkthrough
+- [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) - full MCP method guards + Redis
+- [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) - mandatory proxy deployment
+- [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) - FinOps token buckets
+- [ZERO_INFRA_STRATEGY.md](ZERO_INFRA_STRATEGY.md) - library vs gateway boundary
 
 ## Tests
 

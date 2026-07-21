@@ -307,10 +307,10 @@ def _pick_scan_file(root: Path, kind: str, names: tuple[str, ...]) -> Path | Non
 
 
 _HINTS = {
-    "catalog": "No scan yet — run: mcp-bastion scan tools.json --format json -o .bastion/scan/catalog.json",
-    "skills": "No skill scan yet — run: mcp-bastion scan --skills ./skills --format json -o .bastion/scan/skills.json",
-    "osv": "No OSV scan yet — run: mcp-bastion osv-scan --format json -o .bastion/scan/osv.json",
-    "risk_audit": "No risk audit yet — run: mcp-bastion audit --format json -o .bastion/scan/risk-audit.json",
+    "catalog": "No scan yet - run: mcp-bastion scan tools.json --format json -o .bastion/scan/catalog.json",
+    "skills": "No skill scan yet - run: mcp-bastion scan --skills ./skills --format json -o .bastion/scan/skills.json",
+    "osv": "No OSV scan yet - run: mcp-bastion osv-scan --format json -o .bastion/scan/osv.json",
+    "risk_audit": "No risk audit yet - run: mcp-bastion audit --format json -o .bastion/scan/risk-audit.json",
 }
 
 

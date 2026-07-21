@@ -1,6 +1,6 @@
 # Hybrid stateful / stateless MCP transport tutorial
 
-Step-by-step guide for running MCP-Bastion with **legacy session-based** clients and **stateless** clients (explicit state handles) on the same proxy — without breaking either path.
+Step-by-step guide for running MCP-Bastion with **legacy session-based** clients and **stateless** clients (explicit state handles) on the same proxy - without breaking either path.
 
 **Canonical reference:** [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md)
 
@@ -23,7 +23,7 @@ Step-by-step guide for running MCP-Bastion with **legacy session-based** clients
 
 ---
 
-## Step 1 — Copy sample policy
+## Step 1 - Copy sample policy
 
 ```bash
 cp examples/bastion-hybrid-transport.yaml bastion.yaml
@@ -40,21 +40,21 @@ state_backend:
 
 ---
 
-## Step 2 — Start upstream MCP (loopback)
+## Step 2 - Start upstream MCP (loopback)
 
 Bind upstream to **127.0.0.1** only so clients cannot bypass Bastion:
 
 ```bash
-# Terminal A — example upstream
+# Terminal A - example upstream
 mcp-bastion serve --http 9000 --host 127.0.0.1
 ```
 
 ---
 
-## Step 3 — Start Bastion HTTP proxy
+## Step 3 - Start Bastion HTTP proxy
 
 ```bash
-# Terminal B — boundary proxy with hybrid transport
+# Terminal B - boundary proxy with hybrid transport
 mcp-bastion serve --proxy http://127.0.0.1:9000/mcp --http 8080 --host 0.0.0.0 --config bastion.yaml
 ```
 
@@ -62,7 +62,7 @@ Clients connect to **port 8080**, not 9000.
 
 ---
 
-## Step 4 — Discovery (no initialize handshake)
+## Step 4 - Discovery (no initialize handshake)
 
 Orchestrators can discover capabilities before connecting:
 
@@ -74,9 +74,9 @@ Expected fields include `protocolVersions`, `transport.modes` (`stateful`, `stat
 
 ---
 
-## Step 5 — Stateful client (legacy)
+## Step 5 - Stateful client (legacy)
 
-Send MCP requests with a session header — behavior matches pre-3.2 deployments:
+Send MCP requests with a session header - behavior matches pre-3.2 deployments:
 
 ```bash
 curl -s -X POST http://127.0.0.1:8080/mcp \
@@ -94,7 +94,7 @@ Bastion resolves `mcp_transport_mode: stateful` and keys rate/cost limits by ses
 
 ---
 
-## Step 6 — Stateless client (explicit state handle)
+## Step 6 - Stateless client (explicit state handle)
 
 Stateless clients pass a **server-minted** handle on every tool call (Bastion validates entropy; it does not mint handles):
 
@@ -116,11 +116,11 @@ curl -s -X POST http://127.0.0.1:8080/mcp \
   }"
 ```
 
-Bastion resolves `mcp_transport_mode: stateless` and keys limits by `handle:$HANDLE` — consistent across load-balanced replicas when Redis is enabled.
+Bastion resolves `mcp_transport_mode: stateless` and keys limits by `handle:$HANDLE` - consistent across load-balanced replicas when Redis is enabled.
 
 ---
 
-## Step 7 — Agent stability (infinite loop mitigation)
+## Step 7 - Agent stability (infinite loop mitigation)
 
 With `stability.enabled: true`, repeated identical tool errors trigger graceful recovery:
 
@@ -134,9 +134,9 @@ Test by forcing a tool to return the same error three times; the fourth response
 
 ---
 
-## Step 8 — In-process middleware (no proxy)
+## Step 8 - In-process middleware (no proxy)
 
-If you wrap your own server, enable the same `mcp_transport` block — middleware stamps identity on every guarded surface:
+If you wrap your own server, enable the same `mcp_transport` block - middleware stamps identity on every guarded surface:
 
 ```python
 from mcp_bastion import build_middleware_from_config
@@ -163,7 +163,7 @@ async def handle_mcp(context, call_next):
 
 ## Next steps
 
-- [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) — production proxy checklist
-- [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) — Redis + full MCP method guards
-- [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) — FinOps token buckets
-- [examples/bastion-hybrid-transport.yaml](../examples/bastion-hybrid-transport.yaml) — copy-paste config
+- [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) - production proxy checklist
+- [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) - Redis + full MCP method guards
+- [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md) - FinOps token buckets
+- [examples/bastion-hybrid-transport.yaml](../examples/bastion-hybrid-transport.yaml) - copy-paste config

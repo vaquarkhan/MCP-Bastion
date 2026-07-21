@@ -27,7 +27,7 @@ Then run `mcp-bastion` (or `python -m mcp_bastion.cli` from repo).
 
 ### scan
 
-Static scan of MCP **tool definitions** before deploy. Client-side only — reuses Bastion `content_filter`, injection heuristics, and `tool_metadata_fingerprint`. No ML download, no cloud.
+Static scan of MCP **tool definitions** before deploy. Client-side only - reuses Bastion `content_filter`, injection heuristics, and `tool_metadata_fingerprint`. No ML download, no cloud.
 
 ```bash
 # Scan a tools/list export or hand-authored catalog

@@ -7,9 +7,9 @@ title: MCP-Bastion Docs
 
 Secure MCP servers with local-first middleware for prompt injection defense, PII redaction, rate/cost controls, audit, and observability.
 
-**3.2.0:** hybrid stateful / stateless MCP transport (`mcp_transport`) — [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) · [tutorial](HYBRID_TRANSPORT_TUTORIAL.md).
+**3.2.0:** hybrid stateful / stateless MCP transport (`mcp_transport`) - [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) · [tutorial](HYBRID_TRANSPORT_TUTORIAL.md).
 
-**3.1.0 dashboard:** local posture grades, Sonar-style prevalidation, PMD-style issue guides, and FinOps actual vs would-have-been — see [dashboard/README.md](../dashboard/README.md).
+**3.1.0 dashboard:** local posture grades, Sonar-style prevalidation, PMD-style issue guides, and FinOps actual vs would-have-been - see [dashboard/README.md](../dashboard/README.md).
 
 ## Why teams adopt MCP-Bastion
 

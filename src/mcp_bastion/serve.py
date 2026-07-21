@@ -36,7 +36,7 @@ def run_streamable_http(
     port: int = 8000,
     config: Any | None = None,
 ) -> None:
-    """Run streamable HTTP — hardened uvicorn path or ``mcp.run(transport=...)`` with settings."""
+    """Run streamable HTTP - hardened uvicorn path or ``mcp.run(transport=...)`` with settings."""
     from mcp_bastion.config import load_config
 
     cfg = config or load_config(None)

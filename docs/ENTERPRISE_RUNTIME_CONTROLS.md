@@ -120,8 +120,8 @@ When vendoring third-party rule packs, keep upstream `LICENSE` files in that dir
 
 ## Performance notes (opt-in pillars)
 
-- **LLM scanner:** When enabled and heuristics are uncertain, adds up to **2.5s** synchronous network latency per `tools/call` (fail-open on timeout). The local judge prompt embeds inbound text — treat as defense-in-depth, not robust against prompt injection of the judge itself; missing `confidence` defaults to pass.
-- **ATR rules:** Each enabled rule runs a regex scan on inbound tool text (O(n) rules per call). Community/feed patterns are length-capped; Python `re` has no timeout — vet rules to avoid catastrophic backtracking (ReDoS).
+- **LLM scanner:** When enabled and heuristics are uncertain, adds up to **2.5s** synchronous network latency per `tools/call` (fail-open on timeout). The local judge prompt embeds inbound text - treat as defense-in-depth, not robust against prompt injection of the judge itself; missing `confidence` defaults to pass.
+- **ATR rules:** Each enabled rule runs a regex scan on inbound tool text (O(n) rules per call). Community/feed patterns are length-capped; Python `re` has no timeout - vet rules to avoid catastrophic backtracking (ReDoS).
 - **PromptGuard + LLM scanner:** When both are enabled, Bastion reuses the PromptGuard scan result for the LLM tier (no duplicate ML inference).
 - **Auto-repave:** Counter updates are mutex-protected in-process; multi-replica Redis backends should treat thresholds as best-effort until distributed atomic counters land.
 

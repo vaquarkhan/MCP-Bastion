@@ -4,12 +4,12 @@ MCP-Bastion real-time dashboard and metrics API.
 Run: PYTHONPATH=src python dashboard/app.py
 Serves: http://localhost:7000/ (dashboard), http://localhost:7000/api/metrics (JSON)
 
-Demo data (non-zero charts without a separate MCP server) — on by default for local runs:
+Demo data (non-zero charts without a separate MCP server) - on by default for local runs:
   python dashboard/app.py
   mcp-bastion dashboard
   Opt out: MCP_BASTION_DEMO=0 or mcp-bastion dashboard --no-demo
 
-Optional continuous fake traffic (KPIs tick over time) — off by default (stable baseline).
+Optional continuous fake traffic (KPIs tick over time) - off by default (stable baseline).
   Enable: MCP_BASTION_DEMO_LIVE=1 or mcp-bastion dashboard --live
   Or run: python examples/dashboard_demo.py (includes live loop by default)
 """
@@ -133,7 +133,7 @@ def _governance_config_snapshot() -> dict:
             "tool_metadata_fingerprint": {
                 "enabled": bool(getattr(cfg, "tool_metadata_fingerprint_enabled", False)),
             },
-            # Core policy pillars (RBAC / injection / FinOps / PII) — same panel, same bastion.yaml
+            # Core policy pillars (RBAC / injection / FinOps / PII) - same panel, same bastion.yaml
             "rbac": {"enabled": bool(getattr(cfg, "rbac", False))},
             "prompt_guard": {"enabled": bool(getattr(cfg, "prompt_guard", False))},
             "rate_limit": {"enabled": bool(getattr(cfg, "rate_limit", False))},
@@ -153,7 +153,7 @@ def _demo_metrics_enabled() -> bool:
     """
     Synthetic KPIs/charts seeding is ON unless explicitly turned off.
 
-    Important: do not use os.environ.get("MCP_BASTION_DEMO", "") — when the variable is *unset*,
+    Important: do not use os.environ.get("MCP_BASTION_DEMO", "") - when the variable is *unset*,
     that becomes "" which is not in ("1","true","yes") and would skip the seed even though we
     intend "demo on by default".
     """
@@ -475,7 +475,7 @@ def prevalidate_summary():
         return {
             "engine": "mcp-bastion-scan-suite",
             "note": (
-                "Prevalidation from local mcp-bastion scan / skill / OSV / audit JSON — "
+                "Prevalidation from local mcp-bastion scan / skill / OSV / audit JSON - "
                 "Sonar-style issue list without running a SonarQube server."
             ),
             "combined_grade": posture.get("combined_grade"),
@@ -671,7 +671,7 @@ def dashboard_meta():
 
 @app.get("/meta")
 def meta_short():
-    """Short URL — same payload as /api/dashboard-meta (easier to type)."""
+    """Short URL - same payload as /api/dashboard-meta (easier to type)."""
     return _dashboard_build_info()
 
 
@@ -2459,7 +2459,7 @@ DASHBOARD_HTML = """
     <span id="pollStatus">Connecting to MCP-Bastion metrics…</span>
     <span class="sep" aria-hidden="true">·</span>
     <span class="muted">Data age</span>
-    <span id="dataFreshness" class="muted">—</span>
+    <span id="dataFreshness" class="muted">-</span>
     <span class="sep" aria-hidden="true">·</span>
     <span id="windowStartLine" class="muted"></span>
   </div>
@@ -2467,19 +2467,19 @@ DASHBOARD_HTML = """
   <div class="kpi-summary-bar" id="kpiSummaryBar" role="region" aria-label="At a glance">
     <div class="sum-item">
       <span class="sum-lab">Total requests</span>
-      <span class="sum-val skeleton-text" id="sumTotalReq">—</span>
+      <span class="sum-val skeleton-text" id="sumTotalReq">-</span>
     </div>
     <div class="sum-item">
       <span class="sum-lab">Block rate</span>
-      <span class="sum-val skeleton-text" id="sumBlockPct">—</span>
+      <span class="sum-val skeleton-text" id="sumBlockPct">-</span>
     </div>
     <div class="sum-item sum-threat">
       <span class="sum-lab">Top threat</span>
-      <span class="sum-val skeleton-text" id="sumTopThreat" title="">—</span>
+      <span class="sum-val skeleton-text" id="sumTopThreat" title="">-</span>
     </div>
     <div class="sum-item">
       <span class="sum-lab">Active users / tenants</span>
-      <span class="sum-val skeleton-text" id="sumActiveUsers">—</span>
+      <span class="sum-val skeleton-text" id="sumActiveUsers">-</span>
     </div>
   </div>
 
@@ -2499,7 +2499,7 @@ DASHBOARD_HTML = """
   <div class="card onboarding-card" id="onboardingCard">
     <div class="card-head">
       <h2>Get started</h2>
-      <p class="card-desc">First-run checklist — local files and middleware only (no cloud required).</p>
+      <p class="card-desc">First-run checklist - local files and middleware only (no cloud required).</p>
     </div>
     <ol class="onboard-list" id="onboardingList"></ol>
   </div>
@@ -2546,7 +2546,7 @@ DASHBOARD_HTML = """
   <div class="insight-row">
     <div class="insight-card">
       <h3>Session overview</h3>
-      <div class="insight-stat" id="insightPassRate">—</div>
+      <div class="insight-stat" id="insightPassRate">-</div>
       <p class="insight-lede" id="insightVolumeLine">Waiting for traffic…</p>
     </div>
     <div class="insight-card">
@@ -2572,10 +2572,10 @@ DASHBOARD_HTML = """
   <div class="card" id="dash-posture">
     <div class="card-head">
       <h2>Security posture <span class="muted" style="font-weight:600;font-size:0.85rem;">(pre-deploy)</span></h2>
-      <p class="card-desc">Letter grades from local scan JSON under <code>.bastion/scan/</code> — catalog, skills, OSV, and risk audit. Click a finding for OWASP-linked why/how-to-fix (PMD-style). Prevalidation below is the Sonar-style issue list from the same files — no SonarQube server.</p>
+      <p class="card-desc">Letter grades from local scan JSON under <code>.bastion/scan/</code> - catalog, skills, OSV, and risk audit. Click a finding for OWASP-linked why/how-to-fix (PMD-style). Prevalidation below is the Sonar-style issue list from the same files - no SonarQube server.</p>
     </div>
     <div class="posture-grid" id="postureGrid">
-      <div class="grade-tile grade-none"><div class="g-label">Loading…</div><div class="g-letter">—</div></div>
+      <div class="grade-tile grade-none"><div class="g-label">Loading…</div><div class="g-letter">-</div></div>
     </div>
     <div class="posture-findings" id="postureFindings">
       <h3 style="font-size:0.9rem;margin:0 0 8px;">Findings</h3>
@@ -2643,9 +2643,9 @@ DASHBOARD_HTML = """
       <p class="card-desc" id="complianceDisclaimer">Evidence to support an audit, not a certificate.</p>
     </div>
     <div class="governance-grid" id="complianceMeta">
-      <div class="gov-tile"><div class="gov-name">Policy hash</div><div class="gov-state off" id="compPolicyHash">—</div></div>
-      <div class="gov-tile"><div class="gov-name">Attestation</div><div class="gov-state off" id="compAttestHash">—</div></div>
-      <div class="gov-tile"><div class="gov-name">Generated</div><div class="gov-state off" id="compAttestTs">—</div></div>
+      <div class="gov-tile"><div class="gov-name">Policy hash</div><div class="gov-state off" id="compPolicyHash">-</div></div>
+      <div class="gov-tile"><div class="gov-name">Attestation</div><div class="gov-state off" id="compAttestHash">-</div></div>
+      <div class="gov-tile"><div class="gov-name">Generated</div><div class="gov-state off" id="compAttestTs">-</div></div>
     </div>
     <div class="date-filter-bar" style="margin-top:12px;margin-bottom:0;">
       <label>Framework
@@ -2665,10 +2665,10 @@ DASHBOARD_HTML = """
   <div class="card" id="dash-governance">
     <div class="card-head">
       <h2>Runtime governance &amp; policy</h2>
-      <p class="card-desc">Zero-trust + core policy from <code>bastion.yaml</code> — Agent IAM, RBAC, prompt guard, rate/cost, PII, supply-chain, transport. Block counts refresh from live metrics.</p>
+      <p class="card-desc">Zero-trust + core policy from <code>bastion.yaml</code> - Agent IAM, RBAC, prompt guard, rate/cost, PII, supply-chain, transport. Block counts refresh from live metrics.</p>
     </div>
     <div class="governance-grid" id="governanceGrid">
-      <div class="gov-tile"><div class="gov-name">Loading…</div><div class="gov-state off">—</div></div>
+      <div class="gov-tile"><div class="gov-name">Loading…</div><div class="gov-state off">-</div></div>
     </div>
   </div>
 
@@ -2736,7 +2736,7 @@ DASHBOARD_HTML = """
         <div id="forensicsDetailPanel" hidden>
           <div class="forensics-detail-head">
             <div>
-              <h3 id="forensicsDetailTitle">—</h3>
+              <h3 id="forensicsDetailTitle">-</h3>
               <p class="forensics-detail-meta" id="forensicsDetailMeta"></p>
             </div>
             <button type="button" class="btn-mini" id="forensicsDetailClear" title="Clear selection">Clear</button>
@@ -2769,14 +2769,14 @@ DASHBOARD_HTML = """
       <h2>Agent identity / confused-deputy</h2>
       <p class="card-desc">Denied-by-agent counts from forensics plus Agent IAM scope map from <code>bastion.yaml</code>.</p>
     </div>
-    <div id="agentDeniedSummary" class="muted" style="font-size:0.85rem;">—</div>
+    <div id="agentDeniedSummary" class="muted" style="font-size:0.85rem;">-</div>
     <dl class="agent-scope" id="agentScopeMap"></dl>
   </div>
 
   <div class="card" id="dash-trends">
     <div class="card-head">
       <h2>Posture drift (audit JSONL)</h2>
-      <p class="card-desc">Daily allow/block trend, drift direction, and top drivers from the local audit file — no database.</p>
+      <p class="card-desc">Daily allow/block trend, drift direction, and top drivers from the local audit file - no database.</p>
     </div>
     <div id="trendHint" class="muted" style="font-size:0.8rem;"></div>
     <div class="drift-kpis" id="driftKpis" hidden>
@@ -2797,7 +2797,7 @@ DASHBOARD_HTML = """
       </div>
       <div class="drift-kpi">
         <div class="dk-label">Top driver</div>
-        <div class="dk-value" id="driftDriver" style="font-size:1rem;">—</div>
+        <div class="dk-value" id="driftDriver" style="font-size:1rem;">-</div>
         <div class="dk-sub" id="driftDriverSub">by blocked kind</div>
       </div>
     </div>

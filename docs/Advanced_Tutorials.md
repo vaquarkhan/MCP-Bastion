@@ -4,7 +4,7 @@ Deeper guides beyond [TUTORIALS.md](TUTORIALS.md) and [DETAILED_TUTORIAL.md](DET
 
 | Topic | Doc |
 |-------|-----|
-| **Hybrid stateful / stateless MCP** | [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) — proxy, discovery, Redis, agent stability |
+| **Hybrid stateful / stateless MCP** | [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) - proxy, discovery, Redis, agent stability |
 | **Architecture & boundaries** | [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) |
 | **Gateway boundary mode** | [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) |
 | **Full MCP surface + Redis scale** | [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) |

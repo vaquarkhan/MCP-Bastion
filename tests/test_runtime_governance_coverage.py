@@ -69,7 +69,7 @@ def test_agent_iam_apply_to_context_and_empty_tool():
     ctx = MiddlewareContext(message={}, metadata={})
     iam.apply_to_context(ctx, policy)
     assert ctx.metadata["agent_id"] == "a"
-    iam.apply_to_context(object(), policy)  # no metadata attr — no-op
+    iam.apply_to_context(object(), policy)  # no metadata attr - no-op
 
 
 def test_agent_iam_blocked_vs_allow_list_messages():

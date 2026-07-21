@@ -19,7 +19,7 @@ def _reset_metrics():
 
 def test_live_simulator_records_metrics():
     # First loop iteration always blocks on stop.wait(timeout). If we set stop during that wait,
-    # wait() returns True and the loop exits without ever recording metrics — wait past one timeout.
+    # wait() returns True and the loop exits without ever recording metrics - wait past one timeout.
     stop = threading.Event()
     rng = random.Random(42)
     t = threading.Thread(target=live_simulator, args=(stop, rng), daemon=True)

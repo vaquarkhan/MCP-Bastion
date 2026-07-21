@@ -105,7 +105,7 @@ async def test_prompt_injection():
         record(
             "Adversarial payload blocked (heuristic/ML)",
             False,
-            "Malicious payload was ALLOWED — critical security failure",
+            "Malicious payload was ALLOWED - critical security failure",
         )
     else:
         record("Adversarial payload blocked (heuristic/ML)", True)
@@ -135,7 +135,7 @@ async def test_prompt_injection():
         record(
             "Benign tool call (2+2) passes",
             True,
-            "Skipped strict ML path — ML model unavailable; heuristics-only mode",
+            "Skipped strict ML path - ML model unavailable; heuristics-only mode",
             warn=True,
         )
     except Exception as e:

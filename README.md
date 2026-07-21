@@ -29,7 +29,7 @@
 <p align="center">
   <img
     src="images/mcp-bastion-scan-test-enforce.png"
-    alt="MCP-Bastion: SCAN → TEST → ENFORCE — No other tool has all three"
+    alt="MCP-Bastion: SCAN → TEST → ENFORCE - No other tool has all three"
     width="960"
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
@@ -44,7 +44,7 @@
 | **Test** | Integrated red-team harness against your `bastion.yaml` policy | `mcp-bastion redteam` |
 | **Enforce** | Runtime middleware on every MCP method | `secure_fastmcp(mcp)` or `bastion.yaml` |
 
-**`scan` vs `audit` — different inputs, different questions**
+**`scan` vs `audit` - different inputs, different questions**
 
 | | **`mcp-bastion scan`** | **`mcp-bastion audit`** |
 |---|------------------------|-------------------------|
@@ -58,7 +58,7 @@ They complement each other: **audit** the host surface, then **scan** the tools 
 `mcp-bastion scan` also accepts `--skills DIR` for offline agent skill-file checks. Dependency CVEs: `mcp-bastion osv-refresh` then `mcp-bastion osv-scan` (local DB default; `--online` opt-in, fail-open).
 
 ```bash
-# 1. Scan a tools/list export (or hand-authored catalog) — client-side, no cloud
+# 1. Scan a tools/list export (or hand-authored catalog) - client-side, no cloud
 mcp-bastion scan examples/fixtures/tools-poisoned.json
 mcp-bastion fingerprint tools.json -o baseline.json
 mcp-bastion scan tools.json --baseline baseline.json --format json -o report.json
@@ -79,32 +79,32 @@ mcp-bastion validate --config bastion.yaml
 <p align="center">
   <img
     src="images/mcp-bastion-scan-cli.png"
-    alt="mcp-bastion scan CLI — flags injection, secrets, homoglyphs, and fingerprint drift with letter grade A–F"
+    alt="mcp-bastion scan CLI - flags injection, secrets, homoglyphs, and fingerprint drift with letter grade A–F"
     width="920"
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
 </p>
-<p align="center"><sub><code>mcp-bastion scan</code> — client-side static scanner; no cloud, no ML download</sub></p>
+<p align="center"><sub><code>mcp-bastion scan</code> - client-side static scanner; no cloud, no ML download</sub></p>
 
 <p align="center">
   <img
     src="images/mcp-bastion-audit-cli.png"
-    alt="mcp-bastion audit CLI — local MCP risk audit of client configs, over-broad tools, and standing credentials"
+    alt="mcp-bastion audit CLI - local MCP risk audit of client configs, over-broad tools, and standing credentials"
     width="920"
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
 </p>
-<p align="center"><sub><code>mcp-bastion audit</code> — map the local MCP surface before you enforce; no network, no vault</sub></p>
+<p align="center"><sub><code>mcp-bastion audit</code> - map the local MCP surface before you enforce; no network, no vault</sub></p>
 
 <p align="center">
   <img
     src="images/mcp-bastion-scan-suite.png"
-    alt="MCP-Bastion client-side scan suite — schema preconditions, skill files, OSV dependency CVE lookup"
+    alt="MCP-Bastion client-side scan suite - schema preconditions, skill files, OSV dependency CVE lookup"
     width="960"
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
 </p>
-<p align="center"><sub>Schema · Skills · OSV — offline by default; no login server; no phone-home</sub></p>
+<p align="center"><sub>Schema · Skills · OSV - offline by default; no login server; no phone-home</sub></p>
 
 <p align="center">
   <a href="images/mcp-bastion-dashboard-tour.gif" title="MCP-Bastion dashboard feature tour (GIF)">
@@ -131,12 +131,12 @@ mcp-bastion validate --config bastion.yaml
 <p align="center">
   <img
     src="images/mcp-bastion-dashboard.png"
-    alt="MCP-Bastion dashboard collage — security posture, OWASP coverage, attack matrix, and runtime KPIs"
+    alt="MCP-Bastion dashboard collage - security posture, OWASP coverage, attack matrix, and runtime KPIs"
     width="960"
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
 </p>
-<p align="center"><strong>Live security posture + runtime dashboard</strong> — local-only, zero infra. <code>mcp-bastion dashboard --demo</code> · <a href="dashboard/README.md">Dashboard docs</a> · <a href="https://vimeo.com/1186084574">Older Vimeo walkthrough</a></p>
+<p align="center"><strong>Live security posture + runtime dashboard</strong> - local-only, zero infra. <code>mcp-bastion dashboard --demo</code> · <a href="dashboard/README.md">Dashboard docs</a> · <a href="https://vimeo.com/1186084574">Older Vimeo walkthrough</a></p>
 
 <p align="center">
   <img
@@ -163,7 +163,7 @@ mcp-bastion validate --config bastion.yaml
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
 </p>
-<p align="center"><strong>Hybrid stateful / stateless MCP (3.2.0)</strong> — opt-in <code>mcp_transport</code> for SEP-2575 readiness without breaking legacy sessions. <a href="docs/HYBRID_MCP_TRANSPORT.md">Architecture</a> · <a href="docs/HYBRID_TRANSPORT_TUTORIAL.md">Tutorial</a></p>
+<p align="center"><strong>Hybrid stateful / stateless MCP (3.2.0)</strong> - opt-in <code>mcp_transport</code> for SEP-2575 readiness without breaking legacy sessions. <a href="docs/HYBRID_MCP_TRANSPORT.md">Architecture</a> · <a href="docs/HYBRID_TRANSPORT_TUTORIAL.md">Tutorial</a></p>
 
 ## Why MCP-Bastion? (Solving the 2026 MCP Security Crisis)
 
@@ -543,7 +543,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Agent IAM (Confused Deputy)** | Bind **API tokens** to **agent identities**; per-agent `allowed_tools` / `blocked_tools`, **resource URI** allow/block, optional rate limits  -  stops a support bot from calling admin tools or reading secret resources. See [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md). |
 | **Full MCP surface guards (2.0.0)** | **`resources/read`**, **`prompts/get`**, **`sampling/createMessage`**, **`elicitation/create`**  -  same inbound/outbound pillars as tool calls (not only `tools/call`). [docs/MCP_SURFACE_AND_SCALE.md](docs/MCP_SURFACE_AND_SCALE.md) |
 | **Distributed state (2.0.0)** | **`state_backend: redis`**  -  shared rate limits, replay nonces, cost caps, session scope across replicas. `pip install mcp-bastion-python[redis]` |
-| **Behavioral fingerprinting (3.3.0, opt-in)** | **`behavior_fingerprint.enabled`** — per-agent tool baseline drift + rate spikes; default OFF. [docs/BEHAVIOR_FINGERPRINT.md](docs/BEHAVIOR_FINGERPRINT.md) |
+| **Behavioral fingerprinting (3.3.0, opt-in)** | **`behavior_fingerprint.enabled`** - per-agent tool baseline drift + rate spikes; default OFF. [docs/BEHAVIOR_FINGERPRINT.md](docs/BEHAVIOR_FINGERPRINT.md) |
 | **Hybrid MCP transport (opt-in)** | **`mcp_transport`**  -  stateful sessions **and** stateless explicit state handles; per-request protocol version; proxy discovery card; agent stability monitor. [docs/HYBRID_MCP_TRANSPORT.md](docs/HYBRID_MCP_TRANSPORT.md) |
 | **Server verification (supply chain)** | SHA-256 **manifest checksums** verified at startup and on every `tools/call`; `mcp-bastion manifest` generates trusted manifests after a signed-off build. |
 | **RBAC** | **Tool-level** allow/deny by **role** (from request metadata); **fnmatch globs** (`read_*`) with specificity-aware matching in `bastion.yaml`. **Pair with Agent IAM or edge auth**  -  alone, roles are only as trustworthy as whatever sets `metadata["role"]`. [Live matrix →](docs/BENCHMARKS.md#rbac-tool-level-opt-in) |
@@ -584,7 +584,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 
 ### Real-Time Dashboard and Alerts
 
-The dashboard is **optional and local** — a read-only view over **runtime metrics + local scan/audit artifacts**. No login server, no cloud DB (see [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md)).
+The dashboard is **optional and local** - a read-only view over **runtime metrics + local scan/audit artifacts**. No login server, no cloud DB (see [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md)).
 
 **Feature tour (GIF):** posture + how-to-fix → OWASP → attack matrix → compliance → RBAC/governance → forensics → agents → posture drift → **token & cost savings** → traffic.
 
@@ -609,7 +609,7 @@ The dashboard is **optional and local** — a read-only view over **runtime metr
 <p align="center">
   <img
     src="images/mcp-bastion-dashboard.png"
-    alt="MCP-Bastion dashboard collage — posture, OWASP, attack matrix, KPIs"
+    alt="MCP-Bastion dashboard collage - posture, OWASP, attack matrix, KPIs"
     width="920"
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
@@ -621,9 +621,9 @@ The dashboard is **optional and local** — a read-only view over **runtime metr
 | Area | Panels / actions |
 |------|------------------|
 | **Pre-deploy posture** | Letter grades **A–F** for catalog scan, skill scan, OSV, risk audit + combined grade (reads `.bastion/scan/*.json`) |
-| **Static prevalidation** | Sonar-style issue list from the same local JSON — not a SonarQube server (`/api/prevalidate`) |
+| **Static prevalidation** | Sonar-style issue list from the same local JSON - not a SonarQube server (`/api/prevalidate`) |
 | **Issue guides** | PMD-style why / how to fix / Bastion knobs / OWASP refs on every finding (`/api/issue-guide`) |
-| **OWASP coverage** | Tabs for **ASI Top 10**, **MCP Top 10**, **LLM Top 10** — green/amber/grey heatmap with finding + block pressure |
+| **OWASP coverage** | Tabs for **ASI Top 10**, **MCP Top 10**, **LLM Top 10** - green/amber/grey heatmap with finding + block pressure |
 | **Live attack matrix** | Categories under pressure with intensity, share, top tool, OWASP tags, sample/trace drill-down |
 | **Compliance / reports** | Attestation + policy hash; generate **SOC2 / GDPR / ISO27001 / NIST AI RMF / ASI** evidence or zip (date-filtered) |
 | **Runtime** | KPIs, governance, alerts + SSE, insights, forensics (**Why** + Details), agents / trends / onboarding, traffic/latency/PII charts |

@@ -1,5 +1,5 @@
 """
-Tool metadata fingerprint — detect semantic schema drift (MCP tool description poisoning).
+Tool metadata fingerprint - detect semantic schema drift (MCP tool description poisoning).
 
 Hashes canonical tool name + description + input schema for comparison at deploy time.
 """

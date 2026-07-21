@@ -1,5 +1,5 @@
 """
-JSONPath argument guards — block or redact tool arguments before execution.
+JSONPath argument guards - block or redact tool arguments before execution.
 
 Inspired by gateway-style DLP patterns: match tool globs + JSONPath + regex on
 argument values (including argv-array evasion via space-joined list forms).

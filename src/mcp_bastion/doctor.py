@@ -132,7 +132,7 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
                         "id": "schema_validation",
                         "ok": False,
                         "detail": (
-                            "schema_validation.enabled is true but schema_validation.schemas is empty — "
+                            "schema_validation.enabled is true but schema_validation.schemas is empty - "
                             "no tool arguments will be validated"
                         ),
                     }

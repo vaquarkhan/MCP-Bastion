@@ -107,7 +107,7 @@ cost_policy:
       expensive_api: 0.50
   approval_metadata_key: bastion_cost_approval
 
-# Mandatory proxy boundary — requires edge_auth or agent_iam (see docs/GATEWAY_BOUNDARY.md).
+# Mandatory proxy boundary - requires edge_auth or agent_iam (see docs/GATEWAY_BOUNDARY.md).
 boundary_mode:
   enabled: false
 

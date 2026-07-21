@@ -86,7 +86,7 @@ SLIDES: list[dict[str, str]] = [
     {
         "id": "10-drift",
         "title": "Posture drift (audit JSONL)",
-        "caption": "Daily allow/block, drift Δ, top drivers — local file only",
+        "caption": "Daily allow/block, drift Δ, top drivers - local file only",
         "anchor": "#dash-trends",
     },
     {
@@ -175,7 +175,7 @@ def _build_gif(frames: list[Path], out: Path, duration_ms: int = 5000) -> None:
     """
     Build a walkthrough GIF slow enough to read captions + UI.
 
-    Default 5s/frame (was ~2s — too fast on GitHub README).
+    Default 5s/frame (was ~2s - too fast on GitHub README).
     Uses Pillow duration in milliseconds (more reliable than imageio seconds).
     """
     imgs = []
@@ -392,7 +392,7 @@ async def capture() -> int:
         "|-------|---------|",
     ]
     for s, p in zip(SLIDES, annotated):
-        lines.append(f"| ![](slides/{p.name}) | **{s['title']}** — {s['caption']} |")
+        lines.append(f"| ![](slides/{p.name}) | **{s['title']}** - {s['caption']} |")
     lines.extend(
         [
             "",

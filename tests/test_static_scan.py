@@ -76,9 +76,9 @@ def test_scan_report_text_is_ascii():
     report = scan_tools(tools)
     text = format_report_text(report)
     text.encode("ascii")
-    assert "—" not in text
-    assert "–" not in text
-    assert "…" not in text
+    assert "\u2014" not in text  # em dash
+    assert "\u2013" not in text  # en dash
+    assert "\u2026" not in text  # ellipsis
 
 
 def test_cmd_scan_clean_exits_zero(tmp_path, capsys):
