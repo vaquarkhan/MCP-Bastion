@@ -11,6 +11,15 @@ MCP is evolving from **session-coupled** transports toward **stateless, per-requ
   />
 </p>
 
+<p align="center">
+  <img
+    src="../images/mcp-bastion-hybrid-dual-path.svg"
+    alt="Side-by-side stateful vs stateless request paths on one Bastion proxy"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+
 ## Design principles (zero-infra preserved)
 
 | Principle | What it means |

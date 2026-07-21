@@ -11,7 +11,7 @@
   />
 </p>
 
-[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/3.1.2/)
+[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/3.2.0/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
@@ -20,7 +20,7 @@
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**Current release: [3.1.2](https://pypi.org/project/mcp-bastion-python/3.1.2/)** · Docker `v3.1.2` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
+**Current release: [3.2.0](https://pypi.org/project/mcp-bastion-python/3.2.0/)** · Docker `v3.2.0` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
 
 **The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
 
@@ -155,7 +155,15 @@ mcp-bastion validate --config bastion.yaml
     style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
   />
 </p>
-<p align="center"><strong>Hybrid stateful / stateless MCP</strong> — opt-in <code>mcp_transport</code> for SEP-2575 readiness without breaking legacy sessions. <a href="docs/HYBRID_MCP_TRANSPORT.md">Hybrid transport docs</a></p>
+<p align="center">
+  <img
+    src="images/mcp-bastion-hybrid-dual-path.svg"
+    alt="MCP-Bastion 3.2 dual-path: legacy stateful sessions and SEP-2575-ready stateless state handles on one proxy"
+    width="960"
+    style="max-width:100%; height:auto; border-radius:12px; border:1px solid #1e293b;"
+  />
+</p>
+<p align="center"><strong>Hybrid stateful / stateless MCP (3.2.0)</strong> — opt-in <code>mcp_transport</code> for SEP-2575 readiness without breaking legacy sessions. <a href="docs/HYBRID_MCP_TRANSPORT.md">Architecture</a> · <a href="docs/HYBRID_TRANSPORT_TUTORIAL.md">Tutorial</a></p>
 
 ## Why MCP-Bastion? (Solving the 2026 MCP Security Crisis)
 
@@ -194,7 +202,7 @@ Generate a manifest after a trusted build: `mcp-bastion manifest server.py pypro
 
 Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ENTERPRISE_RUNTIME_CONTROLS.md](docs/ENTERPRISE_RUNTIME_CONTROLS.md) (3.0 pillars)
 
-### Runtime governance pillars (3.0.0+, current **3.1.2**)
+### Runtime governance pillars (3.0.0+, current **3.2.0**)
 
 Opt-in enterprise controls for production MCP runtimes. All default **off** so 2.x behavior is unchanged until you enable them.
 
@@ -828,7 +836,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pin a specific release (optional)
-pip install mcp-bastion-python==3.1.2
+pip install mcp-bastion-python==3.2.0
 ```
 
 **Prerequisites (recommended)**
