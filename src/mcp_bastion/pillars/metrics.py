@@ -307,7 +307,7 @@ class MetricsStore:
         return cls._instance
 
     def record_session_tool(self, session_id: str | None, tool: str) -> None:
-        """Track per-session tool sequence for behavior fingerprinting."""
+        """Track per-session tool sequence for behavior fingerprinting (legacy metrics path)."""
         sid = session_id or "default"
         with self._lock:
             self._session_calls[sid] += 1
@@ -321,13 +321,31 @@ class MetricsStore:
                 uniq = set(window)
                 overlap = len(uniq & baseline) / max(1, len(uniq))
                 if overlap < 0.25:
-                    self._record_anomaly(
+                    self.record_behavior_anomaly(
                         kind="behavior_drift",
                         tool=tool,
                         message=f"session {sid} recent tools diverge from established baseline (overlap={overlap:.2f})",
                         value=float(overlap),
                         baseline=1.0,
                     )
+
+    def record_behavior_anomaly(
+        self,
+        *,
+        kind: str,
+        tool: str,
+        message: str,
+        value: float,
+        baseline: float,
+    ) -> None:
+        """Record a behavioral anomaly for dashboard insights."""
+        self._record_anomaly(
+            kind=kind,
+            tool=tool,
+            message=message,
+            value=value,
+            baseline=baseline,
+        )
 
     def record_request(self, tool: str, user: str | None = None, tenant: str | None = None) -> None:
         with self._lock:

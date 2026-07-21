@@ -6,6 +6,11 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Behavioral fingerprinting pillar:** per-principal tool baseline learning, drift and rate-spike detection (`behavior_fingerprint` in `bastion.yaml`; `warn` or `block`; Redis-backed via `state_backend`).
+- **Release announcement draft:** [docs/RELEASE_3.2.0_ANNOUNCE.md](docs/RELEASE_3.2.0_ANNOUNCE.md).
+
 ## [3.2.0] - 2026-07-21
 
 Feature release: hybrid **stateful / stateless MCP transport** for SEP-2575 readiness — opt-in, backward compatible. All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.2.0**.

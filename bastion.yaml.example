@@ -270,6 +270,17 @@ mcp_transport:
     similarity_threshold: 0.92
     on_detect: inject   # inject | block | warn
 
+# Per-agent behavioral fingerprinting (learn tool baselines; warn or block on drift).
+# Pairs with state_backend: redis for multi-replica baselines. Default enabled for audit metrics.
+behavior_fingerprint:
+  enabled: true
+  learn_min_calls: 12
+  freeze_after_calls: 18
+  drift_window: 10
+  tool_overlap_threshold: 0.25
+  rate_spike_multiplier: 10.0
+  on_detect: warn   # warn | block
+
 # Horizontal scaling: share rate limits, replay nonces, cost budgets, and session scope
 # across workers/replicas (requires pip install mcp-bastion-python[redis]).
 state_backend:

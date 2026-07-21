@@ -22,6 +22,7 @@ from mcp_bastion.errors import (
     ATRRuleMatchError,
     AuthenticationError,
     BastionConfigError,
+    BehaviorAnomalyError,
     CanaryExfiltrationError,
     ExternalPolicyDeniedError,
     GroundingViolationError,
@@ -65,6 +66,7 @@ from mcp_bastion.pillars.sensitive_classifier import SensitiveContentClassifier
 from mcp_bastion.pillars.semantic_firewall import SemanticFirewall
 from mcp_bastion.pillars.state_backend import MemoryStateBackend, StateBackend
 from mcp_bastion.pillars.agent_stability import AgentStabilityMonitor
+from mcp_bastion.pillars.behavior_fingerprint import BehaviorFingerprintMonitor
 from mcp_bastion.pillars.atr_rules import ATRRuleLoader
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
 from mcp_bastion.pillars.canary_goallock import CanaryGoalLock
@@ -523,6 +525,9 @@ class MCPBastionMiddleware(Middleware[Any]):
         agent_stability: AgentStabilityMonitor | None = None,
         enable_agent_stability: bool = False,
         agent_stability_on_detect: str = "inject",
+        behavior_fingerprint: BehaviorFingerprintMonitor | None = None,
+        enable_behavior_fingerprint: bool = False,
+        behavior_fingerprint_on_detect: str = "warn",
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -608,6 +613,9 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.agent_stability = agent_stability
         self.enable_agent_stability = enable_agent_stability and agent_stability is not None
         self.agent_stability_on_detect = (agent_stability_on_detect or "inject").strip().lower()
+        self.behavior_fingerprint = behavior_fingerprint
+        self.enable_behavior_fingerprint = enable_behavior_fingerprint and behavior_fingerprint is not None
+        self.behavior_fingerprint_on_detect = (behavior_fingerprint_on_detect or "warn").strip().lower()
         self._governance = SessionGovernanceRecorder.get()
 
         if self.enable_tool_metadata_guard and not self.enable_content_filter and not self.enable_prompt_guard:
@@ -727,6 +735,55 @@ class MCPBastionMiddleware(Middleware[Any]):
             context.metadata.setdefault("agent_stability", {})["repetitive"] = True
             _trace_append(trace, pillar="agent_stability", status="warn", started=started, detail=detail)
         return result
+
+    def _apply_behavior_fingerprint_check(
+        self,
+        context: MiddlewareContext[Any],
+        tool_name: str,
+        *,
+        trace: list[dict[str, Any]],
+    ) -> None:
+        if not self.enable_behavior_fingerprint or self.behavior_fingerprint is None or not tool_name:
+            return
+        scope = str(
+            context.metadata.get("_mcp_rate_limit_key")
+            or context.metadata.get("_budget_principal")
+            or context.session_id
+            or "default"
+        )
+        started = time.perf_counter()
+        check = self.behavior_fingerprint.check_and_record(scope, tool_name)
+        if not check.anomalous:
+            _trace_append(trace, pillar="behavior_fingerprint", status="ok", started=started)
+            return
+        detail = check.message or check.kind or "anomaly"
+        context.metadata.setdefault("behavior_fingerprint", {})["anomaly"] = {
+            "kind": check.kind,
+            "message": detail,
+            "overlap": check.overlap,
+        }
+        try:
+            from mcp_bastion.pillars.metrics import MetricsStore
+
+            MetricsStore.get().record_behavior_anomaly(
+                kind=str(check.kind or "behavior_anomaly"),
+                tool=tool_name,
+                message=str(detail),
+                value=float(check.overlap or check.current_rate or 0.0),
+                baseline=float(check.baseline_rate or 1.0),
+            )
+        except Exception:
+            pass
+        mode = self.behavior_fingerprint_on_detect
+        if mode == "block":
+            self._handle_violation(
+                context=context,
+                trace=trace,
+                pillar="behavior_fingerprint",
+                started=started,
+                error=BehaviorAnomalyError(f"Behavioral anomaly: {detail}"),
+            )
+        _trace_append(trace, pillar="behavior_fingerprint", status="warn", started=started, detail=detail)
 
     def _apply_output_budget_to_result(
         self,
@@ -1584,6 +1641,8 @@ class MCPBastionMiddleware(Middleware[Any]):
                 _trace_append(trace, pillar="rbac", status="allowed", started=started)
             except Exception as e:
                 self._handle_violation(context=context, trace=trace, pillar="rbac", started=started, error=e)
+
+        self._apply_behavior_fingerprint_check(context, tool_name, trace=trace)
 
         if self.enable_argument_guards and self.argument_guards and params and tool_name:
             started = time.perf_counter()

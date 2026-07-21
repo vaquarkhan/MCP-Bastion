@@ -259,3 +259,13 @@ class AgentLoopDetectedError(MCPBastionError):
         message: str = "Request blocked: repetitive agent tool loop detected",
     ) -> None:
         super().__init__(message, code=-32030)
+
+
+class BehaviorAnomalyError(MCPBastionError):
+    """Raised when behavioral fingerprint detects anomalous agent activity."""
+
+    def __init__(
+        self,
+        message: str = "Request blocked: behavioral anomaly detected",
+    ) -> None:
+        super().__init__(message, code=-32031)

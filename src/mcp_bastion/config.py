@@ -38,6 +38,7 @@ from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine, parse_guard
 from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.state_backend import build_state_backend
 from mcp_bastion.pillars.agent_stability import AgentStabilityMonitor
+from mcp_bastion.pillars.behavior_fingerprint import BehaviorFingerprintMonitor
 from mcp_bastion.mcp_transport import mcp_transport_config_from_bastion
 from mcp_bastion.pillars.atr_rules import ATRRuleLoader
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
@@ -140,6 +141,12 @@ class BastionConfig:
     audit_hash_chain_anchor_every: int = 0
     audit_anchor_webhook_url: str | None = None
     behavior_fingerprint: bool = True
+    behavior_fingerprint_learn_min_calls: int = 12
+    behavior_fingerprint_freeze_after_calls: int = 18
+    behavior_fingerprint_drift_window: int = 10
+    behavior_fingerprint_tool_overlap_threshold: float = 0.25
+    behavior_fingerprint_rate_spike_multiplier: float = 10.0
+    behavior_fingerprint_on_detect: str = "warn"  # warn | block
     cost_attribution: bool = True
     policy_engine_type: str = "none"
     policy_engine_fail_closed: bool = True
@@ -431,7 +438,21 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         hot_reload_poll_seconds=float(hot_reload.get("poll_seconds", 2.0)),
         audit_hash_chain_anchor_every=int(ahc.get("anchor_every", 0)),
         audit_anchor_webhook_url=ahc.get("anchor_webhook_url") or os.environ.get("BASTION_ANCHOR_WEBHOOK_URL"),
-        behavior_fingerprint=bool(bf.get("enabled", True)),
+        behavior_fingerprint=bool(bf.get("enabled", True)) if isinstance(bf, dict) else bool(bf),
+        behavior_fingerprint_learn_min_calls=int(bf.get("learn_min_calls", 12)) if isinstance(bf, dict) else 12,
+        behavior_fingerprint_freeze_after_calls=int(bf.get("freeze_after_calls", 18)) if isinstance(bf, dict) else 18,
+        behavior_fingerprint_drift_window=int(bf.get("drift_window", 10)) if isinstance(bf, dict) else 10,
+        behavior_fingerprint_tool_overlap_threshold=float(
+            bf.get("tool_overlap_threshold", 0.25)
+        )
+        if isinstance(bf, dict)
+        else 0.25,
+        behavior_fingerprint_rate_spike_multiplier=float(
+            bf.get("rate_spike_multiplier", 10.0)
+        )
+        if isinstance(bf, dict)
+        else 10.0,
+        behavior_fingerprint_on_detect=str(bf.get("on_detect", "warn")) if isinstance(bf, dict) else "warn",
         cost_attribution=bool(ca.get("enabled", True)),
         policy_engine_type=engine,
         policy_engine_fail_closed=bool(pe.get("fail_closed", True)),
@@ -728,6 +749,16 @@ def _build_chain(config: BastionConfig) -> Any:
             similarity_threshold=config.agent_stability_similarity_threshold,
             backend=state_backend,
         )
+    behavior_fingerprint_monitor = None
+    if config.behavior_fingerprint:
+        behavior_fingerprint_monitor = BehaviorFingerprintMonitor(
+            learn_min_calls=config.behavior_fingerprint_learn_min_calls,
+            freeze_after_calls=config.behavior_fingerprint_freeze_after_calls,
+            drift_window=config.behavior_fingerprint_drift_window,
+            tool_overlap_threshold=config.behavior_fingerprint_tool_overlap_threshold,
+            rate_spike_multiplier=config.behavior_fingerprint_rate_spike_multiplier,
+            backend=state_backend,
+        )
     shared_backend = state_backend if config.state_backend.strip().lower() == "redis" else None
 
     agent_iam: AgentIAM | None = None
@@ -932,6 +963,9 @@ def _build_chain(config: BastionConfig) -> Any:
         agent_stability=agent_stability_monitor,
         enable_agent_stability=config.agent_stability_enabled and agent_stability_monitor is not None,
         agent_stability_on_detect=config.agent_stability_on_detect,
+        behavior_fingerprint=behavior_fingerprint_monitor,
+        enable_behavior_fingerprint=config.behavior_fingerprint and behavior_fingerprint_monitor is not None,
+        behavior_fingerprint_on_detect=config.behavior_fingerprint_on_detect,
         shadow_mode=config.bastion_mode == "observe",
     )
     if config.governance_registry_url:
