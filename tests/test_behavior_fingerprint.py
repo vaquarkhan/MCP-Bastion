@@ -63,3 +63,17 @@ def test_invalid_config():
 
 def test_behavior_anomaly_error_code():
     assert BehaviorAnomalyError().code == -32031
+
+
+def test_load_config_behavior_fingerprint_defaults_off(tmp_path):
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    from mcp_bastion.config import load_config
+
+    yaml_path = tmp_path / "bastion.yaml"
+    yaml_path.write_text("audit:\n  enabled: false\n", encoding="utf-8")
+    cfg = load_config(str(yaml_path))
+    assert cfg.behavior_fingerprint is False
+    assert cfg.behavior_fingerprint_audit_metrics is True

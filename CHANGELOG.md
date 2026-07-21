@@ -1,15 +1,24 @@
 ﻿# Changelog
 
-**Current release:** **3.2.0** (2026-07-21) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.2.0/) · [Docker `v3.2.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **3.3.0** (2026-07-21) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.3.0/) · [Docker `v3.3.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-07-21
+
+Minor release: **behavioral fingerprinting** middleware pillar — **opt-in, default OFF** (no breaking changes). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.3.0**.
+
 ### Added
 
-- **Behavioral fingerprinting pillar:** per-principal tool baseline learning, drift and rate-spike detection (`behavior_fingerprint` in `bastion.yaml`; `warn` or `block`; Redis-backed via `state_backend`).
-- **Release announcement draft:** [docs/RELEASE_3.2.0_ANNOUNCE.md](docs/RELEASE_3.2.0_ANNOUNCE.md).
+- **Behavioral fingerprinting pillar:** per-principal tool baseline learning, drift and rate-spike detection (`behavior_fingerprint.enabled`); `warn` (default) or `block`; Redis-backed via `state_backend`.
+- **Docs:** [docs/BEHAVIOR_FINGERPRINT.md](docs/BEHAVIOR_FINGERPRINT.md), [docs/RELEASE_3.2.0_ANNOUNCE.md](docs/RELEASE_3.2.0_ANNOUNCE.md).
+- **Tests:** unit + E2E middleware coverage for warn/block modes.
+
+### Changed
+
+- **`behavior_fingerprint` defaults:** middleware pillar **disabled** by default; legacy `audit_metrics` path remains **enabled** (3.2.0-compatible dashboard anomalies).
 
 ## [3.2.0] - 2026-07-21
 

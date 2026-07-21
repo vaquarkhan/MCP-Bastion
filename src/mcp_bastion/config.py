@@ -140,7 +140,8 @@ class BastionConfig:
     hot_reload_poll_seconds: float = 2.0
     audit_hash_chain_anchor_every: int = 0
     audit_anchor_webhook_url: str | None = None
-    behavior_fingerprint: bool = True
+    behavior_fingerprint: bool = False  # middleware pillar; default OFF (opt-in)
+    behavior_fingerprint_audit_metrics: bool = True  # audit→metrics path; unchanged from 3.2.0
     behavior_fingerprint_learn_min_calls: int = 12
     behavior_fingerprint_freeze_after_calls: int = 18
     behavior_fingerprint_drift_window: int = 10
@@ -438,7 +439,14 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         hot_reload_poll_seconds=float(hot_reload.get("poll_seconds", 2.0)),
         audit_hash_chain_anchor_every=int(ahc.get("anchor_every", 0)),
         audit_anchor_webhook_url=ahc.get("anchor_webhook_url") or os.environ.get("BASTION_ANCHOR_WEBHOOK_URL"),
-        behavior_fingerprint=bool(bf.get("enabled", True)) if isinstance(bf, dict) else bool(bf),
+        behavior_fingerprint=(
+            bool(bf.get("enabled", False)) if isinstance(bf, dict) else bool(bf)
+        ),
+        behavior_fingerprint_audit_metrics=(
+            bool(bf.get("audit_metrics", bf.get("enabled", True)))
+            if isinstance(bf, dict)
+            else bool(bf)
+        ),
         behavior_fingerprint_learn_min_calls=int(bf.get("learn_min_calls", 12)) if isinstance(bf, dict) else 12,
         behavior_fingerprint_freeze_after_calls=int(bf.get("freeze_after_calls", 18)) if isinstance(bf, dict) else 18,
         behavior_fingerprint_drift_window=int(bf.get("drift_window", 10)) if isinstance(bf, dict) else 10,
@@ -675,7 +683,7 @@ def _build_chain(config: BastionConfig) -> Any:
         make_audit_export_callback(
             alert_sinks=sinks,
             alert_on=set(config.alerts_on),
-            behavior_fingerprint=config.behavior_fingerprint,
+            behavior_fingerprint=config.behavior_fingerprint_audit_metrics,
             anchor_webhook_url=anchor_url,
             telemetry_sinks=telemetry_callbacks or None,
             telemetry_export_mode=config.telemetry_export_mode,

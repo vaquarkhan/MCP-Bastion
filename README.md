@@ -11,7 +11,7 @@
   />
 </p>
 
-[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/3.2.0/)
+[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/3.3.0/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
@@ -20,7 +20,7 @@
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**Current release: [3.2.0](https://pypi.org/project/mcp-bastion-python/3.2.0/)** · Docker `v3.2.0` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
+**Current release: [3.3.0](https://pypi.org/project/mcp-bastion-python/3.3.0/)** · Docker `v3.3.0` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
 
 **The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
 
@@ -202,7 +202,7 @@ Generate a manifest after a trusted build: `mcp-bastion manifest server.py pypro
 
 Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ENTERPRISE_RUNTIME_CONTROLS.md](docs/ENTERPRISE_RUNTIME_CONTROLS.md) (3.0 pillars)
 
-### Runtime governance pillars (3.0.0+, current **3.2.0**)
+### Runtime governance pillars (3.0.0+, current **3.3.0**)
 
 Opt-in enterprise controls for production MCP runtimes. All default **off** so 2.x behavior is unchanged until you enable them.
 
@@ -543,6 +543,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Agent IAM (Confused Deputy)** | Bind **API tokens** to **agent identities**; per-agent `allowed_tools` / `blocked_tools`, **resource URI** allow/block, optional rate limits  -  stops a support bot from calling admin tools or reading secret resources. See [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md). |
 | **Full MCP surface guards (2.0.0)** | **`resources/read`**, **`prompts/get`**, **`sampling/createMessage`**, **`elicitation/create`**  -  same inbound/outbound pillars as tool calls (not only `tools/call`). [docs/MCP_SURFACE_AND_SCALE.md](docs/MCP_SURFACE_AND_SCALE.md) |
 | **Distributed state (2.0.0)** | **`state_backend: redis`**  -  shared rate limits, replay nonces, cost caps, session scope across replicas. `pip install mcp-bastion-python[redis]` |
+| **Behavioral fingerprinting (3.3.0, opt-in)** | **`behavior_fingerprint.enabled`** — per-agent tool baseline drift + rate spikes; default OFF. [docs/BEHAVIOR_FINGERPRINT.md](docs/BEHAVIOR_FINGERPRINT.md) |
 | **Hybrid MCP transport (opt-in)** | **`mcp_transport`**  -  stateful sessions **and** stateless explicit state handles; per-request protocol version; proxy discovery card; agent stability monitor. [docs/HYBRID_MCP_TRANSPORT.md](docs/HYBRID_MCP_TRANSPORT.md) |
 | **Server verification (supply chain)** | SHA-256 **manifest checksums** verified at startup and on every `tools/call`; `mcp-bastion manifest` generates trusted manifests after a signed-off build. |
 | **RBAC** | **Tool-level** allow/deny by **role** (from request metadata); **fnmatch globs** (`read_*`) with specificity-aware matching in `bastion.yaml`. **Pair with Agent IAM or edge auth**  -  alone, roles are only as trustworthy as whatever sets `metadata["role"]`. [Live matrix →](docs/BENCHMARKS.md#rbac-tool-level-opt-in) |
@@ -836,7 +837,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pin a specific release (optional)
-pip install mcp-bastion-python==3.2.0
+pip install mcp-bastion-python==3.3.0
 ```
 
 **Prerequisites (recommended)**

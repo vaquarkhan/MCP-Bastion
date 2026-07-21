@@ -271,9 +271,10 @@ mcp_transport:
     on_detect: inject   # inject | block | warn
 
 # Per-agent behavioral fingerprinting (learn tool baselines; warn or block on drift).
-# Pairs with state_backend: redis for multi-replica baselines. Default enabled for audit metrics.
+# Opt-in middleware pillar (default OFF). audit_metrics stays on for dashboard anomalies.
 behavior_fingerprint:
-  enabled: true
+  enabled: false
+  audit_metrics: true
   learn_min_calls: 12
   freeze_after_calls: 18
   drift_window: 10
