@@ -25,6 +25,8 @@ Current Python package release: **`mcp-bastion-python==3.3.0`** ([PyPI](https://
 | [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) | **2.0.0:** full MCP method guards + Redis `state_backend` for multi-replica deploys |
 | [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) | **Opt-in:** stateful + stateless MCP transport, discovery card, agent stability |
 | [BEHAVIOR_FINGERPRINT.md](BEHAVIOR_FINGERPRINT.md) | **3.3.0 (opt-in):** per-agent baseline drift + rate spikes |
+| [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) | **CRA / OpenSSF:** SBOM + Article 14 posture (no runtime change) |
+| [CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md) | Generate / download CycloneDX `bom.json` |
 | [REDTEAM.md](REDTEAM.md) | Interpreting harness scores; **`mcp-bastion redteam`** |
 | [Advanced_Tutorials.md](Advanced_Tutorials.md) | Index of deeper docs (points to **DETAILED_TUTORIAL**, **TUTORIALS**, **PILLARS**, …) |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI (`validate`, `serve`, `serve --proxy`, `attest export`, …) |
@@ -47,6 +49,7 @@ Current Python package release: **`mcp-bastion-python==3.3.0`** ([PyPI](https://
 | Doc | Description |
 |-----|-------------|
 | [SECURITY.md](SECURITY.md) | OWASP mapping, mitigations, vulnerability reporting |
+| [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) | CRA Article 14 + CycloneDX SBOM (steward MVP docs) |
 | [BEYOND_OWASP.md](BEYOND_OWASP.md) | Threats outside OWASP Top 10 (localhost CSRF, context flooding, schema drift) |
 | [TRANSPORT_HARDENING.md](TRANSPORT_HARDENING.md) | HTTP / localhost binding and edge_auth guidance |
 | [GATEWAY_BOUNDARY.md](GATEWAY_BOUNDARY.md) | **2.0.0+:** mandatory proxy boundary - loopback upstream, edge_auth, NetworkPolicy checklist |

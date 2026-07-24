@@ -70,3 +70,9 @@ Report privately via:
 - The maintainer contact described in the root **[SECURITY.md](../SECURITY.md)** policy.
 
 We aim to acknowledge reports within **5 business days**.
+
+## European Cyber Resilience Act (CRA) & Article 14
+
+For CRA Article 14 reporting, ENISA Single Reporting Platform (SRP) escalation language, acknowledgement SLA (**48 hours**), and CycloneDX SBOM pointers, see the dedicated section in the root **[SECURITY.md](../SECURITY.md)**.
+
+Architectural posture (what Bastion provides vs manufacturer CE duties): **[CRA_COMPLIANCE.md](CRA_COMPLIANCE.md)**. Local SBOM steps: **[CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md)**.

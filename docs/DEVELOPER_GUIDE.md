@@ -170,8 +170,10 @@ git push origin v2.0.1
 ```
 
 This triggers:
-- **`.github/workflows/publish-mcp.yml`** - core PyPI, npm, MCP Registry
-- **`.github/workflows/publish-docker.yml`** - GHCR proxy + dashboard images
+- **`.github/workflows/publish-mcp.yml`** - core PyPI, npm, MCP Registry, **CycloneDX SBOM artifacts** (`bom.json`, `bom-npm.json`)
+- **`.github/workflows/publish-docker.yml`** - GHCR proxy + dashboard images + **SBOM artifact**
+
+Local SBOM (no version bump required): `python scripts/generate_sbom.py --output bom.json` - see [CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md).
 
 5. Publish all 17 integration packages:
 
@@ -203,4 +205,6 @@ Or: GitHub Actions → **Publish Integration Packages** → `all`.
 
 - [SUPPORT.md](../SUPPORT.md) - issues and docs links
 - [FUNDING.md](../FUNDING.md) - sponsorship and commercial licensing
-- [SECURITY.md](../SECURITY.md) - vulnerability reporting
+- [SECURITY.md](../SECURITY.md) - vulnerability reporting + CRA Article 14
+- [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) - SBOM / OpenSSF steward posture
+- [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md) - provenance and release workflows

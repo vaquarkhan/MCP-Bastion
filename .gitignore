@@ -29,6 +29,10 @@ coverage.xml
 !run-dashboard.cmd
 *.bat
 
+# Local CycloneDX SBOM outputs (generated; CI uploads as artifacts)
+bom.json
+bom-npm.json
+
 # Windows / editors / merge cruft
 Thumbs.db
 ehthumbs.db

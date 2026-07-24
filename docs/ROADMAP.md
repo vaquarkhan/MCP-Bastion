@@ -156,7 +156,7 @@ Low engineering cost; improves GitHub search and time-to-first-demo (learned fro
 | Feature | Effort | Why implement | Acceptance |
 |---------|--------|---------------|------------|
 | **Sigstore / cosign image signing** | M | Enterprise procurement asks for signed artifacts | Verify workflow in [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md) |
-| **SBOM per release** (Python wheel + Docker) | S | SOC2 / vendor questionnaires | Attached to GitHub Release |
+| **SBOM per release** (Python wheel + Docker) | S | SOC2 / vendor questionnaires / CRA | ✅ CycloneDX via `scripts/generate_sbom.py` + publish workflow artifacts ([CRA_COMPLIANCE.md](CRA_COMPLIANCE.md)) |
 | **External security audit** (published report) | L | Independent validation of claims | Linked report + CVE process |
 | **npm `@mcp-bastion/core` publish** (scope + Trusted Publishers) | S | TS developers discover via npm | Package live on npmjs |
 | **E2E integration test matrix** (OPA, OTEL, webhooks, multi-tenant, hot-reload) | M | Today many paths are unit-tested only | CI job with tagged scenarios |

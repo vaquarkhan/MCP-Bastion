@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 480" role="img" aria-labelledby="title desc">
+  <title id="title">MCP-Bastion CRA supply-chain signals</title>
+  <desc id="desc">Release pipelines emit CycloneDX SBOM artifacts alongside PyPI, npm, and Docker publishes without changing runtime middleware.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <linearGradient id="slate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <rect width="1120" height="480" fill="url(#bg)"/>
+
+  <text x="48" y="48" fill="#f8fafc" font-family="Segoe UI, system-ui, sans-serif" font-size="24" font-weight="700">CRA / OpenSSF - SBOM without changing Bastion runtime</text>
+  <text x="48" y="76" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="14">CycloneDX artifacts on release workflows - fail-safe - zero new runtime deps</text>
+
+  <rect x="48" y="110" width="240" height="120" rx="14" fill="url(#slate)" stroke="#334155"/>
+  <text x="68" y="145" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700">1. Tag release</text>
+  <text x="68" y="172" fill="#94a3b8" font-family="Consolas, monospace" font-size="12">vX.Y.Z push</text>
+  <text x="68" y="196" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="12">publish-mcp / publish-docker</text>
+
+  <line x1="300" y1="170" x2="350" y2="170" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="360" y="110" width="280" height="120" rx="14" fill="url(#slate)" stroke="#14b8a6"/>
+  <text x="380" y="145" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700">2. generate_sbom.py</text>
+  <text x="380" y="172" fill="#94a3b8" font-family="Consolas, monospace" font-size="12">bom.json + bom-npm.json</text>
+  <text x="380" y="196" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="12">CycloneDX 1.5 from manifests</text>
+
+  <line x1="655" y1="170" x2="705" y2="170" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="715" y="110" width="360" height="120" rx="14" fill="url(#slate)" stroke="#334155"/>
+  <text x="735" y="145" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700">3. Upload artifact</text>
+  <text x="735" y="172" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="12">GitHub Actions artifact (90 days)</text>
+  <text x="735" y="196" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="12">Does not block PyPI / GHCR publish</text>
+
+  <rect x="48" y="270" width="480" height="160" rx="14" fill="url(#slate)" stroke="#334155"/>
+  <rect x="48" y="270" width="480" height="40" rx="14" fill="url(#teal)"/>
+  <rect x="48" y="294" width="480" height="16" fill="url(#teal)"/>
+  <text x="68" y="296" fill="#042f2e" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700">Unchanged at runtime</text>
+  <text x="68" y="340" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13">PromptGuard · Presidio · RBAC · FinOps · JSON-RPC path</text>
+  <text x="68" y="368" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="13">bastion.yaml schema unchanged · no new required deps</text>
+  <text x="68" y="396" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="13">Library stays zero-infra drop-in middleware</text>
+
+  <rect x="560" y="270" width="512" height="160" rx="14" fill="url(#slate)" stroke="#334155"/>
+  <rect x="560" y="270" width="512" height="40" rx="14" fill="#0ea5e9"/>
+  <rect x="560" y="294" width="512" height="16" fill="#0ea5e9"/>
+  <text x="580" y="296" fill="#0f172a" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700">Article 14 + auditor handoff</text>
+  <text x="580" y="340" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13">SECURITY.md - private advisory + ENISA SRP escalation</text>
+  <text x="580" y="368" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="13">Downstream PDE makers attach bom.json to their CE docs</text>
+  <text x="580" y="396" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="13">attest export + metrics remain session evidence</text>
+</svg>
