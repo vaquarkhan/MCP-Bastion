@@ -9,6 +9,8 @@ Secure MCP servers with local-first middleware for prompt injection defense, PII
 
 **3.2.0:** hybrid stateful / stateless MCP transport (`mcp_transport`) - [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) · [tutorial](HYBRID_TRANSPORT_TUTORIAL.md).
 
+**CRA / OpenSSF:** CycloneDX SBOM + Article 14 VDP - [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) · [tutorial](CRA_SBOM_TUTORIAL.md).
+
 **3.1.0 dashboard:** local posture grades, Sonar-style prevalidation, PMD-style issue guides, and FinOps actual vs would-have-been - see [dashboard/README.md](../dashboard/README.md).
 
 ## Why teams adopt MCP-Bastion
@@ -69,7 +71,8 @@ Hub with all files: [Docs README](README.md).
 - [Discovery checklist](DISCOVERY.md)  -  registries and ecosystem lists
 - [Roadmap](ROADMAP.md)  -  directions (Issues for delivery)
 - [Benchmarks (RBAC & context reduction)](BENCHMARKS.md)  -  measured output-budget, discovery, cache, RBAC matrix
-- [Supply chain & releases](SUPPLY_CHAIN.md)  -  CI merge gates, automated releases, npm provenance, PyPI OIDC
+- [Supply chain & releases](SUPPLY_CHAIN.md)  -  CI merge gates, automated releases, npm provenance, PyPI OIDC, CycloneDX SBOM
+- [CRA compliance (SBOM + Article 14)](CRA_COMPLIANCE.md)  -  OpenSSF steward MVP docs without changing runtime middleware
 - [Integration models](INTEGRATION_MODELS.md)  -  middleware vs URL-swap gateways; how each stack gets Bastion in front of MCP
 - [Detailed Tutorial](DETAILED_TUTORIAL.md)
 - [Policy as Code](POLICY_AS_CODE.md)

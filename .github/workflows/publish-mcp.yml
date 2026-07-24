@@ -90,6 +90,32 @@ jobs:
       - name: Build Python distributions
         run: uv build
 
+      # ==========================================
+      # 2b. CYCLONEDX SBOM (CRA / OpenSSF) - fail-safe
+      # ==========================================
+      - name: Generate CycloneDX SBOM (Python)
+        id: sbom_py
+        continue-on-error: true
+        run: |
+          python scripts/generate_sbom.py \
+            --pyproject pyproject.toml \
+            --output bom.json
+          python scripts/generate_sbom.py \
+            --npm packages/core/package.json \
+            --output bom-npm.json
+
+      - name: Upload CycloneDX SBOM artifacts
+        if: always() && steps.sbom_py.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-bastion-sbom-${{ github.ref_name }}
+          path: |
+            bom.json
+            bom-npm.json
+          if-no-files-found: warn
+          retention-days: 90
+
       - name: Publish distribution to PyPI
         if: steps.pub.outputs.do == 'true'
         continue-on-error: true

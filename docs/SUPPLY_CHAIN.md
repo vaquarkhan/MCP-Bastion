@@ -47,10 +47,29 @@ Integration packages in `integrations/*/pyproject.toml` depend on **`mcp-bastion
 ## Operating guidance
 
 1. **Keep this file in sync** with `.github/workflows/*.yml` whenever CI or publish jobs change.
-2. **Provenance**  -  cite **npm provenance** for `@mcp-bastion/core` and **PyPI Trusted Publishing** for Python wheels when answering security questionnaires.
-3. **One-line summary**  -  “Python and npm releases build in GitHub Actions; npm uses provenance; PyPI uses OIDC trusted publishing.”
+2. **Provenance** - cite **npm provenance** for `@mcp-bastion/core` and **PyPI Trusted Publishing** for Python wheels when answering security questionnaires.
+3. **One-line summary** - "Python and npm releases build in GitHub Actions; npm uses provenance; PyPI uses OIDC trusted publishing; CycloneDX SBOMs upload as release-workflow artifacts."
+
+## Software Bill of Materials (CycloneDX)
+
+For **CRA / OpenSSF** supply-chain transparency, release workflows generate CycloneDX **1.5** JSON without adding runtime dependencies:
+
+| Workflow | Outputs | Notes |
+|----------|---------|--------|
+| `publish-mcp.yml` | `bom.json`, `bom-npm.json` | After `uv build`; `continue-on-error` (fail-safe) |
+| `publish-docker.yml` | `bom.json` | Before image push; fail-safe |
+
+Local generation:
+
+```bash
+python scripts/generate_sbom.py --output bom.json
+python scripts/generate_sbom.py --npm packages/core/package.json --output bom-npm.json
+```
+
+Docs: [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) · tutorial [CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md) · diagram `images/mcp-bastion-cra-sbom.svg`.
 
 ## Related reading
 
-- [SECURITY.md](SECURITY.md)  -  product security behavior and dependency notes  
-- [PILLARS.md](PILLARS.md)  -  policy controls, `bastion.yaml`, and dashboard health rows  
+- [SECURITY.md](SECURITY.md) - product security behavior and dependency notes  
+- [../SECURITY.md](../SECURITY.md) - vulnerability disclosure + CRA Article 14  
+- [PILLARS.md](PILLARS.md) - policy controls, `bastion.yaml`, and dashboard health rows  

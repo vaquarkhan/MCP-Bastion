@@ -215,6 +215,18 @@ Full walkthrough with curl examples, Redis scaling, and agent stability: **[HYBR
 
 ---
 
+## CRA / CycloneDX SBOM (supply chain, no runtime change)
+
+Generate a CycloneDX SBOM for questionnaires and CRA Article 14 steward docs:
+
+```bash
+python scripts/generate_sbom.py --output bom.json
+```
+
+Tutorial: **[CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md)** · posture: [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) · VDP: [SECURITY.md](../SECURITY.md).
+
+---
+
 ## Summary
 
 | Scenario | Approach |
@@ -223,5 +235,6 @@ Full walkthrough with curl examples, Redis scaling, and agent stability: **[HYBR
 | Your own TypeScript MCP server | Use `wrapWithMcpBastion(server, options)`. |
 | Third-party / GitHub / open-source MCP server | Run a Bastion-wrapped proxy that forwards to the upstream server, or run a wrapper process that injects middleware if the server supports it. |
 | Stateless MCP + legacy sessions (same proxy) | Enable `mcp_transport` in `bastion.yaml`; use `serve --proxy` + discovery card. [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) |
+| CRA / SBOM evidence | `python scripts/generate_sbom.py` - [CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md) |
 
 For more examples, see [examples/README.md](../examples/README.md), [SETUP_GUIDE.md](../SETUP_GUIDE.md), and [LLM_INTEGRATION.md](LLM_INTEGRATION.md) for client-side (OpenAI, Claude, etc.) setup.

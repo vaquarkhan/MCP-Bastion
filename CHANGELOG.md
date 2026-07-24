@@ -6,6 +6,12 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **CycloneDX SBOM (CRA / OpenSSF):** `scripts/generate_sbom.py` emits `bom.json` / `bom-npm.json` from manifests (no new runtime deps). Fail-safe upload on `publish-mcp.yml` and `publish-docker.yml`.
+- **CRA Article 14 VDP addendum:** root [SECURITY.md](SECURITY.md) ENISA SRP escalation + 48h acknowledgement SLA; docs [CRA_COMPLIANCE.md](docs/CRA_COMPLIANCE.md), [CRA_SBOM_TUTORIAL.md](docs/CRA_SBOM_TUTORIAL.md), diagram `images/mcp-bastion-cra-sbom.svg`.
+- **Tests:** `tests/test_generate_sbom.py` for SBOM generator coverage.
+
 ## [3.3.0] - 2026-07-21
 
 Minor release: **behavioral fingerprinting** middleware pillar - **opt-in, default OFF** (no breaking changes). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.3.0**.
