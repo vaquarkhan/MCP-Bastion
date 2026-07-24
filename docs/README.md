@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: **`mcp-bastion-python==3.3.0`** ([PyPI](https://pypi.org/project/mcp-bastion-python/)) - behavioral fingerprinting (opt-in) + hybrid MCP transport; see [CHANGELOG](../CHANGELOG.md).
+Current Python package release: **`mcp-bastion-python==3.3.1`** ([PyPI](https://pypi.org/project/mcp-bastion-python/)) - CRA SBOM / Article 14 steward docs + behavioral fingerprinting (opt-in) + hybrid MCP transport; see [CHANGELOG](../CHANGELOG.md).
 
 ## Start here
 

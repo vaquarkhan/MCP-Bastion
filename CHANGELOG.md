@@ -1,10 +1,14 @@
 ﻿# Changelog
 
-**Current release:** **3.3.0** (2026-07-21) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.3.0/) · [Docker `v3.3.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **3.3.1** (2026-07-24) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.3.1/) · [Docker `v3.3.1`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [3.3.1] - 2026-07-24
+
+Patch release: **CRA / OpenSSF steward docs + CycloneDX SBOM pipeline** - **no runtime or API breaking changes**. All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.3.1**.
 
 ### Added
 

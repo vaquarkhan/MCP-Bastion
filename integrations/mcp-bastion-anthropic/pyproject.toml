@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-anthropic"
-version = "3.3.0"
+version = "3.3.1"
 description = "MCP-Bastion security middleware for Anthropic Claude  -  prompt injection, PII, and rate-limit protection for AI agents"
 readme = "README.md"
 license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
