@@ -10,6 +10,7 @@ All Python files in this folder:
 
 | File | Purpose |
 |------|---------|
+| `examples/attack_demos/` | **Hero attack → defense demos** (runnable report) — see [docs/ATTACK_DEMOS.md](../docs/ATTACK_DEMOS.md) |
 | `examples/dashboard_demo.py` | Web dashboard with **rich seeded metrics** (KPIs, time series, forensics, alerts, **Insights & anomalies**  -  run with or without `--no-live`) |
 | `examples/python_server_example.py` | Minimal middleware chain |
 | `examples/full_demo.py` | All features demo (11 scenarios) |

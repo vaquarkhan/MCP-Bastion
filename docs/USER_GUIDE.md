@@ -361,6 +361,8 @@ mcp-bastion redteam
 | Topic | Document |
 |-------|----------|
 | Feature deep dive (issue → solution → benefits) | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
+| Attack demos (runnable) | [ATTACK_DEMOS.md](ATTACK_DEMOS.md) |
+| Multi-language suite | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) · [mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | Quick start | [QUICK_START.md](QUICK_START.md) |
 | Detailed tutorial | [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) |
 | CLI reference | [CLI.md](CLI.md) |

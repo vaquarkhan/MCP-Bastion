@@ -38,6 +38,7 @@
 <li><a href="configuration.html">Configuration reference</a></li>
 <li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
 <li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+<li><a href="multi-language.html">Multi-language suite</a></li>
 </ul></div>
 <div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
 <li><a href="pii-vault.html">PII vault</a></li>
@@ -49,6 +50,7 @@
 <li><a href="feature-deep-dive.html" class="active">Feature deep dive</a></li>
 <li><a href="features.html">Feature enablement</a></li>
 <li><a href="attack-prevention.html">Attack prevention</a></li>
+<li><a href="attack-demos.html">Attack demos (runnable)</a></li>
 </ul></div>
 <div class="nav-group"><div class="nav-group-title">Reference</div><ul>
 <li><a href="cli.html">CLI reference</a></li>
@@ -72,7 +74,7 @@
       <h1 id="feature-deep-dive-issue-solution-and-benefits">Feature deep dive — issue, solution, and benefits</h1>
 <p><strong>Version:</strong> 4.0.0<br />
 <strong>Audience:</strong> Security architects, platform engineers, and reviewers who need <em>why</em> each control exists—not only how to flip a YAML switch<br />
-<strong>Companion docs:</strong> <a href="features.html">FEATURES.md</a> (enablement), <a href="pillars.html">PILLARS.md</a> (counts &amp; mapping), <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> (UI), <a href="index.html">USER_GUIDE.md</a> (end-to-end handbook)</p>
+<strong>Companion docs:</strong> <a href="features.html">FEATURES.md</a> (enablement), <a href="pillars.html">PILLARS.md</a> (counts &amp; mapping), <a href="attack-demos.html">ATTACK_DEMOS.md</a> (runnable attack→defense), <a href="multi-language.html">MULTI_LANGUAGE_SUITE.md</a> (all languages), <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> (UI), <a href="index.html">USER_GUIDE.md</a> (end-to-end handbook)</p>
 <p>This document walks <strong>every major MCP-Bastion capability</strong>—request-path pillars, privacy, FinOps, runtime governance, proxy/transport, the <strong>local dashboard</strong>, CLI/ops, and compliance—using a fixed template:</p>
 <table>
 <thead>
@@ -163,6 +165,10 @@
 <td>Ops</td>
 <td><code>mcp-bastion redteam</code> for harness scores</td>
 </tr>
+<tr>
+<td>Demo</td>
+<td><code>python -m examples.attack_demos --only prompt_guard</code> → <a href="attack-demos.html">ATTACK_DEMOS.md</a></td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -199,8 +205,8 @@
 <td><code>pillar_health</code> → PII Redaction; KPI <code>pii_redacted</code></td>
 </tr>
 <tr>
-<td>Related</td>
-<td>Reversible mode → <a href="#c1-reversible-pii-vault-pii_vault">§ C1 PII vault</a></td>
+<td>Demo</td>
+<td><code>python -m examples.attack_demos --only pii</code></td>
 </tr>
 </tbody>
 </table>
@@ -240,6 +246,10 @@
 <tr>
 <td>Dashboard</td>
 <td>Rate Limiter row; block reasons; governance</td>
+</tr>
+<tr>
+<td>Demo</td>
+<td><code>python -m examples.attack_demos --only rate_limit</code> (error <strong>-32002</strong>)</td>
 </tr>
 </tbody>
 </table>
@@ -315,6 +325,10 @@
 <td>Dashboard</td>
 <td>Content Filter row</td>
 </tr>
+<tr>
+<td>Demo</td>
+<td><code>python -m examples.attack_demos --only content_filter</code></td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -354,6 +368,10 @@
 <tr>
 <td>Dashboard</td>
 <td>RBAC row; <code>/api/governance</code>; Agents panel when IAM is on</td>
+</tr>
+<tr>
+<td>Demo</td>
+<td><code>python -m examples.attack_demos --only rbac</code></td>
 </tr>
 </tbody>
 </table>

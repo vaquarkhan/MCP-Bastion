@@ -1,6 +1,10 @@
 # How MCP-Bastion Prevents Real Attacks
 
-This document shows concrete attack scenarios and how MCP-Bastion blocks or mitigates them. Run `examples/full_demo.py` to see these in action.
+This document shows concrete attack scenarios and how MCP-Bastion blocks or mitigates them.
+
+**Runnable demos (preferred):** [ATTACK_DEMOS.md](ATTACK_DEMOS.md) — `PYTHONPATH=src python -m examples.attack_demos`
+
+Also: `examples/full_demo.py` (legacy combined script).
 
 ---
 

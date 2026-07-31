@@ -2,7 +2,7 @@
 
 **Version:** 4.0.0  
 **Audience:** Security architects, platform engineers, and reviewers who need *why* each control exists—not only how to flip a YAML switch  
-**Companion docs:** [FEATURES.md](FEATURES.md) (enablement), [PILLARS.md](PILLARS.md) (counts & mapping), [dashboard/README.md](../dashboard/README.md) (UI), [USER_GUIDE.md](USER_GUIDE.md) (end-to-end handbook)
+**Companion docs:** [FEATURES.md](FEATURES.md) (enablement), [PILLARS.md](PILLARS.md) (counts & mapping), [ATTACK_DEMOS.md](ATTACK_DEMOS.md) (runnable attack→defense), [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) (all languages), [dashboard/README.md](../dashboard/README.md) (UI), [USER_GUIDE.md](USER_GUIDE.md) (end-to-end handbook)
 
 This document walks **every major MCP-Bastion capability**—request-path pillars, privacy, FinOps, runtime governance, proxy/transport, the **local dashboard**, CLI/ops, and compliance—using a fixed template:
 
@@ -68,6 +68,7 @@ prompt_guard:
 | Error | **-32001** |
 | Dashboard | `pillar_health` → Prompt Guard; governance tiles; attack matrix |
 | Ops | `mcp-bastion redteam` for harness scores |
+| Demo | `python -m examples.attack_demos --only prompt_guard` → [ATTACK_DEMOS.md](ATTACK_DEMOS.md) |
 
 ---
 
@@ -95,7 +96,7 @@ pii:
 |--|--|
 | Error / path | **-32002** or silent redact depending on path |
 | Dashboard | `pillar_health` → PII Redaction; KPI `pii_redacted` |
-| Related | Reversible mode → [§ C1 PII vault](#c1-reversible-pii-vault-pii_vault) |
+| Demo | `python -m examples.attack_demos --only pii` |
 
 ---
 
@@ -127,6 +128,7 @@ rate_limit:
 |--|--|
 | Error | **-32003** |
 | Dashboard | Rate Limiter row; block reasons; governance |
+| Demo | `python -m examples.attack_demos --only rate_limit` (error **-32002**) |
 
 ---
 
@@ -185,6 +187,7 @@ content_filter:
 |--|--|
 | Error | **-32005** |
 | Dashboard | Content Filter row |
+| Demo | `python -m examples.attack_demos --only content_filter` |
 
 ---
 
@@ -218,6 +221,7 @@ See [RBAC.md](RBAC.md).
 |--|--|
 | Error | **-32006** |
 | Dashboard | RBAC row; `/api/governance`; Agents panel when IAM is on |
+| Demo | `python -m examples.attack_demos --only rbac` |
 
 ---
 

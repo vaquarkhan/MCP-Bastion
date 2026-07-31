@@ -579,7 +579,7 @@ Hooks into MCP SDKs (TypeScript, Python) and FastMCP via standard middleware. No
 | **Hot reload** | Optional **reload `bastion.yaml` on change** without restarting the MCP server ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)). |
 | **Composable middleware** | **`compose_middleware`** ordering; **`MCPBastionMiddleware`** flags for each pillar. |
 | **CLI** | **`mcp-bastion scan`**, **`audit`**, **`validate`**, **`redteam`**, **`manifest`**, **`attest export`**, **`serve`**, **`dashboard`**, **`doctor`**, **`tail`**  -  [docs/CLI.md](docs/CLI.md). |
-| **Python + TypeScript** | **`mcp-bastion-python`** on PyPI; **`@mcp-bastion/core`** on npm for TypeScript MCP servers (rate limits in-process; prompt/PII via optional sidecar). |
+| **Python + multi-language** | **`mcp-bastion-python`** on PyPI (engine). For TypeScript / Java / Go / .NET / Kotlin / Rust adapters + shared `bastion.yaml`, use **[mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite)** — see [docs/MULTI_LANGUAGE_SUITE.md](docs/MULTI_LANGUAGE_SUITE.md). Optional in-repo TypeScript: **`@mcp-bastion/core`**. |
 | **Containers** | **Dockerfile**, **docker-compose** profiles (proxy + optional dashboard)  -  [DOCKER.md](DOCKER.md). **Prebuilt images (GHCR):** [`mcp-bastion-proxy`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy), [`mcp-bastion-dashboard`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)  -  published on each `v*` tag ([publish-docker.yml](.github/workflows/publish-docker.yml)). |
 
 ### Real-Time Dashboard and Alerts
@@ -677,6 +677,8 @@ mcp-bastion audit --format json -o .bastion/scan/risk-audit.json
 | Goal | Read in order |
 |------|----------------|
 | **End-to-end handbook** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) → [published Docs](https://vaquarkhan.github.io/MCP-Bastion/guide/) |
+| **Feature deep dive + attack demos** | [docs/FEATURE_DEEP_DIVE.md](docs/FEATURE_DEEP_DIVE.md) → [docs/ATTACK_DEMOS.md](docs/ATTACK_DEMOS.md) |
+| **Java / TypeScript / Go / .NET / Kotlin / Rust** | [docs/MULTI_LANGUAGE_SUITE.md](docs/MULTI_LANGUAGE_SUITE.md) → [mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | **Policy-as-code (`bastion.yaml`)** | [docs/PILLARS.md](docs/PILLARS.md) → [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) → `bastion.yaml.example` → [docs/CLI.md](docs/CLI.md) (`validate`) |
 | **LLM clients (OpenAI, Claude, Gemini, …)** | [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) → [docs/INTEGRATION_MODELS.md](docs/INTEGRATION_MODELS.md) → [examples/](examples/) (`llm_*.py`) |
 | **FastMCP / TypeScript / third-party MCP** | [docs/TUTORIALS.md](docs/TUTORIALS.md) → [docs/DETAILED_TUTORIAL.md](docs/DETAILED_TUTORIAL.md) |
@@ -689,6 +691,8 @@ Full index: **[docs/README.md](docs/README.md)** · handbook site: **[Docs guide
 |-----|-------------|
 | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | **End-to-end user guide** (concepts → install → proxy → vault → ops); published at `/guide/` |
 | [docs/FEATURE_DEEP_DIVE.md](docs/FEATURE_DEEP_DIVE.md) | **Feature-by-feature deep dive**: issue, how Bastion solves it, benefits (incl. dashboard) |
+| [docs/ATTACK_DEMOS.md](docs/ATTACK_DEMOS.md) | Runnable attack → defense demos (keep heavy walkthroughs out of this README) |
+| [docs/MULTI_LANGUAGE_SUITE.md](docs/MULTI_LANGUAGE_SUITE.md) | Multi-language connectors via [mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | [docs/index.md](docs/index.md) | Markdown docs home (source hub) |
 | [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) | **`bastion.yaml` reference**: keys, examples, hot reload, alerts |
 | [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) | **LLM integration**: OpenAI, Claude, Gemini, Mistral, Grok (stdio + HTTP configs) |
