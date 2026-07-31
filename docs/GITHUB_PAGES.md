@@ -1,48 +1,45 @@
 # Publish Docs as GitHub Pages
 
-This repository can publish documentation directly from the `docs/` folder.
+The public site is built from **`docs/site/`** and deployed by [`.github/workflows/pages.yml`](../.github/workflows/pages.yml).
 
-## Option 1 (fastest): GitHub Pages from `main` + `/docs`
+**Live URL:** https://vaquarkhan.github.io/MCP-Bastion/
 
-1. Push your branch to GitHub.
-2. Open repository **Settings**.
-3. Go to **Pages**.
-4. Under **Build and deployment**:
-   - **Source**: `Deploy from a branch`
-   - **Branch**: `main`
-   - **Folder**: `/docs`
-5. Save.
+| Path | Content |
+|------|---------|
+| `/` | Marketing landing (`docs/site/index.html`) |
+| `/guide/` | Professional documentation handbook (generated HTML) |
+| `/integrations.html` | Integration matrix |
 
-After a few minutes, your site is available at:
+## Documentation guide (handbook)
 
-- `https://<org-or-user>.github.io/<repo>/`
+Markdown under `docs/` is the source of truth. A curated set is rendered into `docs/site/guide/` with left-nav IA (Apache Spark / AWS-style handbook).
 
-`docs/index.md` becomes the landing page.
+```bash
+pip install markdown
+python scripts/build_docs_site.py
+```
 
-## Option 2: Custom domain
+Then open `docs/site/guide/index.html` locally, or after merge wait for Pages.
 
-1. Add DNS record (CNAME) pointing to GitHub Pages target.
-2. In **Settings > Pages**, set **Custom domain**.
+**Primary handbook:** [USER_GUIDE.md](USER_GUIDE.md) → https://vaquarkhan.github.io/MCP-Bastion/guide/user-guide.html
+
+CI regenerates `guide/*.html` on every Pages deploy when markdown, the builder, or `docs/site/**` changes.
+
+## Enable Pages (one-time)
+
+1. Repository **Settings → Pages**.
+2. **Source**: GitHub Actions (not “Deploy from a branch”).
+3. Ensure the `Deploy to GitHub Pages` workflow has permission to write Pages.
+
+## Custom domain (optional)
+
+1. Add DNS (CNAME) to the GitHub Pages target.
+2. **Settings → Pages → Custom domain**.
 3. Enable **Enforce HTTPS**.
-
-## Suggested docs navigation structure
-
-- `docs/QUICK_START.md` (minimal code + CI)
-- `docs/DISCOVERY.md` (registry checklist)
-- `docs/ROADMAP.md` (high-level directions)
-- `docs/index.md` (home)
-- `docs/DETAILED_TUTORIAL.md` (full walkthrough)
-- `docs/PILLARS.md` (pillar definitions and `bastion.yaml` mapping)
-- `docs/SUPPLY_CHAIN.md` (CI, releases, npm provenance, PyPI OIDC)
-- `docs/INTEGRATION_MODELS.md` (middleware vs URL-swap adoption; stack bridges)
-- `docs/POLICY_AS_CODE.md` (configuration)
-- `docs/CLI.md` (commands)
-- `docs/LLM_INTEGRATION.md` (provider integration)
-- `docs/SECURITY.md` and `docs/METRICS.md` (operations)
 
 ## Maintenance workflow
 
-1. Update docs in feature branch.
-2. Run tests (`pytest`) and verify commands in examples.
-3. Open PR and review docs links.
-4. Merge to `main`; Pages auto-publishes changes from `docs`.
+1. Edit markdown in `docs/` (or marketing HTML in `docs/site/`).
+2. Run `python scripts/build_docs_site.py` locally to preview.
+3. Open a PR; merge to `main`.
+4. Pages workflow builds the guide and publishes.

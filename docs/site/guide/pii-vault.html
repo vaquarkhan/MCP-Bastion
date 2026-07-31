@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PII vault | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — PII vault">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html" class="active">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>PII vault</h1>
+      </header>
+      <h1 id="reversible-pii-vault-abstraction-hydration">Reversible PII vault (abstraction + hydration)</h1>
+<p>Opt-in privacy mode that <strong>tokenizes</strong> PII instead of permanently destroying it - so agents/LLMs never see raw emails, SSNs, or phones, while MCP tools can still execute with the real values.</p>
+<blockquote>
+<p><strong>Default unchanged:</strong> <code>pii.enabled: true</code> still uses <strong>destructive</strong> Presidio placeholders (<code>&lt;EMAIL_ADDRESS&gt;</code>, …). Vault is <strong>OFF</strong> until you set <code>pii_vault.enabled: true</code>.</p>
+</blockquote>
+<h2 id="why">Why</h2>
+<p>Destructive masking breaks tool calling:</p>
+<pre><code class="language-text">Agent: &quot;send invite to alice@example.com&quot;
+Destructive: &quot;send invite to &lt;EMAIL_ADDRESS&gt;&quot;  → calendar tool fails
+Vault:       &quot;send invite to {{pii:EMAIL_ADDRESS:a3f9…}}&quot;
+  → LLM never sees alice@…
+  → next tools/call args hydrated back to alice@… before the MCP server runs
+</code></pre>
+<h2 id="diagram">Diagram</h2>
+<p><img alt="PII vault abstract and hydrate" src="https://github.com/vaquarkhan/MCP-Bastion/blob/main/images/mcp-bastion-pii-vault.svg" /></p>
+<h2 id="enable">Enable</h2>
+<pre><code class="language-yaml">pii:
+  enabled: true
+
+pii_vault:
+  enabled: true      # default false
+  ttl_seconds: 3600  # session map TTL (memory or Redis state_backend)
+  # token_style: typed        # default — {{pii:TYPE:csprng}}
+  # token_style: low_entropy  # optional — EMAIL_ADDRESS_1 / Person_A
+
+# Recommended for multi-replica:
+# state_backend:
+#   type: redis
+#   redis_url: redis://127.0.0.1:6379/0
+</code></pre>
+<p>No new required package dependencies. Detection uses existing Presidio (+ regex fallback for email/SSN/phone when Presidio is unavailable).</p>
+<h2 id="lifecycle">Lifecycle</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>When</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Abstract</strong></td>
+<td>Outbound tool/resource text (middleware <strong>and</strong> HTTP proxy)</td>
+<td>PII → tokens stored in session vault</td>
+</tr>
+<tr>
+<td><strong>Hydrate</strong></td>
+<td>Inbound <code>tools/call</code> arguments (middleware <strong>and</strong> proxy, before upstream)</td>
+<td>Tokens → original plaintext for the MCP server</td>
+</tr>
+</tbody>
+</table>
+<h3 id="token-styles">Token styles</h3>
+<table>
+<thead>
+<tr>
+<th><code>token_style</code></th>
+<th>Example</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>typed</code> (default)</td>
+<td><code>{{pii:EMAIL_ADDRESS:a3f9b2c1d4e5}}</code></td>
+<td>CSPRNG id - never a hash of plaintext</td>
+</tr>
+<tr>
+<td><code>low_entropy</code> (opt-in)</td>
+<td><code>EMAIL_ADDRESS_1</code>, <code>Person_A</code></td>
+<td>Lower uncanny-valley for LLMs; still session-scoped</td>
+</tr>
+</tbody>
+</table>
+<p>Same value within a session reuses the same token so the LLM stays coherent.</p>
+<h2 id="metrics">Metrics</h2>
+<p>Dashboard / <code>MetricsStore</code> counters (when vault is enabled):</p>
+<ul>
+<li><code>pii_vault_abstract_total</code> - outbound tokenizations</li>
+<li><code>pii_vault_hydrate_total</code> - inbound restorations</li>
+</ul>
+<h2 id="streaming-helper">Streaming helper</h2>
+<p><code>BufferedTokenRestorer</code> restores tokens split across chunks (<code>{{pii:</code> … <code>}}</code>). The HTTP proxy mutates <strong>SSE</strong> (<code>text/event-stream</code>) event-complete JSON-RPC <code>data:</code> frames and buffered JSON bodies.</p>
+<h2 id="security-notes">Security notes</h2>
+<ul>
+<li>Session-scoped maps; TTL wipe; use Redis <code>state_backend</code> when load-balancing</li>
+<li>Do not log plaintext next to tokens in custom sinks</li>
+<li>Vault does <strong>not</strong> replace PromptGuard, RBAC, or FinOps</li>
+</ul>
+<h2 id="tutorial">Tutorial</h2>
+<p>Step-by-step: <a href="pii-vault-tutorial.html">PII_VAULT_TUTORIAL.md</a></p>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY.md">SECURITY.md</a> - OWASP / PII posture</li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/MCP_SURFACE_AND_SCALE.md">MCP_SURFACE_AND_SCALE.md</a> - Redis <code>state_backend</code></li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ZERO_INFRA_STRATEGY.md">ZERO_INFRA_STRATEGY.md</a> - memory default, Redis opt-in</li>
+</ul>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

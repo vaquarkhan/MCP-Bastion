@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature enablement | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Feature enablement">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html" class="active">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Feature enablement</h1>
+      </header>
+      <h1 id="feature-guide-all-pillars">Feature guide (all pillars)</h1>
+<p>How to enable and use every MCP-Bastion security control. For schema details see <a href="configuration.html">POLICY_AS_CODE.md</a>; for pillar counts see <a href="pillars.html">PILLARS.md</a>.</p>
+<h2 id="core-request-path-controls-10">Core request-path controls (10)</h2>
+<h3 id="1-prompt-injection-defense-prompt_guard">1. Prompt injection defense (<code>prompt_guard</code>)</h3>
+<p>Blocks jailbreak and injection payloads on inbound tool arguments and extended MCP methods.</p>
+<pre><code class="language-yaml">prompt_guard:
+  enabled: true
+  threshold: 0.85
+  heuristic_fallback: true
+  fail_open: false
+  use_ungated_default: true    # ProtectAI DeBERTa (no HF gate); default
+  # model_id: meta-llama/Llama-Prompt-Guard-2-86M  # only when use_ungated_default: false
+</code></pre>
+<ul>
+<li><strong>Enable:</strong> <code>prompt_guard.enabled: true</code></li>
+<li><strong>Error code:</strong> -32001</li>
+<li><strong>CLI:</strong> <code>mcp-bastion redteam</code> for harness scores (<a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/REDTEAM.md">REDTEAM.md</a>)</li>
+<li><strong>Tip:</strong> Default ML model is ungated (<code>use_ungated_default: true</code>). Keep <code>fail_open: false</code> in production. Set <code>use_ungated_default: false</code> only if you intentionally use gated Llama Prompt Guard + HF login.</li>
+</ul>
+<h3 id="2-pii-redaction-pii">2. PII redaction (<code>pii</code>)</h3>
+<p>Scrubs emails, phones, SSN-style patterns from tool outputs before they reach the model (destructive Presidio placeholders by default).</p>
+<pre><code class="language-yaml">pii:
+  enabled: true
+</code></pre>
+<ul>
+<li><strong>Enable:</strong> <code>pii.enabled: true</code></li>
+<li><strong>Error code:</strong> -32002 (block) or silent redact depending on path</li>
+<li><strong>Dashboard:</strong> PII row in <code>pillar_health</code></li>
+<li><strong>Reversible mode (opt-in):</strong> see <a href="pii-vault.html">PII_VAULT.md</a> - <code>pii_vault.enabled: true</code> uses <code>{{pii:TYPE:id}}</code> tokens and hydrates tool args.</li>
+</ul>
+<h3 id="3-rate-limiting-rate_limit">3. Rate limiting (<code>rate_limit</code>)</h3>
+<p>Token bucket on iterations, timeout, and optional per-tool caps.</p>
+<pre><code class="language-yaml">rate_limit:
+  enabled: true
+  max_iterations: 15
+  timeout_seconds: 60
+  token_budget: 50000
+  max_per_tool: 0
+</code></pre>
+<ul>
+<li><strong>Enable:</strong> <code>rate_limit.enabled: true</code></li>
+<li><strong>Error code:</strong> -32003</li>
+<li><strong>Multi-replica:</strong> set <code>state_backend.type: redis</code> (<a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/MCP_SURFACE_AND_SCALE.md">MCP_SURFACE_AND_SCALE.md</a>)</li>
+</ul>
+<h3 id="4-circuit-breaker-circuit_breaker">4. Circuit breaker (<code>circuit_breaker</code>)</h3>
+<p>Per-tool failure threshold; opens circuit after repeated errors.</p>
+<pre><code class="language-yaml">circuit_breaker:
+  enabled: true
+</code></pre>
+<ul>
+<li><strong>Enable:</strong> <code>circuit_breaker.enabled: true</code></li>
+<li><strong>Error code:</strong> -32004</li>
+</ul>
+<h3 id="5-content-filter-content_filter">5. Content filter (<code>content_filter</code>)</h3>
+<p>Blocks code execution patterns, file paths, URLs; supports allow/deny lists.</p>
+<pre><code class="language-yaml">content_filter:
+  enabled: true
+  block_code_execution: true
+  block_file_paths: true
+  block_urls: true
+</code></pre>
+<ul>
+<li><strong>Enable:</strong> <code>content_filter.enabled: true</code></li>
+<li><strong>Error code:</strong> -32005</li>
+<li><strong>Required for:</strong> <code>tool_metadata_guard</code> (must also enable <code>content_filter</code> or <code>prompt_guard</code>)</li>
+</ul>
+<h3 id="6-rbac-rbac">6. RBAC (<code>rbac</code>)</h3>
+<p>Role-based tool access with fnmatch globs.</p>
+<pre><code class="language-yaml">rbac:
+  enabled: true
+  require_authenticated_identity: true
+  permissions:
+    viewer: [&quot;read_*&quot;]
+    admin: [&quot;*&quot;]
+</code></pre>
+<ul>
+<li><strong>Full guide:</strong> <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/RBAC.md">RBAC.md</a></li>
+<li><strong>Error code:</strong> -32006</li>
+</ul>
+<h3 id="7-schema-validation-schema_validation">7. Schema validation (<code>schema_validation</code>)</h3>
+<p>Validates tool arguments against declared types per tool.</p>
+<pre><code class="language-yaml">schema_validation:
+  enabled: true
+  schemas:
+    create_report:
+      year: integer
+      amount: number
+</code></pre>
+<ul>
+<li><strong>Enable:</strong> <code>schema_validation.enabled: true</code> + per-tool <code>schemas</code></li>
+<li><strong>Error code:</strong> -32007</li>
+</ul>
+<h3 id="8-replay-guard-replay_guard">8. Replay guard (<code>replay_guard</code>)</h3>
+<p>Detects duplicate request IDs / nonces.</p>
+<pre><code class="language-yaml">replay_guard:
+  enabled: true
+  require_nonce: false
+</code></pre>
+<ul>
+<li><strong>Enable:</strong> <code>replay_guard.enabled: true</code></li>
+<li><strong>Error code:</strong> -32008</li>
+<li><strong>Multi-replica:</strong> Redis <code>state_backend</code></li>
+</ul>
+<h3 id="9-cost-tracker-cost_tracker">9. Cost tracker (<code>cost_tracker</code>)</h3>
+<p>Session and daily spend caps keyed by authenticated principal.</p>
+<pre><code class="language-yaml">cost_tracker:
+  enabled: true
+  max_cost_per_session: 10.0
+  max_cost_per_day: 100.0
+  checkpoint_path: /var/lib/bastion/cost.ckpt
+</code></pre>
+<ul>
+<li><strong>Enable:</strong> <code>cost_tracker.enabled: true</code></li>
+<li><strong>Set per-call cost:</strong> <code>context.metadata["cost"]</code> on each tool call</li>
+<li><strong>Error code:</strong> -32009</li>
+<li><strong>FinOps:</strong> <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a>, <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/COST_AWARE_GOVERNANCE.md">COST_AWARE_GOVERNANCE.md</a></li>
+</ul>
+<h3 id="10-semantic-cache-semantic_cache">10. Semantic cache (<code>semantic_cache</code>)</h3>
+<p>Lexical (Jaccard) cache for repeated tool argument patterns.</p>
+<pre><code class="language-yaml">semantic_cache:
+  enabled: true
+  similarity_threshold: 0.85
+</code></pre>
+<ul>
+<li><strong>Enable:</strong> <code>semantic_cache.enabled: true</code></li>
+<li><strong>Note:</strong> Word overlap, not embeddings; see <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a></li>
+</ul>
+<h2 id="extended-request-path-controls-8">Extended request-path controls (8)</h2>
+<h3 id="11-semantic-firewall-semantic_firewall">11. Semantic firewall (<code>semantic_firewall</code>)</h3>
+<p>Blocks unsafe tool/argument sequences and injection-style chains.</p>
+<pre><code class="language-yaml">semantic_firewall:
+  enabled: true
+</code></pre>
+<ul>
+<li><strong>Error code:</strong> -32010</li>
+</ul>
+<h3 id="12-sensitive-classifier-sensitive_classifier">12. Sensitive classifier (<code>sensitive_classifier</code>)</h3>
+<p>Flags M&amp;A / insider-style business content.</p>
+<pre><code class="language-yaml">sensitive_classifier:
+  enabled: true
+  threshold: 0.7
+</code></pre>
+<ul>
+<li><strong>Error code:</strong> -32011</li>
+</ul>
+<h3 id="13-external-policy-policy_engine">13. External policy (<code>policy_engine</code>)</h3>
+<p>Delegate allow/deny to OPA or Cedar CLI.</p>
+<pre><code class="language-yaml">policy_engine:
+  enabled: true
+  engine: opa
+  fail_closed: true
+  opa:
+    policy_path: policies/bastion.rego
+</code></pre>
+<ul>
+<li><strong>Error code:</strong> -32012</li>
+<li><strong>Install:</strong> <code>pip install mcp-bastion-python[policy]</code></li>
+</ul>
+<h3 id="14-edge-auth-edge_auth">14. Edge auth (<code>edge_auth</code>)</h3>
+<p>Shared-secret check on request metadata (gateway-issued token).</p>
+<pre><code class="language-yaml">edge_auth:
+  enabled: true
+  metadata_key: bastion_edge_token
+  secret_env: BASTION_EDGE_SECRET
+</code></pre>
+<ul>
+<li><strong>Error code:</strong> -32013</li>
+<li><strong>Guide:</strong> <a href="proxy.html">GATEWAY_BOUNDARY.md</a>, <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/TRANSPORT_HARDENING.md">TRANSPORT_HARDENING.md</a></li>
+</ul>
+<h3 id="15-tool-allowlist-tool_allowlist">15. Tool allowlist (<code>tool_allowlist</code>)</h3>
+<p>Fixed list of permitted tool names.</p>
+<pre><code class="language-yaml">tool_allowlist:
+  enabled: true
+  tools: [&quot;search_docs&quot;, &quot;get_weather&quot;]
+</code></pre>
+<ul>
+<li><strong>Error code:</strong> -32014</li>
+<li><strong>Pairs with:</strong> <code>discovery_filter</code> to shrink <code>tools/list</code> (<a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a>)</li>
+<li><strong>Schema minimize (opt-in):</strong> <code>discovery_filter.minimize_schemas</code> - <a href="schema-minimize.html">SCHEMA_MINIMIZE_LIVE_PIN.md</a></li>
+</ul>
+<h3 id="16-session-scope-session_limits">16. Session scope (<code>session_limits</code>)</h3>
+<p>Caps distinct tools per session (privilege creep prevention).</p>
+<pre><code class="language-yaml">session_limits:
+  enabled: true
+  max_unique_tools_per_session: 10
+</code></pre>
+<ul>
+<li><strong>Error code:</strong> -32015</li>
+<li><strong>Multi-replica:</strong> Redis <code>state_backend</code></li>
+</ul>
+<h3 id="17-tool-metadata-guard-tool_metadata_guard">17. Tool metadata guard (<code>tool_metadata_guard</code>)</h3>
+<p>Sanitizes poisoned <code>tools/list</code> metadata.</p>
+<pre><code class="language-yaml">tool_metadata_guard:
+  enabled: true
+</code></pre>
+<ul>
+<li><strong>Requires:</strong> <code>content_filter</code> or <code>prompt_guard</code> enabled</li>
+<li><strong>Error code:</strong> -32016</li>
+</ul>
+<h3 id="18-shadow-mode-programmatic">18. Shadow mode (programmatic)</h3>
+<p>Log-only evaluation for some block paths without denying.</p>
+<pre><code class="language-python">from mcp_bastion.middleware import MCPBastionMiddleware
+
+middleware = MCPBastionMiddleware(..., shadow_mode=True)
+</code></pre>
+<ul>
+<li><strong>Not a YAML boolean</strong>; set on constructor for policy dry-runs</li>
+</ul>
+<h2 id="additional-200-capabilities">Additional 2.0.0 capabilities</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>YAML / CLI</th>
+<th>Doc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agent IAM</td>
+<td><code>agent_iam</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/RUNTIME_GOVERNANCE.md">RUNTIME_GOVERNANCE.md</a></td>
+</tr>
+<tr>
+<td>Server verification</td>
+<td><code>server_verification</code>, <code>mcp-bastion manifest</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/RUNTIME_GOVERNANCE.md">RUNTIME_GOVERNANCE.md</a></td>
+</tr>
+<tr>
+<td>Argument guards</td>
+<td><code>argument_guards</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/MCP_SURFACE_AND_SCALE.md">MCP_SURFACE_AND_SCALE.md</a></td>
+</tr>
+<tr>
+<td>Full MCP surface</td>
+<td>core flags on all methods</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/MCP_SURFACE_AND_SCALE.md">MCP_SURFACE_AND_SCALE.md</a></td>
+</tr>
+<tr>
+<td>Redis state</td>
+<td><code>state_backend</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/MCP_SURFACE_AND_SCALE.md">MCP_SURFACE_AND_SCALE.md</a></td>
+</tr>
+<tr>
+<td>Audit JSONL</td>
+<td><code>audit.jsonl_path</code>, <code>mcp-bastion tail</code></td>
+<td><a href="cli.html">CLI.md</a></td>
+</tr>
+<tr>
+<td>Cost-aware policy</td>
+<td><code>cost_policy</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/COST_AWARE_GOVERNANCE.md">COST_AWARE_GOVERNANCE.md</a></td>
+</tr>
+<tr>
+<td>Governance attestation</td>
+<td><code>mcp-bastion attest export</code></td>
+<td><a href="cli.html">CLI.md</a></td>
+</tr>
+<tr>
+<td>Boundary mode</td>
+<td><code>boundary_mode</code>, <code>serve --proxy</code></td>
+<td><a href="proxy.html">GATEWAY_BOUNDARY.md</a></td>
+</tr>
+<tr>
+<td>Hybrid MCP transport</td>
+<td><code>mcp_transport</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/HYBRID_MCP_TRANSPORT.md">HYBRID_MCP_TRANSPORT.md</a></td>
+</tr>
+<tr>
+<td>BYOI identity</td>
+<td><code>identity_adapter</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ZERO_INFRA_STRATEGY.md">ZERO_INFRA_STRATEGY.md</a></td>
+</tr>
+<tr>
+<td>Secrets resolver</td>
+<td><code>secrets</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ZERO_INFRA_STRATEGY.md">ZERO_INFRA_STRATEGY.md</a></td>
+</tr>
+<tr>
+<td>Syslog SIEM</td>
+<td><code>telemetry.sinks</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="supporting-features-outside-inner-middleware">Supporting features (outside inner middleware)</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Section</th>
+<th>Doc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Audit logging</td>
+<td><code>audit</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a></td>
+</tr>
+<tr>
+<td>Alert sinks</td>
+<td><code>alerts</code></td>
+<td><a href="metrics.html">METRICS.md</a></td>
+</tr>
+<tr>
+<td>Hot reload</td>
+<td><code>hot_reload</code></td>
+<td><a href="configuration.html">POLICY_AS_CODE.md</a></td>
+</tr>
+<tr>
+<td>Multi-tenant</td>
+<td><code>multi_tenant</code></td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/USE_CASES.md">USE_CASES.md</a></td>
+</tr>
+<tr>
+<td>OTEL / Prometheus</td>
+<td><code>telemetry</code>, dashboard</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/OTEL.md">OTEL.md</a>, <a href="metrics.html">METRICS.md</a></td>
+</tr>
+<tr>
+<td>Local dashboard panels (3.1.0)</td>
+<td>posture, prevalidate, issue guides, FinOps burn</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a></td>
+</tr>
+<tr>
+<td>Red-team harness</td>
+<td>CLI</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/REDTEAM.md">REDTEAM.md</a></td>
+</tr>
+<tr>
+<td>Supply-chain doctor</td>
+<td>CLI</td>
+<td><a href="supply-chain.html">SUPPLY_CHAIN.md</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="enable-everything-dev-only">Enable everything (dev only)</h2>
+<p>Use <code>bastion.yaml.example</code> as a starting point. Production should enable only what you need and pair RBAC/FinOps with authenticated identity.</p>
+<pre><code class="language-bash">cp bastion.yaml.example bastion.yaml
+mcp-bastion validate --config bastion.yaml
+mcp-bastion serve --config bastion.yaml --http 8080
+</code></pre>
+<h2 id="error-code-quick-reference">Error code quick reference</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Pillar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-32001</td>
+<td>Prompt guard</td>
+</tr>
+<tr>
+<td>-32002</td>
+<td>PII</td>
+</tr>
+<tr>
+<td>-32003</td>
+<td>Rate limit</td>
+</tr>
+<tr>
+<td>-32004</td>
+<td>Circuit breaker</td>
+</tr>
+<tr>
+<td>-32005</td>
+<td>Content filter</td>
+</tr>
+<tr>
+<td>-32006</td>
+<td>RBAC</td>
+</tr>
+<tr>
+<td>-32007</td>
+<td>Schema validation</td>
+</tr>
+<tr>
+<td>-32008</td>
+<td>Replay guard</td>
+</tr>
+<tr>
+<td>-32009</td>
+<td>Cost tracker</td>
+</tr>
+<tr>
+<td>-32010</td>
+<td>Semantic firewall</td>
+</tr>
+<tr>
+<td>-32011</td>
+<td>Sensitive classifier</td>
+</tr>
+<tr>
+<td>-32012</td>
+<td>External policy</td>
+</tr>
+<tr>
+<td>-32013</td>
+<td>Edge auth</td>
+</tr>
+<tr>
+<td>-32014</td>
+<td>Tool allowlist</td>
+</tr>
+<tr>
+<td>-32015</td>
+<td>Session limits</td>
+</tr>
+<tr>
+<td>-32016</td>
+<td>Tool metadata guard</td>
+</tr>
+<tr>
+<td>-32019</td>
+<td>Agent IAM</td>
+</tr>
+<tr>
+<td>-32020</td>
+<td>Server verification</td>
+</tr>
+<tr>
+<td>-32022</td>
+<td>Argument guards</td>
+</tr>
+<tr>
+<td>-32025</td>
+<td>Exfiltration canary (<code>canary_goallock</code>)</td>
+</tr>
+<tr>
+<td>-32026</td>
+<td>Local LLM scanner</td>
+</tr>
+<tr>
+<td>-32027</td>
+<td>ATR threat rules</td>
+</tr>
+</tbody>
+</table>
+<p>Full table: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/README.md#error-handling">README error handling</a></p>
+<h2 id="runtime-governance-pillars-30">Runtime governance pillars (3.0+)</h2>
+<p>Opt-in enterprise controls for production MCP runtimes. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ENTERPRISE_RUNTIME_CONTROLS.md">ENTERPRISE_RUNTIME_CONTROLS.md</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Pillar</th>
+<th>Config key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Exfiltration canary</td>
+<td><code>canary_goallock</code></td>
+</tr>
+<tr>
+<td>ATR YAML rules</td>
+<td><code>atr_rules</code></td>
+</tr>
+<tr>
+<td>Local LLM scanner</td>
+<td><code>llm_scanner</code></td>
+</tr>
+<tr>
+<td>Threat intel feeds</td>
+<td><code>threat_feeds</code></td>
+</tr>
+<tr>
+<td>Auto-repave</td>
+<td><code>auto_repave</code></td>
+</tr>
+<tr>
+<td>Secret pattern redaction</td>
+<td><code>secrets.redact_patterns</code></td>
+</tr>
+<tr>
+<td>Observe mode</td>
+<td><code>mode: observe</code></td>
+</tr>
+</tbody>
+</table>
+<p>CLI: <code>mcp-bastion report --framework soc2 --audit ./audit.jsonl</code></p>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

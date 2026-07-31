@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTTP proxy &amp; boundary | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — HTTP proxy &amp; boundary">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html" class="active">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>HTTP proxy &amp; boundary</h1>
+      </header>
+      <p>﻿# Gateway boundary mode</p>
+<p>MCP-Bastion is <strong>in-process middleware</strong> by default: security applies only when traffic passes through the wrapped handler. An attacker with direct access to an unwrapped MCP port can bypass pillars entirely.</p>
+<p><strong>Boundary mode</strong> means treating Bastion as a <strong>mandatory network hop</strong>  -  the only MCP entrypoint clients can reach. This closes the structural gap vs commercial gateways without rewriting Bastion as a full SaaS product.</p>
+<h2 id="threat-model">Threat model</h2>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Bypass risk</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Embedded middleware</strong></td>
+<td>Host app must call <code>MCPBastionMiddleware</code> on every path</td>
+<td>Libraries, single-process servers you control</td>
+</tr>
+<tr>
+<td><strong>Proxy boundary</strong></td>
+<td>Clients cannot reach upstream MCP except via Bastion</td>
+<td>Production, multi-tenant, third-party MCP servers</td>
+</tr>
+<tr>
+<td><strong>Embedded + network policy</strong></td>
+<td>Defense in depth</td>
+<td>Kubernetes / VPC with NetworkPolicy</td>
+</tr>
+</tbody>
+</table>
+<h2 id="proxy-boundary-checklist">Proxy boundary checklist</h2>
+<ol>
+<li><strong>Bind upstream MCP to loopback</strong>  -  <code>127.0.0.1</code> only; never expose raw MCP on <code>0.0.0.0</code> without auth.</li>
+<li><strong>Expose only the Bastion proxy</strong>  -  Docker: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/Dockerfile">../Dockerfile</a> + <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/deploy/docker-compose.proxy.yml">../deploy/docker-compose.proxy.yml</a>; only port <strong>8080</strong> published.</li>
+<li><strong>Require edge authentication</strong>  -  enable <code>edge_auth</code> or <code>agent_iam</code> so anonymous clients cannot call tools:</li>
+</ol>
+<pre><code class="language-yaml">edge_auth:
+  enabled: true
+  secret_env: BASTION_EDGE_SECRET
+agent_iam:
+  enabled: true
+  require_token: true
+</code></pre>
+<ol start="4">
+<li><strong>TLS termination</strong>  -  Caddy/nginx in front; see <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/deploy/docker-compose.proxy.yml">../deploy/docker-compose.proxy.yml</a> and <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/TRANSPORT_HARDENING.md">TRANSPORT_HARDENING.md</a>.</li>
+<li><strong>NetworkPolicy / security groups</strong>  -  allow ingress to proxy port only; deny direct routes to upstream MCP port.</li>
+<li><strong>No alternate transports</strong>  -  if upstream offers stdio + HTTP, disable or firewall the path that skips Bastion.</li>
+<li><strong>Stateless readiness (opt-in)</strong>  -  enable <code>mcp_transport.discovery</code> on the proxy so orchestrators can <code>GET /.well-known/mcp.json</code> without hitting upstream. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/HYBRID_MCP_TRANSPORT.md">HYBRID_MCP_TRANSPORT.md</a>.</li>
+</ol>
+<h2 id="docker-quick-start-boundary">Docker quick start (boundary)</h2>
+<pre><code class="language-bash">docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.0
+# Set BASTION_EDGE_SECRET; mount bastion.yaml with edge_auth + pillars enabled
+docker run -p 8080:8080 -e BASTION_EDGE_SECRET=... ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.0
+</code></pre>
+<p>Clients must send the edge token in request metadata (<code>bastion_edge_token</code> by default). Without it, requests fail closed when <code>edge_auth.enabled: true</code>.</p>
+<h2 id="what-bastion-cannot-enforce-alone">What Bastion cannot enforce alone</h2>
+<ul>
+<li><strong>Kernel/network isolation</strong>  -  use firewall, service mesh, or sidecar placement.</li>
+<li><strong>Per-user upstream OAuth to GitHub/Notion</strong>  -  roadmap P2; use an external gateway until shipped.</li>
+<li><strong>Cryptographic attestation</strong> that the host process loaded middleware  -  use proxy boundary + mTLS between client and proxy.</li>
+</ul>
+<h2 id="related-docs">Related docs</h2>
+<ul>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/TRANSPORT_HARDENING.md">TRANSPORT_HARDENING.md</a></li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/HYBRID_MCP_TRANSPORT.md">HYBRID_MCP_TRANSPORT.md</a></li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/INTEGRATION_MODELS.md">INTEGRATION_MODELS.md</a></li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a>  -  FinOps and injection efficacy benchmarks</li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ROADMAP.md">ROADMAP.md</a> P2 (OIDC JWT, hardened <code>mcp-bastion serve</code>)</li>
+</ul>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

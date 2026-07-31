@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PII vault tutorial | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — PII vault tutorial">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html" class="active">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>PII vault tutorial</h1>
+      </header>
+      <h1 id="tutorial-reversible-pii-vault">Tutorial: Reversible PII vault</h1>
+<p>Keep tool-calling working while ensuring the LLM never sees raw PII.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li><code>mcp-bastion-python</code> installed</li>
+<li>Optional: Redis when running multiple replicas</li>
+</ul>
+<h2 id="step-1-enable-vault-opt-in">Step 1 - Enable vault (opt-in)</h2>
+<pre><code class="language-yaml"># bastion-vault.yaml
+audit:
+  enabled: false
+prompt_guard:
+  enabled: false
+rate_limit:
+  enabled: false
+pii:
+  enabled: true
+pii_vault:
+  enabled: true
+  ttl_seconds: 3600
+  # token_style: low_entropy   # optional: EMAIL_ADDRESS_1 / Person_A
+</code></pre>
+<p>Destructive redaction remains the default when <code>pii_vault.enabled</code> is omitted or <code>false</code>.</p>
+<h2 id="step-2-wrap-your-server-or-run-the-http-proxy">Step 2 - Wrap your server (or run the HTTP proxy)</h2>
+<pre><code class="language-python">from mcp_bastion.config import load_config, build_middleware_from_config
+
+mw = build_middleware_from_config(load_config(&quot;bastion-vault.yaml&quot;))
+# attach mw via compose_middleware / FastMCP as usual
+</code></pre>
+<p>Boundary / proxy deployments get the same abstract + hydrate on the wire (JSON and SSE <code>text/event-stream</code> event frames).</p>
+<h2 id="step-3-observe-abstraction">Step 3 - Observe abstraction</h2>
+<p>When a tool returns <code>"Contact alice@example.com"</code>, the agent receives something like:</p>
+<pre><code class="language-text">Contact {{pii:EMAIL_ADDRESS:a3f9b2c1d4e5}}
+</code></pre>
+<p>With <code>token_style: low_entropy</code>:</p>
+<pre><code class="language-text">Contact EMAIL_ADDRESS_1
+</code></pre>
+<p>Confirm the raw email is absent from the middleware / proxy result.</p>
+<h2 id="step-4-observe-hydration">Step 4 - Observe hydration</h2>
+<p>When the agent calls <code>send_mail</code> with <code>{"to": "{{pii:EMAIL_ADDRESS:a3f9b2c1d4e5}}"}</code>, Bastion restores <code>alice@example.com</code> <strong>before</strong> your tool handler runs (or before the proxy forwards upstream) - so SMTP / calendar APIs receive real addresses.</p>
+<h2 id="step-5-scale-with-redis">Step 5 - Scale with Redis</h2>
+<pre><code class="language-yaml">state_backend:
+  type: redis
+  redis_url: redis://127.0.0.1:6379/0
+</code></pre>
+<p>Vault maps share across workers via the same backend as FinOps / replay.</p>
+<h2 id="step-6-verify-tests-locally">Step 6 - Verify tests locally</h2>
+<pre><code class="language-bash">python -m pytest tests/test_pii_vault.py tests/test_proxy_server_coverage.py -q
+</code></pre>
+<h2 id="non-goals-this-release">Non-goals (this release)</h2>
+<ul>
+<li>Does not replace Presidio with GLiNER</li>
+<li>Does not require Ollama / GuardEx</li>
+<li>Does not change default <code>pii</code> destructive behavior when vault is off</li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="pii-vault.html">PII_VAULT.md</a></li>
+<li>Example diagram: <code>images/mcp-bastion-pii-vault.svg</code></li>
+</ul>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
