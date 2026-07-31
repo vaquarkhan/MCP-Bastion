@@ -6,6 +6,9 @@ on:
       - main
     paths:
       - 'docs/site/**'
+      - 'docs/**/*.md'
+      - 'scripts/build_docs_site.py'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -26,6 +29,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install docs build deps
+        run: pip install markdown
+
+      - name: Build documentation guide
+        run: python scripts/build_docs_site.py
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

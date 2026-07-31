@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLI reference | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — CLI reference">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html" class="active">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>CLI reference</h1>
+      </header>
+      <h1 id="mcp-bastion-cli">MCP-Bastion CLI</h1>
+<p>Developer CLI for validating config, running the server, the dashboard, and operational tools.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>scan</code></strong></td>
+<td>Static scan of MCP tool definitions (pre-deploy poisoning / drift / schema) + optional <code>--skills</code></td>
+</tr>
+<tr>
+<td><strong><code>audit</code></strong></td>
+<td>Local MCP risk audit (client configs, over-broad tools, credential smells)</td>
+</tr>
+<tr>
+<td><strong><code>osv-refresh</code></strong></td>
+<td>Download local OSV vulnerability dump (opt-in)</td>
+</tr>
+<tr>
+<td><strong><code>osv-scan</code></strong></td>
+<td>Offline-first dependency CVE lookup (optional <code>--online</code>)</td>
+</tr>
+<tr>
+<td><code>validate</code></td>
+<td>Check <code>bastion.yaml</code> / policy</td>
+</tr>
+<tr>
+<td><code>serve</code></td>
+<td>Run the example MCP server with config</td>
+</tr>
+<tr>
+<td><code>dashboard</code></td>
+<td>Metrics UI + <code>/api/metrics</code></td>
+</tr>
+<tr>
+<td><code>redteam</code></td>
+<td>Run integrated OWASP / MCP Top 10 style harness</td>
+</tr>
+<tr>
+<td><code>doctor</code></td>
+<td>Preflight + supply-chain style checks</td>
+</tr>
+<tr>
+<td><code>attest export</code></td>
+<td>Export signed governance attestation for a session</td>
+</tr>
+<tr>
+<td><code>report</code></td>
+<td>Generate compliance evidence report from audit JSONL</td>
+</tr>
+<tr>
+<td><code>tail</code></td>
+<td>Tail append-only audit JSONL</td>
+</tr>
+</tbody>
+</table>
+<h2 id="install">Install</h2>
+<pre><code class="language-bash">pip install mcp-bastion-python
+</code></pre>
+<p>Then run <code>mcp-bastion</code> (or <code>python -m mcp_bastion.cli</code> from repo).</p>
+<h3 id="scan">scan</h3>
+<p>Static scan of MCP <strong>tool definitions</strong> before deploy. Client-side only - reuses Bastion <code>content_filter</code>, injection heuristics, and <code>tool_metadata_fingerprint</code>. No ML download, no cloud.</p>
+<pre><code class="language-bash"># Scan a tools/list export or hand-authored catalog
+mcp-bastion scan examples/fixtures/tools-poisoned.json
+
+# Baseline drift detection (pair with fingerprint)
+mcp-bastion fingerprint tools.json -o baseline.json
+mcp-bastion scan tools.json --baseline baseline.json
+
+# CI-friendly JSON + non-failing report
+mcp-bastion scan tools.json --format json -o report.json --fail-on none
+
+# Skill files (opt-in; SKILL.md / *.skill.md under a directory)
+mcp-bastion scan --skills ./skills/
+</code></pre>
+<p>Checks: prompt-injection patterns in descriptions/schemas, credential-like material, code-exec patterns, homoglyph tool-name pairs, hidden Unicode, optional fingerprint drift, and <strong>structural inputSchema preconditions</strong> (unbounded strings, free-form objects, unconstrained numerics). Schema checks are on by default within <code>scan</code>; disable with <code>--no-schema-checks</code>. Letter grade <strong>A-F</strong> in output. Exit <strong>1</strong> when findings meet <code>--fail-on</code> (default <code>high</code>).</p>
+<p>Sample fixtures: <code>examples/fixtures/tools-clean.json</code>, <code>tools-poisoned.json</code>.</p>
+<h3 id="osv-refresh-osv-scan">osv-refresh / osv-scan</h3>
+<p>Offline-first dependency CVE lookup via a local OSV dump. Network is opt-in only.</p>
+<pre><code class="language-bash"># User-run refresh (downloads ecosystem zip into .osv/)
+mcp-bastion osv-refresh --ecosystem PyPI --dir .osv
+
+# Scan requirements-style pins (local DB only by default)
+mcp-bastion osv-scan requirements-lock.txt
+mcp-bastion osv-scan -p demo-pkg==1.0.0 --dir .osv
+
+# Opt-in online querybatch (fail-open; package name+version only)
+mcp-bastion osv-scan -p demo-pkg==1.0.0 --online --timeout-ms 3000
+</code></pre>
+<h3 id="audit">audit</h3>
+<p>Local <strong>MCP surface</strong> risk audit - maps what client configs grant before you enforce policy. Client-side only: discovers MCP client JSON configs, over-broad tool grants (<code>*</code>), standing credential smells in <code>env</code> / headers, and filesystem-server hints. No network, no vault, no login server.</p>
+<pre><code class="language-bash"># Scan cwd (and common user MCP config locations)
+mcp-bastion audit
+
+# Project root + explicit config path
+mcp-bastion audit --root . --config .cursor/mcp.json
+
+# CI-friendly JSON (always exit 0)
+mcp-bastion audit --format json -o risk-audit.json --fail-on none
+</code></pre>
+<p>Letter grade <strong>A-F</strong>. Exit <strong>1</strong> when findings meet <code>--fail-on</code> (default <code>high</code>). Pair with <code>examples/bastion-filesystem-guards.yaml</code> when agents can reach local files.</p>
+<h3 id="validate">validate</h3>
+<p>Validate <code>bastion.yaml</code> (or <code>--config PATH</code>):</p>
+<pre><code class="language-bash">mcp-bastion validate
+mcp-bastion validate --config /path/to/bastion.yaml
+</code></pre>
+<p>Validate <code>bastion.yaml</code> (or <code>--config PATH</code>). Logs loaded settings and exits 0 if valid.</p>
+<h3 id="serve">serve</h3>
+<p>Run the MCP server with config. Uses <code>examples/llm_server.py</code> when run from repo:</p>
+<pre><code class="language-bash">mcp-bastion serve
+mcp-bastion serve --http 8080 --host 0.0.0.0
+mcp-bastion serve --config bastion.yaml --http 9000
+
+# Boundary mode: same bastion.yaml, forward to upstream MCP (loopback only)
+mcp-bastion serve --proxy http://127.0.0.1:9000/mcp --http 8080 --config bastion.yaml
+
+# With hybrid transport: enable mcp_transport.discovery in bastion.yaml, then:
+curl -s http://127.0.0.1:8080/.well-known/mcp.json
+</code></pre>
+<p>See <a href="hybrid-transport.html">HYBRID_TRANSPORT_TUTORIAL.md</a> for stateful + stateless clients on one proxy.</p>
+<h3 id="dashboard">dashboard</h3>
+<p>Run the metrics dashboard:</p>
+<pre><code class="language-bash">mcp-bastion dashboard
+mcp-bastion dashboard --port 7000
+mcp-bastion dashboard --port 7000 --demo
+</code></pre>
+<p>Requires: <code>pip install fastapi uvicorn</code> (or <code>pip install mcp-bastion-python[dashboard]</code>).</p>
+<p><strong><code>--demo</code></strong> seeds sample metrics + posture findings so the UI is populated without live traffic. Posture / prevalidate panels also read <code>.bastion/scan/*.json</code> when present. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a>.</p>
+<h3 id="redteam">redteam</h3>
+<p>Run the <strong>integrated red-team</strong> harness (OWASP + MCP Top 10 style cases) against your effective policy. Uses <code>load_config</code> / <code>build_middleware_from_config</code> the same as production.</p>
+<pre><code class="language-bash">mcp-bastion redteam
+mcp-bastion redteam --config bastion.yaml
+# Optional JSON report path:
+mcp-bastion redteam --output report.json
+</code></pre>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/REDTEAM.md">REDTEAM.md</a> for interpreting the score.</p>
+<h3 id="attest-export">attest export</h3>
+<p>Export a <strong>governance attestation</strong> JSON bundle for an agent session (policy hash, pillars fired, blocked/allowed events, audit chain head):</p>
+<pre><code class="language-bash">mcp-bastion attest export --session SESSION_ID
+mcp-bastion attest export --session SESSION_ID --config bastion.yaml --sign
+mcp-bastion attest export --session SESSION_ID -o attestation.json
+</code></pre>
+<p>Signing uses <code>BASTION_MANIFEST_SIGNING_KEY</code> (same key as <code>manifest --sign</code>).</p>
+<h3 id="tail">tail</h3>
+<p>Tail the append-only audit JSONL sink:</p>
+<pre><code class="language-bash">mcp-bastion tail --path .bastion/audit.jsonl
+mcp-bastion tail --config bastion.yaml -n 50
+</code></pre>
+<h3 id="report">report</h3>
+<p>Generate a <strong>compliance evidence</strong> markdown report from audit JSONL. Maps pillar activity to framework controls (evidence only, not certification).</p>
+<pre><code class="language-bash">mcp-bastion report --framework soc2 --audit .bastion/audit.jsonl
+mcp-bastion report --framework iso27001 --audit audit.jsonl -o report.md
+mcp-bastion report --framework gdpr --audit audit.jsonl --from 2026-01-01 --to 2026-12-31
+</code></pre>
+<p>Framework keys: <code>soc2</code>, <code>iso27001</code>, <code>gdpr</code>, <code>nist_ai_rmf</code>. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ENTERPRISE_RUNTIME_CONTROLS.md">ENTERPRISE_RUNTIME_CONTROLS.md</a>.</p>
+<h3 id="doctor">doctor</h3>
+<p><strong>Preflight</strong> checks: config validation, optional paths, and supply-chain style hints (MCP04-related).</p>
+<pre><code class="language-bash">mcp-bastion doctor
+mcp-bastion doctor --config bastion.yaml
+</code></pre>
+<h2 id="environment">Environment</h2>
+<ul>
+<li><code>BASTION_CONFIG</code> – path to config file (default <code>bastion.yaml</code>)</li>
+<li><code>PYTHONPATH</code> – CLI adds repo <code>src</code> when run from repo root</li>
+</ul>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

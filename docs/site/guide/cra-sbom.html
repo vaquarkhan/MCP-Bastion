@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRA &amp; SBOM | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — CRA &amp; SBOM">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html" class="active">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>CRA &amp; SBOM</h1>
+      </header>
+      <h1 id="tutorial-cyclonedx-sbom-for-cra-openssf">Tutorial: CycloneDX SBOM for CRA / OpenSSF</h1>
+<p>Generate and consume MCP-Bastion Software Bills of Materials without changing runtime middleware behavior.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Python 3.10+ (stdlib only; no extra packages required for the generator)</li>
+<li>Repo checkout at the version you care about (tag <code>v3.3.0</code>, <code>main</code>, etc.)</li>
+</ul>
+<h2 id="step-1-generate-the-python-sbom">Step 1 - Generate the Python SBOM</h2>
+<p>From the repository root:</p>
+<pre><code class="language-bash">python scripts/generate_sbom.py --pyproject pyproject.toml --output bom.json
+</code></pre>
+<p>Expected console line:</p>
+<pre><code class="language-text">Wrote CycloneDX SBOM: .../bom.json
+</code></pre>
+<p>Open <code>bom.json</code> and confirm:</p>
+<ul>
+<li><code>bomFormat</code> is <code>CycloneDX</code></li>
+<li><code>specVersion</code> is <code>1.5</code></li>
+<li><code>metadata.component.name</code> is <code>mcp-bastion-python</code></li>
+<li><code>components</code> lists declared runtime dependencies from <code>pyproject.toml</code></li>
+</ul>
+<h2 id="step-2-generate-the-npm-sbom-optional">Step 2 - Generate the npm SBOM (optional)</h2>
+<pre><code class="language-bash">python scripts/generate_sbom.py --npm packages/core/package.json --output bom-npm.json
+</code></pre>
+<p>Use this when answering questionnaires that ask for the TypeScript package graph (<code>@mcp-bastion/core</code>).</p>
+<h2 id="step-3-validate-shape-in-ci-tests">Step 3 - Validate shape in CI / tests</h2>
+<p>The unit suite covers the generator:</p>
+<pre><code class="language-bash">python -m pytest tests/test_generate_sbom.py -q
+</code></pre>
+<h2 id="step-4-find-release-artifacts">Step 4 - Find release artifacts</h2>
+<p>On tagged releases, GitHub Actions uploads SBOM artifacts from:</p>
+<ul>
+<li><strong>Build, Test, and Publish MCP-Bastion</strong> (<code>publish-mcp.yml</code>) - <code>bom.json</code> + <code>bom-npm.json</code></li>
+<li><strong>Publish Docker (GHCR)</strong> (<code>publish-docker.yml</code>) - <code>bom.json</code></li>
+</ul>
+<p>Download from the workflow run <strong>Artifacts</strong> panel. SBOM steps are <strong>fail-safe</strong> (<code>continue-on-error</code>): a generator failure never blocks PyPI or GHCR publish.</p>
+<h2 id="step-5-point-auditors-at-disclosure-sbom">Step 5 - Point auditors at disclosure + SBOM</h2>
+<ol>
+<li>Vulnerability process: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/SECURITY.md">SECURITY.md</a> (includes CRA Article 14 section)</li>
+<li>Supply-chain map: <a href="supply-chain.html">SUPPLY_CHAIN.md</a></li>
+<li>Architecture posture: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/CRA_COMPLIANCE.md">CRA_COMPLIANCE.md</a></li>
+</ol>
+<p>Downstream manufacturers can attach these SBOMs to their own Technical Documentation packages; Bastion does not claim CE marking for third-party PDEs.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>generate_sbom failed: ...</code></td>
+<td>Ensure <code>pyproject.toml</code> / <code>package.json</code> path exists and is UTF-8</td>
+</tr>
+<tr>
+<td>Empty <code>components</code></td>
+<td>Check <code>[project].dependencies</code> (or <code>dependencies</code> in package.json)</td>
+</tr>
+<tr>
+<td>Want deterministic serial</td>
+<td>Pass <code>--serial urn:uuid:...</code> (used by tests)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/CRA_COMPLIANCE.md">CRA_COMPLIANCE.md</a></li>
+<li><a href="supply-chain.html">SUPPLY_CHAIN.md</a></li>
+<li><a href="cli.html">CLI.md</a> (<code>attest export</code> for session evidence)</li>
+</ul>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

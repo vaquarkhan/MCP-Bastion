@@ -6,6 +6,8 @@ For **how this differs from an LLM API “swap base URL” gateway** and how **e
 
 For a full environment-to-production walkthrough, see [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md).
 
+For the end-to-end professional handbook (concepts through production checklist), see [USER_GUIDE.md](USER_GUIDE.md) or the published site: https://vaquarkhan.github.io/MCP-Bastion/guide/.
+
 ---
 
 ## Prerequisites

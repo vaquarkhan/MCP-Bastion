@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User guide (end-to-end) | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — User guide (end-to-end)">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html" class="active">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>User guide (end-to-end)</h1>
+      </header>
+      <h1 id="mcp-bastion-user-guide">MCP-Bastion User Guide</h1>
+<p><strong>Version:</strong> 4.0.0<br />
+<strong>Audience:</strong> Platform engineers, security architects, and developers deploying Model Context Protocol (MCP) servers with AI agents<br />
+<strong>Last updated:</strong> 2026-07-31</p>
+<p>This guide is the end-to-end handbook for MCP-Bastion: from first install through production proxy deployment, privacy controls, security pillars, and release hygiene. It follows the same documentation shape used by large open-source and cloud platforms—<strong>concepts → getting started → how-to → reference → operations</strong>.</p>
+<hr />
+<h2 id="1-what-is-mcp-bastion">1. What is MCP-Bastion?</h2>
+<p>MCP-Bastion is <strong>security and governance middleware</strong> for the <a href="https://modelcontextprotocol.io/">Model Context Protocol</a>. It sits on the request and response path of MCP tools, resources, prompts, and related surfaces, enforcing policy <strong>before</strong> untrusted model-driven actions reach your systems—and <strong>before</strong> sensitive tool output re-enters the model context.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Design choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Deployment model</td>
+<td>Drop-in library or HTTP boundary proxy</td>
+</tr>
+<tr>
+<td>Policy surface</td>
+<td>Single <code>bastion.yaml</code> (policy-as-code)</td>
+</tr>
+<tr>
+<td>Defaults</td>
+<td>Safe; advanced features are <strong>opt-in</strong></td>
+</tr>
+<tr>
+<td>Infrastructure</td>
+<td>Zero mandatory cloud deps (memory default; Redis optional)</td>
+</tr>
+<tr>
+<td>Overhead target</td>
+<td>Low-millisecond path for common pillars</td>
+</tr>
+</tbody>
+</table>
+<p>MCP-Bastion is <strong>not</strong> an LLM provider, an agent framework, or a full API gateway replacement. It composes with FastMCP, custom MCP servers, and upstream MCP HTTP endpoints.</p>
+<h3 id="11-problems-it-addresses">1.1 Problems it addresses</h3>
+<ul>
+<li><strong>Prompt injection / jailbreaks</strong> on tool arguments and MCP surfaces  </li>
+<li><strong>PII and secret leakage</strong> into model context (destructive redact or reversible vault)  </li>
+<li><strong>Context-window bloat</strong> from oversized <code>tools/list</code> catalogs  </li>
+<li><strong>Tool poisoning</strong> via drifted or malicious tool metadata  </li>
+<li><strong>Denial-of-wallet</strong> and runaway agent loops (rate, cost, session scope)  </li>
+<li><strong>Privilege sprawl</strong> (RBAC, Agent IAM, allowlists)  </li>
+<li><strong>Supply-chain integrity</strong> for MCP server artifacts  </li>
+</ul>
+<h3 id="12-release-lineage-400">1.2 Release lineage (4.0.0)</h3>
+<p>Version <strong>4.0.0</strong> adds a major feature bundle while keeping defaults non-breaking:</p>
+<ul>
+<li>Reversible <strong>PII vault</strong> (abstract + hydrate), including HTTP proxy and SSE  </li>
+<li><strong>Schema minimization</strong> for <code>tools/list</code>  </li>
+<li><strong>Live tool-catalog pin</strong> against metadata drift  </li>
+</ul>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
+<hr />
+<h2 id="2-architecture-overview">2. Architecture overview</h2>
+<pre><code class="language-text">┌──────────────┐     JSON-RPC / MCP      ┌─────────────────────┐
+│  AI agent /  │ ───────────────────────►│  MCP-Bastion        │
+│  MCP client  │◄─────────────────────── │  middleware / proxy │
+└──────────────┘   redacted / vaulted    └──────────┬──────────┘
+                                                    │ allowed + hydrated
+                                                    ▼
+                                         ┌─────────────────────┐
+                                         │  Your MCP server /  │
+                                         │  upstream tools     │
+                                         └─────────────────────┘
+</code></pre>
+<p><strong>Two deployment shapes</strong></p>
+<ol>
+<li><strong>In-process middleware</strong> — wrap your Python MCP server; Bastion runs in the same process.  </li>
+<li><strong>HTTP proxy (<code>serve --proxy</code>)</strong> — Bastion terminates client HTTP, enforces policy, forwards to an upstream MCP URL. Same <code>bastion.yaml</code>.</li>
+</ol>
+<p>Policy evaluation is pillar-based. Each pillar can allow, block, redact, or annotate. Shadow/<code>observe</code> mode records would-be blocks without enforcing them.</p>
+<hr />
+<h2 id="3-getting-started">3. Getting started</h2>
+<h3 id="31-prerequisites">3.1 Prerequisites</h3>
+<ul>
+<li>Python <strong>3.11+</strong> recommended  </li>
+<li>An MCP server (FastMCP or custom) <strong>or</strong> an upstream MCP HTTP endpoint  </li>
+<li>Optional: Redis for multi-replica state; Docker for containerized proxy  </li>
+</ul>
+<h3 id="32-install">3.2 Install</h3>
+<pre><code class="language-bash">pip install &quot;mcp-bastion-python==4.0.0&quot;
+</code></pre>
+<p>FastMCP convenience wrapper:</p>
+<pre><code class="language-bash">pip install mcp-bastion-fastmcp
+</code></pre>
+<p>Docker proxy image:</p>
+<pre><code class="language-bash">docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
+</code></pre>
+<h3 id="33-minimal-fastmcp-path">3.3 Minimal FastMCP path</h3>
+<pre><code class="language-python">from mcp.server.fastmcp import FastMCP
+from mcp_bastion_fastmcp import secure_fastmcp
+
+mcp = FastMCP(&quot;demo&quot;)
+secure_fastmcp(mcp)  # wire Bastion into tool dispatch immediately after construction
+
+@mcp.tool()
+def hello(name: str) -&gt; str:
+    return f&quot;Hello, {name}&quot;
+</code></pre>
+<p>This enables core defaults (prompt guard, PII redaction, rate limit). For full policy, use <code>bastion.yaml</code> (next section).</p>
+<h3 id="34-policy-as-code-path">3.4 Policy-as-code path</h3>
+<pre><code class="language-bash">cp bastion.yaml.example bastion.yaml
+# edit bastion.yaml
+export BASTION_CONFIG=./bastion.yaml
+</code></pre>
+<pre><code class="language-python">from mcp_bastion.config import build_middleware_from_config, load_config
+
+mw = build_middleware_from_config(load_config())
+# compose mw onto your MCP server request path
+</code></pre>
+<p>Validate before deploy:</p>
+<pre><code class="language-bash">mcp-bastion validate
+mcp-bastion doctor
+</code></pre>
+<hr />
+<h2 id="4-configuration-model">4. Configuration model</h2>
+<p>All runtime behavior is driven by <strong><code>bastion.yaml</code></strong>. Missing keys use safe defaults. Advanced pillars stay <strong>disabled</strong> until explicitly enabled.</p>
+<h3 id="41-essential-blocks">4.1 Essential blocks</h3>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>Purpose</th>
+<th>Default posture</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prompt_guard</code></td>
+<td>Injection / jailbreak detection</td>
+<td>On</td>
+</tr>
+<tr>
+<td><code>pii</code></td>
+<td>Destructive PII redaction on outputs</td>
+<td>On</td>
+</tr>
+<tr>
+<td><code>pii_vault</code></td>
+<td>Reversible tokenize / hydrate</td>
+<td><strong>Off</strong></td>
+</tr>
+<tr>
+<td><code>rate_limit</code></td>
+<td>Iteration / token budgets</td>
+<td>On</td>
+</tr>
+<tr>
+<td><code>discovery_filter</code></td>
+<td>Allowlist + schema minimize</td>
+<td>Off</td>
+</tr>
+<tr>
+<td><code>tool_metadata_fingerprint</code></td>
+<td>Catalog pin / drift</td>
+<td>Off</td>
+</tr>
+<tr>
+<td><code>agent_iam</code> / <code>rbac</code></td>
+<td>Privilege controls</td>
+<td>Off until wired</td>
+</tr>
+<tr>
+<td><code>boundary_mode</code> / <code>transport_hardening</code></td>
+<td>Proxy hardening</td>
+<td>See examples</td>
+</tr>
+<tr>
+<td><code>state_backend</code></td>
+<td>memory or Redis</td>
+<td>memory</td>
+</tr>
+</tbody>
+</table>
+<p>Full schema: <a href="configuration.html">POLICY_AS_CODE.md</a>.<br />
+Pillar map: <a href="pillars.html">PILLARS.md</a>.<br />
+Feature enablement: <a href="features.html">FEATURES.md</a>.</p>
+<h3 id="42-example-production-oriented-starter">4.2 Example: production-oriented starter</h3>
+<pre><code class="language-yaml">audit:
+  enabled: true
+
+prompt_guard:
+  enabled: true
+  heuristic_fallback: true
+
+pii:
+  enabled: true
+
+pii_vault:
+  enabled: false          # set true for reversible tokens
+  ttl_seconds: 3600
+
+rate_limit:
+  enabled: true
+  max_iterations: 30
+
+discovery_filter:
+  enabled: false
+  minimize_schemas: true  # shrink tools/list tokens without removing tools
+  max_description_chars: 160
+
+tool_metadata_fingerprint:
+  enabled: true
+  pin_on_first_seen: true
+  on_drift: warn          # use block in high-assurance environments
+
+transport_hardening:
+  enabled: true
+</code></pre>
+<hr />
+<h2 id="5-run-paths">5. Run paths</h2>
+<h3 id="51-in-process-middleware">5.1 In-process middleware</h3>
+<p>Use when you own the MCP server code. Attach <code>build_middleware_from_config()</code> via <code>compose_middleware</code> or FastMCP helpers. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/TUTORIALS.md">TUTORIALS.md</a>.</p>
+<h3 id="52-http-proxy-boundary">5.2 HTTP proxy (boundary)</h3>
+<p>Use when the upstream MCP server is third-party or you need un-bypassable enforcement at the edge.</p>
+<pre><code class="language-bash">mcp-bastion serve --proxy --upstream http://127.0.0.1:9000/mcp \
+  --host 127.0.0.1 --port 8080
+</code></pre>
+<p>Clients talk to Bastion; Bastion forwards allowed traffic upstream. With <strong>PII vault</strong> enabled, the proxy:</p>
+<ol>
+<li><strong>Hydrates</strong> vault tokens in inbound <code>tools/call</code> arguments  </li>
+<li><strong>Abstracts / redacts</strong> PII on upstream JSON and SSE (<code>text/event-stream</code>) results  </li>
+</ol>
+<p>Guides: <a href="proxy.html">GATEWAY_BOUNDARY.md</a>, <a href="hybrid-transport.html">HYBRID_TRANSPORT_TUTORIAL.md</a>, <a href="cli.html">CLI.md</a>.</p>
+<h3 id="53-hybrid-mcp-transport">5.3 Hybrid MCP transport</h3>
+<p>Opt-in <code>mcp_transport</code> supports session and explicit state-handle modes for SEP-style readiness. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/HYBRID_MCP_TRANSPORT.md">HYBRID_MCP_TRANSPORT.md</a>.</p>
+<hr />
+<h2 id="6-privacy-pii-redaction-and-reversible-vault">6. Privacy: PII redaction and reversible vault</h2>
+<h3 id="61-destructive-redaction-default">6.1 Destructive redaction (default)</h3>
+<p>With <code>pii.enabled: true</code> (default), outbound tool/resource text uses Presidio-style placeholders (<code>&lt;EMAIL_ADDRESS&gt;</code>, …). Raw PII does not return to the model. Tool calling that needs the real value may break—that is intentional for high-assurance redaction.</p>
+<h3 id="62-reversible-vault-opt-in">6.2 Reversible vault (opt-in)</h3>
+<pre><code class="language-yaml">pii:
+  enabled: true
+pii_vault:
+  enabled: true
+  ttl_seconds: 3600
+  # token_style: typed         # {{pii:EMAIL_ADDRESS:…}}
+  # token_style: low_entropy   # EMAIL_ADDRESS_1 / Person_A
+</code></pre>
+<p><strong>Lifecycle</strong></p>
+<ol>
+<li><strong>Abstract</strong> — outbound text: PII → session tokens  </li>
+<li><strong>Hydrate</strong> — inbound <code>tools/call</code> args: tokens → plaintext for the MCP server  </li>
+</ol>
+<p>Token IDs are CSPRNG for <code>typed</code> style (never a hash of plaintext). Maps live in <code>state_backend</code> (use Redis for multi-replica).</p>
+<p>Docs: <a href="pii-vault.html">PII_VAULT.md</a>, <a href="pii-vault-tutorial.html">PII_VAULT_TUTORIAL.md</a>.</p>
+<hr />
+<h2 id="7-context-engineering-and-catalog-integrity">7. Context engineering and catalog integrity</h2>
+<h3 id="71-schema-minimization">7.1 Schema minimization</h3>
+<p>Large tool catalogs consume tens of thousands of tokens before the user prompt. Opt-in minimization truncates descriptions and strips nested JSON Schema <code>description</code> fields on <code>tools/list</code> <strong>without removing tools</strong>:</p>
+<pre><code class="language-yaml">discovery_filter:
+  minimize_schemas: true
+  max_description_chars: 160
+  strip_schema_descriptions: true
+</code></pre>
+<p>Combine with <code>discovery_filter.enabled</code> + <code>tool_allowlist</code> to also hide non-allowlisted tools.</p>
+<h3 id="72-live-catalog-pin">7.2 Live catalog pin</h3>
+<p>Detect tool-poisoning drift at runtime:</p>
+<pre><code class="language-yaml">tool_metadata_fingerprint:
+  enabled: true
+  pin_on_first_seen: true
+  on_drift: block   # or warn
+</code></pre>
+<p>Or pin to a fingerprint file from <code>mcp-bastion fingerprint</code>.</p>
+<p>Docs: <a href="schema-minimize.html">SCHEMA_MINIMIZE_LIVE_PIN.md</a>.</p>
+<hr />
+<h2 id="8-security-pillars-reference-map">8. Security pillars (reference map)</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Primary pillars</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Injection</td>
+<td><code>prompt_guard</code>, <code>response_scan</code>, <code>semantic_firewall</code>, <code>content_filter</code></td>
+</tr>
+<tr>
+<td>Privacy / DLP</td>
+<td><code>pii</code>, <code>pii_vault</code>, secret redaction</td>
+</tr>
+<tr>
+<td>Privilege</td>
+<td><code>rbac</code>, <code>agent_iam</code>, <code>tool_allowlist</code>, <code>argument_guards</code></td>
+</tr>
+<tr>
+<td>Integrity</td>
+<td><code>server_verification</code>, <code>tool_metadata_fingerprint</code>, <code>tool_metadata_guard</code></td>
+</tr>
+<tr>
+<td>Availability / FinOps</td>
+<td><code>rate_limit</code>, <code>cost_tracker</code>, <code>cost_policy</code>, <code>output_budget</code>, <code>session_limits</code></td>
+</tr>
+<tr>
+<td>Behavior</td>
+<td><code>behavior_fingerprint</code>, <code>agent_stability</code></td>
+</tr>
+<tr>
+<td>Boundary</td>
+<td><code>transport_hardening</code>, <code>boundary_mode</code>, <code>edge_auth</code></td>
+</tr>
+</tbody>
+</table>
+<p>Deep dives: <a href="features.html">FEATURES.md</a>, <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ENTERPRISE_RUNTIME_CONTROLS.md">ENTERPRISE_RUNTIME_CONTROLS.md</a>, <a href="attack-prevention.html">ATTACK_PREVENTION.md</a>.</p>
+<hr />
+<h2 id="9-observability-and-operations">9. Observability and operations</h2>
+<h3 id="91-dashboard">9.1 Dashboard</h3>
+<pre><code class="language-bash">mcp-bastion dashboard --demo
+</code></pre>
+<p>Shows KPIs (requests, blocks, PII, vault abstract/hydrate), governance tiles, and forensics.</p>
+<h3 id="92-metrics">9.2 Metrics</h3>
+<ul>
+<li>In-process <code>MetricsStore</code>  </li>
+<li>Prometheus scrape endpoint on the dashboard (<code>/metrics</code>) including <code>mcp_bastion_pii_vault_*</code>  </li>
+</ul>
+<p>See <a href="metrics.html">METRICS.md</a>, <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a>, <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/OTEL.md">OTEL.md</a>.</p>
+<h3 id="93-doctor-and-red-team">9.3 Doctor and red team</h3>
+<pre><code class="language-bash">mcp-bastion doctor
+mcp-bastion redteam
+</code></pre>
+<hr />
+<h2 id="10-production-checklist">10. Production checklist</h2>
+<ol>
+<li><strong>Pin versions</strong> — <code>mcp-bastion-python==4.0.0</code> (or current release).  </li>
+<li><strong>Validate config</strong> — <code>mcp-bastion validate</code> in CI.  </li>
+<li><strong>Choose deployment shape</strong> — middleware vs <code>serve --proxy</code>.  </li>
+<li><strong>Enable transport hardening</strong> for HTTP.  </li>
+<li><strong>Wire identity</strong> — <code>agent_iam</code> / <code>edge_auth</code> / <code>identity_adapter</code> before relying on RBAC.  </li>
+<li><strong>Decide PII mode</strong> — destructive vs vault; Redis if multi-replica vault.  </li>
+<li><strong>Shrink catalogs</strong> — allowlist and/or <code>minimize_schemas</code>.  </li>
+<li><strong>Pin catalogs</strong> — <code>pin_on_first_seen</code> or fingerprint file in high-assurance envs.  </li>
+<li><strong>Export attestation / audit</strong> as required by your compliance program.  </li>
+<li><strong>SBOM / CRA</strong> — <code>python scripts/generate_sbom.py</code> (<a href="cra-sbom.html">CRA_SBOM_TUTORIAL.md</a>).</li>
+</ol>
+<hr />
+<h2 id="11-end-to-end-scenario-worked-example">11. End-to-end scenario (worked example)</h2>
+<p><strong>Goal:</strong> Protect a calendar MCP server behind Bastion so agents never see raw emails, while invite tools still receive real addresses.</p>
+<ol>
+<li>Install <code>mcp-bastion-python==4.0.0</code>.  </li>
+<li>Copy <code>examples/bastion-pii-vault.yaml</code> → <code>bastion.yaml</code>; set <code>pii_vault.enabled: true</code>.  </li>
+<li>Run upstream MCP on <code>127.0.0.1:9000</code>.  </li>
+<li>Start proxy:<br />
+<code>mcp-bastion serve --proxy --upstream http://127.0.0.1:9000/mcp --port 8080</code>  </li>
+<li>Point the agent at <code>http://127.0.0.1:8080/mcp</code>.  </li>
+<li>Observe tool results containing <code>{{pii:EMAIL_ADDRESS:…}}</code> (or <code>EMAIL_ADDRESS_1</code> if low-entropy).  </li>
+<li>Confirm subsequent <code>tools/call</code> args are hydrated before upstream execution.  </li>
+<li>Enable <code>minimize_schemas</code> and <code>pin_on_first_seen</code> for catalog hygiene.  </li>
+<li>Run <code>mcp-bastion doctor</code> and review dashboard vault counters.</li>
+</ol>
+<hr />
+<h2 id="12-related-documentation">12. Related documentation</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Document</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quick start</td>
+<td><a href="getting-started.html">QUICK_START.md</a></td>
+</tr>
+<tr>
+<td>Detailed tutorial</td>
+<td><a href="installation.html">DETAILED_TUTORIAL.md</a></td>
+</tr>
+<tr>
+<td>CLI reference</td>
+<td><a href="cli.html">CLI.md</a></td>
+</tr>
+<tr>
+<td>Policy schema</td>
+<td><a href="configuration.html">POLICY_AS_CODE.md</a></td>
+</tr>
+<tr>
+<td>Developer / release</td>
+<td><a href="developer.html">DEVELOPER_GUIDE.md</a></td>
+</tr>
+<tr>
+<td>Supply chain</td>
+<td><a href="supply-chain.html">SUPPLY_CHAIN.md</a></td>
+</tr>
+<tr>
+<td>Security policy</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY.md">SECURITY.md</a> / root <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/SECURITY.md">SECURITY.md</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="13-support-and-community">13. Support and community</h2>
+<ul>
+<li><strong>Issues:</strong> https://github.com/vaquarkhan/MCP-Bastion/issues  </li>
+<li><strong>Website:</strong> https://vaquarkhan.github.io/MCP-Bastion/  </li>
+<li><strong>PyPI:</strong> https://pypi.org/project/mcp-bastion-python/  </li>
+</ul>
+<hr />
+<p><em>This guide describes MCP-Bastion 4.0.0. Feature availability depends on your installed package version and <code>bastion.yaml</code> settings.</em></p>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

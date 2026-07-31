@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schema minimize &amp; catalog pin | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Schema minimize &amp; catalog pin">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html" class="active">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Schema minimize &amp; catalog pin</h1>
+      </header>
+      <h1 id="schema-minimize-live-catalog-pin">Schema minimize + live catalog pin</h1>
+<p>Opt-in controls that address <strong>context-window bloat</strong> and <strong>tool-poisoning drift</strong> without changing Bastion’s zero-infra nature (no embeddings, no new heavy deps).</p>
+<h2 id="schema-minimization">Schema minimization</h2>
+<p>Shrink verbose <code>tools/list</code> manifests while keeping the same tools:</p>
+<pre><code class="language-yaml">discovery_filter:
+  enabled: false          # allowlist strip is separate
+  minimize_schemas: true  # default false
+  max_description_chars: 160
+  strip_schema_descriptions: true
+</code></pre>
+<ul>
+<li>Truncates each tool <code>description</code></li>
+<li>Recursively removes <code>description</code> keys inside <code>inputSchema</code> / <code>input_schema</code></li>
+<li>Records estimated <code>tokens_saved</code> under FinOps metrics (<code>source=schema_minimize</code>)</li>
+</ul>
+<p>Pair with <code>discovery_filter.enabled</code> + <code>tool_allowlist</code> when you also want fewer tools advertised.</p>
+<h2 id="live-catalog-pin">Live catalog pin</h2>
+<p>Runtime enforcement of tool metadata fingerprints (ROADMAP P1):</p>
+<pre><code class="language-yaml">tool_metadata_fingerprint:
+  enabled: true
+  pin_on_first_seen: true   # first tools/list becomes the pin
+  on_drift: block           # warn | block
+  pin_ttl_seconds: 604800   # 7 days (memory / Redis state_backend)
+</code></pre>
+<p>Or pin to a known hash / fingerprint file:</p>
+<pre><code class="language-yaml">tool_metadata_fingerprint:
+  enabled: true
+  fingerprint_path: tools.fingerprint.json   # from `mcp-bastion fingerprint`
+  on_drift: block
+</code></pre>
+<ul>
+<li>Runs on <code>tools/list</code> <strong>after</strong> allowlist discovery filter, <strong>before</strong> schema minimize (full metadata hashed)</li>
+<li><code>warn</code>: allow response, set <code>catalog_drift_warnings</code> metadata</li>
+<li><code>block</code>: raise <code>CatalogDriftError</code> (-32032)</li>
+<li>Multi-replica: use <code>state_backend.type: redis</code></li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="features.html">FEATURES.md</a></li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a> - discovery filter token savings</li>
+<li><code>mcp-bastion fingerprint</code> / <code>mcp-bastion scan</code></li>
+</ul>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

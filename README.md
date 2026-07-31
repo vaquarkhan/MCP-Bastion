@@ -676,17 +676,19 @@ mcp-bastion audit --format json -o .bastion/scan/risk-audit.json
 
 | Goal | Read in order |
 |------|----------------|
+| **End-to-end handbook** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) → [published Docs](https://vaquarkhan.github.io/MCP-Bastion/guide/) |
 | **Policy-as-code (`bastion.yaml`)** | [docs/PILLARS.md](docs/PILLARS.md) → [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) → `bastion.yaml.example` → [docs/CLI.md](docs/CLI.md) (`validate`) |
 | **LLM clients (OpenAI, Claude, Gemini, …)** | [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) → [docs/INTEGRATION_MODELS.md](docs/INTEGRATION_MODELS.md) → [examples/](examples/) (`llm_*.py`) |
 | **FastMCP / TypeScript / third-party MCP** | [docs/TUTORIALS.md](docs/TUTORIALS.md) → [docs/DETAILED_TUTORIAL.md](docs/DETAILED_TUTORIAL.md) |
 | **Fleet rollout of `bastion.yaml` + SIEM / SOC audit** | [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) → [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) |
 | **Minimal “hello world” + CI / registries** | [docs/QUICK_START.md](docs/QUICK_START.md) → [examples/ci/README.md](examples/ci/README.md) → [docs/DISCOVERY.md](docs/DISCOVERY.md) |
 
-Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site entry: **[docs/index.md](docs/index.md)** · quick wrap: **[docs/QUICK_START.md](docs/QUICK_START.md)** · discovery: **[docs/DISCOVERY.md](docs/DISCOVERY.md)** · contribute: **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+Full index: **[docs/README.md](docs/README.md)** · handbook site: **[Docs guide](https://vaquarkhan.github.io/MCP-Bastion/guide/)** · quick wrap: **[docs/QUICK_START.md](docs/QUICK_START.md)** · discovery: **[docs/DISCOVERY.md](docs/DISCOVERY.md)** · contribute: **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 | Doc | Description |
 |-----|-------------|
-| [docs/index.md](docs/index.md) | GitHub Pages-ready docs home |
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | **End-to-end user guide** (concepts → install → proxy → vault → ops); published at `/guide/` |
+| [docs/index.md](docs/index.md) | Markdown docs home (source hub) |
 | [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) | **`bastion.yaml` reference**: keys, examples, hot reload, alerts |
 | [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) | **LLM integration**: OpenAI, Claude, Gemini, Mistral, Grok (stdio + HTTP configs) |
 | [docs/DETAILED_TUTORIAL.md](docs/DETAILED_TUTORIAL.md) | Step-by-step implementation tutorial for new teams |

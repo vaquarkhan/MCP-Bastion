@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuration reference | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Configuration reference">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html" class="active">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Configuration reference</h1>
+      </header>
+      <h1 id="policy-as-code-bastionyaml">Policy-as-Code (bastion.yaml)</h1>
+<p>Single config file controls MCP-Bastion policy. Use <code>bastion.yaml</code> in project root or set <code>BASTION_CONFIG</code> to a path.</p>
+<p><strong>Canonical pillar list and counts</strong> (request-path vs <code>bastion.yaml</code> vs dashboard): see <a href="pillars.html">PILLARS.md</a>.</p>
+<h2 id="example">Example</h2>
+<p>Copy <code>bastion.yaml.example</code> to <code>bastion.yaml</code>:</p>
+<pre><code class="language-yaml">prompt_guard:
+  enabled: true
+
+pii:
+  enabled: true
+
+rate_limit:
+  enabled: true
+  max_iterations: 15
+  timeout_seconds: 60
+  token_budget: 50000
+
+rbac:
+  enabled: true
+  permissions:
+    default: [&quot;read_data&quot;]
+    admin: [&quot;*&quot;]
+
+cost_tracker:
+  enabled: true
+  max_cost_per_session: 0.50
+  max_cost_per_day: 10.0
+
+audit:
+  enabled: true
+
+alerts:
+  slack_webhook:   # or set env SLACK_WEBHOOK_URL
+  alert_on: [injection, rate_limit, cost]
+  webhook_url: https://your-server.com/alerts
+  webhooks:
+    - https://hooks.slack.com/...
+    - https://events.pagerduty.com/...
+  retry_attempts: 3
+  retry_backoff_seconds: 0.25
+  retry_backoff_max_seconds: 2.0
+  timeout_seconds: 5.0
+
+content_filter:
+  enabled: true
+  block_code_execution: true
+  block_file_paths: true
+  block_urls: false
+  allowlist_patterns: []
+  denylist_patterns:
+    - &quot;(?i)password&quot;
+
+hot_reload:
+  enabled: true
+  poll_seconds: 2.0
+</code></pre>
+<h2 id="load-in-code">Load in code</h2>
+<pre><code class="language-python">from mcp_bastion import load_config, build_middleware_from_config
+
+# Load from bastion.yaml or BASTION_CONFIG; optional: load_config(&quot;path/to/bastion.yaml&quot;)
+config = load_config()
+middleware = build_middleware_from_config(config)
+# Wire middleware into your MCP server
+</code></pre>
+<p>One-liner (load + build in one call):</p>
+<pre><code class="language-python">from mcp_bastion import build_middleware_from_config
+
+middleware = build_middleware_from_config()
+</code></pre>
+<h2 id="schema">Schema</h2>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Keys</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>prompt_guard</td>
+<td>enabled</td>
+<td>Meta PromptGuard for injection</td>
+</tr>
+<tr>
+<td>pii</td>
+<td>enabled</td>
+<td>PII redaction (Presidio)</td>
+</tr>
+<tr>
+<td>rate_limit</td>
+<td>enabled, max_iterations, timeout_seconds, token_budget</td>
+<td>Token bucket</td>
+</tr>
+<tr>
+<td>circuit_breaker</td>
+<td>enabled</td>
+<td>Per-tool circuit breaker</td>
+</tr>
+<tr>
+<td>content_filter</td>
+<td>enabled, block_code_execution, block_file_paths, block_urls, allowlist_patterns, denylist_patterns</td>
+<td>Content filter with explicit allow/deny tuning</td>
+</tr>
+<tr>
+<td>rbac</td>
+<td>enabled, permissions</td>
+<td>Role -&gt; list of tools</td>
+</tr>
+<tr>
+<td>schema_validation</td>
+<td>enabled</td>
+<td>Input schema validation</td>
+</tr>
+<tr>
+<td>replay_guard</td>
+<td>enabled, require_nonce</td>
+<td>Replay protection</td>
+</tr>
+<tr>
+<td>cost_tracker</td>
+<td>enabled, max_cost_per_session, max_cost_per_day, checkpoint_path</td>
+<td>Cost budgets keyed by authenticated principal (2.0.0); set per-call cost in <code>metadata["cost"]</code></td>
+</tr>
+<tr>
+<td>semantic_cache</td>
+<td>enabled</td>
+<td>Semantic cache</td>
+</tr>
+<tr>
+<td>audit</td>
+<td>enabled</td>
+<td>Audit log + metrics</td>
+</tr>
+<tr>
+<td>alerts</td>
+<td>slack_webhook, webhook_url, webhooks, alert_on, retry_attempts, retry_backoff_seconds, retry_backoff_max_seconds, timeout_seconds</td>
+<td>Slack/generic webhook(s), alert kinds, and retry/backoff policy</td>
+</tr>
+<tr>
+<td>hot_reload</td>
+<td>enabled, poll_seconds</td>
+<td>Reload <code>bastion.yaml</code> in process without restart</td>
+</tr>
+<tr>
+<td>mcp_transport</td>
+<td>enabled, mode, state_handle, protocol, discovery, stability</td>
+<td>Hybrid stateful/stateless identity (opt-in). See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/HYBRID_MCP_TRANSPORT.md">HYBRID_MCP_TRANSPORT.md</a></td>
+</tr>
+<tr>
+<td>state_backend</td>
+<td>type, redis_url, key_prefix</td>
+<td>Shared Redis state for multi-replica deploys</td>
+</tr>
+</tbody>
+</table>
+<p>Install PyYAML for YAML loading: <code>pip install pyyaml</code>.</p>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

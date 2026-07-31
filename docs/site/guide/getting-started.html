@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Getting started | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Getting started">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html" class="active">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Getting started</h1>
+      </header>
+      <p>﻿# Quick start: protect an MCP server in minutes</p>
+<p>Time-to-value matters. Pick <strong>one</strong> path; each keeps Bastion-specific code to <strong>a couple of lines</strong> before you wire transport (stdio or HTTP) the same way you already do for MCP.</p>
+<hr />
+<h2 id="path-a-fastmcp-python">Path A  -  FastMCP (Python)</h2>
+<p>After <code>pip install mcp-bastion-fastmcp</code> and your usual <code>mcp</code> / FastMCP install:</p>
+<pre><code class="language-python">from mcp.server.fastmcp import FastMCP
+from mcp_bastion_fastmcp import secure_fastmcp
+
+mcp = FastMCP(&quot;My Server&quot;)
+secure_fastmcp(mcp)  # must run right after FastMCP(); wires Bastion into tool dispatch
+</code></pre>
+<p><code>secure_fastmcp</code> patches FastMCP’s internal tool dispatcher so each <code>tools/call</code> runs through <code>MCPBastionMiddleware</code> (defaults: prompt guard, PII redaction, rate limit). It does <strong>not</strong> load arbitrary <code>bastion.yaml</code> by itself. For <strong>full</strong> policy (semantic firewall, OPA/Cedar, allowlists, session limits, etc.) use <strong>Path B</strong> or compose middleware on the low-level MCP server.</p>
+<p>Full runnable pattern: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/integrations/mcp-bastion-fastmcp/README.md">integrations/mcp-bastion-fastmcp/README.md</a>.</p>
+<hr />
+<h2 id="path-b-policy-as-code-bastionyaml">Path B  -  Policy-as-code (<code>bastion.yaml</code>)</h2>
+<p>After <code>pip install mcp-bastion-python[policy]</code> and copying <code>bastion.yaml.example</code> → <code>bastion.yaml</code>:</p>
+<pre><code class="language-python">from mcp_bastion import build_middleware_from_config
+
+middleware = build_middleware_from_config()
+</code></pre>
+<p>Register <code>middleware</code> on your MCP server’s request path (see <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/TUTORIALS.md">TUTORIALS.md</a>). Adjust knobs only in YAML.</p>
+<p><strong>HTTP proxy + stateless MCP:</strong> see <a href="hybrid-transport.html">HYBRID_TRANSPORT_TUTORIAL.md</a> (<code>serve --proxy</code>, discovery card, <code>mcp_transport</code> block).</p>
+<hr />
+<h2 id="path-c-ci-gate-machine-scale-adoption">Path C  -  CI gate (machine-scale adoption)</h2>
+<p>Add <strong><code>mcp-bastion validate</code></strong> to every PR so policy stays valid in pipelines: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/examples/ci/README.md">examples/ci/README.md</a>.</p>
+<hr />
+<h2 id="next-steps">Next steps</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Doc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full walkthrough</td>
+<td><a href="installation.html">DETAILED_TUTORIAL.md</a></td>
+</tr>
+<tr>
+<td>Claude / OpenAI / Gemini configs</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/LLM_INTEGRATION.md">LLM_INTEGRATION.md</a></td>
+</tr>
+<tr>
+<td><code>bastion.yaml</code> reference</td>
+<td><a href="configuration.html">POLICY_AS_CODE.md</a></td>
+</tr>
+<tr>
+<td>Production + SIEM</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a></td>
+</tr>
+<tr>
+<td>Local dashboard (demo)</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> - <code>mcp-bastion dashboard --demo</code></td>
+</tr>
+</tbody>
+</table>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metrics | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Metrics">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html" class="active">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Metrics</h1>
+      </header>
+      <p>﻿# Performance Overhead &amp; Effectiveness Metrics</p>
+<p>MCP-Bastion is designed for low latency and measurable security effectiveness. This document describes how to interpret and collect these metrics.</p>
+<p>For <strong>many nodes</strong> (rolling out <code>bastion.yaml</code>, central dashboards, <strong>SIEM / SOC</strong> audit forwarding, compliance retention patterns), see <strong><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a></strong>  -  sections <em>Large-scale deployments: policy distribution and fleet visibility</em> and <em>SOC, SIEM, and compliance-oriented audit trails</em>.</p>
+<hr />
+<h2 id="performance-overhead">Performance Overhead</h2>
+<h3 id="proxy-overhead-without-ml">Proxy overhead (without ML)</h3>
+<p>When <strong>prompt injection</strong> and <strong>PII redaction</strong> are disabled (rate limiting only), the middleware adds a small amount of latency per request. The validation checklist measures this:</p>
+<ul>
+<li><strong>Target:</strong> Under <strong>5 ms</strong> added per tool call (excluding ML inference).</li>
+<li><strong>How it’s measured:</strong> <code>scripts/validate_checklist.py</code> runs 100 requests without Bastion (baseline) and 100 with Bastion (rate limit only), then computes the difference.</li>
+</ul>
+<pre><code class="language-bash">PYTHONPATH=src python scripts/validate_checklist.py
+# Look for: &quot;Proxy overhead &lt; 5ms (excl. ML)&quot; and &quot;Overhead: X.XXms&quot;
+</code></pre>
+<ul>
+<li><strong>Typical result:</strong> On a modern machine, overhead is well under 5 ms (often &lt; 1 ms for the rate-limit-only path).</li>
+</ul>
+<h3 id="when-ml-is-enabled">When ML is enabled</h3>
+<ul>
+<li><strong>PromptGuard (injection):</strong> Adds latency proportional to model inference (e.g. tens to a few hundred ms per call depending on hardware). Run locally (CPU or GPU) so data does not leave your network.</li>
+<li><strong>PII redaction (Presidio):</strong> Adds latency per response (e.g. tens of ms depending on text length and entities). Tune by limiting entities or response size if needed.</li>
+</ul>
+<p>Use the <strong>dashboard</strong> and <strong>Prometheus</strong> metrics (see below) to observe request volume and latency in production.</p>
+<hr />
+<h2 id="effectiveness-metrics">Effectiveness Metrics</h2>
+<p>These metrics show how well MCP-Bastion is blocking threats and protecting data.</p>
+<h3 id="from-the-dashboard">From the dashboard</h3>
+<p>Run <code>mcp-bastion dashboard --port 7000</code> and open http://localhost:7000/. You get:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Summary bar (KPI strip)</strong></td>
+<td>At a glance: <strong>total requests</strong>, <strong>block rate</strong> (% of invocations), <strong>top threat</strong> (most common block class), and <strong>active users</strong> / tenant count when attribution data exists. Replaces a blank first paint with skeleton placeholders, then live values.</td>
+</tr>
+<tr>
+<td><strong>Load state</strong></td>
+<td>Until metrics connect, a short “connecting to metrics” style message and busy state instead of an empty page.</td>
+</tr>
+<tr>
+<td><strong>Requests</strong></td>
+<td>Total tool (and optionally resource) requests seen.</td>
+</tr>
+<tr>
+<td><strong>Blocked</strong></td>
+<td>Number of requests blocked (injection, rate limit, RBAC, content filter, etc.).</td>
+</tr>
+<tr>
+<td><strong>Blocked %</strong></td>
+<td>Percentage of requests blocked; useful for tuning thresholds and understanding abuse.</td>
+</tr>
+<tr>
+<td><strong>PII redacted</strong></td>
+<td>Number of responses where PII was redacted (count of redaction events).</td>
+</tr>
+<tr>
+<td><strong>Cost</strong></td>
+<td>Sum of cost recorded via cost tracker (e.g. per-session or per-tenant).</td>
+</tr>
+<tr>
+<td><strong>Blocked by reason</strong></td>
+<td>Breakdown of why requests were blocked (injection, rate_limit, rbac, content_filter, cost_budget, schema, etc.).</td>
+</tr>
+<tr>
+<td><strong>Top tools</strong></td>
+<td>Most frequently used tools; helps identify high-value or high-risk tools.</td>
+</tr>
+<tr>
+<td><strong>Cost by user</strong></td>
+<td>Cost per user/session when cost tracker is used with a user identifier.</td>
+</tr>
+<tr>
+<td><strong>Recent alerts</strong></td>
+<td>Last N alerts (injection, rate_limit, cost, rbac, etc.) for quick triage.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="from-the-api">From the API</h3>
+<ul>
+<li><strong>JSON metrics:</strong> <code>GET http://localhost:7000/api/metrics</code> returns the same data as the dashboard in JSON (e.g. for custom dashboards or automation). Includes <code>cost_reduction</code> (<code>tokens_used</code>, <code>tokens_saved</code>, <code>tokens_avoided_by_blocks</code>, <code>cost_actual_usd</code>, <code>cost_if_unblocked_usd</code>, <code>by_source</code>, <code>by_block_kind</code>, <code>blocked_issues</code>).</li>
+<li><strong>Local posture / guides:</strong> <code>/api/posture</code>, <code>/api/prevalidate</code>, <code>/api/issue-guide</code> - read-only over <code>.bastion/scan</code> + bundled guides (<a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a>).</li>
+<li><strong>Prometheus:</strong> <code>GET http://localhost:7000/metrics</code> exposes Prometheus format so you can scrape with Grafana/Datadog and set alerts (e.g. on <code>blocked_total</code> or <code>blocked_pct</code>).</li>
+</ul>
+<h3 id="from-opentelemetry">From OpenTelemetry</h3>
+<p>If you set <code>OTEL_EXPORTER_OTLP_ENDPOINT</code>, each tool call is recorded as a span with attributes such as <code>mcp.tool</code>, <code>mcp.action</code>, <code>mcp.latency_ms</code>, and <code>mcp.error</code> when blocked. Use that to measure latency and blocked rate per tool in your observability stack.</p>
+<hr />
+<h2 id="interpreting-effectiveness">Interpreting Effectiveness</h2>
+<ul>
+<li><strong>Blocked %:</strong> A non-zero blocked rate is expected (malicious or abusive traffic). Very high blocked % might indicate overly strict rules (e.g. prompt threshold) or a real attack surge; use “blocked by reason” to tune.</li>
+<li><strong>PII redacted:</strong> Confirms that PII detection is active; combine with logging to ensure no raw PII is logged.</li>
+<li><strong>Cost and cost by user:</strong> Helps enforce budgets and detect runaway sessions or expensive tenants.</li>
+</ul>
+<p>Use the dashboard and alerts (Slack, webhook) to react to spikes in blocked count or cost. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> and <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/SETUP_GUIDE.md">SETUP_GUIDE.md</a> for wiring the dashboard and audit callbacks.</p>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

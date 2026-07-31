@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply chain | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Supply chain">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html" class="active">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Supply chain</h1>
+      </header>
+      <p>﻿# Supply chain, releases, and provenance</p>
+<p>This page is for <strong>operators and security reviewers</strong>: how MCP-Bastion <strong>builds and publishes</strong> artifacts today, and how to describe that accurately in questionnaires and release notes. Verifiable facts (GitHub Actions, npm provenance, PyPI Trusted Publishing) usually read stronger than generic “enterprise-grade supply chain” labels.</p>
+<h2 id="what-github-actions-does-today">What GitHub Actions does today</h2>
+<p>Workflows live under <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/.github/workflows/"><code>.github/workflows/</code></a>. Highlights:</p>
+<h3 id="ciyml-pull-requests-and-main"><code>ci.yml</code> (pull requests and <code>main</code>)</h3>
+<ul>
+<li><strong>Python:</strong> <code>pip install -e ".[dev,policy,dashboard]"</code>, then <code>mcp-bastion validate --config bastion.yaml.example</code>, then <strong><code>python -m pytest --cov=mcp_bastion --cov-fail-under=92</code></strong> (see <code>[tool.coverage.*]</code> in <code>pyproject.toml</code>).</li>
+<li><strong>TypeScript:</strong> <code>npm ci</code> and <strong><code>npm test</code></strong> (workspace packages).</li>
+</ul>
+<h3 id="publish-mcpyml-main-package-pypi-npm-mcp-registry"><code>publish-mcp.yml</code> (main package: PyPI + npm + MCP Registry)</h3>
+<ul>
+<li><strong>Checkout</strong> of the ref that triggered the run (<code>actions/checkout@v4</code>).</li>
+<li><strong>TypeScript (monorepo):</strong> <code>npm ci</code>, <code>npm run build</code>, <code>npm run test</code> (workspace tests).</li>
+<li><strong>npm release (on version tags):</strong> Prefer OIDC Trusted Publishing with <code>--provenance</code>. If <code>@mcp-bastion/core</code> does not exist yet, a one-time <strong><code>NPM_TOKEN</code></strong> bootstrap is required - see <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/PUBLISHING_NPM_AND_REGISTRY.md">PUBLISHING_NPM_AND_REGISTRY.md</a>.</li>
+<li><strong>Python:</strong> <code>uv build</code> to produce wheels/sdists; <strong>PyPI</strong> publish uses <strong><code>pypa/gh-action-pypi-publish</code></strong> with <strong><code>id-token: write</code></strong> for <a href="https://docs.pypi.org/trusted-publishers/">PyPI Trusted Publishing</a> (OIDC; no long-lived PyPI password in the workflow).</li>
+<li><strong>MCP Registry (on tags):</strong> <code>mcp-publisher</code> <strong>v1.7.9+</strong> with <code>github-oidc</code> login (correct OIDC audience for production registry).</li>
+</ul>
+<h3 id="publish-integrationsyml-integration-packages"><code>publish-integrations.yml</code> (integration packages)</h3>
+<ul>
+<li>Per-package <strong><code>uv build</code></strong> and PyPI publish via the same <strong>OIDC</strong> pattern (<code>id-token: write</code>).</li>
+<li>Trigger: push tag <strong><code>integration-v*</code></strong> (see workflow conditions) or <strong>Actions → “Publish Integration Packages” → Run workflow</strong> and choose a <strong>single</strong> package (recommended) or <code>all</code> (matrix runs all jobs in parallel).</li>
+</ul>
+<h2 id="pypi-publish-order-do-not-skip">PyPI publish order (do not skip)</h2>
+<p>Integration packages in <code>integrations/*/pyproject.toml</code> depend on <strong><code>mcp-bastion-python&gt;=...</code></strong>. If you publish an integration <strong>before</strong> that version of the core package exists on PyPI, <strong>installs can fail</strong> (<code>ResolutionImpossible</code> / “No matching distribution”).</p>
+<p><strong>Recommended order:</strong></p>
+<ol>
+<li><strong>Merge</strong> your release branch to the branch you tag from (usually <code>main</code>) so <code>pyproject.toml</code> at the repo root matches the version you are shipping (e.g. <code>2.0.0</code>).</li>
+<li><strong>Tag the monorepo</strong> with <strong><code>v2.0.0</code></strong> (same version as <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/pyproject.toml">pyproject.toml</a> <code>version</code>) and <strong>push the tag</strong>  -  this runs <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/.github/workflows/publish-mcp.yml"><code>.github/workflows/publish-mcp.yml</code></a> and publishes <strong><code>mcp-bastion-python</code></strong> (and npm <code>@mcp-bastion/core</code> when the job succeeds, plus MCP registry steps if configured).</li>
+<li><strong>Wait</strong> until <a href="https://pypi.org/project/mcp-bastion-python/#history">PyPI</a> shows the new <strong><code>mcp-bastion-python</code></strong> release (and fix any failed workflow before continuing).</li>
+<li><strong>Publish each integration on PyPI one at a time</strong>  -  use <strong>Run workflow</strong> on <strong><code>publish-integrations.yml</code></strong>, set <strong>package</strong> to e.g. <code>mcp-bastion-openai</code>, then repeat for <code>mcp-bastion-langchain</code>, <code>mcp-bastion-fastmcp</code>, etc. Avoid choosing <strong><code>all</code></strong> for the first time after a core bump if you want easier failure triage; the matrix is <strong>parallel</strong> and does not depend on each other, but a missing core wheel still breaks every integration’s install.</li>
+<li>If you need a new <strong>integration</strong> package version, bump <code>version</code> in that integration’s <code>pyproject.toml</code>, merge, then run the integration workflow (or use an <code>integration-v*</code> tag if your process uses it).</li>
+</ol>
+<p><strong>Local one-off (if you do not use Actions):</strong> from repo root, <code>uv build</code> then upload only under <code>src/</code> for the main package; for integrations, <code>cd integrations/&lt;name&gt;</code> and <code>uv build</code> / <code>twine upload</code>  -  still <strong>after</strong> the matching <code>mcp-bastion-python</code> is on PyPI.</p>
+<h2 id="release-and-provenance-summary">Release and provenance summary</h2>
+<ul>
+<li><strong>Merge gate:</strong> every PR to <strong><code>main</code></strong> runs validation, <strong>pytest with ≥92% coverage</strong> on <code>src/mcp_bastion</code>, and npm workspace tests before merge.</li>
+<li><strong>Publish:</strong> tagged releases build on GitHub Actions with <strong>npm provenance</strong> and <strong>PyPI Trusted Publishing</strong> (OIDC).</li>
+<li><strong>Artifacts:</strong> Python wheels/sdists and npm package are produced from the same automated pipelines linked above.</li>
+</ul>
+<h2 id="operating-guidance">Operating guidance</h2>
+<ol>
+<li><strong>Keep this file in sync</strong> with <code>.github/workflows/*.yml</code> whenever CI or publish jobs change.</li>
+<li><strong>Provenance</strong> - cite <strong>npm provenance</strong> for <code>@mcp-bastion/core</code> and <strong>PyPI Trusted Publishing</strong> for Python wheels when answering security questionnaires.</li>
+<li><strong>One-line summary</strong> - "Python and npm releases build in GitHub Actions; npm uses provenance; PyPI uses OIDC trusted publishing; CycloneDX SBOMs upload as release-workflow artifacts."</li>
+</ol>
+<h2 id="software-bill-of-materials-cyclonedx">Software Bill of Materials (CycloneDX)</h2>
+<p>For <strong>CRA / OpenSSF</strong> supply-chain transparency, release workflows generate CycloneDX <strong>1.5</strong> JSON without adding runtime dependencies:</p>
+<table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Outputs</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>publish-mcp.yml</code></td>
+<td><code>bom.json</code>, <code>bom-npm.json</code></td>
+<td>After <code>uv build</code>; <code>continue-on-error</code> (fail-safe)</td>
+</tr>
+<tr>
+<td><code>publish-docker.yml</code></td>
+<td><code>bom.json</code></td>
+<td>Before image push; fail-safe</td>
+</tr>
+</tbody>
+</table>
+<p>Local generation:</p>
+<pre><code class="language-bash">python scripts/generate_sbom.py --output bom.json
+python scripts/generate_sbom.py --npm packages/core/package.json --output bom-npm.json
+</code></pre>
+<p>Docs: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/CRA_COMPLIANCE.md">CRA_COMPLIANCE.md</a> · tutorial <a href="cra-sbom.html">CRA_SBOM_TUTORIAL.md</a> · diagram <code>images/mcp-bastion-cra-sbom.svg</code>.</p>
+<h2 id="related-reading">Related reading</h2>
+<ul>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY.md">SECURITY.md</a> - product security behavior and dependency notes  </li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/SECURITY.md">../SECURITY.md</a> - vulnerability disclosure + CRA Article 14  </li>
+<li><a href="pillars.html">PILLARS.md</a> - policy controls, <code>bastion.yaml</code>, and dashboard health rows  </li>
+</ul>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
