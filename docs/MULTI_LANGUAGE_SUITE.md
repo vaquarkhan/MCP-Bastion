@@ -44,13 +44,76 @@ Engine contract in the suite: [docs/PYPI_ENGINE.md](https://github.com/vaquarkha
 |---------|---------|
 | **Python engine** | `pip install mcp-bastion-python` |
 | **Suite CLI** | `pip install "git+https://github.com/vaquarkhan/mcp-bastion-suite.git"` then `mcp-bastion-suite doctor` |
-| **Node / TypeScript** | npm GitHub Packages `@vaquarkhan/mcp-bastion-suite` |
-| **Java / Kotlin** | Maven GitHub Packages `io.github.vaquarkhan:mcp-bastion-suite` |
+| **Node / TypeScript** | npm GitHub Packages `@vaquarkhan/mcp-bastion-suite` **or** download `.tgz` from [Release v0.1.0](https://github.com/vaquarkhan/mcp-bastion-suite/releases/tag/v0.1.0) |
+| **Java / Kotlin** | **Not on Maven Central** — see [Java JAR below](#java--kotlin-maven-jar) |
 | **Go** | `go get github.com/vaquarkhan/mcp-bastion-suite/adapters/go@v0.1.0` |
-| **.NET** | NuGet GitHub Packages `McpBastionSuite` |
+| **.NET** | NuGet GitHub Packages `McpBastionSuite` **or** `.nupkg` from [Release v0.1.0](https://github.com/vaquarkhan/mcp-bastion-suite/releases/tag/v0.1.0) |
 | **Any / CI** | `ghcr.io/vaquarkhan/mcp-bastion-suite` or [GitHub Action](https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/action.yml) |
 
-Full commands: [suite DOWNLOADS.md](https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/DOWNLOADS.md).
+Full commands: [suite DOWNLOADS.md](https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/DOWNLOADS.md) · Release assets: [v0.1.0](https://github.com/vaquarkhan/mcp-bastion-suite/releases/tag/v0.1.0)
+
+### Java / Kotlin (Maven JAR)
+
+The adapter JAR is published as a **GitHub Release asset**, not Maven Central. That is why search.maven.org / Maven Central UI will not show it.
+
+**Option A — download JAR (no registry auth)**
+
+```text
+https://github.com/vaquarkhan/mcp-bastion-suite/releases/download/v0.1.0/mcp-bastion-suite-0.1.0.jar
+https://github.com/vaquarkhan/mcp-bastion-suite/releases/download/v0.1.0/pom.xml
+```
+
+Install into your local Maven repo:
+
+```bash
+mvn install:install-file \
+  -Dfile=mcp-bastion-suite-0.1.0.jar \
+  -DpomFile=pom.xml \
+  -DgroupId=io.github.vaquarkhan \
+  -DartifactId=mcp-bastion-suite \
+  -Dversion=0.1.0 \
+  -Dpackaging=jar
+```
+
+Then in `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>io.github.vaquarkhan</groupId>
+  <artifactId>mcp-bastion-suite</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
+
+**Option B — GitHub Packages** (needs a PAT with `read:packages`; package visibility may be private until set Public in GitHub → Packages)
+
+```xml
+<repositories>
+  <repository>
+    <id>github</id>
+    <url>https://maven.pkg.github.com/vaquarkhan/mcp-bastion-suite</url>
+  </repository>
+</repositories>
+```
+
+`~/.m2/settings.xml`:
+
+```xml
+<server>
+  <id>github</id>
+  <username>YOUR_GITHUB_USERNAME</username>
+  <password>YOUR_PAT_WITH_read:packages</password>
+</server>
+```
+
+**Important:** The Java adapter is a thin connector. The security engine is still **`mcp-bastion-python`** (CLI / sidecar / proxy). Install the engine:
+
+```bash
+pip install "mcp-bastion-python>=4.0.0,<5"
+# or use suite Docker: ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0
+```
+
+Tutorial: [suite java.md](https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/java.md)
 
 Shared policy sketch (same file in every language):
 
