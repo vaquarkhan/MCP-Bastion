@@ -294,7 +294,7 @@ Docs: [SCHEMA_MINIMIZE_LIVE_PIN.md](SCHEMA_MINIMIZE_LIVE_PIN.md).
 | Behavior | `behavior_fingerprint`, `agent_stability` |
 | Boundary | `transport_hardening`, `boundary_mode`, `edge_auth` |
 
-Deep dives: [FEATURES.md](FEATURES.md), [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md), [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md).
+Deep dives: [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) (issue → solution → benefits), [FEATURES.md](FEATURES.md), [ENTERPRISE_RUNTIME_CONTROLS.md](ENTERPRISE_RUNTIME_CONTROLS.md), [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md).
 
 ---
 
@@ -360,10 +360,12 @@ mcp-bastion redteam
 
 | Topic | Document |
 |-------|----------|
+| Feature deep dive (issue → solution → benefits) | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
 | Quick start | [QUICK_START.md](QUICK_START.md) |
 | Detailed tutorial | [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) |
 | CLI reference | [CLI.md](CLI.md) |
 | Policy schema | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) |
+| Dashboard | [../dashboard/README.md](../dashboard/README.md) |
 | Developer / release | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) |
 | Supply chain | [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md) |
 | Security policy | [SECURITY.md](SECURITY.md) / root [SECURITY.md](../SECURITY.md) |

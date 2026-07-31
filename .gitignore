@@ -81,3 +81,6 @@ agent-transcripts/
 coverage-full.log
 coverage-run.log
 
+
+# Local docs screenshots
+docs/site/guide/_preview/
