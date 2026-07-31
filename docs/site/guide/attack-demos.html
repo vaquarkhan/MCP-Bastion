@@ -73,7 +73,7 @@
         <h1>Attack demos (GIFs)</h1>
       </header>
       <h1 id="attack-defense-demos">Attack → defense demos</h1>
-<p>Runnable scenarios <strong>and video-style GIFs</strong> showing what an attack looks like and how MCP-Bastion blocks or redacts it. Keep this detail here—<strong>not</strong> in the root README.</p>
+<p><strong>Scripted GIF videos</strong> (terminal-style) plus runnable Python scenarios so users <strong>see Bastion value</strong> for each hero feature: attack → intercept → block/redact → <em>how it helps you</em>.</p>
 <table>
 <thead>
 <tr>
@@ -83,32 +83,29 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Documentation bible</strong> (all visuals)</td>
+<td><strong>Documentation bible</strong></td>
 <td><a href="bible.html">DOCUMENTATION_BIBLE.md</a></td>
 </tr>
 <tr>
-<td>Issue → solution → benefits</td>
+<td>Issue → solution → benefits (+ embedded GIFs)</td>
 <td><a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a></td>
 </tr>
 <tr>
-<td>Narrative attack guide</td>
+<td>Narrative attacks</td>
 <td><a href="attack-prevention.html">ATTACK_PREVENTION.md</a></td>
 </tr>
 <tr>
-<td>Multi-language connectors</td>
+<td>Multi-language</td>
 <td><a href="multi-language.html">MULTI_LANGUAGE_SUITE.md</a></td>
-</tr>
-<tr>
-<td>Legacy combined script</td>
-<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/examples/full_demo.py">examples/full_demo.py</a></td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2 id="master-tour-gif">Master tour (GIF)</h2>
 <p><img alt="Attack defense tour" src="../assets/mcp-bastion-attack-defense-tour.gif" /></p>
-<p>Regenerate GIFs:</p>
-<pre><code class="language-bash">python scripts/generate_attack_demo_gifs.py
+<p>Each clip is <strong>4 beats</strong>: <code>1 ATTACK</code> → <code>2 BASTION</code> → <code>3 BLOCKED/REDACTED</code> → <code>4 VALUE</code>.</p>
+<pre><code class="language-bash">python scripts/generate_attack_demo_gifs.py   # regenerate GIFs
+PYTHONPATH=src python -m examples.attack_demos --strict   # live scripted demos
 </code></pre>
 <hr />
 <h2 id="quick-run-live-same-scenarios">Quick run (live, same scenarios)</h2>

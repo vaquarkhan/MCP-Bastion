@@ -1,14 +1,13 @@
 # Attack → defense demos
 
-Runnable scenarios **and video-style GIFs** showing what an attack looks like and how MCP-Bastion blocks or redacts it. Keep this detail here—**not** in the root README.
+**Scripted GIF videos** (terminal-style) plus runnable Python scenarios so users **see Bastion value** for each hero feature: attack → intercept → block/redact → *how it helps you*.
 
 | Related | Link |
 |---------|------|
-| **Documentation bible** (all visuals) | [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) |
-| Issue → solution → benefits | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
-| Narrative attack guide | [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) |
-| Multi-language connectors | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) |
-| Legacy combined script | [examples/full_demo.py](../examples/full_demo.py) |
+| **Documentation bible** | [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) |
+| Issue → solution → benefits (+ embedded GIFs) | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
+| Narrative attacks | [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) |
+| Multi-language | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) |
 
 ---
 
@@ -16,10 +15,11 @@ Runnable scenarios **and video-style GIFs** showing what an attack looks like an
 
 ![Attack defense tour](images/mcp-bastion-attack-defense-tour.gif)
 
-Regenerate GIFs:
+Each clip is **4 beats**: `1 ATTACK` → `2 BASTION` → `3 BLOCKED/REDACTED` → `4 VALUE`.
 
 ```bash
-python scripts/generate_attack_demo_gifs.py
+python scripts/generate_attack_demo_gifs.py   # regenerate GIFs
+PYTHONPATH=src python -m examples.attack_demos --strict   # live scripted demos
 ```
 
 ---

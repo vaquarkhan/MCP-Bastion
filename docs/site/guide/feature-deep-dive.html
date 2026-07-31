@@ -145,6 +145,10 @@
   fail_open: false
   use_ungated_default: true
 </code></pre>
+<h3 id="see-bastion-help-scripted-gif">See Bastion help (scripted GIF)</h3>
+<p><img alt="Prompt guard attack defense demo" src="../assets/attack-demos/01-prompt-guard.gif" /></p>
+<p><em>Attack → Bastion evaluate → </em><em>BLOCKED -32001</em><em> → value: tool never runs.</em><br />
+Run: <code>PYTHONPATH=src python -m examples.attack_demos --only prompt_guard</code> · Gallery: <a href="attack-demos.html">ATTACK_DEMOS.md</a></p>
 <h3 id="signals">Signals</h3>
 <table>
 <thead>
@@ -168,7 +172,7 @@
 </tr>
 <tr>
 <td>Demo</td>
-<td><code>python -m examples.attack_demos --only prompt_guard</code> → <a href="attack-demos.html">ATTACK_DEMOS.md</a></td>
+<td>GIF above · <code>python -m examples.attack_demos --only prompt_guard</code></td>
 </tr>
 </tbody>
 </table>
@@ -188,6 +192,10 @@
 <pre><code class="language-yaml">pii:
   enabled: true          # default ON
 </code></pre>
+<h3 id="see-bastion-help-scripted-gif_1">See Bastion help (scripted GIF)</h3>
+<p><img alt="PII redaction attack defense demo" src="../assets/attack-demos/02-pii.gif" /></p>
+<p><em>Outbound SSN/email scrubbed before the model sees them.</em><br />
+Run: <code>PYTHONPATH=src python -m examples.attack_demos --only pii</code></p>
 <h3 id="signals_1">Signals</h3>
 <table>
 <thead>
@@ -199,7 +207,7 @@
 <tbody>
 <tr>
 <td>Error / path</td>
-<td><strong>-32002</strong> or silent redact depending on path</td>
+<td>silent redact (or block path depending on config)</td>
 </tr>
 <tr>
 <td>Dashboard</td>
@@ -207,7 +215,11 @@
 </tr>
 <tr>
 <td>Demo</td>
-<td><code>python -m examples.attack_demos --only pii</code></td>
+<td>GIF above · <code>python -m examples.attack_demos --only pii</code></td>
+</tr>
+<tr>
+<td>Related</td>
+<td>Reversible mode → <a href="#c1-reversible-pii-vault-pii_vault">§ C1 PII vault</a></td>
 </tr>
 </tbody>
 </table>
@@ -231,6 +243,10 @@
   token_budget: 50000
   max_per_tool: 0
 </code></pre>
+<h3 id="see-bastion-help-scripted-gif_2">See Bastion help (scripted GIF)</h3>
+<p><img alt="Rate limit attack defense demo" src="../assets/attack-demos/03-rate-limit.gif" /></p>
+<p><em>Agent loop stopped — denial-of-wallet contained (</em><em>-32002</em><em>).</em><br />
+Run: <code>PYTHONPATH=src python -m examples.attack_demos --only rate_limit</code></p>
 <h3 id="signals_2">Signals</h3>
 <table>
 <thead>
@@ -242,7 +258,7 @@
 <tbody>
 <tr>
 <td>Error</td>
-<td><strong>-32003</strong></td>
+<td><strong>-32002</strong> (<code>RateLimitExceededError</code>)</td>
 </tr>
 <tr>
 <td>Dashboard</td>
@@ -250,7 +266,7 @@
 </tr>
 <tr>
 <td>Demo</td>
-<td><code>python -m examples.attack_demos --only rate_limit</code> (error <strong>-32002</strong>)</td>
+<td>GIF above · <code>python -m examples.attack_demos --only rate_limit</code></td>
 </tr>
 </tbody>
 </table>
@@ -309,6 +325,10 @@
   block_urls: false
   block_secrets: false
 </code></pre>
+<h3 id="see-bastion-help-scripted-gif_3">See Bastion help (scripted GIF)</h3>
+<p><img alt="Content filter attack defense demo" src="../assets/attack-demos/04-content-filter.gif" /></p>
+<p><em><code>/etc/passwd</code>-style paths blocked (</em><em>-32005</em><em>).</em><br />
+Run: <code>PYTHONPATH=src python -m examples.attack_demos --only content_filter</code></p>
 <h3 id="signals_4">Signals</h3>
 <table>
 <thead>
@@ -328,7 +348,7 @@
 </tr>
 <tr>
 <td>Demo</td>
-<td><code>python -m examples.attack_demos --only content_filter</code></td>
+<td>GIF above · <code>python -m examples.attack_demos --only content_filter</code></td>
 </tr>
 </tbody>
 </table>
@@ -353,6 +373,10 @@
     admin: [&quot;*&quot;]
 </code></pre>
 <p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/RBAC.md">RBAC.md</a>.</p>
+<h3 id="see-bastion-help-scripted-gif_4">See Bastion help (scripted GIF)</h3>
+<p><img alt="RBAC attack defense demo" src="../assets/attack-demos/05-rbac.gif" /></p>
+<p><em><code>viewer</code> cannot call <code>write</code> (</em><em>-32006</em><em>).</em><br />
+Run: <code>PYTHONPATH=src python -m examples.attack_demos --only rbac</code></p>
 <h3 id="signals_5">Signals</h3>
 <table>
 <thead>
@@ -372,7 +396,7 @@
 </tr>
 <tr>
 <td>Demo</td>
-<td><code>python -m examples.attack_demos --only rbac</code></td>
+<td>GIF above · <code>python -m examples.attack_demos --only rbac</code></td>
 </tr>
 </tbody>
 </table>
@@ -396,6 +420,10 @@
       year: integer
       amount: number
 </code></pre>
+<h3 id="see-bastion-help-scripted-gif_5">See Bastion help (scripted GIF)</h3>
+<p><img alt="Schema validation attack defense demo" src="../assets/attack-demos/06-schema.gif" /></p>
+<p><em>Missing/wrong arg types rejected (</em><em>-32007</em><em>).</em><br />
+Run: <code>PYTHONPATH=src python -m examples.attack_demos --only schema</code></p>
 <h3 id="signals_6">Signals</h3>
 <table>
 <thead>
@@ -412,6 +440,10 @@
 <tr>
 <td>Dashboard</td>
 <td>Schema Validation row</td>
+</tr>
+<tr>
+<td>Demo</td>
+<td>GIF above · <code>python -m examples.attack_demos --only schema</code></td>
 </tr>
 </tbody>
 </table>
@@ -431,6 +463,10 @@
   enabled: true          # default OFF
   require_nonce: false
 </code></pre>
+<h3 id="see-bastion-help-scripted-gif_6">See Bastion help (scripted GIF)</h3>
+<p><img alt="Replay guard attack defense demo" src="../assets/attack-demos/07-replay.gif" /></p>
+<p><em>Duplicate nonce rejected (</em><em>-32008</em><em>).</em><br />
+Run: <code>PYTHONPATH=src python -m examples.attack_demos --only replay</code></p>
 <h3 id="signals_7">Signals</h3>
 <table>
 <thead>
@@ -447,6 +483,10 @@
 <tr>
 <td>Dashboard</td>
 <td>Replay Guard row</td>
+</tr>
+<tr>
+<td>Demo</td>
+<td>GIF above · <code>python -m examples.attack_demos --only replay</code></td>
 </tr>
 </tbody>
 </table>
@@ -468,6 +508,10 @@
   max_cost_per_session: 10.0
   max_cost_per_day: 100.0
 </code></pre>
+<h3 id="see-bastion-help-scripted-gif_7">See Bastion help (scripted GIF)</h3>
+<p><img alt="Cost tracker attack defense demo" src="../assets/attack-demos/08-cost.gif" /></p>
+<p><em>Session spend cap hard-stops further calls (</em><em>-32009</em><em>).</em><br />
+Run: <code>PYTHONPATH=src python -m examples.attack_demos --only cost</code></p>
 <h3 id="signals_8">Signals</h3>
 <table>
 <thead>
@@ -484,6 +528,10 @@
 <tr>
 <td>Dashboard</td>
 <td>Cost Tracker row; cost KPIs; FinOps panels</td>
+</tr>
+<tr>
+<td>Demo</td>
+<td>GIF above · <code>python -m examples.attack_demos --only cost</code></td>
 </tr>
 </tbody>
 </table>
