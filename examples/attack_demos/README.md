@@ -2,11 +2,15 @@
 
 Runnable scenarios that print a markdown report: **attack**, **Bastion feature**, **block/redact outcome**, **error code**.
 
+**Full demo hub (dashboard + all languages + payloads):** [docs/DEMOS.md](../../docs/DEMOS.md)
+
 ```bash
 PYTHONPATH=src python -m examples.attack_demos
 PYTHONPATH=src python -m examples.attack_demos --only rbac
 PYTHONPATH=src python -m examples.attack_demos --strict
 ```
+
+Payload catalog: [payloads.json](payloads.json)
 
 | ID | Feature | Expected |
 |----|---------|----------|

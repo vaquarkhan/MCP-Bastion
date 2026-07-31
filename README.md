@@ -7,7 +7,9 @@
   ·
   <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html"><strong>Documentation</strong></a>
   ·
-  <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/attack-demos.html"><strong>Demo (Attack → Defense)</strong></a>
+  <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html"><strong>Demos</strong></a>
+  ·
+  <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/multi-language.html"><strong>Multi-language</strong></a>
   ·
   <a href="CONTRIBUTING.md"><strong>Contributing</strong></a>
   ·
@@ -32,7 +34,8 @@
 [![Docker proxy (GHCR)](https://img.shields.io/badge/GHCR-mcp--bastion--proxy-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 [![Docker dashboard (GHCR)](https://img.shields.io/badge/GHCR-mcp--bastion--dashboard-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
 [![Docs](https://img.shields.io/badge/docs-handbook%20%2B%20bible-0B5FFF?logo=readthedocs&logoColor=white)](https://vaquarkhan.github.io/MCP-Bastion/guide/)
-[![Attack demos](https://img.shields.io/badge/demo-attack%20%E2%86%92%20defense-22C55E?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/guide/attack-demos.html)
+[![Demos](https://img.shields.io/badge/demos-attack%20%2B%20dashboard-22C55E?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html)
+[![Multi-language](https://img.shields.io/badge/suite-TS%20Java%20Go%20.NET-7C3AED)](https://vaquarkhan.github.io/MCP-Bastion/guide/multi-language.html)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
@@ -40,10 +43,10 @@
 
 | Go to | Link |
 |-------|------|
-| **Documentation bible** (features, dashboard, multi-language) | https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html |
-| **Attack → defense demos** (scripted GIFs + runnable) | https://vaquarkhan.github.io/MCP-Bastion/guide/attack-demos.html |
+| **Documentation bible** | https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html |
+| **Demos** (attacks, dashboard, payloads, all languages) | https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html |
+| **Multi-language suite** | https://vaquarkhan.github.io/MCP-Bastion/guide/multi-language.html · [suite repo](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | **Docs hub** | https://vaquarkhan.github.io/MCP-Bastion/guide/ |
-| Multi-language suite | https://github.com/vaquarkhan/mcp-bastion-suite |
 
 **The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
 
