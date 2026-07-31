@@ -3,6 +3,20 @@
 <!-- mcp-name: io.github.vaquarkhan/mcp-bastion -->
 
 <p align="center">
+  <a href="#mcp-bastion"><strong>README</strong></a>
+  ·
+  <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html"><strong>Documentation</strong></a>
+  ·
+  <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/attack-demos.html"><strong>Demo (Attack → Defense)</strong></a>
+  ·
+  <a href="CONTRIBUTING.md"><strong>Contributing</strong></a>
+  ·
+  <a href="LICENSE"><strong>License</strong></a>
+  ·
+  <a href="SECURITY.md"><strong>Security</strong></a>
+</p>
+
+<p align="center">
   <img
     src="images/mcp-bastian.png"
     alt="MCP-Bastion  -  Fortifying the Model Context Protocol"
@@ -17,10 +31,19 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
 [![Docker proxy (GHCR)](https://img.shields.io/badge/GHCR-mcp--bastion--proxy-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 [![Docker dashboard (GHCR)](https://img.shields.io/badge/GHCR-mcp--bastion--dashboard-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
+[![Docs](https://img.shields.io/badge/docs-handbook%20%2B%20bible-0B5FFF?logo=readthedocs&logoColor=white)](https://vaquarkhan.github.io/MCP-Bastion/guide/)
+[![Attack demos](https://img.shields.io/badge/demo-attack%20%E2%86%92%20defense-22C55E?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/guide/attack-demos.html)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
 **Current release: [4.0.0](https://pypi.org/project/mcp-bastion-python/4.0.0/)** · Docker `v4.0.0` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
+
+| Go to | Link |
+|-------|------|
+| **Documentation bible** (features, dashboard, multi-language) | https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html |
+| **Attack → defense demos** (scripted GIFs + runnable) | https://vaquarkhan.github.io/MCP-Bastion/guide/attack-demos.html |
+| **Docs hub** | https://vaquarkhan.github.io/MCP-Bastion/guide/ |
+| Multi-language suite | https://github.com/vaquarkhan/mcp-bastion-suite |
 
 **The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
 
