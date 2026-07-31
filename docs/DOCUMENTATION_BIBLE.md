@@ -14,8 +14,8 @@
 
 ![MCP-Bastion attack defense tour](images/mcp-bastion-attack-defense-tour.gif)
 
-*Eight hero scenarios: attack → Bastion evaluate → block/redact → benefit.*  
-Run the same logic live: `PYTHONPATH=src python -m examples.attack_demos`
+*Scripted terminal demos: **ATTACK → BASTION → BLOCK/REDACT → VALUE** for eight hero features.*  
+Live: `PYTHONPATH=src python -m examples.attack_demos --strict` · Per-feature GIFs in [ATTACK_DEMOS.md](ATTACK_DEMOS.md) and [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md)
 
 ### Dashboard walkthrough
 

@@ -62,13 +62,20 @@ prompt_guard:
   use_ungated_default: true
 ```
 
+### See Bastion help (scripted GIF)
+
+![Prompt guard attack defense demo](images/attack-demos/01-prompt-guard.gif)
+
+*Attack → Bastion evaluate → **BLOCKED -32001** → value: tool never runs.*  
+Run: `PYTHONPATH=src python -m examples.attack_demos --only prompt_guard` · Gallery: [ATTACK_DEMOS.md](ATTACK_DEMOS.md)
+
 ### Signals
 | | |
 |--|--|
 | Error | **-32001** |
 | Dashboard | `pillar_health` → Prompt Guard; governance tiles; attack matrix |
 | Ops | `mcp-bastion redteam` for harness scores |
-| Demo | `python -m examples.attack_demos --only prompt_guard` → [ATTACK_DEMOS.md](ATTACK_DEMOS.md) |
+| Demo | GIF above · `python -m examples.attack_demos --only prompt_guard` |
 
 ---
 
@@ -91,12 +98,20 @@ pii:
   enabled: true          # default ON
 ```
 
+### See Bastion help (scripted GIF)
+
+![PII redaction attack defense demo](images/attack-demos/02-pii.gif)
+
+*Outbound SSN/email scrubbed before the model sees them.*  
+Run: `PYTHONPATH=src python -m examples.attack_demos --only pii`
+
 ### Signals
 | | |
 |--|--|
-| Error / path | **-32002** or silent redact depending on path |
+| Error / path | silent redact (or block path depending on config) |
 | Dashboard | `pillar_health` → PII Redaction; KPI `pii_redacted` |
-| Demo | `python -m examples.attack_demos --only pii` |
+| Demo | GIF above · `python -m examples.attack_demos --only pii` |
+| Related | Reversible mode → [§ C1 PII vault](#c1-reversible-pii-vault-pii_vault) |
 
 ---
 
@@ -123,12 +138,19 @@ rate_limit:
   max_per_tool: 0
 ```
 
+### See Bastion help (scripted GIF)
+
+![Rate limit attack defense demo](images/attack-demos/03-rate-limit.gif)
+
+*Agent loop stopped — denial-of-wallet contained (**-32002**).*  
+Run: `PYTHONPATH=src python -m examples.attack_demos --only rate_limit`
+
 ### Signals
 | | |
 |--|--|
-| Error | **-32003** |
+| Error | **-32002** (`RateLimitExceededError`) |
 | Dashboard | Rate Limiter row; block reasons; governance |
-| Demo | `python -m examples.attack_demos --only rate_limit` (error **-32002**) |
+| Demo | GIF above · `python -m examples.attack_demos --only rate_limit` |
 
 ---
 
@@ -182,12 +204,19 @@ content_filter:
   block_secrets: false
 ```
 
+### See Bastion help (scripted GIF)
+
+![Content filter attack defense demo](images/attack-demos/04-content-filter.gif)
+
+*`/etc/passwd`-style paths blocked (**-32005**).*  
+Run: `PYTHONPATH=src python -m examples.attack_demos --only content_filter`
+
 ### Signals
 | | |
 |--|--|
 | Error | **-32005** |
 | Dashboard | Content Filter row |
-| Demo | `python -m examples.attack_demos --only content_filter` |
+| Demo | GIF above · `python -m examples.attack_demos --only content_filter` |
 
 ---
 
@@ -216,12 +245,19 @@ rbac:
 
 See [RBAC.md](RBAC.md).
 
+### See Bastion help (scripted GIF)
+
+![RBAC attack defense demo](images/attack-demos/05-rbac.gif)
+
+*`viewer` cannot call `write` (**-32006**).*  
+Run: `PYTHONPATH=src python -m examples.attack_demos --only rbac`
+
 ### Signals
 | | |
 |--|--|
 | Error | **-32006** |
 | Dashboard | RBAC row; `/api/governance`; Agents panel when IAM is on |
-| Demo | `python -m examples.attack_demos --only rbac` |
+| Demo | GIF above · `python -m examples.attack_demos --only rbac` |
 
 ---
 
@@ -248,11 +284,19 @@ schema_validation:
       amount: number
 ```
 
+### See Bastion help (scripted GIF)
+
+![Schema validation attack defense demo](images/attack-demos/06-schema.gif)
+
+*Missing/wrong arg types rejected (**-32007**).*  
+Run: `PYTHONPATH=src python -m examples.attack_demos --only schema`
+
 ### Signals
 | | |
 |--|--|
 | Error | **-32007** |
 | Dashboard | Schema Validation row |
+| Demo | GIF above · `python -m examples.attack_demos --only schema` |
 
 ---
 
@@ -275,11 +319,19 @@ replay_guard:
   require_nonce: false
 ```
 
+### See Bastion help (scripted GIF)
+
+![Replay guard attack defense demo](images/attack-demos/07-replay.gif)
+
+*Duplicate nonce rejected (**-32008**).*  
+Run: `PYTHONPATH=src python -m examples.attack_demos --only replay`
+
 ### Signals
 | | |
 |--|--|
 | Error | **-32008** |
 | Dashboard | Replay Guard row |
+| Demo | GIF above · `python -m examples.attack_demos --only replay` |
 
 ---
 
@@ -304,11 +356,19 @@ cost_tracker:
   max_cost_per_day: 100.0
 ```
 
+### See Bastion help (scripted GIF)
+
+![Cost tracker attack defense demo](images/attack-demos/08-cost.gif)
+
+*Session spend cap hard-stops further calls (**-32009**).*  
+Run: `PYTHONPATH=src python -m examples.attack_demos --only cost`
+
 ### Signals
 | | |
 |--|--|
 | Error | **-32009** |
 | Dashboard | Cost Tracker row; cost KPIs; FinOps panels |
+| Demo | GIF above · `python -m examples.attack_demos --only cost` |
 
 ---
 
