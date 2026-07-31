@@ -24,6 +24,7 @@ ASSETS = SITE / "assets"
 PAGES: list[tuple[str, str, str, str]] = [
     ("index", "Documentation Home", "USER_GUIDE.md", "Start here"),
     ("bible", "Documentation bible", "DOCUMENTATION_BIBLE.md", "Start here"),
+    ("demos", "Demos (attack + dashboard)", "DEMOS.md", "Start here"),
     ("getting-started", "Getting started", "QUICK_START.md", "Start here"),
     ("user-guide", "User guide (end-to-end)", "USER_GUIDE.md", "Start here"),
     ("installation", "Installation & tutorials", "DETAILED_TUTORIAL.md", "Guides"),
@@ -178,10 +179,10 @@ def _home_body() -> str:
     cards = []
     featured = [
         ("bible.html", "Documentation bible", "Visual tour: attack GIFs, dashboard, features, multi-language."),
-        ("user-guide.html", "User guide (end-to-end)", "Install → configure → proxy → vault → production checklist."),
-        ("attack-demos.html", "Attack demos (GIFs)", "Video-style attack → Bastion block/redact for hero features."),
-        ("feature-deep-dive.html", "Feature deep dive", "Every control: issue → solution → benefits, including dashboard."),
+        ("demos.html", "Demos hub", "Attacks, payloads, dashboard tour, and every language."),
         ("multi-language.html", "Multi-language suite", "TypeScript, Java, Go, .NET via mcp-bastion-suite."),
+        ("feature-deep-dive.html", "Feature deep dive", "Every control: issue → solution → benefits, including dashboard."),
+        ("user-guide.html", "User guide (end-to-end)", "Install → configure → proxy → vault → production checklist."),
         ("getting-started.html", "Getting started", "FastMCP, policy-as-code, and CI gate paths."),
     ]
     for href, title, blurb in featured:
