@@ -32,6 +32,7 @@ PAGES: list[tuple[str, str, str, str]] = [
     ("proxy", "HTTP proxy & boundary", "GATEWAY_BOUNDARY.md", "Guides"),
     ("hybrid-transport", "Hybrid MCP transport", "HYBRID_TRANSPORT_TUTORIAL.md", "Guides"),
     ("multi-language", "Multi-language suite", "MULTI_LANGUAGE_SUITE.md", "Guides"),
+    ("package-status", "Package registry status", "PACKAGE_REGISTRY_STATUS.md", "Guides"),
     ("pii-vault", "PII vault", "PII_VAULT.md", "Privacy & context"),
     ("pii-vault-tutorial", "PII vault tutorial", "PII_VAULT_TUTORIAL.md", "Privacy & context"),
     ("schema-minimize", "Schema minimize & catalog pin", "SCHEMA_MINIMIZE_LIVE_PIN.md", "Privacy & context"),

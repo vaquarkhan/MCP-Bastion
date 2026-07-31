@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Package registry status | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Package registry status">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="bible.html">Documentation bible</a></li>
+<li><a href="demos.html">Demos (attack + dashboard)</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+<li><a href="multi-language.html">Multi-language suite</a></li>
+<li><a href="package-status.html" class="active">Package registry status</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="feature-deep-dive.html">Feature deep dive</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+<li><a href="attack-demos.html">Attack demos (GIFs)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Package registry status</h1>
+      </header>
+      <h1 id="package-registry-status-org-friendly-installs">Package registry status (org-friendly installs)</h1>
+<p><strong>Last checked:</strong> 2026-07-31<br />
+<strong>Goal:</strong> Every language can install from a <strong>public registry</strong> without downloading GitHub Release assets locally (many orgs block that).</p>
+<h2 id="status-matrix">Status matrix</h2>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Registry</th>
+<th>Version</th>
+<th>Public download?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mcp-bastion-python</code></td>
+<td><strong>PyPI</strong></td>
+<td>4.0.0</td>
+<td><strong>YES</strong></td>
+<td><code>pip install mcp-bastion-python==4.0.0</code></td>
+</tr>
+<tr>
+<td>17× <code>mcp-bastion-*</code> integrations</td>
+<td><strong>PyPI</strong></td>
+<td>4.0.0</td>
+<td><strong>YES</strong></td>
+<td>e.g. <code>mcp-bastion-openai</code>, <code>mcp-bastion-fastmcp</code>, …</td>
+</tr>
+<tr>
+<td><code>ghcr.io/vaquarkhan/mcp-bastion-proxy</code></td>
+<td><strong>GHCR</strong></td>
+<td>v4.0.0</td>
+<td><strong>YES</strong></td>
+<td>Public container</td>
+</tr>
+<tr>
+<td><code>ghcr.io/vaquarkhan/mcp-bastion-dashboard</code></td>
+<td><strong>GHCR</strong></td>
+<td>v4.0.0</td>
+<td><strong>YES</strong></td>
+<td>Public container</td>
+</tr>
+<tr>
+<td><code>ghcr.io/vaquarkhan/mcp-bastion-suite</code></td>
+<td><strong>GHCR</strong></td>
+<td>0.1.0</td>
+<td><strong>YES</strong></td>
+<td>Public container</td>
+</tr>
+<tr>
+<td>Go <code>…/adapters/go</code></td>
+<td><strong>proxy.golang.org</strong></td>
+<td>v0.1.0</td>
+<td><strong>YES</strong></td>
+<td><code>go get …@v0.1.0</code></td>
+</tr>
+<tr>
+<td><code>@mcp-bastion/core</code></td>
+<td>npmjs.org</td>
+<td>—</td>
+<td><strong>NO</strong></td>
+<td>Never bootstrapped; needs <code>NPM_TOKEN</code> once</td>
+</tr>
+<tr>
+<td><code>@vaquarkhan/mcp-bastion-suite</code></td>
+<td>npmjs.org</td>
+<td>—</td>
+<td><strong>NO</strong></td>
+<td>Only GitHub Packages (401 without PAT)</td>
+</tr>
+<tr>
+<td><code>io.github.vaquarkhan:mcp-bastion-suite</code></td>
+<td><strong>Maven Central</strong></td>
+<td>—</td>
+<td><strong>NO</strong></td>
+<td><code>numFound=0</code>; JAR only on GH Release / private GH Packages</td>
+</tr>
+<tr>
+<td><code>McpBastionSuite</code></td>
+<td><strong>NuGet.org</strong></td>
+<td>—</td>
+<td><strong>NO</strong></td>
+<td>Only GitHub Packages / Release <code>.nupkg</code></td>
+</tr>
+<tr>
+<td>GitHub Packages (Maven/npm/NuGet)</td>
+<td>maven/npm.pkg.github.com</td>
+<td>0.1.0</td>
+<td><strong>NO (401)</strong></td>
+<td>Not usable without <code>read:packages</code> PAT</td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-works-today-in-locked-down-orgs">What works today in locked-down orgs</h2>
+<pre><code class="language-bash"># Engine + integrations (recommended for everyone)
+pip install &quot;mcp-bastion-python==4.0.0&quot;
+pip install &quot;mcp-bastion-openai==4.0.0&quot;
+
+# Boundary / CLI without language adapters
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
+docker pull ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0
+
+# Go adapter (public module proxy)
+go get github.com/vaquarkhan/mcp-bastion-suite/adapters/go@v0.1.0
+</code></pre>
+<p>Java / TypeScript / .NET <strong>cannot</strong> currently resolve from Maven Central / npmjs / NuGet.org. Point those stacks at the <strong>Docker proxy</strong> + shared <code>bastion.yaml</code> until public packages exist:</p>
+<pre><code class="language-bash">docker run --rm -p 8080:8080 -v &quot;$PWD/bastion.yaml:/config/bastion.yaml&quot; \
+  ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0 serve --proxy --config /config/bastion.yaml
+</code></pre>
+<h2 id="gaps-to-publish-action-required">Gaps to publish (action required)</h2>
+<h3 id="1-npm-mcp-bastioncore-mcp-bastion-repo">1. npm <code>@mcp-bastion/core</code> (MCP-Bastion repo)</h3>
+<ol>
+<li>Create granular npm token (read/write).  </li>
+<li>Repo secret <code>NPM_TOKEN</code> on <code>vaquarkhan/MCP-Bastion</code>.  </li>
+<li>Actions → <strong>Build, Test, and Publish MCP-Bastion</strong> → publish=true (or push <code>v*</code> tag).  </li>
+<li>Configure Trusted Publisher on npmjs.com (see <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/PUBLISHING_NPM_AND_REGISTRY.md">PUBLISHING_NPM_AND_REGISTRY.md</a>).</li>
+</ol>
+<h3 id="2-java-maven-central-iogithubvaquarkhanmcp-bastion-suite">2. Java → Maven Central (<code>io.github.vaquarkhan:mcp-bastion-suite</code>)</h3>
+<p>GitHub Packages is <strong>not</strong> enough for orgs that block PAT / local JAR install. Need:</p>
+<ol>
+<li>Sonatype Central Portal account for <code>io.github.vaquarkhan</code> (same group already used for other artifacts).  </li>
+<li>Secrets on <code>mcp-bastion-suite</code>: e.g. <code>CENTRAL_USERNAME</code> / <code>CENTRAL_TOKEN</code> (or OSSRH pair).  </li>
+<li>Extend <strong>Publish language adapters</strong> workflow to deploy with <code>central-publishing-maven-plugin</code> (or <code>mvn deploy</code> to Central).  </li>
+<li>Cut a new version (e.g. <code>0.1.1</code>) so Central gets a clean publish.</li>
+</ol>
+<h3 id="3-typescript-suite-npmjsorg-vaquarkhanmcp-bastion-suite-or-mcp-bastionsuite">3. TypeScript suite → npmjs.org (<code>@vaquarkhan/mcp-bastion-suite</code> or <code>@mcp-bastion/suite</code>)</h3>
+<ol>
+<li>Prefer scope <code>@mcp-bastion</code> on npmjs (public) <strong>or</strong> publish <code>@vaquarkhan/…</code> with npm access.  </li>
+<li>Secret <code>NPM_TOKEN</code> on <code>mcp-bastion-suite</code>.  </li>
+<li>Change adapter publish job <code>registry-url</code> from <code>npm.pkg.github.com</code> → <code>https://registry.npmjs.org</code>.</li>
+</ol>
+<h3 id="4-net-nugetorg-mcpbastionsuite">4. .NET → NuGet.org (<code>McpBastionSuite</code>)</h3>
+<ol>
+<li>Create nuget.org API key.  </li>
+<li>Secret <code>NUGET_API_KEY</code> on <code>mcp-bastion-suite</code>.  </li>
+<li>Push with <code>dotnet nuget push --source https://api.nuget.org/v3/index.json</code>.</li>
+</ol>
+<h3 id="5-optional-interim-public-github-packages">5. Optional interim: public GitHub Packages</h3>
+<p>If Central/npmjs/nuget.org take time, set each GH Package visibility to <strong>Public</strong> (UI or <code>PACKAGES_TOKEN</code> with <code>write:packages</code>). Still often blocked in enterprises that only allow Maven Central / npmjs / nuget.org.</p>
+<h2 id="verify-script">Verify script</h2>
+<pre><code class="language-bash">python scripts/verify_package_registries.py
+</code></pre>
+<p>Exits non-zero if any expected public package is missing.</p>
+<h2 id="related">Related</h2>
+<ul>
+<li>Suite publishing: https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/PUBLISHING.md  </li>
+<li>npm bootstrap: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/PUBLISHING_NPM_AND_REGISTRY.md">PUBLISHING_NPM_AND_REGISTRY.md</a>  </li>
+<li>Multi-language install: <a href="multi-language.html">MULTI_LANGUAGE_SUITE.md</a>  </li>
+</ul>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
