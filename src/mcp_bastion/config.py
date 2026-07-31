@@ -76,6 +76,7 @@ class BastionConfig:
     pii: bool = True
     pii_vault: bool = False  # reversible tokenization; default OFF (opt-in)
     pii_vault_ttl_seconds: float = 3600.0
+    pii_vault_token_style: str = "typed"  # typed | low_entropy
     rate_limit: bool = True
     rate_limit_max_iterations: int = 15
     rate_limit_timeout_seconds: float = 60.0
@@ -373,6 +374,11 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
             bool(pv.get("enabled", False)) if isinstance(pv, dict) else bool(pv)
         ),
         pii_vault_ttl_seconds=float(pv.get("ttl_seconds", 3600)) if isinstance(pv, dict) else 3600.0,
+        pii_vault_token_style=(
+            str(pv.get("token_style", "typed")).strip().lower() or "typed"
+            if isinstance(pv, dict)
+            else "typed"
+        ),
         rate_limit=data.get("rate_limit", {}).get("enabled", True),
         rate_limit_max_iterations=data.get("rate_limit", {}).get("max_iterations", 15),
         rate_limit_timeout_seconds=float(data.get("rate_limit", {}).get("timeout_seconds", 60)),
@@ -777,9 +783,14 @@ def _build_chain(config: BastionConfig) -> Any:
         )
     pii_vault: PiiVault | None = None
     if config.pii_vault and config.pii:
+        style = (config.pii_vault_token_style or "typed").strip().lower() or "typed"
+        if style not in ("typed", "low_entropy"):
+            logger.warning("Unknown pii_vault.token_style=%r; using typed", style)
+            style = "typed"
         pii_vault = PiiVault(
             backend=state_backend,
             ttl_seconds=config.pii_vault_ttl_seconds,
+            token_style=style,
         )
     shared_backend = state_backend if config.state_backend.strip().lower() == "redis" else None
 
@@ -1004,8 +1015,36 @@ def _build_chain(config: BastionConfig) -> Any:
         )
 
     if audit_mw is not None:
-        return compose_middleware(audit_mw, bastion_mw)
-    return bastion_mw
+        chain = compose_middleware(audit_mw, bastion_mw)
+    else:
+        chain = bastion_mw
+    return _attach_bastion(chain, bastion_mw)
+
+
+def _attach_bastion(chain: Any, bastion_mw: Any) -> Any:
+    """Tag composed/hot stacks so the HTTP proxy can hydrate/abstract wire bodies."""
+    try:
+        setattr(chain, "_mcp_bastion", bastion_mw)
+    except Exception:
+        pass
+    return chain
+
+
+def resolve_bastion_middleware(stack: Any) -> Any | None:
+    """Return the core ``MCPBastionMiddleware`` from a built stack (if present)."""
+    if stack is None:
+        return None
+    tagged = getattr(stack, "_mcp_bastion", None)
+    if tagged is not None:
+        return tagged
+    from mcp_bastion.middleware import MCPBastionMiddleware
+
+    if isinstance(stack, MCPBastionMiddleware):
+        return stack
+    inner = getattr(stack, "_chain", None)
+    if inner is not None:
+        return resolve_bastion_middleware(inner)
+    return None
 
 
 class _HotReloadingMiddleware:

@@ -29,6 +29,8 @@ pii:
 pii_vault:
   enabled: true      # default false
   ttl_seconds: 3600  # session map TTL (memory or Redis state_backend)
+  # token_style: typed        # default — {{pii:TYPE:csprng}}
+  # token_style: low_entropy  # optional — EMAIL_ADDRESS_1 / Person_A
 
 # Recommended for multi-replica:
 # state_backend:
@@ -42,14 +44,28 @@ No new required package dependencies. Detection uses existing Presidio (+ regex 
 
 | Phase | When | Effect |
 |-------|------|--------|
-| **Abstract** | Outbound tool/resource text | PII → `{{pii:TYPE:csprng}}` stored in session vault |
-| **Hydrate** | Inbound `tools/call` arguments (just before handler) | Tokens → original plaintext for the MCP server |
+| **Abstract** | Outbound tool/resource text (middleware **and** HTTP proxy) | PII → tokens stored in session vault |
+| **Hydrate** | Inbound `tools/call` arguments (middleware **and** proxy, before upstream) | Tokens → original plaintext for the MCP server |
 
-Token IDs are **CSPRNG** (`secrets.token_hex`) - never a hash of the plaintext (no rainbow-table risk). Same value within a session reuses the same token so the LLM stays coherent.
+### Token styles
+
+| `token_style` | Example | Notes |
+|---------------|---------|--------|
+| `typed` (default) | `{{pii:EMAIL_ADDRESS:a3f9b2c1d4e5}}` | CSPRNG id - never a hash of plaintext |
+| `low_entropy` (opt-in) | `EMAIL_ADDRESS_1`, `Person_A` | Lower uncanny-valley for LLMs; still session-scoped |
+
+Same value within a session reuses the same token so the LLM stays coherent.
+
+## Metrics
+
+Dashboard / `MetricsStore` counters (when vault is enabled):
+
+- `pii_vault_abstract_total` - outbound tokenizations
+- `pii_vault_hydrate_total` - inbound restorations
 
 ## Streaming helper
 
-`BufferedTokenRestorer` restores tokens split across chunks (`{{pii:` … `}}`). The HTTP proxy is not yet a streaming mutator; the helper is ready for future SSE paths and covered by unit tests.
+`BufferedTokenRestorer` restores tokens split across chunks (`{{pii:` … `}}`). The HTTP proxy mutates **complete** JSON-RPC response bodies today; SSE/chunk streaming mutation remains Phase 3.
 
 ## Security notes
 

@@ -682,14 +682,24 @@ class MCPBastionMiddleware(Middleware[Any]):
             try:
                 arguments = json.loads(arguments)
             except json.JSONDecodeError:
+                from mcp_bastion.pillars.pii_vault import count_vault_tokens
+
                 restored = self.pii_vault.restore_text(arguments, self._vault_session_key(context))
                 if restored != arguments:
                     params["arguments"] = restored
+                    n = max(0, count_vault_tokens(arguments) - count_vault_tokens(restored))
+                    MetricsStore.get().record_pii_vault_hydrate(n or 1)
                     _trace_append(trace, pillar="pii_vault_hydrate", status="ok", started=started)
                 return
+        from mcp_bastion.pillars.pii_vault import count_vault_tokens
+
+        before = json.dumps(arguments, default=str, sort_keys=True)
         restored_args = self.pii_vault.restore_value(arguments, self._vault_session_key(context))
         if restored_args != arguments:
             params["arguments"] = restored_args
+            after = json.dumps(restored_args, default=str, sort_keys=True)
+            n = max(0, count_vault_tokens(before) - count_vault_tokens(after))
+            MetricsStore.get().record_pii_vault_hydrate(n or 1)
             _trace_append(trace, pillar="pii_vault_hydrate", status="ok", started=started)
 
     def _semantic_cache_scope(self, context: MiddlewareContext[Any], tenant_id: str) -> str:
@@ -2150,8 +2160,19 @@ class MCPBastionMiddleware(Middleware[Any]):
         if not content:
             return result
         if self.enable_pii_vault and self.pii_vault is not None and context is not None:
+            from mcp_bastion.pillars.pii_vault import count_vault_tokens
+
             session_key = self._vault_session_key(context)
+            before = " ".join(
+                str(i.get("text", "")) for i in content if isinstance(i, dict) and i.get("type") == "text"
+            )
             redacted = self.pii_redactor.vault_content_items(content, self.pii_vault, session_key)
+            after = " ".join(
+                str(i.get("text", "")) for i in redacted if isinstance(i, dict) and i.get("type") == "text"
+            )
+            n = max(0, count_vault_tokens(after) - count_vault_tokens(before))
+            if n:
+                MetricsStore.get().record_pii_vault_abstract(n)
         else:
             redacted = self.pii_redactor.redact_content_items(content)
         if self.enable_secret_redaction and self.secret_redactor is not None:

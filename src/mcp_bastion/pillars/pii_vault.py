@@ -9,7 +9,8 @@ Nature-preserving defaults:
 - Disabled unless ``pii_vault.enabled: true`` (and ``pii.enabled: true``).
 - Destructive Presidio redaction remains the default path.
 - Uses existing ``StateBackend`` (memory by default; Redis optional).
-- Token IDs are CSPRNG (never a hash of the plaintext).
+- Token IDs are CSPRNG (never a hash of the plaintext) for ``token_style: typed``.
+- Optional ``token_style: low_entropy`` emits ``EMAIL_ADDRESS_1`` / ``Person_A``.
 """
 
 from __future__ import annotations
@@ -28,11 +29,34 @@ logger = logging.getLogger(__name__)
 TOKEN_RE = re.compile(r"\{\{pii:([A-Za-z0-9_]+):([a-f0-9]{8,32})\}\}")
 TOKEN_TEMPLATE = "{{{{pii:{entity_type}:{token_id}}}}}"
 
+# Low-entropy display forms: EMAIL_ADDRESS_1, Person_A (lookup-gated on restore).
+LOW_ENTROPY_RE = re.compile(r"\b(Person_[A-Z]+|[A-Z][A-Z0-9_]*_\d+)\b")
+_PERSON_TYPES = frozenset({"PERSON", "PERSON_NAME", "NAME", "NRP"})
+_TOKEN_STYLES = frozenset({"typed", "low_entropy"})
+
 # Deterministic fallbacks when Presidio is unavailable (tests / fail-soft).
 _EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 _SSN_RE = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
 _PHONE_RE = re.compile(r"\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b")
 _CC_RE = re.compile(r"\b(?:\d[ -]*?){13,19}\b")
+
+
+def _index_to_letters(n: int) -> str:
+    """1 -> A, 26 -> Z, 27 -> AA (Excel-style)."""
+    if n < 1:
+        n = 1
+    out: list[str] = []
+    while n > 0:
+        n, rem = divmod(n - 1, 26)
+        out.append(chr(ord("A") + rem))
+    return "".join(reversed(out))
+
+
+def count_vault_tokens(text: str) -> int:
+    """Count typed + low-entropy vault placeholders in text (best-effort)."""
+    if not text or not isinstance(text, str):
+        return 0
+    return len(TOKEN_RE.findall(text)) + len(LOW_ENTROPY_RE.findall(text))
 
 
 @dataclass(frozen=True)
@@ -127,6 +151,7 @@ class PiiVault:
     Keys in ``StateBackend``:
     - ``pii_vault:fwd:{session}:{token}`` -> JSON ``{type, value}``
     - ``pii_vault:rev:{session}:{type}:{value}`` -> token id (stable within session)
+    - ``pii_vault:seq:{session}:{type}`` -> counter (low_entropy only)
     """
 
     def __init__(
@@ -136,15 +161,20 @@ class PiiVault:
         ttl_seconds: float = 3600.0,
         id_bytes: int = 6,
         key_prefix: str = "pii_vault",
+        token_style: str = "typed",
     ) -> None:
         if ttl_seconds <= 0:
             raise ValueError("ttl_seconds must be > 0")
         if id_bytes < 4:
             raise ValueError("id_bytes must be >= 4")
+        style = (token_style or "typed").strip().lower()
+        if style not in _TOKEN_STYLES:
+            raise ValueError(f"token_style must be one of {sorted(_TOKEN_STYLES)}")
         self.backend = backend or MemoryStateBackend()
         self.ttl_seconds = float(ttl_seconds)
         self.id_bytes = int(id_bytes)
         self.key_prefix = key_prefix
+        self.token_style = style
 
     def _fwd_key(self, session_key: str, token_id: str) -> str:
         return f"{self.key_prefix}:fwd:{session_key}:{token_id}"
@@ -153,8 +183,30 @@ class PiiVault:
         # Value is stored only as part of Redis/memory key material for reverse lookup.
         return f"{self.key_prefix}:rev:{session_key}:{normalize_entity_type(entity_type)}:{value}"
 
+    def _seq_key(self, session_key: str, entity_type: str) -> str:
+        return f"{self.key_prefix}:seq:{session_key}:{normalize_entity_type(entity_type)}"
+
+    def _alloc_low_entropy_label(self, session_key: str, entity_type: str) -> str:
+        """Allocate EMAIL_ADDRESS_1 or Person_A within the session."""
+        et = normalize_entity_type(entity_type)
+        seq_key = self._seq_key(session_key, et)
+        raw = self.backend.get(seq_key)
+        try:
+            n = int(raw) + 1 if raw is not None else 1
+        except (TypeError, ValueError):
+            n = 1
+        self.backend.set(seq_key, str(n), ttl_seconds=self.ttl_seconds)
+        if et in _PERSON_TYPES:
+            return f"Person_{_index_to_letters(n)}"
+        return f"{et}_{n}"
+
+    def _display_token(self, entity_type: str, token_id: str) -> str:
+        if self.token_style == "low_entropy":
+            return token_id
+        return format_token(entity_type, token_id)
+
     def mint_token(self, session_key: str, entity_type: str, value: str) -> str:
-        """Return stable typed token for value within session (CSPRNG id on first sight)."""
+        """Return stable token for value within session (CSPRNG or low-entropy id)."""
         sk = session_key or "default"
         et = normalize_entity_type(entity_type)
         val = value if isinstance(value, str) else str(value)
@@ -163,14 +215,17 @@ class PiiVault:
         if existing:
             token_id = existing
         else:
-            token_id = secrets.token_hex(self.id_bytes)
+            if self.token_style == "low_entropy":
+                token_id = self._alloc_low_entropy_label(sk, et)
+            else:
+                token_id = secrets.token_hex(self.id_bytes)
             self.backend.set(rev, token_id, ttl_seconds=self.ttl_seconds)
             self.backend.set_json(
                 self._fwd_key(sk, token_id),
                 {"type": et, "value": val},
                 ttl_seconds=self.ttl_seconds,
             )
-        return format_token(et, token_id)
+        return self._display_token(et, token_id)
 
     def lookup(self, session_key: str, token_id: str) -> tuple[str, str] | None:
         """Return ``(entity_type, value)`` for token id, or None."""
@@ -218,14 +273,23 @@ class PiiVault:
             return text
         sk = session_key or "default"
 
-        def _sub(m: re.Match[str]) -> str:
+        def _sub_typed(m: re.Match[str]) -> str:
             token_id = m.group(2)
             hit = self.lookup(sk, token_id)
             if hit is None:
                 return m.group(0)
             return hit[1]
 
-        return TOKEN_RE.sub(_sub, text)
+        out = TOKEN_RE.sub(_sub_typed, text)
+
+        def _sub_low(m: re.Match[str]) -> str:
+            label = m.group(0)
+            hit = self.lookup(sk, label)
+            if hit is None:
+                return label
+            return hit[1]
+
+        return LOW_ENTROPY_RE.sub(_sub_low, out)
 
     def abstract_content_items(
         self,
@@ -266,8 +330,8 @@ class BufferedTokenRestorer:
     """
     Streaming-safe vault restore: hold chunks that may contain a partial ``{{pii:...}}``.
 
-    MCP Bastion's HTTP proxy is not yet a streaming mutator; this helper is ready for
-    future SSE/chunk pipelines and is fully unit-tested.
+    MCP Bastion's HTTP proxy mutates complete JSON-RPC response bodies; this helper is
+    for SSE/chunk pipelines (Phase 3) and is fully unit-tested.
     """
 
     def __init__(self, vault: PiiVault, session_key: str) -> None:
