@@ -45,6 +45,7 @@ from mcp_bastion.pillars.cost_policy import CostPolicyEngine
 from mcp_bastion.pillars.cost_tracker import CostTracker
 from mcp_bastion.pillars.session_governance import SessionGovernanceRecorder
 from mcp_bastion.pillars.pii_redaction import PIIRedactor
+from mcp_bastion.pillars.pii_vault import PiiVault
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
 from mcp_bastion.pillars.rate_limit import RateLimitCheckResult, TokenBucketRateLimiter
 from mcp_bastion.pillars.response_scanner import ResponseInjectionScanner
@@ -451,6 +452,7 @@ class MCPBastionMiddleware(Middleware[Any]):
         self,
         prompt_guard: PromptGuardEngine | None = None,
         pii_redactor: PIIRedactor | None = None,
+        pii_vault: PiiVault | None = None,
         rate_limiter: TokenBucketRateLimiter | None = None,
         circuit_breaker: CircuitBreaker | None = None,
         content_filter: ContentFilter | None = None,
@@ -464,6 +466,7 @@ class MCPBastionMiddleware(Middleware[Any]):
         external_policy: Any = None,
         enable_prompt_guard: bool = True,
         enable_pii_redaction: bool = True,
+        enable_pii_vault: bool = False,
         enable_rate_limit: bool = True,
         enable_circuit_breaker: bool = False,
         enable_content_filter: bool = False,
@@ -531,6 +534,8 @@ class MCPBastionMiddleware(Middleware[Any]):
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
+        self.pii_vault = pii_vault
+        self.enable_pii_vault = bool(enable_pii_vault) and pii_vault is not None
         self.rate_limiter = rate_limiter or TokenBucketRateLimiter()
         self.circuit_breaker = circuit_breaker or CircuitBreaker()
         self.content_filter = content_filter or ContentFilter()
@@ -647,6 +652,45 @@ class MCPBastionMiddleware(Middleware[Any]):
         context.metadata["_budget_principal"] = principal_id
         context.metadata["_budget_tenant"] = tenant_id
         return principal_id, tenant_id
+
+    def _vault_session_key(self, context: MiddlewareContext[Any]) -> str:
+        """Stable session key for PII vault maps (tenant + session/handle)."""
+        tenant = str(context.metadata.get("tenant_id") or self.default_tenant_id or "default")
+        scope = (
+            context.metadata.get("_mcp_transport_scope")
+            or context.session_id
+            or context.metadata.get("_budget_principal")
+            or "anonymous"
+        )
+        return f"{tenant}|{scope}"
+
+    def _hydrate_tool_arguments(
+        self,
+        context: MiddlewareContext[Any],
+        params: dict | None,
+        *,
+        trace: list[dict[str, Any]],
+    ) -> None:
+        """Restore vault tokens in tool arguments in-place before the handler runs."""
+        if not self.enable_pii_vault or self.pii_vault is None or not isinstance(params, dict):
+            return
+        started = time.perf_counter()
+        arguments = params.get("arguments")
+        if arguments is None:
+            return
+        if isinstance(arguments, str):
+            try:
+                arguments = json.loads(arguments)
+            except json.JSONDecodeError:
+                restored = self.pii_vault.restore_text(arguments, self._vault_session_key(context))
+                if restored != arguments:
+                    params["arguments"] = restored
+                    _trace_append(trace, pillar="pii_vault_hydrate", status="ok", started=started)
+                return
+        restored_args = self.pii_vault.restore_value(arguments, self._vault_session_key(context))
+        if restored_args != arguments:
+            params["arguments"] = restored_args
+            _trace_append(trace, pillar="pii_vault_hydrate", status="ok", started=started)
 
     def _semantic_cache_scope(self, context: MiddlewareContext[Any], tenant_id: str) -> str:
         return str(context.metadata.get("_mcp_transport_scope") or tenant_id)
@@ -1265,8 +1309,9 @@ class MCPBastionMiddleware(Middleware[Any]):
             return result
         if self.enable_pii_redaction:
             started = time.perf_counter()
-            result = self._redact_result_content(result)
-            _trace_append(trace, pillar="pii_redaction", status="ok", started=started)
+            result = self._redact_result_content(result, context=context)
+            pillar = "pii_vault_abstract" if self.enable_pii_vault else "pii_redaction"
+            _trace_append(trace, pillar=pillar, status="ok", started=started)
         result = self._apply_output_budget_to_result(context, result, tool_name=surface_key or method)
         result = self._apply_grounding_to_result(context, result, trace=trace)
         if self.enable_response_scan:
@@ -1954,6 +1999,10 @@ class MCPBastionMiddleware(Middleware[Any]):
             context=context, trace=trace, session_id=session_id, tool_name=tool_name
         )
 
+        # Hydrate vault tokens in args so MCP tools receive plaintext (opt-in vault only).
+        if isinstance(params, dict):
+            self._hydrate_tool_arguments(context, params, trace=trace)
+
         result: Any = None
         try:
             started = time.perf_counter()
@@ -2013,8 +2062,9 @@ class MCPBastionMiddleware(Middleware[Any]):
 
         if self.enable_pii_redaction and result is not None:
             started = time.perf_counter()
-            result = self._redact_result_content(result)
-            _trace_append(trace, pillar="pii_redaction", status="ok", started=started)
+            result = self._redact_result_content(result, context=context)
+            pillar = "pii_vault_abstract" if self.enable_pii_vault else "pii_redaction"
+            _trace_append(trace, pillar=pillar, status="ok", started=started)
 
         if result is not None:
             started = time.perf_counter()
@@ -2089,12 +2139,21 @@ class MCPBastionMiddleware(Middleware[Any]):
                 tenant=context.metadata.get("tenant_id"),
             )
 
-    def _redact_result_content(self, result: Any) -> Any:
-        """Redact PII and configured secret patterns from result content items."""
+    def _redact_result_content(
+        self,
+        result: Any,
+        *,
+        context: MiddlewareContext[Any] | None = None,
+    ) -> Any:
+        """Redact or vault-abstract PII (and optional secrets) from result content items."""
         content = _get_content_from_result(result)
         if not content:
             return result
-        redacted = self.pii_redactor.redact_content_items(content)
+        if self.enable_pii_vault and self.pii_vault is not None and context is not None:
+            session_key = self._vault_session_key(context)
+            redacted = self.pii_redactor.vault_content_items(content, self.pii_vault, session_key)
+        else:
+            redacted = self.pii_redactor.redact_content_items(content)
         if self.enable_secret_redaction and self.secret_redactor is not None:
             out = []
             for item in redacted:
@@ -2105,4 +2164,3 @@ class MCPBastionMiddleware(Middleware[Any]):
             redacted = out
         _set_content_in_result(result, redacted)
         return result
-

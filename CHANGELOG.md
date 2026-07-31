@@ -6,6 +6,11 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Reversible PII vault (opt-in):** `pii_vault.enabled` abstracts outbound PII to `{{pii:TYPE:id}}` and hydrates inbound tool args before execution. Destructive Presidio redaction remains the default. Docs: [PII_VAULT.md](docs/PII_VAULT.md), [PII_VAULT_TUTORIAL.md](docs/PII_VAULT_TUTORIAL.md), diagram `images/mcp-bastion-pii-vault.svg`.
+- **Tests:** `tests/test_pii_vault.py` (abstract/hydrate, buffered restore, config defaults).
+
 ## [3.3.1] - 2026-07-24
 
 Patch release: **CRA / OpenSSF steward docs + CycloneDX SBOM pipeline** - **no runtime or API breaking changes**. All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **3.3.1**.

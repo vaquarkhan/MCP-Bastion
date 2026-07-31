@@ -696,6 +696,7 @@ Full index: **[docs/README.md](docs/README.md)** (docs hub) · published site en
 | [docs/SUPPLY_CHAIN.md](docs/SUPPLY_CHAIN.md) | CI merge gates, releases, npm provenance, PyPI Trusted Publishing, CycloneDX SBOM |
 | [docs/CRA_COMPLIANCE.md](docs/CRA_COMPLIANCE.md) | CRA / OpenSSF steward posture (Article 14 + SBOM; no runtime change) |
 | [docs/CRA_SBOM_TUTORIAL.md](docs/CRA_SBOM_TUTORIAL.md) | Generate and download CycloneDX `bom.json` |
+| [docs/PII_VAULT.md](docs/PII_VAULT.md) | Opt-in reversible PII tokenization (abstract + hydrate) |
 | [docs/INTEGRATION_MODELS.md](docs/INTEGRATION_MODELS.md) | Middleware + `bastion.yaml` vs “change base URL”; bridge for Python, TS, Desktop, HTTP, integrations |
 | [examples/ci/README.md](examples/ci/README.md) | Copy-paste GitHub Actions snippet to run `mcp-bastion validate` on your policy file |
 | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | **Measured** RBAC matrix, output-budget reduction (up to ~99% on large tool outputs), discovery filter, lexical cache  -  pytest + report generator |

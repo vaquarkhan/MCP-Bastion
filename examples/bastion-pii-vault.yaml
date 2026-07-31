@@ -1,0 +1,25 @@
+# Opt-in reversible PII vault example
+# Copy patterns into bastion.yaml. Destructive redaction remains default when pii_vault is off.
+
+audit:
+  enabled: false
+
+prompt_guard:
+  enabled: true
+  heuristic_fallback: true
+
+pii:
+  enabled: true
+
+pii_vault:
+  enabled: true
+  ttl_seconds: 3600
+
+rate_limit:
+  enabled: true
+  max_iterations: 30
+
+# For multi-replica workers, share vault maps:
+# state_backend:
+#   type: redis
+#   redis_url: redis://127.0.0.1:6379/0
