@@ -19,10 +19,13 @@ pii:
 
 # Reversible tokenization (opt-in). Default OFF - destructive Presidio placeholders remain.
 # When enabled: outbound results use {{pii:TYPE:id}}; inbound tool args are hydrated before the MCP server.
+# HTTP proxy also abstracts upstream results and hydrates tools/call args on the wire.
 # See docs/PII_VAULT.md
 pii_vault:
   enabled: false
   ttl_seconds: 3600
+  # token_style: typed        # default
+  # token_style: low_entropy  # EMAIL_ADDRESS_1 / Person_A
 
 rate_limit:
   enabled: true

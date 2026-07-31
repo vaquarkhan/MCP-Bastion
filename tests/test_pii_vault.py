@@ -431,3 +431,79 @@ def test_redactor_vault_content_and_none_vault():
     assert redactor.vault_content_items([], None, "s") == []
     out = redactor.vault_text("hello", vault, "s", detect=lambda t: [])
     assert out == "hello"
+
+
+def test_low_entropy_token_style_roundtrip():
+    from mcp_bastion.pillars.pii_vault import EntitySpan
+
+    vault = PiiVault(backend=MemoryStateBackend(), token_style="low_entropy")
+    session = "s1"
+    text = "mail alice@example.com and Bob"
+    spans = [
+        EntitySpan(5, 22, "EMAIL_ADDRESS", "alice@example.com"),
+        EntitySpan(27, 30, "PERSON", "Bob"),
+    ]
+    out = vault.abstract_text(text, session, spans=spans)
+    assert "alice@example.com" not in out
+    assert "Bob" not in out
+    assert "EMAIL_ADDRESS_1" in out
+    assert "Person_A" in out
+    assert "{{pii:" not in out
+    assert vault.restore_text(out, session) == text
+    # Stable within session
+    out2 = vault.abstract_text(text, session, spans=spans)
+    assert out2 == out
+
+
+def test_low_entropy_unknown_label_left_intact():
+    vault = PiiVault(backend=MemoryStateBackend(), token_style="low_entropy")
+    assert vault.restore_text("see EMAIL_ADDRESS_99 later", "s") == "see EMAIL_ADDRESS_99 later"
+
+
+def test_invalid_token_style_raises():
+    with pytest.raises(ValueError, match="token_style"):
+        PiiVault(token_style="hash")
+
+
+def test_vault_metrics_abstract_and_hydrate():
+    from mcp_bastion.pillars.metrics import MetricsStore
+
+    store = MetricsStore.get()
+    before_a = store.get_metrics().get("pii_vault_abstract_total", 0)
+    before_h = store.get_metrics().get("pii_vault_hydrate_total", 0)
+    store.record_pii_vault_abstract(2)
+    store.record_pii_vault_hydrate(3)
+    snap = store.get_metrics()
+    assert snap["pii_vault_abstract_total"] == before_a + 2
+    assert snap["pii_vault_hydrate_total"] == before_h + 3
+
+
+def test_load_config_token_style(tmp_path):
+    try:
+        import yaml  # noqa: F401
+    except ImportError:
+        pytest.skip("pyyaml not installed")
+    from mcp_bastion.config import load_config, build_middleware_from_config
+
+    p = tmp_path / "bastion.yaml"
+    p.write_text(
+        "audit: {enabled: false}\n"
+        "pii:\n  enabled: true\n"
+        "pii_vault:\n  enabled: true\n  token_style: low_entropy\n"
+        "prompt_guard:\n  enabled: false\nrate_limit:\n  enabled: false\n",
+        encoding="utf-8",
+    )
+    cfg = load_config(str(p))
+    assert cfg.pii_vault_token_style == "low_entropy"
+    mw = build_middleware_from_config(cfg)
+    assert isinstance(mw, MCPBastionMiddleware)
+    assert mw.pii_vault is not None
+    assert mw.pii_vault.token_style == "low_entropy"
+
+
+def test_index_to_letters():
+    from mcp_bastion.pillars.pii_vault import _index_to_letters
+
+    assert _index_to_letters(1) == "A"
+    assert _index_to_letters(26) == "Z"
+    assert _index_to_letters(27) == "AA"

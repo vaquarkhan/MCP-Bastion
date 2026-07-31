@@ -9,7 +9,8 @@ All notable changes to this project are documented in this file.
 ### Added
 
 - **Reversible PII vault (opt-in):** `pii_vault.enabled` abstracts outbound PII to `{{pii:TYPE:id}}` and hydrates inbound tool args before execution. Destructive Presidio redaction remains the default. Docs: [PII_VAULT.md](docs/PII_VAULT.md), [PII_VAULT_TUTORIAL.md](docs/PII_VAULT_TUTORIAL.md), diagram `images/mcp-bastion-pii-vault.svg`.
-- **Tests:** `tests/test_pii_vault.py` (abstract/hydrate, buffered restore, config defaults).
+- **PII vault Phase 2:** HTTP proxy mutates upstream JSON-RPC results (PII redact / vault abstract) and hydrates `tools/call` args before forward; `pii_vault_abstract_total` / `pii_vault_hydrate_total` metrics; optional `pii_vault.token_style: low_entropy` (`EMAIL_ADDRESS_1` / `Person_A`).
+- **Tests:** `tests/test_pii_vault.py` (abstract/hydrate, buffered restore, config defaults, low-entropy, metrics); proxy mutation coverage in `tests/test_proxy_server_coverage.py`.
 
 ## [3.3.1] - 2026-07-24
 

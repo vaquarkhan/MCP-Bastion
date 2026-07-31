@@ -50,6 +50,8 @@ class DashboardMetrics:
     requests_total: int = 0
     blocked_total: int = 0
     pii_redacted_total: int = 0
+    pii_vault_abstract_total: int = 0
+    pii_vault_hydrate_total: int = 0
     cost_total: float = 0.0
     blocked_by_reason: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     blocked_by_kind: dict[str, int] = field(default_factory=lambda: defaultdict(int))
@@ -99,6 +101,8 @@ class DashboardMetrics:
             "blocked_total": blocked,
             "blocked_pct": round(100 * blocked / max(1, self.requests_total), 2),
             "pii_redacted_total": self.pii_redacted_total,
+            "pii_vault_abstract_total": self.pii_vault_abstract_total,
+            "pii_vault_hydrate_total": self.pii_vault_hydrate_total,
             "pii_by_entity": dict(sorted(self.pii_by_entity.items(), key=lambda x: -x[1])[:20]),
             "cost_total": round(self.cost_total, 2),
             "blocked_by_reason": dict(self.blocked_by_reason),
@@ -502,6 +506,20 @@ class MetricsStore:
     def record_pii_redacted(self, count: int = 1) -> None:
         with self._lock:
             self._metrics.pii_redacted_total += count
+
+    def record_pii_vault_abstract(self, count: int = 1) -> None:
+        """Count vault tokenizations (outbound abstract)."""
+        if count <= 0:
+            return
+        with self._lock:
+            self._metrics.pii_vault_abstract_total += count
+
+    def record_pii_vault_hydrate(self, count: int = 1) -> None:
+        """Count vault restorations (inbound hydrate)."""
+        if count <= 0:
+            return
+        with self._lock:
+            self._metrics.pii_vault_hydrate_total += count
 
     def record_pii_entities(self, entity_counts: dict[str, int]) -> None:
         """Increment per-entity PII counts and total redacted (from Presidio detection)."""

@@ -11,7 +11,9 @@ from mcp_bastion.config import load_config
 from mcp_bastion.proxy_server import (
     GUARDED_METHODS,
     _guard_request,
+    _hydrate_proxy_request,
     _jsonrpc_method,
+    _mutate_proxy_response,
     _read_body,
     _upstream_request,
     build_proxy_asgi_app,
@@ -411,3 +413,128 @@ audit:
     )
     headers = dict(sent[0]["headers"])
     assert headers.get(b"cache-control") == b"public, max-age=300"
+
+
+@pytest.mark.asyncio
+async def test_proxy_mutates_upstream_pii_with_vault(tmp_path):
+    """Phase 2: proxy abstracts PII in upstream tool results when vault is on."""
+    cfg_path = tmp_path / "bastion.yaml"
+    cfg_path.write_text(
+        """
+audit:
+  enabled: false
+prompt_guard:
+  enabled: false
+rate_limit:
+  enabled: false
+pii:
+  enabled: true
+pii_vault:
+  enabled: true
+  ttl_seconds: 600
+""",
+        encoding="utf-8",
+    )
+    app = build_proxy_asgi_app("http://127.0.0.1:9000/mcp", config_path=str(cfg_path))
+    sent: list[dict] = []
+
+    async def send(msg):
+        sent.append(msg)
+
+    req = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": "lookup", "arguments": {}},
+        }
+    ).encode()
+
+    async def receive():
+        return {"type": "http.request", "body": req, "more_body": False}
+
+    upstream_body = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {"content": [{"type": "text", "text": "reach alice@example.com"}]},
+        }
+    ).encode()
+
+    with mock.patch(
+        "mcp_bastion.proxy_server._upstream_request",
+        return_value=(200, [("Content-Type", "application/json")], upstream_body),
+    ):
+        await app(
+            {
+                "type": "http",
+                "method": "POST",
+                "path": "/mcp",
+                "headers": [(b"mcp-session-id", b"proxy-vault-1")],
+                "query_string": b"",
+            },
+            receive,
+            send,
+        )
+    out = json.loads(sent[1]["body"].decode())
+    text = out["result"]["content"][0]["text"]
+    assert "alice@example.com" not in text
+    assert "{{pii:EMAIL_ADDRESS:" in text
+
+
+@pytest.mark.asyncio
+async def test_proxy_hydrates_vault_tokens_before_upstream(tmp_path):
+    from mcp_bastion.config import build_middleware_from_config, load_config, resolve_bastion_middleware
+    from mcp_bastion.pillars.pii_vault import detect_entities_regex
+
+    cfg_path = tmp_path / "bastion.yaml"
+    cfg_path.write_text(
+        """
+audit:
+  enabled: false
+prompt_guard:
+  enabled: false
+rate_limit:
+  enabled: false
+pii:
+  enabled: true
+pii_vault:
+  enabled: true
+""",
+        encoding="utf-8",
+    )
+    cfg = load_config(str(cfg_path))
+    stack = build_middleware_from_config(cfg)
+    bastion = resolve_bastion_middleware(stack)
+    assert bastion is not None and bastion.pii_vault is not None
+    tok = bastion.pii_vault.mint_token("default|proxy-session", "EMAIL_ADDRESS", "alice@example.com")
+    # Sanity: regex detect unused but imported for clarity of vault path
+    assert detect_entities_regex("a@b.com")
+
+    body = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {"name": "send", "arguments": {"to": tok}},
+        }
+    ).encode()
+    new_body, ctx = _hydrate_proxy_request(
+        bastion,
+        body,
+        session_id="proxy-session",
+        request_id="r1",
+        metadata={},
+        headers=[],
+    )
+    assert ctx is not None
+    msg = json.loads(new_body.decode())
+    assert msg["params"]["arguments"]["to"] == "alice@example.com"
+
+
+def test_mutate_proxy_response_skips_when_pii_off():
+    class FakeBastion:
+        enable_pii_redaction = False
+
+    raw = b'{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"a@b.com"}]}}'
+    assert _mutate_proxy_response(FakeBastion(), raw, ctx=None, method="tools/call") == raw
