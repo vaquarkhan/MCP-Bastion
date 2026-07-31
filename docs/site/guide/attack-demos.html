@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attack demos (runnable) | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Attack demos (runnable)">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+<li><a href="multi-language.html">Multi-language suite</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="feature-deep-dive.html">Feature deep dive</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+<li><a href="attack-demos.html" class="active">Attack demos (runnable)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Attack demos (runnable)</h1>
+      </header>
+      <h1 id="attack-defense-demos">Attack → defense demos</h1>
+<p>Runnable, feature-by-feature scenarios that show <strong>what an attack looks like</strong> and <strong>how MCP-Bastion blocks or redacts it</strong>. Keep visuals and long walkthroughs here (and in <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a>)—<strong>not</strong> in the root README.</p>
+<table>
+<thead>
+<tr>
+<th>Related</th>
+<th>Link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Issue → solution → benefits</td>
+<td><a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a></td>
+</tr>
+<tr>
+<td>Narrative attack guide</td>
+<td><a href="attack-prevention.html">ATTACK_PREVENTION.md</a></td>
+</tr>
+<tr>
+<td>Multi-language connectors</td>
+<td><a href="multi-language.html">MULTI_LANGUAGE_SUITE.md</a> · <a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a></td>
+</tr>
+<tr>
+<td>Legacy combined script</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/examples/full_demo.py">examples/full_demo.py</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="quick-run">Quick run</h2>
+<p>From the MCP-Bastion repo root:</p>
+<pre><code class="language-bash"># Windows PowerShell
+$env:PYTHONPATH=&quot;src&quot;; python -m examples.attack_demos
+
+# Linux / macOS
+PYTHONPATH=src python -m examples.attack_demos
+
+# One feature
+PYTHONPATH=src python -m examples.attack_demos --only rate_limit
+
+# Fail CI if core demos do not block
+PYTHONPATH=src python -m examples.attack_demos --strict
+</code></pre>
+<p>Or: <code>python examples/attack_demos/runner.py</code> (adds <code>src/</code> to <code>sys.path</code> automatically).</p>
+<p>Optional deps for full fidelity:</p>
+<pre><code class="language-bash">pip install torch transformers presidio-analyzer presidio-anonymizer
+python -m spacy download en_core_web_sm
+</code></pre>
+<p>Without ML/Presidio, <strong>prompt_guard</strong> and <strong>pii</strong> may report <code>INFO</code>/<code>SKIP</code>; rate limit, content filter, RBAC, schema, replay, and cost still demonstrate blocks.</p>
+<hr />
+<h2 id="hero-scenarios">Hero scenarios</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Feature</th>
+<th>Attack</th>
+<th>Expected defense</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td><code>prompt_guard</code></td>
+<td>Jailbreak string in tool args</td>
+<td>Block <strong>-32001</strong> (needs ML/heuristics)</td>
+</tr>
+<tr>
+<td>02</td>
+<td><code>pii</code></td>
+<td>SSN/email/phone in tool output</td>
+<td>Redact placeholders</td>
+</tr>
+<tr>
+<td>03</td>
+<td><code>rate_limit</code></td>
+<td>Agent loop past <code>max_iterations</code></td>
+<td>Block <strong>-32002</strong></td>
+</tr>
+<tr>
+<td>04</td>
+<td><code>content_filter</code></td>
+<td><code>/etc/passwd</code> path</td>
+<td>Block <strong>-32005</strong></td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>rbac</code></td>
+<td><code>viewer</code> calls <code>write</code></td>
+<td>Block <strong>-32006</strong></td>
+</tr>
+<tr>
+<td>06</td>
+<td><code>schema_validation</code></td>
+<td>Missing / wrong arg types</td>
+<td>Block <strong>-32007</strong></td>
+</tr>
+<tr>
+<td>07</td>
+<td><code>replay_guard</code></td>
+<td>Duplicate request_id + nonce</td>
+<td>Block <strong>-32008</strong></td>
+</tr>
+<tr>
+<td>08</td>
+<td><code>cost_tracker</code></td>
+<td>Session spend over cap</td>
+<td>Block <strong>-32009</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Each printed report includes: feature key, attack description, outcome, and MCP error code when present.</p>
+<hr />
+<h2 id="how-demos-map-to-docs">How demos map to docs</h2>
+<p>In <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a>, hero controls link here under <strong>Demo</strong>. Example:</p>
+<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only content_filter
+</code></pre>
+<p>Sample output shape:</p>
+<pre><code class="language-text">### [04] Path traversal / sensitive file read
+- **Feature:** `content_filter`
+- **Attack:** read_file path=&quot;/etc/passwd&quot;
+- **Result:** PASS (blocked) code=-32005 expected=-32005
+- **Detail:** Content filter blocked sensitive path. ...
+</code></pre>
+<hr />
+<h2 id="gifs-visuals-optional">GIFs / visuals (optional)</h2>
+<p>Prefer <strong>script output in docs</strong> as the source of truth (always regenerable). Optional terminal GIFs can be added later under <code>docs/site/assets/demos/</code> using <a href="https://github.com/charmbracelet/vhs">VHS</a> or asciinema—<strong>do not</strong> embed large GIFs in the root README.</p>
+<p>Dashboard UI tour (separate from per-pillar attacks):</p>
+<pre><code class="language-bash">mcp-bastion dashboard --demo
+python scripts/capture_dashboard_demo.py
+</code></pre>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a>.</p>
+<hr />
+<h2 id="extending">Extending</h2>
+<ol>
+<li>Add a function in <code>examples/attack_demos/scenarios.py</code> returning <code>ScenarioResult</code>.</li>
+<li>Append it to <code>SCENARIOS</code>.</li>
+<li>Document the row in the table above and link from FEATURE_DEEP_DIVE.</li>
+</ol>
+<p>For TypeScript / Java / Go / .NET stacks, run the same policy via the suite proxy/adapters—see <a href="multi-language.html">MULTI_LANGUAGE_SUITE.md</a>.</p>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

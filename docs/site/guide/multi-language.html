@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-language suite | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Multi-language suite">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+<li><a href="multi-language.html" class="active">Multi-language suite</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="feature-deep-dive.html">Feature deep dive</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+<li><a href="attack-demos.html">Attack demos (runnable)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Multi-language suite</h1>
+      </header>
+      <h1 id="multi-language-suite-mcp-bastion-suite">Multi-language suite (<a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a>)</h1>
+<p><strong>MCP-Bastion</strong> (this repo) is the <strong>security engine</strong> published as <a href="https://pypi.org/project/mcp-bastion-python/"><code>mcp-bastion-python</code></a> on PyPI—middleware, pillars, dashboard, CLI (<code>validate</code>, <code>scan</code>, <code>serve --proxy</code>, …).</p>
+<p><strong><a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a></strong> is the <strong>multi-language connector layer</strong>: shared <code>bastion.yaml</code>, native adapters (TypeScript, Java/Kotlin, Go, .NET), tutorials, Docker, and a GitHub Action. It does <strong>not</strong> vendor Bastion source; the engine always comes from PyPI.</p>
+<blockquote>
+<p>Keep deep language tutorials and framework packs in the suite repo so this README stays light. This page is the bridge.</p>
+</blockquote>
+<hr />
+<h2 id="how-the-two-repos-relate">How the two repos relate</h2>
+<pre><code class="language-text">┌─────────────────────────────────────────────────────────┐
+│  Your app (Nest, Spring, FastAPI, .NET, Go, Rust, …)    │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+        ┌───────────────────▼───────────────────┐
+        │  mcp-bastion-suite                       │
+        │  adapters · YAML/CLI · sidecar · proxy   │
+        │  https://github.com/vaquarkhan/mcp-bastion-suite
+        └───────────────────┬───────────────────┘
+                            │  bastion.yaml (shared policy)
+                            ▼
+        ┌───────────────────────────────────────┐
+        │  mcp-bastion-python  (this project)     │
+        │  Scan → Test → Enforce · dashboard      │
+        │  pip install mcp-bastion-python         │
+        └───────────────────────────────────────┘
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Repo</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion">MCP-Bastion</a></td>
+<td>Engine + Python middleware + docs site + attack demos</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a></td>
+<td>Connectors for every language / framework</td>
+</tr>
+</tbody>
+</table>
+<p>Engine contract in the suite: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/PYPI_ENGINE.md">docs/PYPI_ENGINE.md</a>.</p>
+<hr />
+<h2 id="install-matrix-suite">Install matrix (suite)</h2>
+<table>
+<thead>
+<tr>
+<th>You use</th>
+<th>Install</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Python engine</strong></td>
+<td><code>pip install mcp-bastion-python</code></td>
+</tr>
+<tr>
+<td><strong>Suite CLI</strong></td>
+<td><code>pip install "git+https://github.com/vaquarkhan/mcp-bastion-suite.git"</code> then <code>mcp-bastion-suite doctor</code></td>
+</tr>
+<tr>
+<td><strong>Node / TypeScript</strong></td>
+<td>npm GitHub Packages <code>@vaquarkhan/mcp-bastion-suite</code></td>
+</tr>
+<tr>
+<td><strong>Java / Kotlin</strong></td>
+<td>Maven GitHub Packages <code>io.github.vaquarkhan:mcp-bastion-suite</code></td>
+</tr>
+<tr>
+<td><strong>Go</strong></td>
+<td><code>go get github.com/vaquarkhan/mcp-bastion-suite/adapters/go@v0.1.0</code></td>
+</tr>
+<tr>
+<td><strong>.NET</strong></td>
+<td>NuGet GitHub Packages <code>McpBastionSuite</code></td>
+</tr>
+<tr>
+<td><strong>Any / CI</strong></td>
+<td><code>ghcr.io/vaquarkhan/mcp-bastion-suite</code> or <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/action.yml">GitHub Action</a></td>
+</tr>
+</tbody>
+</table>
+<p>Full commands: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/DOWNLOADS.md">suite DOWNLOADS.md</a>.</p>
+<p>Shared policy sketch (same file in every language):</p>
+<pre><code class="language-yaml">prompt_guard:
+  enabled: true
+  threshold: 0.85
+  heuristic_fallback: true
+pii:
+  enabled: true
+rate_limit:
+  enabled: true
+  max_iterations: 15
+  timeout_seconds: 60
+mode: enforce
+</code></pre>
+<pre><code class="language-bash">cp bastion.yaml.example bastion.yaml   # from the suite clone
+mcp-bastion-suite validate --config bastion.yaml
+mcp-bastion-suite scan examples/_shared/data/tools.json --format json -o .bastion/scan/catalog.json
+</code></pre>
+<hr />
+<h2 id="how-each-language-works">How each language works</h2>
+<p>All languages share <strong>one policy</strong> and one engine. Adapters differ only in <em>how</em> traffic reaches Bastion (in-process Python vs sidecar/proxy).</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>How it works</th>
+<th>Suite tutorial</th>
+<th>Runnable example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Any (YAML)</strong></td>
+<td>CLI validate/scan/doctor; enforce via proxy</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/yaml.md">yaml.md</a></td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/declarative">examples/declarative</a></td>
+</tr>
+<tr>
+<td><strong>Python / FastMCP</strong></td>
+<td>In-process <code>mcp-bastion-python</code> middleware</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/python.md">python.md</a> · <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/fastmcp.md">fastmcp.md</a></td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/frameworks/python">frameworks/python</a></td>
+</tr>
+<tr>
+<td><strong>TypeScript</strong> (Nest / Express / Fastify)</td>
+<td>Adapter + sidecar / shared yaml</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/typescript.md">typescript.md</a></td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/frameworks/typescript">frameworks/typescript</a></td>
+</tr>
+<tr>
+<td><strong>Java</strong> (Spring Boot / Spring AI / Quarkus / Micronaut)</td>
+<td>Java adapter + proxy to PyPI engine</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/java.md">java.md</a> · <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/spring-boot.md">spring-boot.md</a></td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/frameworks/java">frameworks/java</a> · <a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/frameworks/spring-boot">spring-boot</a></td>
+</tr>
+<tr>
+<td><strong>Kotlin</strong></td>
+<td>Same Maven artifact; Ktor / Spring</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/kotlin.md">kotlin.md</a></td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/frameworks/kotlin">frameworks/kotlin</a></td>
+</tr>
+<tr>
+<td><strong>Go</strong></td>
+<td>Go adapter + proxy</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/go.md">go.md</a></td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/frameworks/go">frameworks/go</a></td>
+</tr>
+<tr>
+<td><strong>.NET</strong></td>
+<td>NuGet adapter + proxy</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/dotnet.md">dotnet.md</a></td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/frameworks/dotnet">frameworks/dotnet</a></td>
+</tr>
+<tr>
+<td><strong>Rust</strong></td>
+<td>YAML + CLI + proxy (no native engine fork)</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/rust.md">rust.md</a></td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/frameworks/rust">frameworks/rust</a></td>
+</tr>
+<tr>
+<td><strong>Third-party MCP</strong></td>
+<td>HTTP boundary only</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/proxy.md">proxy.md</a></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Architecture deep dive: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/MULTI_LANGUAGE.md">suite MULTI_LANGUAGE.md</a>.<br />
+Tutorial index: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/docs/tutorials">suite docs/tutorials</a>.</p>
+<h3 id="typical-non-python-path">Typical non-Python path</h3>
+<ol>
+<li>Author <code>bastion.yaml</code> (same as Python).  </li>
+<li><code>mcp-bastion-suite validate</code> / <code>scan</code> in CI (Action or Docker).  </li>
+<li>Run engine as <strong>proxy/sidecar</strong> (<code>mcp-bastion serve --proxy</code> or suite helper).  </li>
+<li>Point Nest/Spring/.NET/Go MCP HTTP traffic at the proxy—or use the language adapter that stamps edge auth and forwards.</li>
+</ol>
+<p>Python teams can stay in-process (this repo’s FastMCP wrap) without the suite; the suite still helps if you want one CI story across languages.</p>
+<hr />
+<h2 id="sample-data-ide">Sample data &amp; IDE</h2>
+<ul>
+<li>CRM/support desk fixtures: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/tree/main/examples/_shared/data">suite examples/_shared/data</a>  </li>
+<li>Cursor / VS Code / Copilot: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/IDE_INTEGRATION.md">suite IDE_INTEGRATION.md</a></li>
+</ul>
+<hr />
+<h2 id="feature-parity">Feature parity</h2>
+<p>Validate, scan, red-team, dashboard, and <strong>runtime enforce</strong> are implemented by <strong>mcp-bastion-python</strong>. The suite unlocks that stack for other languages via adapters + shared policy.</p>
+<ul>
+<li>What each pillar does: <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a>  </li>
+<li>Attack → defense scripts (Python engine): <a href="attack-demos.html">ATTACK_DEMOS.md</a>  </li>
+<li>Enablement YAML: <a href="features.html">FEATURES.md</a></li>
+</ul>
+<p>Upgrade engine only:</p>
+<pre><code class="language-bash">pip install -U &quot;mcp-bastion-python&gt;=4.0.0&quot;
+mcp-bastion-suite --version   # if suite CLI installed
+</code></pre>
+<hr />
+<h2 id="docker-github-action-suite">Docker / GitHub Action (suite)</h2>
+<pre><code class="language-bash">docker pull ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0
+docker run --rm -v &quot;$PWD&quot;:/work -w /work ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0 \
+  validate --config bastion.yaml
+</code></pre>
+<pre><code class="language-yaml">- uses: vaquarkhan/mcp-bastion-suite@main
+  with:
+    command: validate
+    config: bastion.yaml
+</code></pre>
+<hr />
+<h2 id="where-to-go-next">Where to go next</h2>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Start here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Understand Bastion pillars</td>
+<td><a href="index.html">USER_GUIDE.md</a> · <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a></td>
+</tr>
+<tr>
+<td>Run attack demos (Python)</td>
+<td><a href="attack-demos.html">ATTACK_DEMOS.md</a></td>
+</tr>
+<tr>
+<td>Adopt from Java/TS/Go/.NET</td>
+<td><a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a> → language tutorial</td>
+</tr>
+<tr>
+<td>Proxy boundary</td>
+<td><a href="proxy.html">GATEWAY_BOUNDARY.md</a> · suite <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/proxy.md">proxy.md</a></td>
+</tr>
+</tbody>
+</table>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

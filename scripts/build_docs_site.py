@@ -36,6 +36,8 @@ PAGES: list[tuple[str, str, str, str]] = [
     ("feature-deep-dive", "Feature deep dive", "FEATURE_DEEP_DIVE.md", "Security"),
     ("features", "Feature enablement", "FEATURES.md", "Security"),
     ("attack-prevention", "Attack prevention", "ATTACK_PREVENTION.md", "Security"),
+    ("attack-demos", "Attack demos (runnable)", "ATTACK_DEMOS.md", "Security"),
+    ("multi-language", "Multi-language suite", "MULTI_LANGUAGE_SUITE.md", "Guides"),
     ("cli", "CLI reference", "CLI.md", "Reference"),
     ("metrics", "Metrics", "METRICS.md", "Reference"),
     ("cra-sbom", "CRA & SBOM", "CRA_SBOM_TUTORIAL.md", "Compliance"),
@@ -161,6 +163,8 @@ def _home_body() -> str:
         ("pii-vault.html", "PII vault", "Reversible tokenization so models never see raw PII."),
         ("proxy.html", "HTTP proxy & boundary", "Un-bypassable enforcement with the same bastion.yaml."),
         ("feature-deep-dive.html", "Feature deep dive", "Every control: issue → how Bastion solves it → benefits, including dashboard."),
+        ("attack-demos.html", "Attack demos", "Runnable attack → block/redact scenarios (hero features)."),
+        ("multi-language.html", "Multi-language suite", "TypeScript, Java, Go, .NET via mcp-bastion-suite."),
         ("pillars.html", "Security pillars", "Map concerns to configuration blocks."),
         ("cli.html", "CLI reference", "validate, doctor, serve, fingerprint, redteam."),
     ]
@@ -185,7 +189,8 @@ how-to guides, and reference.</p>
 <ol class="paths">
   <li><strong>Developer (minutes):</strong> Getting started → Feature enablement → CLI</li>
   <li><strong>Platform engineer:</strong> User guide → Configuration → Proxy → Metrics</li>
-  <li><strong>Security / compliance:</strong> Feature deep dive → Pillars → Attack prevention → PII vault → CRA &amp; SBOM</li>
+  <li><strong>Security / compliance:</strong> Feature deep dive → Attack demos → Pillars → PII vault → CRA &amp; SBOM</li>
+  <li><strong>Other languages:</strong> Multi-language suite → suite tutorials (TS / Java / Go / .NET)</li>
 </ol>
 """
 
