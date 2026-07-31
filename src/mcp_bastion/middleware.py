@@ -23,6 +23,7 @@ from mcp_bastion.errors import (
     AuthenticationError,
     BastionConfigError,
     BehaviorAnomalyError,
+    CatalogDriftError,
     CanaryExfiltrationError,
     ExternalPolicyDeniedError,
     GroundingViolationError,
@@ -495,6 +496,11 @@ class MCPBastionMiddleware(Middleware[Any]):
         enable_response_scan: bool = False,
         response_scan_extra_patterns: list[str] | None = None,
         enable_discovery_filter: bool = False,
+        discovery_filter_minimize_schemas: bool = False,
+        discovery_filter_max_description_chars: int = 160,
+        discovery_filter_strip_schema_descriptions: bool = True,
+        live_catalog_pin: Any = None,
+        enable_live_catalog_pin: bool = False,
         response_scanner: ResponseInjectionScanner | None = None,
         enable_output_budget: bool = False,
         output_budget: OutputBudget | None = None,
@@ -586,6 +592,11 @@ class MCPBastionMiddleware(Middleware[Any]):
             extra_patterns=response_scan_extra_patterns or []
         )
         self.enable_discovery_filter = enable_discovery_filter
+        self.discovery_filter_minimize_schemas = bool(discovery_filter_minimize_schemas)
+        self.discovery_filter_max_description_chars = max(0, int(discovery_filter_max_description_chars))
+        self.discovery_filter_strip_schema_descriptions = bool(discovery_filter_strip_schema_descriptions)
+        self.live_catalog_pin = live_catalog_pin
+        self.enable_live_catalog_pin = bool(enable_live_catalog_pin) and live_catalog_pin is not None
 
         self.output_budget = output_budget or OutputBudget()
         self.enable_output_budget = enable_output_budget
@@ -1054,6 +1065,69 @@ class MCPBastionMiddleware(Middleware[Any]):
             return result
         return _set_tools_on_result(result, kept)
 
+    def _apply_schema_minimize(self, context: MiddlewareContext[Any], result: Any) -> Any:
+        """Truncate tool descriptions / strip schema descriptions on tools/list (opt-in)."""
+        if not self.discovery_filter_minimize_schemas:
+            return result
+        tools = _get_tools_list_from_result(result)
+        if tools is None or not tools:
+            return result
+        from mcp_bastion.pillars.schema_minimize import minimize_tools
+
+        minimized, tokens_saved = minimize_tools(
+            tools,
+            max_description_chars=self.discovery_filter_max_description_chars,
+            strip_schema_descriptions=self.discovery_filter_strip_schema_descriptions,
+            to_dict=_tool_entry_to_dict,
+        )
+        context.metadata.setdefault("schema_minimize", {}).update(
+            {
+                "tool_count": len(minimized),
+                "max_description_chars": self.discovery_filter_max_description_chars,
+                "strip_schema_descriptions": self.discovery_filter_strip_schema_descriptions,
+                "tokens_saved": tokens_saved,
+            }
+        )
+        if tokens_saved > 0:
+            try:
+                from mcp_bastion.pillars.metrics import MetricsStore
+
+                MetricsStore.get().record_tokens_saved(
+                    tokens_saved,
+                    source="schema_minimize",
+                    as_output=False,
+                )
+            except Exception:
+                pass
+        return _set_tools_on_result(result, minimized)
+
+    def _apply_live_catalog_pin(self, context: MiddlewareContext[Any], result: Any) -> Any:
+        """Pin tools/list fingerprint on first sight; warn or block on drift."""
+        if not self.enable_live_catalog_pin or self.live_catalog_pin is None:
+            return result
+        tools = _get_tools_list_from_result(result)
+        if tools is None or not tools:
+            return result
+        tool_dicts = [_tool_entry_to_dict(t) for t in tools]
+        tenant = str(context.metadata.get("tenant_id") or self.default_tenant_id or "default")
+        scope = f"{tenant}|{context.session_id or 'global'}"
+        outcome = self.live_catalog_pin.check(tool_dicts, scope=scope)
+        context.metadata.setdefault("live_catalog_pin", {}).update(outcome)
+        if outcome.get("status") == "drift":
+            detail = str(outcome.get("detail") or "catalog fingerprint drift")
+            err = CatalogDriftError(
+                f"Tool catalog drift detected: {detail} "
+                f"(got {str(outcome.get('fingerprint') or '')[:16]}…)"
+            )
+            if self.live_catalog_pin.on_drift == "block" and not self.shadow_mode:
+                raise err
+            bucket = "shadow_blocked" if self.shadow_mode else "catalog_drift_warnings"
+            context.metadata.setdefault(bucket, []).append(
+                {"pillar": "live_catalog_pin", "reason": str(err), "outcome": outcome}
+            )
+            logger.warning("live_catalog_pin drift scope=%s detail=%s", scope, detail)
+        return result
+
     def _enforce_session_tool_scope(
         self,
         *,
@@ -1520,6 +1594,8 @@ class MCPBastionMiddleware(Middleware[Any]):
                 )
             if result is not None:
                 result = self._apply_discovery_filter(context, result)
+                result = self._apply_live_catalog_pin(context, result)
+                result = self._apply_schema_minimize(context, result)
                 result = self._apply_tool_metadata_guard(context, result)
             return result
         finally:

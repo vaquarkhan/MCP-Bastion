@@ -89,7 +89,7 @@ Highest value; closes audit gaps and matches mcp-scan / Invariant class tooling.
 | **Layered injection scoring** (heuristic + ML + attribution in audit) | M | Operators need to know *which* layer blocked a request | Audit/metrics show per-layer reason |
 | **Second-order injection scan** (tool outputs + resources, not only inbound args) | M | Exfil via tool results is a top MCP attack path | Red-team case blocked + attributed to `response_scan` |
 | **`mcp-bastion scan`** static tool-definition scanner | M | Parity with mcp-scan; rug-pull / homoglyph / embedded prompts in `tools/list` | ✅ Shipped 3.0 - CLI report flags poisoned description + drift |
-| **Live tool-definition pinning** (hash on first sight, block on drift) | M | Extends server verification from files to runtime catalog | Drift scenario blocked in integration test |
+| **Live tool-definition pinning** (hash on first sight, block on drift) | M | Extends server verification from files to runtime catalog | ✅ `tool_metadata_fingerprint.pin_on_first_seen` / `expected` + `on_drift` |
 | **Shadow / typosquat tool detection** | S | `read_file` vs `read_fi1e` across servers | Scanner flags homoglyph pair |
 | **Bundled injection benchmark corpus** | S | Honest marketing; CI regression gate | `tests/` + [BENCHMARKS.md](BENCHMARKS.md) table |
 

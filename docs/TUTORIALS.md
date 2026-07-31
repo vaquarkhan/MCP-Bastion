@@ -250,5 +250,6 @@ Tutorial: **[PII_VAULT_TUTORIAL.md](PII_VAULT_TUTORIAL.md)** · [PII_VAULT.md](P
 | Stateless MCP + legacy sessions (same proxy) | Enable `mcp_transport` in `bastion.yaml`; use `serve --proxy` + discovery card. [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) |
 | CRA / SBOM evidence | `python scripts/generate_sbom.py` - [CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md) |
 | Reversible PII (LLM never sees raw) | `pii_vault.enabled: true` - [PII_VAULT_TUTORIAL.md](PII_VAULT_TUTORIAL.md) |
+| Schema minimize + live catalog pin | `discovery_filter.minimize_schemas` / `tool_metadata_fingerprint.pin_on_first_seen` - [SCHEMA_MINIMIZE_LIVE_PIN.md](SCHEMA_MINIMIZE_LIVE_PIN.md) |
 
 For more examples, see [examples/README.md](../examples/README.md), [SETUP_GUIDE.md](../SETUP_GUIDE.md), and [LLM_INTEGRATION.md](LLM_INTEGRATION.md) for client-side (OpenAI, Claude, etc.) setup.

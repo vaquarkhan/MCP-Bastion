@@ -40,6 +40,7 @@ from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.state_backend import build_state_backend
 from mcp_bastion.pillars.agent_stability import AgentStabilityMonitor
 from mcp_bastion.pillars.behavior_fingerprint import BehaviorFingerprintMonitor
+from mcp_bastion.pillars.tool_metadata_fingerprint import LiveCatalogPin, load_expected_fingerprint
 from mcp_bastion.mcp_transport import mcp_transport_config_from_bastion
 from mcp_bastion.pillars.atr_rules import ATRRuleLoader
 from mcp_bastion.pillars.auto_repave import AutoRepaveEngine
@@ -85,6 +86,9 @@ class BastionConfig:
     response_scan: bool = False
     response_scan_extra_patterns: list[str] = field(default_factory=list)
     discovery_filter: bool = False
+    discovery_filter_minimize_schemas: bool = False
+    discovery_filter_max_description_chars: int = 160
+    discovery_filter_strip_schema_descriptions: bool = True
     output_budget: bool = False
     output_budget_max_tokens: int = 4000
     output_budget_min_tokens: int = 500
@@ -200,6 +204,9 @@ class BastionConfig:
     tool_metadata_fingerprint_enabled: bool = False
     tool_metadata_fingerprint_path: str | None = None
     tool_metadata_fingerprint_expected: str | None = None
+    tool_metadata_fingerprint_pin_on_first_seen: bool = False
+    tool_metadata_fingerprint_on_drift: str = "warn"  # warn | block
+    tool_metadata_fingerprint_pin_ttl_seconds: float = 86400.0 * 7
     governance_allowed_registry_names: list[str] = field(default_factory=list)
     governance_allowed_repository_urls: list[str] = field(default_factory=list)
     state_backend: str = "memory"
@@ -387,6 +394,15 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         response_scan=bool(data.get("response_scan", {}).get("enabled", False)),
         response_scan_extra_patterns=list(data.get("response_scan", {}).get("extra_patterns", [])),
         discovery_filter=bool(data.get("discovery_filter", {}).get("enabled", False)),
+        discovery_filter_minimize_schemas=bool(
+            data.get("discovery_filter", {}).get("minimize_schemas", False)
+        ),
+        discovery_filter_max_description_chars=int(
+            data.get("discovery_filter", {}).get("max_description_chars", 160)
+        ),
+        discovery_filter_strip_schema_descriptions=bool(
+            data.get("discovery_filter", {}).get("strip_schema_descriptions", True)
+        ),
         output_budget=bool(data.get("output_budget", {}).get("enabled", False)),
         output_budget_max_tokens=int(data.get("output_budget", {}).get("max_output_tokens", 4000)),
         output_budget_min_tokens=int(data.get("output_budget", {}).get("min_tokens", 500)),
@@ -523,6 +539,9 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         tool_metadata_fingerprint_enabled=bool(tmf.get("enabled", False)),
         tool_metadata_fingerprint_path=tmf.get("fingerprint_path") or tmf.get("path"),
         tool_metadata_fingerprint_expected=tmf.get("expected") or tmf.get("expected_sha256"),
+        tool_metadata_fingerprint_pin_on_first_seen=bool(tmf.get("pin_on_first_seen", False)),
+        tool_metadata_fingerprint_on_drift=str(tmf.get("on_drift", "warn") or "warn").strip().lower(),
+        tool_metadata_fingerprint_pin_ttl_seconds=float(tmf.get("pin_ttl_seconds", 86400 * 7)),
         governance_allowed_registry_names=list(gov.get("allowed_registry_names", []))
         if isinstance(gov.get("allowed_registry_names"), list)
         else [],
@@ -792,6 +811,37 @@ def _build_chain(config: BastionConfig) -> Any:
             ttl_seconds=config.pii_vault_ttl_seconds,
             token_style=style,
         )
+    live_catalog_pin: LiveCatalogPin | None = None
+    if config.tool_metadata_fingerprint_enabled and (
+        config.tool_metadata_fingerprint_pin_on_first_seen
+        or config.tool_metadata_fingerprint_expected
+        or config.tool_metadata_fingerprint_path
+    ):
+        expected_fp = config.tool_metadata_fingerprint_expected
+        if not expected_fp and config.tool_metadata_fingerprint_path:
+            try:
+                expected_fp = load_expected_fingerprint(config.tool_metadata_fingerprint_path)
+            except Exception as exc:
+                if not config.tool_metadata_fingerprint_pin_on_first_seen:
+                    logger.warning(
+                        "tool_metadata_fingerprint path unreadable (%s); live pin disabled",
+                        exc,
+                    )
+                    expected_fp = None
+                else:
+                    expected_fp = None
+        if expected_fp or config.tool_metadata_fingerprint_pin_on_first_seen:
+            drift = (config.tool_metadata_fingerprint_on_drift or "warn").strip().lower()
+            if drift not in ("warn", "block"):
+                logger.warning("Unknown tool_metadata_fingerprint.on_drift=%r; using warn", drift)
+                drift = "warn"
+            live_catalog_pin = LiveCatalogPin(
+                backend=state_backend,
+                pin_on_first_seen=config.tool_metadata_fingerprint_pin_on_first_seen and not expected_fp,
+                on_drift=drift,
+                expected=expected_fp,
+                ttl_seconds=config.tool_metadata_fingerprint_pin_ttl_seconds,
+            )
     shared_backend = state_backend if config.state_backend.strip().lower() == "redis" else None
 
     agent_iam: AgentIAM | None = None
@@ -953,6 +1003,11 @@ def _build_chain(config: BastionConfig) -> Any:
         enable_response_scan=config.response_scan,
         response_scan_extra_patterns=config.response_scan_extra_patterns,
         enable_discovery_filter=config.discovery_filter,
+        discovery_filter_minimize_schemas=config.discovery_filter_minimize_schemas,
+        discovery_filter_max_description_chars=config.discovery_filter_max_description_chars,
+        discovery_filter_strip_schema_descriptions=config.discovery_filter_strip_schema_descriptions,
+        live_catalog_pin=live_catalog_pin,
+        enable_live_catalog_pin=live_catalog_pin is not None,
         enable_output_budget=config.output_budget,
         output_budget=OutputBudget(
             max_output_tokens=config.output_budget_max_tokens,
