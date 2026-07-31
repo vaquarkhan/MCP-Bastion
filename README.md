@@ -677,6 +677,7 @@ mcp-bastion audit --format json -o .bastion/scan/risk-audit.json
 | Goal | Read in order |
 |------|----------------|
 | **End-to-end handbook** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) → [published Docs](https://vaquarkhan.github.io/MCP-Bastion/guide/) |
+| **Documentation bible (GIFs + dashboard)** | [docs/DOCUMENTATION_BIBLE.md](docs/DOCUMENTATION_BIBLE.md) → [live bible](https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html) |
 | **Feature deep dive + attack demos** | [docs/FEATURE_DEEP_DIVE.md](docs/FEATURE_DEEP_DIVE.md) → [docs/ATTACK_DEMOS.md](docs/ATTACK_DEMOS.md) |
 | **Java / TypeScript / Go / .NET / Kotlin / Rust** | [docs/MULTI_LANGUAGE_SUITE.md](docs/MULTI_LANGUAGE_SUITE.md) → [mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | **Policy-as-code (`bastion.yaml`)** | [docs/PILLARS.md](docs/PILLARS.md) → [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) → `bastion.yaml.example` → [docs/CLI.md](docs/CLI.md) (`validate`) |
@@ -690,6 +691,7 @@ Full index: **[docs/README.md](docs/README.md)** · handbook site: **[Docs guide
 | Doc | Description |
 |-----|-------------|
 | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | **End-to-end user guide** (concepts → install → proxy → vault → ops); published at `/guide/` |
+| [docs/DOCUMENTATION_BIBLE.md](docs/DOCUMENTATION_BIBLE.md) | **System bible**: attack GIFs, dashboard tour, feature map, multi-language |
 | [docs/FEATURE_DEEP_DIVE.md](docs/FEATURE_DEEP_DIVE.md) | **Feature-by-feature deep dive**: issue, how Bastion solves it, benefits (incl. dashboard) |
 | [docs/ATTACK_DEMOS.md](docs/ATTACK_DEMOS.md) | Runnable attack → defense demos (keep heavy walkthroughs out of this README) |
 | [docs/MULTI_LANGUAGE_SUITE.md](docs/MULTI_LANGUAGE_SUITE.md) | Multi-language connectors via [mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite) |

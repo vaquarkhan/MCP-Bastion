@@ -231,6 +231,16 @@ body {
   font-size: inherit;
 }
 
+.docs-article img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin: 1rem 0;
+  background: #0f172a;
+  display: block;
+}
+
 .docs-footer {
   margin-top: 3rem;
   padding-top: 1rem;

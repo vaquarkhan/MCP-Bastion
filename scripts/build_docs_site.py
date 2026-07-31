@@ -23,12 +23,14 @@ ASSETS = SITE / "assets"
 # Curated IA: (slug, title, source markdown relative to docs/, nav group)
 PAGES: list[tuple[str, str, str, str]] = [
     ("index", "Documentation Home", "USER_GUIDE.md", "Start here"),
+    ("bible", "Documentation bible", "DOCUMENTATION_BIBLE.md", "Start here"),
     ("getting-started", "Getting started", "QUICK_START.md", "Start here"),
     ("user-guide", "User guide (end-to-end)", "USER_GUIDE.md", "Start here"),
     ("installation", "Installation & tutorials", "DETAILED_TUTORIAL.md", "Guides"),
     ("configuration", "Configuration reference", "POLICY_AS_CODE.md", "Guides"),
     ("proxy", "HTTP proxy & boundary", "GATEWAY_BOUNDARY.md", "Guides"),
     ("hybrid-transport", "Hybrid MCP transport", "HYBRID_TRANSPORT_TUTORIAL.md", "Guides"),
+    ("multi-language", "Multi-language suite", "MULTI_LANGUAGE_SUITE.md", "Guides"),
     ("pii-vault", "PII vault", "PII_VAULT.md", "Privacy & context"),
     ("pii-vault-tutorial", "PII vault tutorial", "PII_VAULT_TUTORIAL.md", "Privacy & context"),
     ("schema-minimize", "Schema minimize & catalog pin", "SCHEMA_MINIMIZE_LIVE_PIN.md", "Privacy & context"),
@@ -36,8 +38,7 @@ PAGES: list[tuple[str, str, str, str]] = [
     ("feature-deep-dive", "Feature deep dive", "FEATURE_DEEP_DIVE.md", "Security"),
     ("features", "Feature enablement", "FEATURES.md", "Security"),
     ("attack-prevention", "Attack prevention", "ATTACK_PREVENTION.md", "Security"),
-    ("attack-demos", "Attack demos (runnable)", "ATTACK_DEMOS.md", "Security"),
-    ("multi-language", "Multi-language suite", "MULTI_LANGUAGE_SUITE.md", "Guides"),
+    ("attack-demos", "Attack demos (GIFs)", "ATTACK_DEMOS.md", "Security"),
     ("cli", "CLI reference", "CLI.md", "Reference"),
     ("metrics", "Metrics", "METRICS.md", "Reference"),
     ("cra-sbom", "CRA & SBOM", "CRA_SBOM_TUTORIAL.md", "Compliance"),
@@ -79,7 +80,25 @@ def _md_to_html(text: str) -> str:
             return f"[{label}](https://github.com/vaquarkhan/MCP-Bastion/blob/main/{path[3:]})"
         return m.group(0)
 
-    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", link_sub, text)
+    def img_sub(m: re.Match[str]) -> str:
+        alt, path = m.group(1), m.group(2)
+        if path.startswith(("http://", "https://", "data:")):
+            return m.group(0)
+        # docs/images/* and docs/site/assets/* — from guide HTML use ../assets/
+        if path.startswith("images/"):
+            return f"![{alt}](../assets/{path[len('images/'):]})"
+        if path.startswith("../images/"):
+            # repo-root images/ (SVGs) — GitHub raw for site
+            rel = path[len("../images/") :]
+            return (
+                f"![{alt}](https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/images/{rel})"
+            )
+        if path.startswith("../dashboard/") or path.startswith("../"):
+            return m.group(0)
+        return m.group(0)
+
+    text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", img_sub, text)
+    text = re.sub(r"(?<!!)\[([^\]]+)\]\(([^)]+)\)", link_sub, text)
     return markdown.markdown(
         text,
         extensions=["fenced_code", "tables", "toc", "nl2br", "sane_lists"],
@@ -158,15 +177,12 @@ def _page_shell(title: str, active: str, body: str, *, description: str = "") ->
 def _home_body() -> str:
     cards = []
     featured = [
+        ("bible.html", "Documentation bible", "Visual tour: attack GIFs, dashboard, features, multi-language."),
         ("user-guide.html", "User guide (end-to-end)", "Install → configure → proxy → vault → production checklist."),
-        ("getting-started.html", "Getting started", "FastMCP, policy-as-code, and CI gate paths."),
-        ("pii-vault.html", "PII vault", "Reversible tokenization so models never see raw PII."),
-        ("proxy.html", "HTTP proxy & boundary", "Un-bypassable enforcement with the same bastion.yaml."),
-        ("feature-deep-dive.html", "Feature deep dive", "Every control: issue → how Bastion solves it → benefits, including dashboard."),
-        ("attack-demos.html", "Attack demos", "Runnable attack → block/redact scenarios (hero features)."),
+        ("attack-demos.html", "Attack demos (GIFs)", "Video-style attack → Bastion block/redact for hero features."),
+        ("feature-deep-dive.html", "Feature deep dive", "Every control: issue → solution → benefits, including dashboard."),
         ("multi-language.html", "Multi-language suite", "TypeScript, Java, Go, .NET via mcp-bastion-suite."),
-        ("pillars.html", "Security pillars", "Map concerns to configuration blocks."),
-        ("cli.html", "CLI reference", "validate, doctor, serve, fingerprint, redteam."),
+        ("getting-started.html", "Getting started", "FastMCP, policy-as-code, and CI gate paths."),
     ]
     for href, title, blurb in featured:
         cards.append(
