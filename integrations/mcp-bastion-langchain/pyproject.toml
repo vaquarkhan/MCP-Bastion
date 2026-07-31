@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-langchain"
-version = "3.3.1"
+version = "4.0.0"
 description = "MCP-Bastion security middleware integration for LangChain  -  prompt injection, PII, and rate-limit protection for LLM agents"
 readme = "README.md"
 license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }

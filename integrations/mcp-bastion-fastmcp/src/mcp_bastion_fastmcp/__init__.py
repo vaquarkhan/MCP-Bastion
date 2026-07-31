@@ -1,4 +1,4 @@
 """MCP-Bastion security integration for FastMCP servers."""
-__version__ = "3.3.1"
+__version__ = "4.0.0"
 from mcp_bastion_fastmcp.middleware import secure_fastmcp
 __all__ = ["secure_fastmcp"]

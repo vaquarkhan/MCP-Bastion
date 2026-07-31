@@ -1,10 +1,14 @@
 ﻿# Changelog
 
-**Current release:** **3.3.1** (2026-07-24) - [PyPI](https://pypi.org/project/mcp-bastion-python/3.3.1/) · [Docker `v3.3.1`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **4.0.0** (2026-07-31) - [PyPI](https://pypi.org/project/mcp-bastion-python/4.0.0/) · [Docker `v4.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [4.0.0] - 2026-07-31
+
+Major release: **reversible PII vault**, **proxy JSON/SSE mutate**, **schema minimization**, and **live catalog pin** - additive / opt-in (defaults unchanged). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **4.0.0**.
 
 ### Added
 
@@ -14,6 +18,11 @@ All notable changes to this project are documented in this file.
 - **PII vault Phase 2:** HTTP proxy mutates upstream JSON-RPC results (PII redact / vault abstract) and hydrates `tools/call` args before forward; `pii_vault_abstract_total` / `pii_vault_hydrate_total` metrics; optional `pii_vault.token_style: low_entropy` (`EMAIL_ADDRESS_1` / `Person_A`).
 - **PII vault Phase 3:** SSE (`text/event-stream`) event-frame mutation via `SsePiiMutator` (split-chunk safe); dashboard PII vault governance tile + KPI footnote; Prometheus `mcp_bastion_pii_vault_*` counters.
 - **Tests:** `tests/test_pii_vault.py` (abstract/hydrate, buffered restore, config defaults, low-entropy, metrics); proxy mutation / SSE coverage in `tests/test_proxy_server_coverage.py`; `tests/test_schema_minimize_live_pin.py`.
+
+### Compatibility
+
+- **No breaking config defaults:** `pii_vault`, schema minimize, and live catalog pin remain **OFF** unless enabled. Destructive PII redaction path unchanged when vault is off.
+- Major version signals the size of the feature bundle (vault + proxy mutate + context/poisoning controls), not a forced migration.
 
 ## [3.3.1] - 2026-07-24
 

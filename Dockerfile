@@ -5,7 +5,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-ARG BASTION_VERSION=3.3.1
+ARG BASTION_VERSION=4.0.0
 # Pin to PyPI release. Retry briefly: GHCR builds can race CDN propagation after tag publish.
 RUN pip install --no-cache-dir --upgrade pip \
     && for i in 1 2 3 4 5 6 7 8 9 10 11 12; do \
