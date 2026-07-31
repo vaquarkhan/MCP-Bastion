@@ -1,19 +1,30 @@
 # Attack → defense demos
 
-Runnable, feature-by-feature scenarios that show **what an attack looks like** and **how MCP-Bastion blocks or redacts it**. Keep visuals and long walkthroughs here (and in [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md))—**not** in the root README.
+Runnable scenarios **and video-style GIFs** showing what an attack looks like and how MCP-Bastion blocks or redacts it. Keep this detail here—**not** in the root README.
 
 | Related | Link |
 |---------|------|
+| **Documentation bible** (all visuals) | [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) |
 | Issue → solution → benefits | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
 | Narrative attack guide | [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) |
-| Multi-language connectors | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) · [mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite) |
+| Multi-language connectors | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) |
 | Legacy combined script | [examples/full_demo.py](../examples/full_demo.py) |
 
 ---
 
-## Quick run
+## Master tour (GIF)
 
-From the MCP-Bastion repo root:
+![Attack defense tour](images/mcp-bastion-attack-defense-tour.gif)
+
+Regenerate GIFs:
+
+```bash
+python scripts/generate_attack_demo_gifs.py
+```
+
+---
+
+## Quick run (live, same scenarios)
 
 ```bash
 # Windows PowerShell
@@ -22,82 +33,113 @@ $env:PYTHONPATH="src"; python -m examples.attack_demos
 # Linux / macOS
 PYTHONPATH=src python -m examples.attack_demos
 
-# One feature
 PYTHONPATH=src python -m examples.attack_demos --only rate_limit
-
-# Fail CI if core demos do not block
 PYTHONPATH=src python -m examples.attack_demos --strict
 ```
 
-Or: `python examples/attack_demos/runner.py` (adds `src/` to `sys.path` automatically).
+Optional deps for full prompt/PII fidelity: `torch`, `transformers`, `presidio-analyzer`, `en_core_web_sm`.
 
-Optional deps for full fidelity:
+---
+
+## Per-feature GIF gallery
+
+### 01 — Prompt injection (`prompt_guard`) → **-32001**
+
+![Prompt guard](images/attack-demos/01-prompt-guard.gif)
 
 ```bash
-pip install torch transformers presidio-analyzer presidio-anonymizer
-python -m spacy download en_core_web_sm
+PYTHONPATH=src python -m examples.attack_demos --only prompt_guard
 ```
 
-Without ML/Presidio, **prompt_guard** and **pii** may report `INFO`/`SKIP`; rate limit, content filter, RBAC, schema, replay, and cost still demonstrate blocks.
+### 02 — PII leakage (`pii`) → redacted
 
----
+![PII](images/attack-demos/02-pii.gif)
 
-## Hero scenarios
+```bash
+PYTHONPATH=src python -m examples.attack_demos --only pii
+```
 
-| ID | Feature | Attack | Expected defense |
-|----|---------|--------|------------------|
-| 01 | `prompt_guard` | Jailbreak string in tool args | Block **-32001** (needs ML/heuristics) |
-| 02 | `pii` | SSN/email/phone in tool output | Redact placeholders |
-| 03 | `rate_limit` | Agent loop past `max_iterations` | Block **-32002** |
-| 04 | `content_filter` | `/etc/passwd` path | Block **-32005** |
-| 05 | `rbac` | `viewer` calls `write` | Block **-32006** |
-| 06 | `schema_validation` | Missing / wrong arg types | Block **-32007** |
-| 07 | `replay_guard` | Duplicate request_id + nonce | Block **-32008** |
-| 08 | `cost_tracker` | Session spend over cap | Block **-32009** |
+### 03 — Rate / denial of wallet (`rate_limit`) → **-32002**
 
-Each printed report includes: feature key, attack description, outcome, and MCP error code when present.
+![Rate limit](images/attack-demos/03-rate-limit.gif)
 
----
+```bash
+PYTHONPATH=src python -m examples.attack_demos --only rate_limit
+```
 
-## How demos map to docs
+### 04 — Path traversal (`content_filter`) → **-32005**
 
-In [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md), hero controls link here under **Demo**. Example:
+![Content filter](images/attack-demos/04-content-filter.gif)
 
 ```bash
 PYTHONPATH=src python -m examples.attack_demos --only content_filter
 ```
 
-Sample output shape:
+### 05 — Unauthorized tool (`rbac`) → **-32006**
 
-```text
-### [04] Path traversal / sensitive file read
-- **Feature:** `content_filter`
-- **Attack:** read_file path="/etc/passwd"
-- **Result:** PASS (blocked) code=-32005 expected=-32005
-- **Detail:** Content filter blocked sensitive path. ...
+![RBAC](images/attack-demos/05-rbac.gif)
+
+```bash
+PYTHONPATH=src python -m examples.attack_demos --only rbac
+```
+
+### 06 — Schema bypass (`schema_validation`) → **-32007**
+
+![Schema](images/attack-demos/06-schema.gif)
+
+```bash
+PYTHONPATH=src python -m examples.attack_demos --only schema
+```
+
+### 07 — Replay (`replay_guard`) → **-32008**
+
+![Replay](images/attack-demos/07-replay.gif)
+
+```bash
+PYTHONPATH=src python -m examples.attack_demos --only replay
+```
+
+### 08 — Cost overrun (`cost_tracker`) → **-32009**
+
+![Cost](images/attack-demos/08-cost.gif)
+
+```bash
+PYTHONPATH=src python -m examples.attack_demos --only cost
 ```
 
 ---
 
-## GIFs / visuals (optional)
+## Dashboard (runtime view of the same defenses)
 
-Prefer **script output in docs** as the source of truth (always regenerable). Optional terminal GIFs can be added later under `docs/site/assets/demos/` using [VHS](https://github.com/charmbracelet/vhs) or asciinema—**do not** embed large GIFs in the root README.
-
-Dashboard UI tour (separate from per-pillar attacks):
+![Dashboard tour](images/mcp-bastion-dashboard-tour.gif)
 
 ```bash
 mcp-bastion dashboard --demo
-python scripts/capture_dashboard_demo.py
+# optional recapture:
+# python scripts/capture_dashboard_demo.py
 ```
 
-See [dashboard/README.md](../dashboard/README.md).
+See [dashboard/README.md](../dashboard/README.md) and the [Documentation bible](DOCUMENTATION_BIBLE.md).
+
+---
+
+## Hero table
+
+| ID | Feature | Attack | Defense | GIF |
+|----|---------|--------|---------|-----|
+| 01 | `prompt_guard` | Jailbreak in args | **-32001** | [gif](images/attack-demos/01-prompt-guard.gif) |
+| 02 | `pii` | SSN/email in output | Redact | [gif](images/attack-demos/02-pii.gif) |
+| 03 | `rate_limit` | Agent loop | **-32002** | [gif](images/attack-demos/03-rate-limit.gif) |
+| 04 | `content_filter` | `/etc/passwd` | **-32005** | [gif](images/attack-demos/04-content-filter.gif) |
+| 05 | `rbac` | viewer→write | **-32006** | [gif](images/attack-demos/05-rbac.gif) |
+| 06 | `schema_validation` | Bad args | **-32007** | [gif](images/attack-demos/06-schema.gif) |
+| 07 | `replay_guard` | Dup nonce | **-32008** | [gif](images/attack-demos/07-replay.gif) |
+| 08 | `cost_tracker` | Over budget | **-32009** | [gif](images/attack-demos/08-cost.gif) |
 
 ---
 
 ## Extending
 
-1. Add a function in `examples/attack_demos/scenarios.py` returning `ScenarioResult`.
-2. Append it to `SCENARIOS`.
-3. Document the row in the table above and link from FEATURE_DEEP_DIVE.
-
-For TypeScript / Java / Go / .NET stacks, run the same policy via the suite proxy/adapters—see [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md).
+1. Add scenario in `examples/attack_demos/scenarios.py`.
+2. Add storyboard entry in `scripts/generate_attack_demo_gifs.py`.
+3. Re-run generators; link from [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md).

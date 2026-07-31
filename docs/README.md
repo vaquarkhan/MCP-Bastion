@@ -9,8 +9,9 @@ Current Python package release: **`mcp-bastion-python==4.0.0`** ([PyPI](https://
 | Doc | Description |
 |-----|-------------|
 | [USER_GUIDE.md](USER_GUIDE.md) | **End-to-end handbook** (concepts → install → config → proxy → vault → ops) — also published at [GitHub Pages Docs](https://vaquarkhan.github.io/MCP-Bastion/guide/) |
+| [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) | **System bible** — attack GIFs, dashboard tour, feature map, multi-language ([live](https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html)) |
 | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) | **Issue → solution → benefits** for every control + full dashboard panels |
-| [ATTACK_DEMOS.md](ATTACK_DEMOS.md) | **Runnable** attack → defense demos (hero features) |
+| [ATTACK_DEMOS.md](ATTACK_DEMOS.md) | **Runnable + GIF** attack → defense demos (hero features) |
 | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) | **Java / TS / Go / .NET / Kotlin / Rust** via [mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | [FEATURES.md](FEATURES.md) | **How-to for all 18 pillars** - enable, configure, error codes |
 | [RBAC.md](RBAC.md) | **RBAC deep dive** - roles, fnmatch globs, Agent IAM pairing |

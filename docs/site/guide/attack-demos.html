@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Attack demos (runnable) | MCP-Bastion Docs</title>
-<meta name="description" content="MCP-Bastion documentation — Attack demos (runnable)">
+<title>Attack demos (GIFs) | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Attack demos (GIFs)">
 <meta name="docs-version" content="4.0.0">
 <link rel="stylesheet" href="../assets/guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,6 +30,7 @@
     <nav class="docs-nav" aria-label="Documentation">
 <div class="nav-group"><div class="nav-group-title">Start here</div><ul>
 <li><a href="index.html">Documentation Home</a></li>
+<li><a href="bible.html">Documentation bible</a></li>
 <li><a href="getting-started.html">Getting started</a></li>
 <li><a href="user-guide.html">User guide (end-to-end)</a></li>
 </ul></div>
@@ -50,7 +51,7 @@
 <li><a href="feature-deep-dive.html">Feature deep dive</a></li>
 <li><a href="features.html">Feature enablement</a></li>
 <li><a href="attack-prevention.html">Attack prevention</a></li>
-<li><a href="attack-demos.html" class="active">Attack demos (runnable)</a></li>
+<li><a href="attack-demos.html" class="active">Attack demos (GIFs)</a></li>
 </ul></div>
 <div class="nav-group"><div class="nav-group-title">Reference</div><ul>
 <li><a href="cli.html">CLI reference</a></li>
@@ -69,10 +70,10 @@
     <article class="docs-article">
       <header class="article-header">
         <p class="eyebrow">MCP-Bastion Documentation</p>
-        <h1>Attack demos (runnable)</h1>
+        <h1>Attack demos (GIFs)</h1>
       </header>
       <h1 id="attack-defense-demos">Attack → defense demos</h1>
-<p>Runnable, feature-by-feature scenarios that show <strong>what an attack looks like</strong> and <strong>how MCP-Bastion blocks or redacts it</strong>. Keep visuals and long walkthroughs here (and in <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a>)—<strong>not</strong> in the root README.</p>
+<p>Runnable scenarios <strong>and video-style GIFs</strong> showing what an attack looks like and how MCP-Bastion blocks or redacts it. Keep this detail here—<strong>not</strong> in the root README.</p>
 <table>
 <thead>
 <tr>
@@ -81,6 +82,10 @@
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><strong>Documentation bible</strong> (all visuals)</td>
+<td><a href="bible.html">DOCUMENTATION_BIBLE.md</a></td>
+</tr>
 <tr>
 <td>Issue → solution → benefits</td>
 <td><a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a></td>
@@ -91,7 +96,7 @@
 </tr>
 <tr>
 <td>Multi-language connectors</td>
-<td><a href="multi-language.html">MULTI_LANGUAGE_SUITE.md</a> · <a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a></td>
+<td><a href="multi-language.html">MULTI_LANGUAGE_SUITE.md</a></td>
 </tr>
 <tr>
 <td>Legacy combined script</td>
@@ -100,117 +105,143 @@
 </tbody>
 </table>
 <hr />
-<h2 id="quick-run">Quick run</h2>
-<p>From the MCP-Bastion repo root:</p>
+<h2 id="master-tour-gif">Master tour (GIF)</h2>
+<p><img alt="Attack defense tour" src="../assets/mcp-bastion-attack-defense-tour.gif" /></p>
+<p>Regenerate GIFs:</p>
+<pre><code class="language-bash">python scripts/generate_attack_demo_gifs.py
+</code></pre>
+<hr />
+<h2 id="quick-run-live-same-scenarios">Quick run (live, same scenarios)</h2>
 <pre><code class="language-bash"># Windows PowerShell
 $env:PYTHONPATH=&quot;src&quot;; python -m examples.attack_demos
 
 # Linux / macOS
 PYTHONPATH=src python -m examples.attack_demos
 
-# One feature
 PYTHONPATH=src python -m examples.attack_demos --only rate_limit
-
-# Fail CI if core demos do not block
 PYTHONPATH=src python -m examples.attack_demos --strict
 </code></pre>
-<p>Or: <code>python examples/attack_demos/runner.py</code> (adds <code>src/</code> to <code>sys.path</code> automatically).</p>
-<p>Optional deps for full fidelity:</p>
-<pre><code class="language-bash">pip install torch transformers presidio-analyzer presidio-anonymizer
-python -m spacy download en_core_web_sm
-</code></pre>
-<p>Without ML/Presidio, <strong>prompt_guard</strong> and <strong>pii</strong> may report <code>INFO</code>/<code>SKIP</code>; rate limit, content filter, RBAC, schema, replay, and cost still demonstrate blocks.</p>
+<p>Optional deps for full prompt/PII fidelity: <code>torch</code>, <code>transformers</code>, <code>presidio-analyzer</code>, <code>en_core_web_sm</code>.</p>
 <hr />
-<h2 id="hero-scenarios">Hero scenarios</h2>
+<h2 id="per-feature-gif-gallery">Per-feature GIF gallery</h2>
+<h3 id="01-prompt-injection-prompt_guard-32001">01 — Prompt injection (<code>prompt_guard</code>) → <strong>-32001</strong></h3>
+<p><img alt="Prompt guard" src="../assets/attack-demos/01-prompt-guard.gif" /></p>
+<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only prompt_guard
+</code></pre>
+<h3 id="02-pii-leakage-pii-redacted">02 — PII leakage (<code>pii</code>) → redacted</h3>
+<p><img alt="PII" src="../assets/attack-demos/02-pii.gif" /></p>
+<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only pii
+</code></pre>
+<h3 id="03-rate-denial-of-wallet-rate_limit-32002">03 — Rate / denial of wallet (<code>rate_limit</code>) → <strong>-32002</strong></h3>
+<p><img alt="Rate limit" src="../assets/attack-demos/03-rate-limit.gif" /></p>
+<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only rate_limit
+</code></pre>
+<h3 id="04-path-traversal-content_filter-32005">04 — Path traversal (<code>content_filter</code>) → <strong>-32005</strong></h3>
+<p><img alt="Content filter" src="../assets/attack-demos/04-content-filter.gif" /></p>
+<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only content_filter
+</code></pre>
+<h3 id="05-unauthorized-tool-rbac-32006">05 — Unauthorized tool (<code>rbac</code>) → <strong>-32006</strong></h3>
+<p><img alt="RBAC" src="../assets/attack-demos/05-rbac.gif" /></p>
+<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only rbac
+</code></pre>
+<h3 id="06-schema-bypass-schema_validation-32007">06 — Schema bypass (<code>schema_validation</code>) → <strong>-32007</strong></h3>
+<p><img alt="Schema" src="../assets/attack-demos/06-schema.gif" /></p>
+<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only schema
+</code></pre>
+<h3 id="07-replay-replay_guard-32008">07 — Replay (<code>replay_guard</code>) → <strong>-32008</strong></h3>
+<p><img alt="Replay" src="../assets/attack-demos/07-replay.gif" /></p>
+<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only replay
+</code></pre>
+<h3 id="08-cost-overrun-cost_tracker-32009">08 — Cost overrun (<code>cost_tracker</code>) → <strong>-32009</strong></h3>
+<p><img alt="Cost" src="../assets/attack-demos/08-cost.gif" /></p>
+<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only cost
+</code></pre>
+<hr />
+<h2 id="dashboard-runtime-view-of-the-same-defenses">Dashboard (runtime view of the same defenses)</h2>
+<p><img alt="Dashboard tour" src="../assets/mcp-bastion-dashboard-tour.gif" /></p>
+<pre><code class="language-bash">mcp-bastion dashboard --demo
+# optional recapture:
+# python scripts/capture_dashboard_demo.py
+</code></pre>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> and the <a href="bible.html">Documentation bible</a>.</p>
+<hr />
+<h2 id="hero-table">Hero table</h2>
 <table>
 <thead>
 <tr>
 <th>ID</th>
 <th>Feature</th>
 <th>Attack</th>
-<th>Expected defense</th>
+<th>Defense</th>
+<th>GIF</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>01</td>
 <td><code>prompt_guard</code></td>
-<td>Jailbreak string in tool args</td>
-<td>Block <strong>-32001</strong> (needs ML/heuristics)</td>
+<td>Jailbreak in args</td>
+<td><strong>-32001</strong></td>
+<td><a href="images/attack-demos/01-prompt-guard.gif">gif</a></td>
 </tr>
 <tr>
 <td>02</td>
 <td><code>pii</code></td>
-<td>SSN/email/phone in tool output</td>
-<td>Redact placeholders</td>
+<td>SSN/email in output</td>
+<td>Redact</td>
+<td><a href="images/attack-demos/02-pii.gif">gif</a></td>
 </tr>
 <tr>
 <td>03</td>
 <td><code>rate_limit</code></td>
-<td>Agent loop past <code>max_iterations</code></td>
-<td>Block <strong>-32002</strong></td>
+<td>Agent loop</td>
+<td><strong>-32002</strong></td>
+<td><a href="images/attack-demos/03-rate-limit.gif">gif</a></td>
 </tr>
 <tr>
 <td>04</td>
 <td><code>content_filter</code></td>
-<td><code>/etc/passwd</code> path</td>
-<td>Block <strong>-32005</strong></td>
+<td><code>/etc/passwd</code></td>
+<td><strong>-32005</strong></td>
+<td><a href="images/attack-demos/04-content-filter.gif">gif</a></td>
 </tr>
 <tr>
 <td>05</td>
 <td><code>rbac</code></td>
-<td><code>viewer</code> calls <code>write</code></td>
-<td>Block <strong>-32006</strong></td>
+<td>viewer→write</td>
+<td><strong>-32006</strong></td>
+<td><a href="images/attack-demos/05-rbac.gif">gif</a></td>
 </tr>
 <tr>
 <td>06</td>
 <td><code>schema_validation</code></td>
-<td>Missing / wrong arg types</td>
-<td>Block <strong>-32007</strong></td>
+<td>Bad args</td>
+<td><strong>-32007</strong></td>
+<td><a href="images/attack-demos/06-schema.gif">gif</a></td>
 </tr>
 <tr>
 <td>07</td>
 <td><code>replay_guard</code></td>
-<td>Duplicate request_id + nonce</td>
-<td>Block <strong>-32008</strong></td>
+<td>Dup nonce</td>
+<td><strong>-32008</strong></td>
+<td><a href="images/attack-demos/07-replay.gif">gif</a></td>
 </tr>
 <tr>
 <td>08</td>
 <td><code>cost_tracker</code></td>
-<td>Session spend over cap</td>
-<td>Block <strong>-32009</strong></td>
+<td>Over budget</td>
+<td><strong>-32009</strong></td>
+<td><a href="images/attack-demos/08-cost.gif">gif</a></td>
 </tr>
 </tbody>
 </table>
-<p>Each printed report includes: feature key, attack description, outcome, and MCP error code when present.</p>
-<hr />
-<h2 id="how-demos-map-to-docs">How demos map to docs</h2>
-<p>In <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a>, hero controls link here under <strong>Demo</strong>. Example:</p>
-<pre><code class="language-bash">PYTHONPATH=src python -m examples.attack_demos --only content_filter
-</code></pre>
-<p>Sample output shape:</p>
-<pre><code class="language-text">### [04] Path traversal / sensitive file read
-- **Feature:** `content_filter`
-- **Attack:** read_file path=&quot;/etc/passwd&quot;
-- **Result:** PASS (blocked) code=-32005 expected=-32005
-- **Detail:** Content filter blocked sensitive path. ...
-</code></pre>
-<hr />
-<h2 id="gifs-visuals-optional">GIFs / visuals (optional)</h2>
-<p>Prefer <strong>script output in docs</strong> as the source of truth (always regenerable). Optional terminal GIFs can be added later under <code>docs/site/assets/demos/</code> using <a href="https://github.com/charmbracelet/vhs">VHS</a> or asciinema—<strong>do not</strong> embed large GIFs in the root README.</p>
-<p>Dashboard UI tour (separate from per-pillar attacks):</p>
-<pre><code class="language-bash">mcp-bastion dashboard --demo
-python scripts/capture_dashboard_demo.py
-</code></pre>
-<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a>.</p>
 <hr />
 <h2 id="extending">Extending</h2>
 <ol>
-<li>Add a function in <code>examples/attack_demos/scenarios.py</code> returning <code>ScenarioResult</code>.</li>
-<li>Append it to <code>SCENARIOS</code>.</li>
-<li>Document the row in the table above and link from FEATURE_DEEP_DIVE.</li>
+<li>Add scenario in <code>examples/attack_demos/scenarios.py</code>.</li>
+<li>Add storyboard entry in <code>scripts/generate_attack_demo_gifs.py</code>.</li>
+<li>Re-run generators; link from <a href="bible.html">DOCUMENTATION_BIBLE.md</a>.</li>
 </ol>
-<p>For TypeScript / Java / Go / .NET stacks, run the same policy via the suite proxy/adapters—see <a href="multi-language.html">MULTI_LANGUAGE_SUITE.md</a>.</p>
     </article>
     <footer class="docs-footer">
       <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
