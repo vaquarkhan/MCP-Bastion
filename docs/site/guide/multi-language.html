@@ -137,11 +137,11 @@
 </tr>
 <tr>
 <td><strong>Node / TypeScript</strong></td>
-<td>npm GitHub Packages <code>@vaquarkhan/mcp-bastion-suite</code></td>
+<td>npm GitHub Packages <code>@vaquarkhan/mcp-bastion-suite</code> <strong>or</strong> download <code>.tgz</code> from <a href="https://github.com/vaquarkhan/mcp-bastion-suite/releases/tag/v0.1.0">Release v0.1.0</a></td>
 </tr>
 <tr>
 <td><strong>Java / Kotlin</strong></td>
-<td>Maven GitHub Packages <code>io.github.vaquarkhan:mcp-bastion-suite</code></td>
+<td><strong>Not on Maven Central</strong> — see <a href="#java--kotlin-maven-jar">Java JAR below</a></td>
 </tr>
 <tr>
 <td><strong>Go</strong></td>
@@ -149,7 +149,7 @@
 </tr>
 <tr>
 <td><strong>.NET</strong></td>
-<td>NuGet GitHub Packages <code>McpBastionSuite</code></td>
+<td>NuGet GitHub Packages <code>McpBastionSuite</code> <strong>or</strong> <code>.nupkg</code> from <a href="https://github.com/vaquarkhan/mcp-bastion-suite/releases/tag/v0.1.0">Release v0.1.0</a></td>
 </tr>
 <tr>
 <td><strong>Any / CI</strong></td>
@@ -157,7 +157,49 @@
 </tr>
 </tbody>
 </table>
-<p>Full commands: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/DOWNLOADS.md">suite DOWNLOADS.md</a>.</p>
+<p>Full commands: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/DOWNLOADS.md">suite DOWNLOADS.md</a> · Release assets: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/releases/tag/v0.1.0">v0.1.0</a></p>
+<h3 id="java-kotlin-maven-jar">Java / Kotlin (Maven JAR)</h3>
+<p>The adapter JAR is published as a <strong>GitHub Release asset</strong>, not Maven Central. That is why search.maven.org / Maven Central UI will not show it.</p>
+<p><strong>Option A — download JAR (no registry auth)</strong></p>
+<pre><code class="language-text">https://github.com/vaquarkhan/mcp-bastion-suite/releases/download/v0.1.0/mcp-bastion-suite-0.1.0.jar
+https://github.com/vaquarkhan/mcp-bastion-suite/releases/download/v0.1.0/pom.xml
+</code></pre>
+<p>Install into your local Maven repo:</p>
+<pre><code class="language-bash">mvn install:install-file \
+  -Dfile=mcp-bastion-suite-0.1.0.jar \
+  -DpomFile=pom.xml \
+  -DgroupId=io.github.vaquarkhan \
+  -DartifactId=mcp-bastion-suite \
+  -Dversion=0.1.0 \
+  -Dpackaging=jar
+</code></pre>
+<p>Then in <code>pom.xml</code>:</p>
+<pre><code class="language-xml">&lt;dependency&gt;
+  &lt;groupId&gt;io.github.vaquarkhan&lt;/groupId&gt;
+  &lt;artifactId&gt;mcp-bastion-suite&lt;/artifactId&gt;
+  &lt;version&gt;0.1.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p><strong>Option B — GitHub Packages</strong> (needs a PAT with <code>read:packages</code>; package visibility may be private until set Public in GitHub → Packages)</p>
+<pre><code class="language-xml">&lt;repositories&gt;
+  &lt;repository&gt;
+    &lt;id&gt;github&lt;/id&gt;
+    &lt;url&gt;https://maven.pkg.github.com/vaquarkhan/mcp-bastion-suite&lt;/url&gt;
+  &lt;/repository&gt;
+&lt;/repositories&gt;
+</code></pre>
+<p><code>~/.m2/settings.xml</code>:</p>
+<pre><code class="language-xml">&lt;server&gt;
+  &lt;id&gt;github&lt;/id&gt;
+  &lt;username&gt;YOUR_GITHUB_USERNAME&lt;/username&gt;
+  &lt;password&gt;YOUR_PAT_WITH_read:packages&lt;/password&gt;
+&lt;/server&gt;
+</code></pre>
+<p><strong>Important:</strong> The Java adapter is a thin connector. The security engine is still <strong><code>mcp-bastion-python</code></strong> (CLI / sidecar / proxy). Install the engine:</p>
+<pre><code class="language-bash">pip install &quot;mcp-bastion-python&gt;=4.0.0,&lt;5&quot;
+# or use suite Docker: ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0
+</code></pre>
+<p>Tutorial: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/java.md">suite java.md</a></p>
 <p>Shared policy sketch (same file in every language):</p>
 <pre><code class="language-yaml">prompt_guard:
   enabled: true
