@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard &amp; observability | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Dashboard &amp; observability">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="bible.html">Documentation bible</a></li>
+<li><a href="demos.html">Demos (attack + dashboard)</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+<li><a href="multi-language.html">Multi-language suite</a></li>
+<li><a href="package-status.html">Package registry status</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="feature-deep-dive.html">Feature deep dive</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+<li><a href="attack-demos.html">Attack demos (GIFs)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+<li><a href="observability.html" class="active">Dashboard &amp; observability</a></li>
+<li><a href="otel.html">OpenTelemetry (optional)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Dashboard &amp; observability</h1>
+      </header>
+      <h1 id="dashboard-observability-and-opentelemetry">Dashboard, observability, and OpenTelemetry</h1>
+<p><strong>Live:</strong> https://vaquarkhan.github.io/MCP-Bastion/guide/observability.html  </p>
+<p>This page covers the <strong>local dashboard</strong>, built-in metrics/audit hooks, and whether you need <strong>OpenTelemetry (OTEL)</strong>.</p>
+<hr />
+<h2 id="short-answer-do-you-need-opentelemetry">Short answer: do you need OpenTelemetry?</h2>
+<p><strong>No — not required.</strong> MCP-Bastion is designed for <strong>zero-infra</strong> observability first.</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Required?</th>
+<th>What you get</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dashboard</strong> (<code>mcp-bastion dashboard</code>)</td>
+<td>Optional</td>
+<td>Human UI: KPIs, posture, attack matrix, FinOps, forensics</td>
+</tr>
+<tr>
+<td><strong>Prometheus <code>/metrics</code></strong></td>
+<td>Optional</td>
+<td>Scrape counters (blocks, PII, vault, latency) into Grafana/AMP</td>
+</tr>
+<tr>
+<td><strong>Audit JSONL + alerts</strong></td>
+<td>Recommended in prod</td>
+<td>SOC/SIEM-friendly event trail; Slack/HTTP webhooks</td>
+</tr>
+<tr>
+<td><strong>OpenTelemetry OTLP</strong></td>
+<td><strong>Optional</strong></td>
+<td>Spans into an existing APM (Jaeger, Datadog, Honeycomb, ADOT, …)</td>
+</tr>
+</tbody>
+</table>
+<p>Use <strong>OTEL only if</strong> you already run a tracing backend and want Bastion tool-call spans beside the rest of your services.<br />
+If you do <strong>not</strong> have OTEL today, start with <strong>dashboard + Prometheus + audit</strong> — that is enough for security/FinOps operators.</p>
+<p>Setup when you want it: <a href="otel.html">OTEL.md</a> · <code>pip install mcp-bastion-python[otel]</code> · set <code>OTEL_EXPORTER_OTLP_ENDPOINT</code>.</p>
+<hr />
+<h2 id="observability-stack-how-pieces-fit">Observability stack (how pieces fit)</h2>
+<pre><code class="language-text">MCP tool calls
+      │
+      ▼
+MCP-Bastion middleware / proxy
+      │
+      ├── MetricsStore ──► Dashboard UI ──► /metrics (Prometheus)
+      ├── Audit JSONL  ──► SIEM / `mcp-bastion report` / posture drift
+      ├── Alerts       ──► Slack / HTTP webhooks
+      └── (optional) OTEL spans ──► OTLP collector / APM
+</code></pre>
+<p>Same policy (<code>bastion.yaml</code>) drives blocks; observability only <strong>records</strong> what happened.</p>
+<p>Deep SIEM / fleet patterns: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a><br />
+Effectiveness numbers: <a href="metrics.html">METRICS.md</a></p>
+<hr />
+<h2 id="dashboard-features-full-board">Dashboard features (full board)</h2>
+<p>Zero-infra local UI — <strong>no login, no DB, no cloud</strong>.</p>
+<pre><code class="language-bash">mcp-bastion dashboard --demo          # seeded tour data
+# open http://127.0.0.1:7000/
+mcp-bastion dashboard --port 7000     # live MetricsStore when wired
+</code></pre>
+<p><img alt="Dashboard tour" src="../assets/mcp-bastion-dashboard-tour.gif" /></p>
+<table>
+<thead>
+<tr>
+<th>Panel / capability</th>
+<th>What it shows</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Overview KPIs</strong></td>
+<td>Requests, block %, top threat, users/tenants</td>
+<td>Instant “are we under pressure?”</td>
+</tr>
+<tr>
+<td><strong>Pillar health</strong></td>
+<td>Which guards are live vs idle</td>
+<td>Config ↔ runtime alignment</td>
+</tr>
+<tr>
+<td><strong>Security posture A–F</strong></td>
+<td>Grades from <code>scan</code> / <code>osv-scan</code> / <code>audit</code> JSON</td>
+<td>Pre-deploy ship/no-ship</td>
+</tr>
+<tr>
+<td><strong>Static prevalidation</strong></td>
+<td>Sonar-style issue list</td>
+<td>Fix catalog smells before runtime</td>
+</tr>
+<tr>
+<td><strong>Issue guides</strong></td>
+<td>Why / fix steps / Bastion knobs / OWASP</td>
+<td>Turns findings into YAML changes</td>
+</tr>
+<tr>
+<td><strong>OWASP / ASI / MCP / LLM heatmaps</strong></td>
+<td>Coverage tabs</td>
+<td>Map pillars to taxonomies</td>
+</tr>
+<tr>
+<td><strong>Live attack matrix</strong></td>
+<td>Category pressure + samples</td>
+<td>SOC-style situational awareness</td>
+</tr>
+<tr>
+<td><strong>Runtime governance tiles</strong></td>
+<td>RBAC, prompt, rate/cost, PII, IAM, transport</td>
+<td>Policy readable by non-devs</td>
+</tr>
+<tr>
+<td><strong>Cost burn &amp; reduction</strong></td>
+<td>Actual vs would-have-been; tokens avoided</td>
+<td>FinOps ROI of blocks</td>
+</tr>
+<tr>
+<td><strong>Posture drift</strong></td>
+<td>Daily allow/block from audit JSONL</td>
+<td>Catch regressions after changes</td>
+</tr>
+<tr>
+<td><strong>Forensics</strong></td>
+<td>Why blocked + Trace / Reproduce</td>
+<td>Faster incident review</td>
+</tr>
+<tr>
+<td><strong>Agents</strong></td>
+<td>Denied-by-agent + IAM scope map</td>
+<td>Confused-deputy visibility</td>
+</tr>
+<tr>
+<td><strong>Alerts / insights</strong></td>
+<td>SSE alerts + anomalies</td>
+<td>Page into Slack/ops</td>
+</tr>
+<tr>
+<td><strong>Observe banner</strong></td>
+<td>Would-have-blocked counts</td>
+<td>Safe rollout (<code>mode: observe</code>)</td>
+</tr>
+<tr>
+<td><strong>Compliance evidence</strong></td>
+<td>Hashes + SOC2/GDPR/ISO/NIST packs</td>
+<td>Auditor-friendly exports</td>
+</tr>
+<tr>
+<td><strong>Prometheus <code>/metrics</code></strong></td>
+<td>Scrape from dashboard process</td>
+<td>Grafana without a separate agent</td>
+</tr>
+<tr>
+<td><strong>Date filters / onboarding</strong></td>
+<td>Scope + first-run checklist</td>
+<td>Usability</td>
+</tr>
+</tbody>
+</table>
+<p>UI details and screenshots: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a><br />
+Feature deep dive Part F: <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a></p>
+<hr />
+<h2 id="built-in-observability-no-otel">Built-in observability (no OTEL)</h2>
+<h3 id="1-metrics-prometheus">1. Metrics + Prometheus</h3>
+<ul>
+<li>Dashboard JSON APIs (<code>/api/metrics</code>, posture, forensics, …)  </li>
+<li>Prometheus text: <code>GET http://127.0.0.1:7000/metrics</code>  </li>
+<li>Includes pillar counters and vault series (<code>mcp_bastion_pii_vault_*</code>) when enabled  </li>
+</ul>
+<p>See <a href="metrics.html">METRICS.md</a>.</p>
+<h3 id="2-audit-trail">2. Audit trail</h3>
+<pre><code class="language-yaml">audit:
+  enabled: true
+  jsonl_path: .bastion/audit.jsonl
+</code></pre>
+<ul>
+<li>Who / what / allow vs block / reason  </li>
+<li>Feeds dashboard <strong>posture drift</strong>, <code>mcp-bastion report</code>, compliance packs  </li>
+<li>Optional hash chain / telemetry sinks for SIEM (<a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a>)</li>
+</ul>
+<h3 id="3-alerts">3. Alerts</h3>
+<pre><code class="language-yaml">alerts:
+  # Slack / HTTP webhook targets — see POLICY_AS_CODE.md
+</code></pre>
+<p>Real-time notify when blocks or thresholds fire.</p>
+<h3 id="4-observe-shadow-mode">4. Observe / shadow mode</h3>
+<pre><code class="language-yaml">mode: observe   # would-block without denying
+</code></pre>
+<p>Dashboard <strong>observe banner</strong> shows would-have-blocked counts — tune before <code>enforce</code>.</p>
+<hr />
+<h2 id="opentelemetry-optional">OpenTelemetry (optional)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>When to enable</strong></td>
+<td>You already have Jaeger / Tempo / Datadog / Honeycomb / ADOT / etc.</td>
+</tr>
+<tr>
+<td><strong>When to skip</strong></td>
+<td>Solo / small team; dashboard + Prometheus is enough</td>
+</tr>
+<tr>
+<td><strong>What it adds</strong></td>
+<td>Per-<code>tools/call</code> span: tool name, action, latency, error when blocked</td>
+</tr>
+<tr>
+<td><strong>What it does <em>not</em> replace</strong></td>
+<td>Dashboard, Prometheus scrape, or audit JSONL</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash">pip install &quot;mcp-bastion-python[otel]&quot;
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+</code></pre>
+<p>Full notes: <a href="otel.html">OTEL.md</a>.</p>
+<hr />
+<h2 id="recommended-setups">Recommended setups</h2>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Enable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Laptop / first demo</strong></td>
+<td><code>mcp-bastion dashboard --demo</code> only</td>
+</tr>
+<tr>
+<td><strong>Team MCP (prod-ish)</strong></td>
+<td>Dashboard + audit JSONL + Prometheus scrape</td>
+</tr>
+<tr>
+<td><strong>Enterprise / SOC</strong></td>
+<td>Above + alerts webhooks + SIEM sink (<a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a>)</td>
+</tr>
+<tr>
+<td><strong>Existing APM estate</strong></td>
+<td>Above + <strong>optional</strong> OTEL OTLP</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="quick-commands">Quick commands</h2>
+<pre><code class="language-bash"># Dashboard
+mcp-bastion dashboard --demo
+
+# Prometheus scrape (while dashboard running)
+curl -s http://127.0.0.1:7000/metrics | head
+
+# Optional OTEL
+pip install &quot;mcp-bastion-python[otel]&quot;
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+</code></pre>
+<h2 id="related">Related</h2>
+<table>
+<thead>
+<tr>
+<th>Doc</th>
+<th>Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a></td>
+<td>UI panels &amp; tour GIFs</td>
+</tr>
+<tr>
+<td><a href="metrics.html">METRICS.md</a></td>
+<td>Overhead &amp; effectiveness</td>
+</tr>
+<tr>
+<td><a href="otel.html">OTEL.md</a></td>
+<td>OTLP setup</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a></td>
+<td>OWASP map, SIEM, fleet</td>
+</tr>
+<tr>
+<td><a href="demos.html">DEMOS.md</a></td>
+<td>Dashboard demo section</td>
+</tr>
+<tr>
+<td><a href="bible.html">DOCUMENTATION_BIBLE.md</a></td>
+<td>Visual bible</td>
+</tr>
+</tbody>
+</table>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

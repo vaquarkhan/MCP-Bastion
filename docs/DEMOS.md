@@ -107,7 +107,9 @@ mcp-bastion dashboard --demo
 | FinOps | Actual vs would-have-been spend |
 | Compliance | Evidence packs |
 
-Details: [dashboard/README.md](../dashboard/README.md) · Bible Part 3: [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md)
+Details: [DASHBOARD_AND_OBSERVABILITY.md](DASHBOARD_AND_OBSERVABILITY.md) · [dashboard/README.md](../dashboard/README.md) · Bible Part 3: [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md)
+
+**Do you need OpenTelemetry?** No. Dashboard + Prometheus + audit JSONL are enough; OTEL is optional for existing APM stacks — see [DASHBOARD_AND_OBSERVABILITY.md](DASHBOARD_AND_OBSERVABILITY.md).
 
 ---
 

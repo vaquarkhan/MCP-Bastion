@@ -58,6 +58,8 @@
 <div class="nav-group"><div class="nav-group-title">Reference</div><ul>
 <li><a href="cli.html">CLI reference</a></li>
 <li><a href="metrics.html">Metrics</a></li>
+<li><a href="observability.html">Dashboard &amp; observability</a></li>
+<li><a href="otel.html">OpenTelemetry (optional)</a></li>
 </ul></div>
 <div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
 <li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
@@ -273,7 +275,8 @@ python scripts/generate_attack_demo_gifs.py
 </tr>
 </tbody>
 </table>
-<p>Details: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> · Bible Part 3: <a href="bible.html">DOCUMENTATION_BIBLE.md</a></p>
+<p>Details: <a href="observability.html">DASHBOARD_AND_OBSERVABILITY.md</a> · <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> · Bible Part 3: <a href="bible.html">DOCUMENTATION_BIBLE.md</a></p>
+<p><strong>Do you need OpenTelemetry?</strong> No. Dashboard + Prometheus + audit JSONL are enough; OTEL is optional for existing APM stacks — see <a href="observability.html">DASHBOARD_AND_OBSERVABILITY.md</a>.</p>
 <hr />
 <h2 id="4-how-demos-work-in-every-language">4. How demos work in every language</h2>
 <p><strong>Same <code>bastion.yaml</code>. Same engine (<code>mcp-bastion-python</code>).</strong><br />
