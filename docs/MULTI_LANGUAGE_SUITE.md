@@ -36,6 +36,8 @@
 
 Engine contract in the suite: [docs/PYPI_ENGINE.md](https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/PYPI_ENGINE.md).
 
+**Org-friendly registry audit:** [PACKAGE_REGISTRY_STATUS.md](PACKAGE_REGISTRY_STATUS.md) — what is on PyPI / npmjs / Maven Central / NuGet.org / GHCR (and what is still missing).
+
 ---
 
 ## Install matrix (suite)
