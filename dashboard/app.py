@@ -138,6 +138,12 @@ def _governance_config_snapshot() -> dict:
             "prompt_guard": {"enabled": bool(getattr(cfg, "prompt_guard", False))},
             "rate_limit": {"enabled": bool(getattr(cfg, "rate_limit", False))},
             "pii": {"enabled": bool(getattr(cfg, "pii", False))},
+            "pii_vault": {
+                "enabled": bool(getattr(cfg, "pii_vault", False))
+                and bool(getattr(cfg, "pii", False)),
+                "token_style": str(getattr(cfg, "pii_vault_token_style", "typed") or "typed"),
+                "ttl_seconds": float(getattr(cfg, "pii_vault_ttl_seconds", 3600.0) or 3600.0),
+            },
             "cost_tracker": {"enabled": bool(getattr(cfg, "cost_tracker", False))},
             "schema_validation": {"enabled": bool(getattr(cfg, "schema_validation", False))},
             "content_filter": {"enabled": bool(getattr(cfg, "content_filter", False))},
@@ -693,6 +699,12 @@ def prometheus_metrics():
         "# HELP mcp_bastion_pii_redacted_total PII redaction count",
         "# TYPE mcp_bastion_pii_redacted_total counter",
         f"mcp_bastion_pii_redacted_total {m.get('pii_redacted_total', 0)}",
+        "# HELP mcp_bastion_pii_vault_abstract_total Reversible PII vault abstract (tokenize) count",
+        "# TYPE mcp_bastion_pii_vault_abstract_total counter",
+        f"mcp_bastion_pii_vault_abstract_total {m.get('pii_vault_abstract_total', 0)}",
+        "# HELP mcp_bastion_pii_vault_hydrate_total Reversible PII vault hydrate (restore) count",
+        "# TYPE mcp_bastion_pii_vault_hydrate_total counter",
+        f"mcp_bastion_pii_vault_hydrate_total {m.get('pii_vault_hydrate_total', 0)}",
         "# HELP mcp_bastion_cost_total Cost sum",
         "# TYPE mcp_bastion_cost_total gauge",
         f"mcp_bastion_cost_total {m.get('cost_total', 0)}",
@@ -2675,7 +2687,7 @@ DASHBOARD_HTML = """
   <div class="kpi-grid">
     <div class="kpi req"><h2>Requests</h2><div class="value" id="kpiReq">0</div><p class="kpi-foot">Allowed tool calls recorded in this process.</p></div>
     <div class="kpi block"><h2>Blocked</h2><div class="value" id="kpiBlocked">0</div><p class="kpi-foot">Denied by policy (rate limits, injection, RBAC, …).</p></div>
-    <div class="kpi pii"><h2>PII redacted</h2><div class="value" id="kpiPii">0</div><p class="kpi-foot">Entities masked or removed by Presidio-style detection.</p></div>
+    <div class="kpi pii"><h2>PII redacted</h2><div class="value" id="kpiPii">0</div><p class="kpi-foot" id="kpiPiiFoot">Entities masked or removed by Presidio-style detection.</p></div>
     <div class="kpi cost"><h2>Cost</h2><div class="value" id="kpiCost">$0.00</div><p class="kpi-foot" id="kpiCostFoot">Cumulative tracked spend (when cost middleware is enabled).</p></div>
   </div>
 

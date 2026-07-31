@@ -538,3 +538,122 @@ def test_mutate_proxy_response_skips_when_pii_off():
 
     raw = b'{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"a@b.com"}]}}'
     assert _mutate_proxy_response(FakeBastion(), raw, ctx=None, method="tools/call") == raw
+
+
+def test_sse_mutator_handles_split_frames_and_pii():
+    from mcp_bastion.base import MiddlewareContext
+    from mcp_bastion.config import build_middleware_from_config, load_config, resolve_bastion_middleware
+    from mcp_bastion.proxy_server import SsePiiMutator, _is_sse_response, _mutate_sse_body
+
+    assert _is_sse_response([("Content-Type", "text/event-stream; charset=utf-8")])
+    assert not _is_sse_response([("Content-Type", "application/json")])
+
+    cfg_path_content = (
+        "audit:\n  enabled: false\n"
+        "prompt_guard:\n  enabled: false\n"
+        "rate_limit:\n  enabled: false\n"
+        "pii:\n  enabled: true\n"
+        "pii_vault:\n  enabled: true\n"
+    )
+    import tempfile
+    from pathlib import Path
+
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "bastion.yaml"
+        p.write_text(cfg_path_content, encoding="utf-8")
+        cfg = load_config(str(p))
+        bastion = resolve_bastion_middleware(build_middleware_from_config(cfg))
+    assert bastion is not None
+
+    payload = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {"content": [{"type": "text", "text": "reach alice@example.com"}]},
+        }
+    )
+    sse = f"event: message\ndata: {payload}\n\n"
+    ctx = MiddlewareContext(
+        message={"method": "tools/call"},
+        request_id="1",
+        session_id="sse-sess",
+        metadata={"tenant_id": "default"},
+    )
+    mutator = SsePiiMutator(bastion, ctx=ctx, method="tools/call")
+    # Split mid-event (including mid-email) to exercise frame buffer.
+    mid = sse.index("@")
+    out = mutator.push(sse[:mid]) + mutator.push(sse[mid:]) + mutator.flush()
+    assert "alice@example.com" not in out
+    assert "{{pii:EMAIL_ADDRESS:" in out
+    assert "event: message" in out
+
+    whole = _mutate_sse_body(bastion, sse.encode(), ctx=ctx, method="tools/call")
+    assert "alice@example.com" not in whole.decode()
+
+
+@pytest.mark.asyncio
+async def test_proxy_mutates_sse_upstream(tmp_path):
+    cfg_path = tmp_path / "bastion.yaml"
+    cfg_path.write_text(
+        """
+audit:
+  enabled: false
+prompt_guard:
+  enabled: false
+rate_limit:
+  enabled: false
+pii:
+  enabled: true
+pii_vault:
+  enabled: true
+""",
+        encoding="utf-8",
+    )
+    app = build_proxy_asgi_app("http://127.0.0.1:9000/mcp", config_path=str(cfg_path))
+    sent: list[dict] = []
+
+    async def send(msg):
+        sent.append(msg)
+
+    req = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": "lookup", "arguments": {}},
+        }
+    ).encode()
+
+    async def receive():
+        return {"type": "http.request", "body": req, "more_body": False}
+
+    payload = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {"content": [{"type": "text", "text": "reach alice@example.com"}]},
+        }
+    )
+    # Long enough to exercise chunked ASGI emit (>64 bytes).
+    sse_body = (f"event: message\ndata: {payload}\n\n" * 3).encode()
+
+    with mock.patch(
+        "mcp_bastion.proxy_server._upstream_request",
+        return_value=(200, [("Content-Type", "text/event-stream")], sse_body),
+    ):
+        await app(
+            {
+                "type": "http",
+                "method": "POST",
+                "path": "/mcp",
+                "headers": [(b"mcp-session-id", b"sse-1")],
+                "query_string": b"",
+            },
+            receive,
+            send,
+        )
+    bodies = [m.get("body", b"") for m in sent if m.get("type") == "http.response.body"]
+    combined = b"".join(bodies).decode()
+    assert "alice@example.com" not in combined
+    assert "{{pii:EMAIL_ADDRESS:" in combined
+    assert any(m.get("more_body") for m in sent if m.get("type") == "http.response.body")

@@ -65,7 +65,7 @@ Dashboard / `MetricsStore` counters (when vault is enabled):
 
 ## Streaming helper
 
-`BufferedTokenRestorer` restores tokens split across chunks (`{{pii:` … `}}`). The HTTP proxy mutates **complete** JSON-RPC response bodies today; SSE/chunk streaming mutation remains Phase 3.
+`BufferedTokenRestorer` restores tokens split across chunks (`{{pii:` … `}}`). The HTTP proxy mutates **SSE** (`text/event-stream`) event-complete JSON-RPC `data:` frames and buffered JSON bodies.
 
 ## Security notes
 
