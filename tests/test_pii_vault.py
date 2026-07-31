@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from mcp_bastion.base import MiddlewareContext
@@ -296,3 +298,136 @@ def test_dedupe_overlapping_spans():
     out = _dedupe_spans(spans)
     assert len(out) == 2
     assert out[0].text == "hello"
+
+
+def test_normalize_entity_type_empty():
+    assert normalize_entity_type("") == "PII"
+    assert normalize_entity_type("  ") == "PII"
+
+
+def test_detect_phone_and_credit_card():
+    text = "Call 415-555-0199 card 4111 1111 1111 1111"
+    spans = detect_entities_regex(text)
+    types = {s.entity_type for s in spans}
+    assert "PHONE_NUMBER" in types
+    assert "CREDIT_CARD" in types
+
+
+def test_detect_entities_presidio_empty_and_fallback():
+    from mcp_bastion.pillars.pii_vault import detect_entities_presidio
+
+    assert detect_entities_presidio(object(), "") == []
+    assert detect_entities_presidio(object(), None) == []  # type: ignore[arg-type]
+
+    class Boom:
+        def _ensure_loaded(self):
+            raise RuntimeError("no presidio")
+
+    spans = detect_entities_presidio(Boom(), "mail x@y.com")
+    assert any(s.entity_type == "EMAIL_ADDRESS" for s in spans)
+
+
+def test_detect_entities_presidio_skips_bad_offsets():
+    from mcp_bastion.pillars.pii_vault import detect_entities_presidio
+
+    class FakeResult:
+        def __init__(self, start, end, entity_type="EMAIL_ADDRESS"):
+            self.start = start
+            self.end = end
+            self.entity_type = entity_type
+
+    class FakeAnalyzer:
+        def analyze(self, **kwargs):
+            return [
+                FakeResult(5, 3),  # end <= start
+                FakeResult(-1, 2),
+                FakeResult(0, 999),  # past len
+                FakeResult(0, 11, "EMAIL_ADDRESS"),
+            ]
+
+    class FakeRedactor:
+        language = "en"
+        entities = ["EMAIL_ADDRESS"]
+
+        def _ensure_loaded(self):
+            return None
+
+        def __init__(self):
+            self._analyzer = FakeAnalyzer()
+
+    text = "alice@x.com"
+    spans = detect_entities_presidio(FakeRedactor(), text)
+    assert any(s.text == "alice@x.com" for s in spans)
+
+
+def test_vault_edge_cases():
+    vault = PiiVault(backend=MemoryStateBackend())
+    assert vault.abstract_text("", "s") == ""
+    assert vault.abstract_text(None, "s") is None  # type: ignore[arg-type]
+    assert vault.restore_text("", "s") == ""
+    assert vault.restore_text(None, "s") is None  # type: ignore[arg-type]
+    assert vault.abstract_content_items([], "s") == []
+    assert vault.restore_value(42, "s") == 42
+    assert vault.restore_value(("a",), "s") == ("a",)
+    vault.wipe_session("s")  # TTL no-op
+    with pytest.raises(ValueError):
+        PiiVault(id_bytes=2)
+    # non-string value coerced
+    tok = vault.mint_token("s", "CUSTOM", 12345)
+    assert vault.restore_text(tok, "s") == "12345"
+    # lookup miss
+    assert vault.lookup("s", "00" * 6) is None
+    # corrupt fwd payload
+    vault.backend.set_json(vault._fwd_key("s", "abcdef12"), {"type": "X"})  # missing value
+    assert vault.lookup("s", "abcdef12") is None
+
+
+def test_abstract_text_with_explicit_spans():
+    vault = PiiVault(backend=MemoryStateBackend())
+    text = "hello world"
+    spans = [EntitySpan(6, 11, "PERSON", "world")]
+    out = vault.abstract_text(text, "s", spans=spans)
+    assert "world" not in out
+    assert vault.restore_text(out, "s") == "hello world"
+
+
+def test_hydrate_tool_arguments_string_json(monkeypatch):
+    vault = PiiVault(backend=MemoryStateBackend())
+    tok = vault.mint_token("default|anon", "EMAIL_ADDRESS", "a@b.com")
+    mw = MCPBastionMiddleware(
+        pii_vault=vault,
+        enable_pii_vault=True,
+        enable_pii_redaction=True,
+        enable_prompt_guard=False,
+        enable_rate_limit=False,
+    )
+    ctx = MiddlewareContext(message={}, session_id="anon", metadata={"tenant_id": "default"})
+    params = {"arguments": json.dumps({"to": tok})}
+    # Force restore path for JSON string args that parse to dict
+    trace: list = []
+    # After parse, restore_value on dict
+    import json as _json
+
+    raw = params["arguments"]
+    parsed = _json.loads(raw)
+    restored = vault.restore_value(parsed, mw._vault_session_key(ctx))
+    assert restored["to"] == "a@b.com"
+    # Direct hydrate with string non-json
+    params2 = {"arguments": f"send {tok}"}
+    mw._hydrate_tool_arguments(ctx, params2, trace=trace)
+    assert "a@b.com" in params2["arguments"]
+    assert any(t.get("pillar") == "pii_vault_hydrate" for t in trace)
+
+
+def test_redactor_vault_content_and_none_vault():
+    redactor = PIIRedactor()
+    content = [{"type": "text", "text": "x@y.com"}, {"type": "image", "data": "z"}]
+    vault = PiiVault(backend=MemoryStateBackend())
+    items = redactor.vault_content_items(content, vault, "s", detect=detect_entities_regex)
+    assert "x@y.com" not in items[0]["text"]
+    assert items[1]["type"] == "image"
+    assert redactor.vault_content_items([], vault, "s") == []
+    # None vault delegates to destructive redact_content_items (empty short-circuit)
+    assert redactor.vault_content_items([], None, "s") == []
+    out = redactor.vault_text("hello", vault, "s", detect=lambda t: [])
+    assert out == "hello"

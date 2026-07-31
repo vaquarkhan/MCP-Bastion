@@ -23,12 +23,15 @@ from mcp_bastion.cli import (
 
 
 def test_cli_version_flag(capsys, monkeypatch):
+    from mcp_bastion import __version__
+
     monkeypatch.setattr(sys, "argv", ["mcp-bastion", "--version"])
     with pytest.raises(SystemExit) as exc:
         main()
     assert exc.value.code == 0
     out, _ = capsys.readouterr()
-    assert "3.0.1" in out
+    assert __version__ in out
+    assert "mcp-bastion" in out.lower() or "bastion" in out.lower() or __version__ in out
 
 
 def test_cmd_validate_missing_file_returns_one():

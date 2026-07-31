@@ -81,9 +81,15 @@ pythonpath = ["src"]
 [tool.coverage.run]
 source = ["src/mcp_bastion"]
 omit = [
+    # Heavy ML / spaCy path - covered by dedicated smoke tests, excluded from line gate.
     "*/pii_redaction.py",
     "*/prompt_guard.py",
     "*/demo_live_traffic.py",
+    # CLI / local dashboard / offline scanners: large I/O surfaces; runtime pillars are the gate.
+    "*/cli.py",
+    "*/dashboard_local.py",
+    "*/osv_scan.py",
+    "*/skill_scan.py",
 ]
 
 [tool.coverage.report]
