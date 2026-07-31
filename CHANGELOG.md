@@ -8,10 +8,12 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **Schema minimization (opt-in):** `discovery_filter.minimize_schemas` truncates tool descriptions and strips JSON Schema `description` fields on `tools/list` (context-token savings without removing tools). Docs: [SCHEMA_MINIMIZE_LIVE_PIN.md](docs/SCHEMA_MINIMIZE_LIVE_PIN.md).
+- **Live tool-catalog pin (opt-in):** `tool_metadata_fingerprint.pin_on_first_seen` / `expected` (+ `on_drift: warn|block`) pins the runtime catalog fingerprint and detects tool-poisoning drift.
 - **Reversible PII vault (opt-in):** `pii_vault.enabled` abstracts outbound PII to `{{pii:TYPE:id}}` and hydrates inbound tool args before execution. Destructive Presidio redaction remains the default. Docs: [PII_VAULT.md](docs/PII_VAULT.md), [PII_VAULT_TUTORIAL.md](docs/PII_VAULT_TUTORIAL.md), diagram `images/mcp-bastion-pii-vault.svg`.
 - **PII vault Phase 2:** HTTP proxy mutates upstream JSON-RPC results (PII redact / vault abstract) and hydrates `tools/call` args before forward; `pii_vault_abstract_total` / `pii_vault_hydrate_total` metrics; optional `pii_vault.token_style: low_entropy` (`EMAIL_ADDRESS_1` / `Person_A`).
 - **PII vault Phase 3:** SSE (`text/event-stream`) event-frame mutation via `SsePiiMutator` (split-chunk safe); dashboard PII vault governance tile + KPI footnote; Prometheus `mcp_bastion_pii_vault_*` counters.
-- **Tests:** `tests/test_pii_vault.py` (abstract/hydrate, buffered restore, config defaults, low-entropy, metrics); proxy mutation / SSE coverage in `tests/test_proxy_server_coverage.py`.
+- **Tests:** `tests/test_pii_vault.py` (abstract/hydrate, buffered restore, config defaults, low-entropy, metrics); proxy mutation / SSE coverage in `tests/test_proxy_server_coverage.py`; `tests/test_schema_minimize_live_pin.py`.
 
 ## [3.3.1] - 2026-07-24
 

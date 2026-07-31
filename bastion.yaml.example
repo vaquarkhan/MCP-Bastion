@@ -40,6 +40,10 @@ response_scan:
 
 discovery_filter:
   enabled: false    # strip non-allowlisted tools from tools/list (requires tool_allowlist)
+  # Context engineering (opt-in): shrink verbose tool manifests without removing tools.
+  minimize_schemas: false
+  max_description_chars: 160
+  strip_schema_descriptions: true
 
 # FinOps: truncate/offload large tool outputs (opt-in).
 output_budget:
@@ -211,9 +215,13 @@ stdio_guard:
   enabled: false
 
 # Semantic schema drift detection (tools/list metadata fingerprint)
+# Doctor/CLI: fingerprint_path + expected. Runtime live pin: pin_on_first_seen or expected/path.
 tool_metadata_fingerprint:
   enabled: false
   fingerprint_path: tools.fingerprint.json
+  # pin_on_first_seen: true   # hash catalog on first tools/list; compare later
+  # on_drift: warn            # warn | block
+  # pin_ttl_seconds: 604800
 
 governance:
   attestation_enabled: true   # per-session events for mcp-bastion attest export

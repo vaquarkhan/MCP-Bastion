@@ -225,6 +225,7 @@ tool_allowlist:
 
 - **Error code:** -32014
 - **Pairs with:** `discovery_filter` to shrink `tools/list` ([BENCHMARKS.md](BENCHMARKS.md))
+- **Schema minimize (opt-in):** `discovery_filter.minimize_schemas` - [SCHEMA_MINIMIZE_LIVE_PIN.md](SCHEMA_MINIMIZE_LIVE_PIN.md)
 
 ### 16. Session scope (`session_limits`)
 

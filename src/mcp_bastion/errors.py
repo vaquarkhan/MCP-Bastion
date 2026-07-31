@@ -269,3 +269,13 @@ class BehaviorAnomalyError(MCPBastionError):
         message: str = "Request blocked: behavioral anomaly detected",
     ) -> None:
         super().__init__(message, code=-32031)
+
+
+class CatalogDriftError(MCPBastionError):
+    """Raised when tools/list catalog fingerprint drifts from pin or expected hash."""
+
+    def __init__(
+        self,
+        message: str = "Response blocked: tool catalog fingerprint drift (possible tool poisoning)",
+    ) -> None:
+        super().__init__(message, code=-32032)
