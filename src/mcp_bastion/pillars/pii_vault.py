@@ -330,8 +330,8 @@ class BufferedTokenRestorer:
     """
     Streaming-safe vault restore: hold chunks that may contain a partial ``{{pii:...}}``.
 
-    MCP Bastion's HTTP proxy mutates complete JSON-RPC response bodies; this helper is
-    for SSE/chunk pipelines (Phase 3) and is fully unit-tested.
+    MCP Bastion's HTTP proxy mutates JSON and SSE (event-complete ``data:`` frames);
+    this helper restores vault tokens that arrive split across text chunks.
     """
 
     def __init__(self, vault: PiiVault, session_key: str) -> None:

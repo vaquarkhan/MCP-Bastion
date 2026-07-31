@@ -4,9 +4,9 @@ MCP HTTP proxy - same bastion.yaml enforcement, boundary deployment shape.
 Forwards streamable-HTTP MCP to an upstream URL while running configured middleware
 on guarded JSON-RPC methods (tools/call, resources/read, etc.).
 
-Phase 2: when PII (and optional vault) is enabled, mutates wire bodies:
+When PII (and optional vault) is enabled, mutates wire bodies:
 - hydrate vault tokens in inbound ``tools/call`` arguments before upstream
-- abstract/redact PII in upstream JSON-RPC ``result`` content before the client sees it
+- abstract/redact PII in upstream JSON-RPC ``result`` content (JSON and SSE)
 """
 
 from __future__ import annotations
@@ -71,6 +71,18 @@ async def _read_body(receive: Any) -> bytes:
         elif event.get("type") == "http.disconnect":
             break
     return b"".join(chunks)
+
+
+def _header_ci(headers: list[tuple[str, str]], name: str) -> str:
+    want = name.lower()
+    for k, v in headers:
+        if k.lower() == want:
+            return v
+    return ""
+
+
+def _is_sse_response(headers: list[tuple[str, str]]) -> bool:
+    return "text/event-stream" in _header_ci(headers, "content-type").lower()
 
 
 def _upstream_request(
@@ -228,6 +240,148 @@ def _mutate_proxy_response(
         return resp_body
 
 
+def _mutate_sse_data_line(
+    bastion: Any,
+    data_payload: str,
+    *,
+    ctx: MiddlewareContext[Any] | None,
+    method: str | None,
+) -> str:
+    """Mutate one SSE ``data:`` JSON-RPC payload; pass through on failure/non-result."""
+    raw = data_payload.encode("utf-8")
+    mutated = _mutate_proxy_response(bastion, raw, ctx=ctx, method=method)
+    if mutated is raw:
+        return data_payload
+    try:
+        return mutated.decode("utf-8")
+    except UnicodeDecodeError:
+        return data_payload
+
+
+def _mutate_sse_event_text(
+    bastion: Any,
+    event_text: str,
+    *,
+    ctx: MiddlewareContext[Any] | None,
+    method: str | None,
+) -> str:
+    """Rewrite ``data:`` lines inside one SSE event (event-complete JSON-RPC mutate)."""
+    lines = event_text.split("\n")
+    out: list[str] = []
+    for line in lines:
+        if line.startswith("data:"):
+            prefix_len = 5
+            rest = line[prefix_len:]
+            # Preserve a single optional space after data:
+            if rest.startswith(" "):
+                payload = rest[1:]
+                spacer = " "
+            else:
+                payload = rest
+                spacer = ""
+            new_payload = _mutate_sse_data_line(bastion, payload, ctx=ctx, method=method)
+            out.append(f"data:{spacer}{new_payload}")
+        else:
+            out.append(line)
+    return "\n".join(out)
+
+
+class SsePiiMutator:
+    """
+    Incremental SSE frame buffer: mutate complete events as ``\\n\\n`` boundaries arrive.
+
+    Handles TCP/chunk splits that bisect an event. JSON-RPC mutation runs only on
+    complete ``data:`` payloads (same rules as buffered JSON responses).
+    """
+
+    def __init__(
+        self,
+        bastion: Any,
+        *,
+        ctx: MiddlewareContext[Any] | None,
+        method: str | None,
+    ) -> None:
+        self.bastion = bastion
+        self.ctx = ctx
+        self.method = method
+        self._buf = ""
+
+    def push(self, chunk: str) -> str:
+        if not chunk:
+            return ""
+        self._buf += chunk
+        out: list[str] = []
+        while True:
+            # Prefer CRLF event boundary, then LF.
+            idx_crlf = self._buf.find("\r\n\r\n")
+            idx_lf = self._buf.find("\n\n")
+            if idx_crlf < 0 and idx_lf < 0:
+                break
+            if idx_crlf >= 0 and (idx_lf < 0 or idx_crlf <= idx_lf):
+                event = self._buf[:idx_crlf].replace("\r\n", "\n")
+                self._buf = self._buf[idx_crlf + 4 :]
+                sep = "\r\n\r\n"
+            else:
+                event = self._buf[:idx_lf]
+                self._buf = self._buf[idx_lf + 2 :]
+                sep = "\n\n"
+            mutated = _mutate_sse_event_text(
+                self.bastion, event, ctx=self.ctx, method=self.method
+            )
+            out.append(mutated + sep)
+        return "".join(out)
+
+    def flush(self) -> str:
+        if not self._buf:
+            return ""
+        leftover = self._buf
+        self._buf = ""
+        # Trailing partial event without blank line - still try mutate (final frame).
+        return _mutate_sse_event_text(
+            self.bastion, leftover.replace("\r\n", "\n"), ctx=self.ctx, method=self.method
+        )
+
+
+def _mutate_sse_body(
+    bastion: Any,
+    resp_body: bytes,
+    *,
+    ctx: MiddlewareContext[Any] | None,
+    method: str | None,
+) -> bytes:
+    """Mutate a complete SSE body (also exercises chunk-split path via SsePiiMutator)."""
+    if ctx is None or not method or method not in _RESPONSE_MUTATE_METHODS:
+        return resp_body
+    if not getattr(bastion, "enable_pii_redaction", False):
+        return resp_body
+    try:
+        text = resp_body.decode("utf-8")
+    except UnicodeDecodeError:
+        return resp_body
+    mutator = SsePiiMutator(bastion, ctx=ctx, method=method)
+    # Feed in mid-sized chunks so split-frame logic is used even for buffered upstream.
+    step = max(32, len(text) // 4 or 32)
+    out = ""
+    for i in range(0, len(text), step):
+        out += mutator.push(text[i : i + step])
+    out += mutator.flush()
+    return out.encode("utf-8")
+
+
+def _mutate_upstream_body(
+    bastion: Any,
+    resp_body: bytes,
+    *,
+    resp_headers: list[tuple[str, str]],
+    ctx: MiddlewareContext[Any] | None,
+    method: str | None,
+) -> bytes:
+    """Dispatch JSON vs SSE mutation for an upstream response body."""
+    if _is_sse_response(resp_headers):
+        return _mutate_sse_body(bastion, resp_body, ctx=ctx, method=method)
+    return _mutate_proxy_response(bastion, resp_body, ctx=ctx, method=method)
+
+
 def build_proxy_asgi_app(
     upstream_url: str,
     *,
@@ -328,18 +482,29 @@ def build_proxy_asgi_app(
             _upstream_request, url, method=method, headers=headers, body=body
         )
         if bastion is not None and proxy_ctx is not None:
-            resp_body = _mutate_proxy_response(
-                bastion, resp_body, ctx=proxy_ctx, method=rpc_method
+            resp_body = _mutate_upstream_body(
+                bastion,
+                resp_body,
+                resp_headers=resp_headers,
+                ctx=proxy_ctx,
+                method=rpc_method,
             )
+        is_sse = _is_sse_response(resp_headers)
         out_headers = [
             (k.encode("latin-1"), v.encode("latin-1"))
             for k, v in resp_headers
             if k.lower() not in ("transfer-encoding", "connection", "content-length")
         ]
-        # Recompute length after possible mutation.
-        out_headers.append((b"content-length", str(len(resp_body)).encode("latin-1")))
+        if not is_sse:
+            out_headers.append((b"content-length", str(len(resp_body)).encode("latin-1")))
         await send({"type": "http.response.start", "status": status, "headers": out_headers})
-        await send({"type": "http.response.body", "body": resp_body})
+        if is_sse and len(resp_body) > 64:
+            # Emit SSE in chunks so clients see stream-shaped delivery after mutate.
+            mid = len(resp_body) // 2
+            await send({"type": "http.response.body", "body": resp_body[:mid], "more_body": True})
+            await send({"type": "http.response.body", "body": resp_body[mid:], "more_body": False})
+        else:
+            await send({"type": "http.response.body", "body": resp_body})
 
     if th.enabled:
         return TransportHardeningMiddleware(proxy_app, th)

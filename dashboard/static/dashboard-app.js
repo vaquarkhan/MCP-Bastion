@@ -1392,6 +1392,7 @@
       var pg = features.prompt_guard || {};
       var rl = features.rate_limit || {};
       var pii = features.pii || {};
+      var piiVault = features.pii_vault || {};
       var cost = features.cost_tracker || {};
       var schema = features.schema_validation || {};
       var cf = features.content_filter || {};
@@ -1411,12 +1412,19 @@
         ? (th.block_browser_origin ? 'blocks browser Origin' : 'Origin check off')
           + (th.require_loopback ? ' · loopback bind' : '')
         : 'HTTP hardening disabled';
+      var vaultAbs = (metrics && metrics.pii_vault_abstract_total) || 0;
+      var vaultHyd = (metrics && metrics.pii_vault_hydrate_total) || 0;
+      var vaultMeta = piiVault.enabled
+        ? (vaultAbs + ' abstract · ' + vaultHyd + ' hydrate'
+          + (piiVault.token_style ? ' · ' + piiVault.token_style : ''))
+        : 'Reversible vault off';
       grid.innerHTML = [
         tile('RBAC', !!rbac.enabled, kindMeta(!!rbac.enabled, 'rbac', 'Role allow/deny off')),
         tile('Prompt guard', !!pg.enabled, kindMeta(!!pg.enabled, 'injection', 'Injection ML/heuristics off')),
         tile('Rate limit', !!rl.enabled, kindMeta(!!rl.enabled, 'rate_limit', 'Session rate caps off')),
         tile('Cost tracker', !!cost.enabled, kindMeta(!!cost.enabled, 'cost', 'USD budget gate off')),
         tile('PII redaction', !!pii.enabled, pii.enabled ? ((metrics && metrics.pii_redacted_total) || 0) + ' entities redacted' : 'Presidio-style PII off'),
+        tile('PII vault', !!piiVault.enabled, vaultMeta),
         tile('Schema validation', !!schema.enabled, kindMeta(!!schema.enabled, 'schema_validation', 'Tool schema gate off')),
         tile('Content filter', !!cf.enabled, kindMeta(!!cf.enabled, 'content_filter', 'Path/code filters off')),
         tile('Agent IAM', !!iam.enabled, iamMeta),
@@ -2384,6 +2392,16 @@
       document.getElementById('kpiBlocked').textContent =
         (d.blocked_total ?? 0) + ' (' + (d.blocked_pct ?? 0) + '%)';
       document.getElementById('kpiPii').textContent = d.pii_redacted_total ?? 0;
+      var piiFoot = document.getElementById('kpiPiiFoot');
+      if (piiFoot) {
+        var va = Number(d.pii_vault_abstract_total || 0);
+        var vh = Number(d.pii_vault_hydrate_total || 0);
+        if (va > 0 || vh > 0) {
+          piiFoot.textContent = 'Destructive redactions · vault ' + va + ' abstract · ' + vh + ' hydrate';
+        } else {
+          piiFoot.textContent = 'Entities masked or removed by Presidio-style detection.';
+        }
+      }
       document.getElementById('kpiCost').textContent =
         '$' + Number(d.cost_total ?? 0).toFixed(2);
       var cr = d.cost_reduction || {};

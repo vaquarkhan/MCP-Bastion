@@ -36,7 +36,7 @@ mw = build_middleware_from_config(load_config("bastion-vault.yaml"))
 # attach mw via compose_middleware / FastMCP as usual
 ```
 
-Boundary / proxy deployments get the same abstract + hydrate on the wire (complete JSON-RPC bodies).
+Boundary / proxy deployments get the same abstract + hydrate on the wire (JSON and SSE `text/event-stream` event frames).
 
 ## Step 3 - Observe abstraction
 
@@ -79,7 +79,6 @@ python -m pytest tests/test_pii_vault.py tests/test_proxy_server_coverage.py -q
 - Does not replace Presidio with GLiNER
 - Does not require Ollama / GuardEx
 - Does not change default `pii` destructive behavior when vault is off
-- SSE/chunk streaming mutation is deferred (buffer helper exists; proxy mutates full JSON bodies)
 
 ## Related
 
