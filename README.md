@@ -688,6 +688,7 @@ Full index: **[docs/README.md](docs/README.md)** · handbook site: **[Docs guide
 | Doc | Description |
 |-----|-------------|
 | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | **End-to-end user guide** (concepts → install → proxy → vault → ops); published at `/guide/` |
+| [docs/FEATURE_DEEP_DIVE.md](docs/FEATURE_DEEP_DIVE.md) | **Feature-by-feature deep dive**: issue, how Bastion solves it, benefits (incl. dashboard) |
 | [docs/index.md](docs/index.md) | Markdown docs home (source hub) |
 | [docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md) | **`bastion.yaml` reference**: keys, examples, hot reload, alerts |
 | [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md) | **LLM integration**: OpenAI, Claude, Gemini, Mistral, Grok (stdio + HTTP configs) |

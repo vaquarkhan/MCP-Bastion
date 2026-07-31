@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature deep dive | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — Feature deep dive">
+<meta name="docs-version" content="4.0.0">
+<link rel="stylesheet" href="../assets/guide.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">MCP-Bastion</a>
+    <span class="version-badge">4.0.0</span>
+    <nav class="header-links">
+      <a href="index.html" class="current">Docs</a>
+      <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+    </nav>
+  </div>
+</header>
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <nav class="docs-nav" aria-label="Documentation">
+<div class="nav-group"><div class="nav-group-title">Start here</div><ul>
+<li><a href="index.html">Documentation Home</a></li>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="user-guide.html">User guide (end-to-end)</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Guides</div><ul>
+<li><a href="installation.html">Installation &amp; tutorials</a></li>
+<li><a href="configuration.html">Configuration reference</a></li>
+<li><a href="proxy.html">HTTP proxy &amp; boundary</a></li>
+<li><a href="hybrid-transport.html">Hybrid MCP transport</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
+<li><a href="pii-vault.html">PII vault</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
+<li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Security</div><ul>
+<li><a href="pillars.html">Security pillars</a></li>
+<li><a href="feature-deep-dive.html" class="active">Feature deep dive</a></li>
+<li><a href="features.html">Feature enablement</a></li>
+<li><a href="attack-prevention.html">Attack prevention</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Reference</div><ul>
+<li><a href="cli.html">CLI reference</a></li>
+<li><a href="metrics.html">Metrics</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
+<li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
+<li><a href="supply-chain.html">Supply chain</a></li>
+</ul></div>
+<div class="nav-group"><div class="nav-group-title">Contribute</div><ul>
+<li><a href="developer.html">Developer guide</a></li>
+</ul></div>
+</nav>
+  </aside>
+  <main id="main" class="docs-main">
+    <article class="docs-article">
+      <header class="article-header">
+        <p class="eyebrow">MCP-Bastion Documentation</p>
+        <h1>Feature deep dive</h1>
+      </header>
+      <h1 id="feature-deep-dive-issue-solution-and-benefits">Feature deep dive — issue, solution, and benefits</h1>
+<p><strong>Version:</strong> 4.0.0<br />
+<strong>Audience:</strong> Security architects, platform engineers, and reviewers who need <em>why</em> each control exists—not only how to flip a YAML switch<br />
+<strong>Companion docs:</strong> <a href="features.html">FEATURES.md</a> (enablement), <a href="pillars.html">PILLARS.md</a> (counts &amp; mapping), <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> (UI), <a href="index.html">USER_GUIDE.md</a> (end-to-end handbook)</p>
+<p>This document walks <strong>every major MCP-Bastion capability</strong>—request-path pillars, privacy, FinOps, runtime governance, proxy/transport, the <strong>local dashboard</strong>, CLI/ops, and compliance—using a fixed template:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>The issue</strong></td>
+<td>Real failure mode if the control is absent</td>
+</tr>
+<tr>
+<td><strong>How Bastion solves it</strong></td>
+<td>Mechanism on the MCP request/response path (or offline tool)</td>
+</tr>
+<tr>
+<td><strong>Benefits</strong></td>
+<td>Concrete outcomes for security, cost, or operations</td>
+</tr>
+<tr>
+<td><strong>Enable</strong></td>
+<td>Primary <code>bastion.yaml</code> / CLI knobs (defaults noted)</td>
+</tr>
+<tr>
+<td><strong>Signals</strong></td>
+<td>JSON-RPC error code, dashboard surface, metrics</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Defaults:</strong> Code defaults (<code>BastionConfig</code>) keep most advanced pillars <strong>off</strong>. Prompt guard, PII redaction, rate limit, audit, and transport hardening lean <strong>on</strong>. Treat <code>bastion.yaml.example</code> as a stronger starter posture, not the library default.</p>
+</blockquote>
+<hr />
+<h2 id="how-to-read-this-guide">How to read this guide</h2>
+<pre><code class="language-text">AI agent / MCP client
+        │  JSON-RPC (tools, resources, prompts, …)
+        ▼
+┌───────────────────────────┐
+│  MCP-Bastion middleware   │  ← pillars evaluate here
+│  or HTTP boundary proxy   │
+└─────────────┬─────────────┘
+              │ allowed / redacted / vaulted
+              ▼
+        Your MCP server / tools
+</code></pre>
+<p>Each pillar can <strong>allow</strong>, <strong>block</strong>, <strong>redact</strong>, <strong>tokenise</strong>, or <strong>observe</strong> (log would-be blocks without denying). Dashboard and Prometheus consume the same metrics store.</p>
+<hr />
+<h1 id="part-a-core-request-path-pillars-10">Part A — Core request-path pillars (10)</h1>
+<h2 id="a1-prompt-injection-defense-prompt_guard">A1. Prompt injection defense (<code>prompt_guard</code>)</h2>
+<h3 id="the-issue">The issue</h3>
+<p>Agents pass untrusted text into tool arguments. Attackers (or poisoned retrieved content) embed jailbreaks—“ignore previous instructions”, exfiltrate secrets, escalate privileges. Without inbound screening, a single successful injection can drive arbitrary tool use.</p>
+<h3 id="how-bastion-solves-it">How Bastion solves it</h3>
+<p><code>prompt_guard</code> scores inbound text with an ML classifier (default: ungated ProtectAI DeBERTa) plus heuristic fallback. High-risk payloads are blocked before the tool runs. The same path covers extended MCP surfaces (<code>resources/read</code>, <code>prompts/get</code>, sampling, elicitation) when those methods are used.</p>
+<h3 id="benefits">Benefits</h3>
+<ul>
+<li>Stops classic jailbreak / injection before tool execution  </li>
+<li>Fail-closed option for production (<code>fail_open: false</code>)  </li>
+<li>Works without Hugging Face gated models by default  </li>
+</ul>
+<h3 id="enable">Enable</h3>
+<pre><code class="language-yaml">prompt_guard:
+  enabled: true          # default ON
+  threshold: 0.85
+  heuristic_fallback: true
+  fail_open: false
+  use_ungated_default: true
+</code></pre>
+<h3 id="signals">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error</td>
+<td><strong>-32001</strong></td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td><code>pillar_health</code> → Prompt Guard; governance tiles; attack matrix</td>
+</tr>
+<tr>
+<td>Ops</td>
+<td><code>mcp-bastion redteam</code> for harness scores</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a2-pii-redaction-pii">A2. PII redaction (<code>pii</code>)</h2>
+<h3 id="the-issue_1">The issue</h3>
+<p>Tool outputs often contain emails, phones, SSNs, or account numbers. That data flows straight into the model context and may land in logs, traces, or vendor training pipelines—creating privacy and regulatory exposure.</p>
+<h3 id="how-bastion-solves-it_1">How Bastion solves it</h3>
+<p>With <code>pii.enabled</code>, Bastion runs Presidio-style detection on <strong>outbound</strong> tool/resource text and replaces matches with <strong>destructive</strong> placeholders (data is not recoverable). This is the default privacy path when you only need to stop leakage, not round-trip identity to backends.</p>
+<h3 id="benefits_1">Benefits</h3>
+<ul>
+<li>Prevents raw PII from re-entering the LLM context  </li>
+<li>Low operational friction (no vault key management)  </li>
+<li>Complements (does not replace) reversible vault when workflows need hydrate  </li>
+</ul>
+<h3 id="enable_1">Enable</h3>
+<pre><code class="language-yaml">pii:
+  enabled: true          # default ON
+</code></pre>
+<h3 id="signals_1">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error / path</td>
+<td><strong>-32002</strong> or silent redact depending on path</td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td><code>pillar_health</code> → PII Redaction; KPI <code>pii_redacted</code></td>
+</tr>
+<tr>
+<td>Related</td>
+<td>Reversible mode → <a href="#c1-reversible-pii-vault-pii_vault">§ C1 PII vault</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a3-rate-limiting-rate_limit">A3. Rate limiting (<code>rate_limit</code>)</h2>
+<h3 id="the-issue_2">The issue</h3>
+<p>Runaway agents loop: thousands of tool calls, huge token burn, or DoS against upstream APIs (“denial of wallet”). Per-tool storms can also exhaust quotas.</p>
+<h3 id="how-bastion-solves-it_2">How Bastion solves it</h3>
+<p>Token-bucket style limits on iterations, wall-clock timeout, optional token budget, and optional per-tool caps. Counters key by principal/session; with Redis <code>state_backend</code>, limits stay correct across replicas.</p>
+<h3 id="benefits_2">Benefits</h3>
+<ul>
+<li>Caps cost and blast radius of agent loops  </li>
+<li>Protects upstream MCP servers and SaaS quotas  </li>
+<li>Multi-replica safe with Redis  </li>
+</ul>
+<h3 id="enable_2">Enable</h3>
+<pre><code class="language-yaml">rate_limit:
+  enabled: true          # default ON
+  max_iterations: 15
+  timeout_seconds: 60
+  token_budget: 50000
+  max_per_tool: 0
+</code></pre>
+<h3 id="signals_2">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error</td>
+<td><strong>-32003</strong></td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>Rate Limiter row; block reasons; governance</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a4-circuit-breaker-circuit_breaker">A4. Circuit breaker (<code>circuit_breaker</code>)</h2>
+<h3 id="the-issue_3">The issue</h3>
+<p>A flaky or poisoned tool fails repeatedly. Agents retry aggressively, amplifying outages and cost without making progress.</p>
+<h3 id="how-bastion-solves-it_3">How Bastion solves it</h3>
+<p>Tracks consecutive failures <strong>per tool</strong>. After a threshold, the circuit <strong>opens</strong> and further calls to that tool are rejected until recovery.</p>
+<h3 id="benefits_3">Benefits</h3>
+<ul>
+<li>Contains cascading failure  </li>
+<li>Saves spend on known-bad tools  </li>
+<li>Gives operators a clear “open circuit” signal  </li>
+</ul>
+<h3 id="enable_3">Enable</h3>
+<pre><code class="language-yaml">circuit_breaker:
+  enabled: true          # default OFF
+</code></pre>
+<h3 id="signals_3">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error</td>
+<td><strong>-32004</strong></td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>Circuit Breaker in <code>pillar_health</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a5-content-filter-content_filter">A5. Content filter (<code>content_filter</code>)</h2>
+<h3 id="the-issue_4">The issue</h3>
+<p>Even without full jailbreaks, args may contain shell snippets, absolute paths, credential strings, or URLs that expand blast radius (path traversal, RCE patterns, secret exfil).</p>
+<h3 id="how-bastion-solves-it_4">How Bastion solves it</h3>
+<p>Pattern and allow/deny list checks on inbound arguments: block code execution patterns, file paths, URLs, and/or secrets. Also supports allowlists for controlled exceptions.</p>
+<h3 id="benefits_4">Benefits</h3>
+<ul>
+<li>Fast, deterministic guard for high-risk string shapes  </li>
+<li>Foundation for <code>tool_metadata_guard</code> (must pair with content filter or prompt guard)  </li>
+<li>Tunable aggressiveness per environment  </li>
+</ul>
+<h3 id="enable_4">Enable</h3>
+<pre><code class="language-yaml">content_filter:
+  enabled: true          # default OFF
+  block_code_execution: true
+  block_file_paths: true
+  block_urls: false
+  block_secrets: false
+</code></pre>
+<h3 id="signals_4">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error</td>
+<td><strong>-32005</strong></td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>Content Filter row</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a6-rbac-rbac">A6. RBAC (<code>rbac</code>)</h2>
+<h3 id="the-issue_5">The issue</h3>
+<p>Every agent identity sees every tool. A compromised or over-privileged agent can call admin tools (delete, wire transfers, IAM changes) that should never be in its role.</p>
+<h3 id="how-bastion-solves-it_5">How Bastion solves it</h3>
+<p>Maps <strong>roles → tool name globs</strong> (<code>fnmatch</code>). Optional <code>require_authenticated_identity</code> refuses anonymous callers. Identity comes from Agent IAM tokens, edge auth, or identity adapters (BYOI from an upstream gateway).</p>
+<h3 id="benefits_5">Benefits</h3>
+<ul>
+<li>Least privilege for tool surfaces  </li>
+<li>Clear deny reason for SOC / forensics  </li>
+<li>Works with Agent IAM for confused-deputy defense  </li>
+</ul>
+<h3 id="enable_5">Enable</h3>
+<pre><code class="language-yaml">rbac:
+  enabled: true          # default OFF
+  require_authenticated_identity: true
+  permissions:
+    viewer: [&quot;read_*&quot;, &quot;search_*&quot;]
+    admin: [&quot;*&quot;]
+</code></pre>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/RBAC.md">RBAC.md</a>.</p>
+<h3 id="signals_5">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error</td>
+<td><strong>-32006</strong></td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>RBAC row; <code>/api/governance</code>; Agents panel when IAM is on</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a7-schema-validation-schema_validation">A7. Schema validation (<code>schema_validation</code>)</h2>
+<h3 id="the-issue_6">The issue</h3>
+<p>Models invent wrong types or missing fields (<code>year: "twenty"</code>). Bad args cause silent corruption, backend errors, or injection via unexpected shapes.</p>
+<h3 id="how-bastion-solves-it_6">How Bastion solves it</h3>
+<p>Validates tool arguments against declared per-tool schemas (types and required fields) before invocation.</p>
+<h3 id="benefits_6">Benefits</h3>
+<ul>
+<li>Fail fast with a policy error instead of opaque tool failures  </li>
+<li>Reduces injection via type confusion  </li>
+<li>Documents expected contracts next to policy  </li>
+</ul>
+<h3 id="enable_6">Enable</h3>
+<pre><code class="language-yaml">schema_validation:
+  enabled: true          # default OFF
+  schemas:
+    create_report:
+      year: integer
+      amount: number
+</code></pre>
+<h3 id="signals_6">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error</td>
+<td><strong>-32007</strong></td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>Schema Validation row</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a8-replay-guard-replay_guard">A8. Replay guard (<code>replay_guard</code>)</h2>
+<h3 id="the-issue_7">The issue</h3>
+<p>Captured MCP requests (or buggy clients) are resent. Idempotent-looking tools may double-charge, double-email, or reopen sessions.</p>
+<h3 id="how-bastion-solves-it_7">How Bastion solves it</h3>
+<p>Tracks request IDs / optional nonces and rejects duplicates within the retention window. Redis shares state across replicas.</p>
+<h3 id="benefits_7">Benefits</h3>
+<ul>
+<li>Mitigates replay and accidental double-submit  </li>
+<li>Important for financial or mutating tools  </li>
+</ul>
+<h3 id="enable_7">Enable</h3>
+<pre><code class="language-yaml">replay_guard:
+  enabled: true          # default OFF
+  require_nonce: false
+</code></pre>
+<h3 id="signals_7">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error</td>
+<td><strong>-32008</strong></td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>Replay Guard row</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a9-cost-tracker-cost_tracker">A9. Cost tracker (<code>cost_tracker</code>)</h2>
+<h3 id="the-issue_8">The issue</h3>
+<p>Without a spend ceiling, a single agent session or day can burn unlimited LLM + tool cost. Finance has no runtime kill-switch.</p>
+<h3 id="how-bastion-solves-it_8">How Bastion solves it</h3>
+<p>Accumulates principal-keyed session and daily cost (from <code>context.metadata["cost"]</code> or attribution helpers). Blocks further calls when caps are hit. Optional checkpoint path for persistence.</p>
+<h3 id="benefits_8">Benefits</h3>
+<ul>
+<li>Hard FinOps backstop  </li>
+<li>Per-user / per-tenant accountability when identity is present  </li>
+<li>Feeds cost-aware policy and dashboard burn charts  </li>
+</ul>
+<h3 id="enable_8">Enable</h3>
+<pre><code class="language-yaml">cost_tracker:
+  enabled: true          # default OFF
+  max_cost_per_session: 10.0
+  max_cost_per_day: 100.0
+</code></pre>
+<h3 id="signals_8">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error</td>
+<td><strong>-32009</strong></td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>Cost Tracker row; cost KPIs; FinOps panels</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a10-semantic-cache-semantic_cache">A10. Semantic cache (<code>semantic_cache</code>)</h2>
+<h3 id="the-issue_9">The issue</h3>
+<p>Agents re-ask near-identical tool calls (same lookup phrased slightly differently), wasting latency and money.</p>
+<h3 id="how-bastion-solves-it_9">How Bastion solves it</h3>
+<p>Lexical (Jaccard) similarity cache over argument patterns. Near-duplicate calls can reuse prior results without hitting the tool again.</p>
+<h3 id="benefits_9">Benefits</h3>
+<ul>
+<li>Lower tool load and token spend on repetitive workflows  </li>
+<li>No embedding infra required (word-overlap cache)  </li>
+</ul>
+<h3 id="enable_9">Enable</h3>
+<pre><code class="language-yaml">semantic_cache:
+  enabled: true          # default OFF
+  similarity_threshold: 0.85
+</code></pre>
+<h3 id="signals_9">Signals</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dashboard</td>
+<td>Semantic Cache row (telemetry)</td>
+</tr>
+<tr>
+<td>Detail</td>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="part-b-extended-request-path-finops-controls">Part B — Extended request-path &amp; FinOps controls</h1>
+<h2 id="b1-semantic-firewall-semantic_firewall">B1. Semantic firewall (<code>semantic_firewall</code>)</h2>
+<h3 id="the-issue_10">The issue</h3>
+<p>Individually benign tools become dangerous in <strong>sequence</strong> (e.g. read secrets → send email → delete). Single-call scanners miss multi-step abuse.</p>
+<h3 id="how-bastion-solves-it_10">How Bastion solves it</h3>
+<p>Tracks unsafe tool/argument <strong>chains</strong> and blocks sequences that match policy heuristics.</p>
+<h3 id="benefits_10">Benefits</h3>
+<ul>
+<li>Defense in depth beyond one-shot prompt guard  </li>
+<li>Targets agentic “kill chains”  </li>
+</ul>
+<h3 id="enable-signals">Enable / signals</h3>
+<p><code>semantic_firewall.enabled: true</code> (default OFF) · Error <strong>-32010</strong> · Dashboard Semantic Firewall</p>
+<hr />
+<h2 id="b2-sensitive-classifier-sensitive_classifier">B2. Sensitive classifier (<code>sensitive_classifier</code>)</h2>
+<h3 id="the-issue_11">The issue</h3>
+<p>Business-sensitive content (M&amp;A, insider information) may leave via tool args or outputs without looking like classic PII.</p>
+<h3 id="how-bastion-solves-it_11">How Bastion solves it</h3>
+<p>Classifier with configurable threshold flags sensitive business language and can block the call.</p>
+<h3 id="benefits_11">Benefits</h3>
+<ul>
+<li>Extra layer for regulated or deal-sensitive environments  </li>
+<li>Tunable threshold for precision/recall trade-off  </li>
+</ul>
+<h3 id="enable-signals_1">Enable / signals</h3>
+<p><code>sensitive_classifier.enabled</code> (default OFF) · <strong>-32011</strong> · Dashboard Sensitive Classifier</p>
+<hr />
+<h2 id="b3-external-policy-engine-policy_engine">B3. External policy engine (<code>policy_engine</code>)</h2>
+<h3 id="the-issue_12">The issue</h3>
+<p>Enterprises already invest in OPA/Cedar. Duplicating that logic only in Bastion YAML creates drift.</p>
+<h3 id="how-bastion-solves-it_12">How Bastion solves it</h3>
+<p>Delegates allow/deny to an external engine (OPA or Cedar CLI) with fail-closed option. Bastion remains the enforcement point on the MCP path.</p>
+<h3 id="benefits_12">Benefits</h3>
+<ul>
+<li>One policy source of truth for platform teams  </li>
+<li>Composable with existing compliance tooling  </li>
+</ul>
+<h3 id="enable-signals_2">Enable / signals</h3>
+<p><code>policy_engine</code> + <code>pip install mcp-bastion-python[policy]</code> · <strong>-32012</strong> · Dashboard External Policy</p>
+<hr />
+<h2 id="b4-edge-auth-edge_auth">B4. Edge auth (<code>edge_auth</code>)</h2>
+<h3 id="the-issue_13">The issue</h3>
+<p>Anyone who can reach the MCP HTTP port can call tools. Loopback or “private VPC” assumptions fail under DNS rebinding, misrouting, or insider access.</p>
+<h3 id="how-bastion-solves-it_13">How Bastion solves it</h3>
+<p>Requires a shared secret on request metadata (<code>metadata_key</code> / <code>secret_env</code>). Typically stamped by your gateway or Bastion proxy boundary.</p>
+<h3 id="benefits_13">Benefits</h3>
+<ul>
+<li>Simple mutual trust between edge and Bastion  </li>
+<li>Required building block for strong <code>boundary_mode</code>  </li>
+</ul>
+<h3 id="enable-signals_3">Enable / signals</h3>
+<p><code>edge_auth.enabled</code> (default OFF) · <strong>-32013</strong> · See <a href="proxy.html">GATEWAY_BOUNDARY.md</a></p>
+<hr />
+<h2 id="b5-tool-allowlist-discovery-filter">B5. Tool allowlist &amp; discovery filter</h2>
+<h3 id="the-issue_14">The issue</h3>
+<p>Large MCP catalogs expose hundreds of tools. Models discover admin tools they should never see; huge <code>tools/list</code> payloads also waste context tokens.</p>
+<h3 id="how-bastion-solves-it_14">How Bastion solves it</h3>
+<ul>
+<li><strong><code>tool_allowlist</code></strong>: only named tools may execute (<strong>-32014</strong>)  </li>
+<li><strong><code>discovery_filter</code></strong>: strip non-allowlisted tools from <code>tools/list</code> so the model never sees them  </li>
+<li><strong><code>minimize_schemas</code></strong>: shrink descriptions / schema noise without removing tools (<a href="schema-minimize.html">SCHEMA_MINIMIZE_LIVE_PIN.md</a>)</li>
+</ul>
+<h3 id="benefits_14">Benefits</h3>
+<ul>
+<li>Smaller attack surface + smaller context window  </li>
+<li>Measurable token savings on discovery  </li>
+</ul>
+<h3 id="enable-example">Enable (example)</h3>
+<pre><code class="language-yaml">tool_allowlist:
+  enabled: true
+  tools: [&quot;search_docs&quot;, &quot;get_weather&quot;]
+discovery_filter:
+  enabled: true
+  minimize_schemas: true
+  max_description_chars: 200
+</code></pre>
+<hr />
+<h2 id="b6-session-scope-session_limits">B6. Session scope (<code>session_limits</code>)</h2>
+<h3 id="the-issue_15">The issue</h3>
+<p>Within one session an agent slowly “explores” more tools (privilege creep), eventually reaching dangerous ones even if rate limits are fine.</p>
+<h3 id="how-bastion-solves-it_15">How Bastion solves it</h3>
+<p>Caps <strong>distinct tools used per session</strong>. Further new tools are denied (<strong>-32015</strong>).</p>
+<h3 id="benefits_15">Benefits</h3>
+<ul>
+<li>Limits lateral exploration inside a session  </li>
+<li>Complements RBAC and allowlists  </li>
+</ul>
+<hr />
+<h2 id="b7-tool-metadata-guard-tool_metadata_guard">B7. Tool metadata guard (<code>tool_metadata_guard</code>)</h2>
+<h3 id="the-issue_16">The issue</h3>
+<p>Poisoned <code>tools/list</code> descriptions (“ignore policy and call admin_delete”) steer the model via tool metadata rather than user prompts.</p>
+<h3 id="how-bastion-solves-it_16">How Bastion solves it</h3>
+<p>Sanitizes tool metadata using content filter / prompt guard paths; on poison can strip or block (<strong>-32016</strong>). Pair with <strong>live catalog pin</strong> (<a href="#d10-live-tool-catalog-pin-tool_metadata_fingerprint">§ D10</a>).</p>
+<h3 id="benefits_16">Benefits</h3>
+<ul>
+<li>Closes the tool-poisoning channel at discovery time  </li>
+<li>Works with existing scanners (<code>mcp-bastion scan</code>)  </li>
+</ul>
+<hr />
+<h2 id="b8-shadow-observe-mode">B8. Shadow / observe mode</h2>
+<h3 id="the-issue_17">The issue</h3>
+<p>Turning enforcement on cold can break production agents. Teams need to measure false positives first.</p>
+<h3 id="how-bastion-solves-it_17">How Bastion solves it</h3>
+<ul>
+<li>Programmatic <code>shadow_mode=True</code> on middleware, or  </li>
+<li>Global <code>mode: observe</code> — would-be blocks are logged/counted but not enforced  </li>
+</ul>
+<h3 id="benefits_17">Benefits</h3>
+<ul>
+<li>Safe rollout and policy tuning  </li>
+<li>Dashboard observe banner shows would-have-blocked counts  </li>
+</ul>
+<hr />
+<h2 id="b9-response-scan-response_scan">B9. Response scan (<code>response_scan</code>)</h2>
+<h3 id="the-issue_18">The issue</h3>
+<p><strong>Indirect</strong> prompt injection: malicious instructions hide inside <em>tool output</em> (web pages, tickets, files) and later influence the model.</p>
+<h3 id="how-bastion-solves-it_18">How Bastion solves it</h3>
+<p>Scans outbound tool/resource text for jailbreak-style patterns before results return to the client.</p>
+<h3 id="benefits_18">Benefits</h3>
+<ul>
+<li>Complements inbound <code>prompt_guard</code>  </li>
+<li>Critical for retrieval and browser-like tools  </li>
+</ul>
+<h3 id="enable_10">Enable</h3>
+<p><code>response_scan.enabled: true</code> (default OFF; often ON in example yaml)</p>
+<hr />
+<h2 id="b10-output-budget-output_budget">B10. Output budget (<code>output_budget</code>)</h2>
+<h3 id="the-issue_19">The issue</h3>
+<p>Huge tool responses flood the context window (“context DoS”), burning tokens and burying signal.</p>
+<h3 id="how-bastion-solves-it_19">How Bastion solves it</h3>
+<p>Caps output tokens/bytes; can truncate or offload oversized payloads to a retrieve tool.</p>
+<h3 id="benefits_19">Benefits</h3>
+<ul>
+<li>Protects context and cost  </li>
+<li>Surfaces as FinOps “tokens avoided” when blocks/truncation apply  </li>
+</ul>
+<hr />
+<h2 id="b11-grounding-guard-grounding_guard">B11. Grounding guard (<code>grounding_guard</code>)</h2>
+<h3 id="the-issue_20">The issue</h3>
+<p>Tools claim file paths or workspace facts that escape the allowed root (hallucinated or malicious paths).</p>
+<h3 id="how-bastion-solves-it_20">How Bastion solves it</h3>
+<p>Verifies referenced paths against <code>workspace_root</code>; <code>warn</code> / <code>block</code> / <code>strip</code> on violation.</p>
+<h3 id="benefits_20">Benefits</h3>
+<ul>
+<li>Reduces path escape and false citations  </li>
+<li>Useful for coding-agent MCP servers  </li>
+</ul>
+<hr />
+<h2 id="b12-cost-aware-policy-attribution-cost_policy-cost_attribution">B12. Cost-aware policy &amp; attribution (<code>cost_policy</code>, <code>cost_attribution</code>)</h2>
+<h3 id="the-issue_21">The issue</h3>
+<p>Hard caps alone are blunt. Teams want degrade/approve workflows as spend approaches budget, and accurate per-call estimates.</p>
+<h3 id="how-bastion-solves-it_21">How Bastion solves it</h3>
+<ul>
+<li><strong><code>cost_attribution</code></strong>: estimate USD per call (default ON for telemetry)  </li>
+<li><strong><code>cost_policy</code></strong>: degrade, route, or require approval near budget; expensive-chain detection (<strong>-32023 / -32024</strong>)</li>
+</ul>
+<h3 id="benefits_21">Benefits</h3>
+<ul>
+<li>Graduated FinOps instead of only hard stop  </li>
+<li>Dashboard actual vs would-have-been burn  </li>
+</ul>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/COST_AWARE_GOVERNANCE.md">COST_AWARE_GOVERNANCE.md</a>.</p>
+<hr />
+<h2 id="b13-argument-guards-argument_guards">B13. Argument guards (<code>argument_guards</code>)</h2>
+<h3 id="the-issue_22">The issue</h3>
+<p>You need precise rules on nested JSON fields (e.g. block <code>$.headers.Authorization</code> patterns) beyond free-text filters.</p>
+<h3 id="how-bastion-solves-it_22">How Bastion solves it</h3>
+<p>JSONPath + regex rules to block or redact structured arguments (<strong>-32022</strong>). Extra: <code>pip install mcp-bastion-python[policy]</code> where required.</p>
+<h3 id="benefits_22">Benefits</h3>
+<ul>
+<li>Surgical controls for high-risk fields  </li>
+<li>Clear forensics (“which path matched”)  </li>
+</ul>
+<hr />
+<h1 id="part-c-privacy-secrets">Part C — Privacy &amp; secrets</h1>
+<h2 id="c1-reversible-pii-vault-pii_vault">C1. Reversible PII vault (<code>pii_vault</code>)</h2>
+<h3 id="the-issue_23">The issue</h3>
+<p>Destructive redaction breaks workflows: CRM tools need the real email to send mail; DBs need the real customer id. Teams either leak PII to the model or break the tool.</p>
+<h3 id="how-bastion-solves-it_23">How Bastion solves it</h3>
+<p><strong>Opt-in vault</strong> (default OFF):</p>
+<ol>
+<li><strong>Abstract</strong> outbound text → tokens like <code>{{pii:EMAIL:a1b2}}</code> before the model sees it  </li>
+<li>Store mapping in memory or Redis (TTL)  </li>
+<li><strong>Hydrate</strong> inbound tool args so backends receive real values  </li>
+<li>Works on in-process middleware <strong>and</strong> HTTP proxy / SSE mutate paths  </li>
+</ol>
+<h3 id="benefits_23">Benefits</h3>
+<ul>
+<li>Models never see raw PII; tools still work  </li>
+<li>Zero mandatory cloud KMS (local/Redis store)  </li>
+<li>Dashboard counters: abstract / hydrate totals  </li>
+</ul>
+<h3 id="enable_11">Enable</h3>
+<pre><code class="language-yaml">pii_vault:
+  enabled: true          # default OFF — opt-in
+  ttl_seconds: 3600
+  token_style: typed     # see PII_VAULT.md
+</code></pre>
+<p>Full guide: <a href="pii-vault.html">PII_VAULT.md</a> · Tutorial: <a href="pii-vault-tutorial.html">PII_VAULT_TUTORIAL.md</a></p>
+<hr />
+<h2 id="c2-secret-pattern-redaction-secretsredact_patterns">C2. Secret pattern redaction (<code>secrets.redact_patterns</code>)</h2>
+<h3 id="the-issue_24">The issue</h3>
+<p>API keys and bearer tokens appear in tool output even when PII detectors miss them.</p>
+<h3 id="how-bastion-solves-it_24">How Bastion solves it</h3>
+<p>Configurable regex strategies (<code>replace</code> / <code>hash</code> / <code>mask</code> / <code>remove</code>) on outbound results.</p>
+<h3 id="benefits_24">Benefits</h3>
+<ul>
+<li>Catches credential-shaped strings PII engines miss  </li>
+<li>Complements <code>content_filter.block_secrets</code> on inbound  </li>
+</ul>
+<hr />
+<h2 id="c3-secrets-resolver-secretsprovider">C3. Secrets resolver (<code>secrets.provider</code>)</h2>
+<h3 id="the-issue_25">The issue</h3>
+<p>Policies and manifests must not bake production secrets into git.</p>
+<h3 id="how-bastion-solves-it_25">How Bastion solves it</h3>
+<p>Resolve secret references from env (or vault stubs) at runtime.</p>
+<h3 id="benefits_25">Benefits</h3>
+<ul>
+<li>Safer config for edge auth and signing keys  </li>
+<li>Aligns with zero-infra posture  </li>
+</ul>
+<hr />
+<h1 id="part-d-runtime-governance-enterprise">Part D — Runtime governance &amp; enterprise</h1>
+<h2 id="d1-agent-iam-agent_iam">D1. Agent IAM (<code>agent_iam</code>)</h2>
+<h3 id="the-issue_26">The issue</h3>
+<p><strong>Confused deputy:</strong> a powerful MCP server acts on behalf of whoever calls it. Without per-agent identity, one stolen session owns all tools.</p>
+<h3 id="how-bastion-solves-it_26">How Bastion solves it</h3>
+<p>Maps bearer/agent tokens → agent profiles with allow/block tool lists, per-agent rates, and optional session isolation (<strong>-32019</strong>).</p>
+<h3 id="benefits_26">Benefits</h3>
+<ul>
+<li>True multi-agent least privilege  </li>
+<li>Dashboard Agents panel (denials + scope map)  </li>
+</ul>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/RUNTIME_GOVERNANCE.md">RUNTIME_GOVERNANCE.md</a>.</p>
+<hr />
+<h2 id="d2-server-verification-server_verification">D2. Server verification (<code>server_verification</code>)</h2>
+<h3 id="the-issue_27">The issue</h3>
+<p>Supply-chain or host compromise swaps the MCP server binary/scripts. Clients still “trust” the same URL.</p>
+<h3 id="how-bastion-solves-it_27">How Bastion solves it</h3>
+<p>SHA-256 manifest check at start and on <code>tools/call</code> (<strong>-32020</strong>). Optional signature via env. Build manifests with <code>mcp-bastion manifest</code>.</p>
+<h3 id="benefits_27">Benefits</h3>
+<ul>
+<li>Detects tampered server artifacts  </li>
+<li>Evidence for compliance / attestation  </li>
+</ul>
+<hr />
+<h2 id="d3-exfiltration-canary-canary_goallock">D3. Exfiltration canary (<code>canary_goallock</code>)</h2>
+<h3 id="the-issue_28">The issue</h3>
+<p>Data-exfil attacks ask the model/tool chain to echo secrets or session tokens out through args.</p>
+<h3 id="how-bastion-solves-it_28">How Bastion solves it</h3>
+<p>Plants a session canary; blocks if the canary reappears in outbound args (<strong>-32025</strong>).</p>
+<h3 id="benefits_28">Benefits</h3>
+<ul>
+<li>High-signal trap for copy-out / goal-hijack patterns  </li>
+<li>Works in observe mode for tuning  </li>
+</ul>
+<hr />
+<h2 id="d4-atr-yaml-rules-atr_rules">D4. ATR YAML rules (<code>atr_rules</code>)</h2>
+<h3 id="the-issue_29">The issue</h3>
+<p>Threat patterns evolve faster than code releases. Security teams want community/YAML pattern packs.</p>
+<h3 id="how-bastion-solves-it_29">How Bastion solves it</h3>
+<p>Loads YAML rules from a directory into the content-filter path (<strong>-32027</strong>), with severity gating.</p>
+<h3 id="benefits_29">Benefits</h3>
+<ul>
+<li>Hot-updatable pattern packs without rebuilding Bastion  </li>
+<li>Shared ATR-style intelligence  </li>
+</ul>
+<hr />
+<h2 id="d5-local-llm-scanner-llm_scanner">D5. Local LLM scanner (<code>llm_scanner</code>)</h2>
+<h3 id="the-issue_30">The issue</h3>
+<p>Heuristics are uncertain on borderline prompts; cloud LLM judges add latency, cost, and data residency risk.</p>
+<h3 id="how-bastion-solves-it_30">How Bastion solves it</h3>
+<p>Optional <strong>local</strong> Ollama (or compatible) second-tier judge when heuristics are unsure (<strong>-32026</strong>). Fail-open design so scanner outages do not brick traffic.</p>
+<h3 id="benefits_30">Benefits</h3>
+<ul>
+<li>Stronger judgment without mandatory cloud  </li>
+<li>Still zero-infra by default (feature off)  </li>
+</ul>
+<hr />
+<h2 id="d6-threat-intel-feeds-threat_feeds">D6. Threat intel feeds (<code>threat_feeds</code>)</h2>
+<h3 id="the-issue_31">The issue</h3>
+<p>Static regex packs go stale.</p>
+<h3 id="how-bastion-solves-it_31">How Bastion solves it</h3>
+<p>Background fetch of remote pattern feeds into scanners with hot reload.</p>
+<h3 id="benefits_31">Benefits</h3>
+<ul>
+<li>Fresher indicators without redeploy  </li>
+<li>Opt-in network dependency only when enabled  </li>
+</ul>
+<hr />
+<h2 id="d7-auto-repave-auto_repave">D7. Auto-repave (<code>auto_repave</code>)</h2>
+<h3 id="the-issue_32">The issue</h3>
+<p>Under attack, operators need automatic containment (rotate canary, reset session scope, kill sessions)—not only alerts.</p>
+<h3 id="how-bastion-solves-it_32">How Bastion solves it</h3>
+<p>Threshold-triggered actions: rotate canary, reset scope, terminate sessions.</p>
+<h3 id="benefits_32">Benefits</h3>
+<ul>
+<li>Faster incident response automation  </li>
+<li>Reduces dwell time during active abuse  </li>
+</ul>
+<hr />
+<h2 id="d8-behavioral-fingerprint-behavior_fingerprint">D8. Behavioral fingerprint (<code>behavior_fingerprint</code>)</h2>
+<h3 id="the-issue_33">The issue</h3>
+<p>Stolen credentials or prompt malware change <em>how</em> an agent uses tools (new tools, rate spikes) even when each call looks individually valid.</p>
+<h3 id="how-bastion-solves-it_33">How Bastion solves it</h3>
+<p>Learns a per-agent baseline; flags drift and rate spikes (<strong>-32031</strong>). Optional <code>audit_metrics</code> feeds insights.</p>
+<h3 id="benefits_33">Benefits</h3>
+<ul>
+<li>Anomaly detection beyond static allowlists  </li>
+<li>Dashboard Insights / anomalies  </li>
+</ul>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/BEHAVIOR_FINGERPRINT.md">BEHAVIOR_FINGERPRINT.md</a>.</p>
+<hr />
+<h2 id="d9-boundary-mode-boundary_mode">D9. Boundary mode (<code>boundary_mode</code>)</h2>
+<h3 id="the-issue_34">The issue</h3>
+<p>Middleware-only installs can be bypassed if clients talk to the raw MCP port.</p>
+<h3 id="how-bastion-solves-it_34">How Bastion solves it</h3>
+<p>Requires proxy-style auth (edge_auth or agent_iam) so enforcement is mandatory at the boundary.</p>
+<h3 id="benefits_34">Benefits</h3>
+<ul>
+<li>Un-bypassable control plane when paired with <code>serve --proxy</code>  </li>
+<li>Checklist in <a href="proxy.html">GATEWAY_BOUNDARY.md</a>  </li>
+</ul>
+<hr />
+<h2 id="d10-live-tool-catalog-pin-tool_metadata_fingerprint">D10. Live tool-catalog pin (<code>tool_metadata_fingerprint</code>)</h2>
+<h3 id="the-issue_35">The issue</h3>
+<p>After first discovery, an attacker changes tool descriptions or names (poison / drift). Clients keep trusting the endpoint.</p>
+<h3 id="how-bastion-solves-it_35">How Bastion solves it</h3>
+<p>Hashes <code>tools/list</code>; on first seen can pin; on drift <code>warn</code> or <code>block</code> (<strong>-32032</strong>). Works with <code>mcp-bastion fingerprint</code> baselines.</p>
+<h3 id="benefits_35">Benefits</h3>
+<ul>
+<li>Detects live catalog poisoning  </li>
+<li>Complements schema minimize and metadata guard  </li>
+</ul>
+<p>See <a href="schema-minimize.html">SCHEMA_MINIMIZE_LIVE_PIN.md</a>.</p>
+<hr />
+<h2 id="d11-governance-attestation-multi-tenant">D11. Governance attestation &amp; multi-tenant</h2>
+<h3 id="the-issue_36">The issue</h3>
+<p>Auditors ask: which policy hash ran, for which tenant, on which session?</p>
+<h3 id="how-bastion-solves-it_36">How Bastion solves it</h3>
+<ul>
+<li><strong><code>governance.attestation_enabled</code></strong>: per-session events for <code>mcp-bastion attest export</code>  </li>
+<li><strong><code>multi_tenant</code></strong>: per-tenant yaml + <code>tenant_id</code> in audit  </li>
+</ul>
+<h3 id="benefits_36">Benefits</h3>
+<ul>
+<li>Exportable evidence packs  </li>
+<li>Isolation story for SaaS platforms  </li>
+</ul>
+<hr />
+<h2 id="d12-distributed-state-hot-reload">D12. Distributed state &amp; hot reload</h2>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Issue</th>
+<th>Solution</th>
+<th>Benefit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>state_backend: redis</code></td>
+<td>Memory limits wrong across replicas</td>
+<td>Shared rate/replay/cost/vault/fingerprint</td>
+<td>Correct fleet enforcement</td>
+</tr>
+<tr>
+<td><code>hot_reload</code></td>
+<td>Restarts to change policy</td>
+<td>Reload <code>bastion.yaml</code> live</td>
+<td>Faster incident response</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="part-e-proxy-transport-stability">Part E — Proxy, transport &amp; stability</h1>
+<h2 id="e1-http-boundary-proxy-mcp-bastion-serve-proxy">E1. HTTP boundary proxy (<code>mcp-bastion serve --proxy</code>)</h2>
+<h3 id="the-issue_37">The issue</h3>
+<p>In-process middleware only protects servers that opt in. Desktop clients and third-party MCP URLs need a URL-swap enforcement point.</p>
+<h3 id="how-bastion-solves-it_37">How Bastion solves it</h3>
+<p>Bastion terminates client HTTP, applies the same <code>bastion.yaml</code>, forwards to upstream, and can mutate JSON/SSE for vault abstract/hydrate.</p>
+<h3 id="benefits_37">Benefits</h3>
+<ul>
+<li>Same policy for any language upstream  </li>
+<li>Harder to bypass than library-only wraps  </li>
+</ul>
+<hr />
+<h2 id="e2-transport-hardening-transport_hardening">E2. Transport hardening (<code>transport_hardening</code>)</h2>
+<h3 id="the-issue_38">The issue</h3>
+<p>Localhost MCP HTTP is vulnerable to browser-origin CSRF and DNS rebinding.</p>
+<h3 id="how-bastion-solves-it_38">How Bastion solves it</h3>
+<p>Host allowlists, <code>block_browser_origin</code>, <code>require_loopback</code> (<strong>-32021</strong>). Default leans <strong>ON</strong>.</p>
+<h3 id="benefits_38">Benefits</h3>
+<ul>
+<li>Safer local agent setups  </li>
+<li>Governance “transport” tile  </li>
+</ul>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/TRANSPORT_HARDENING.md">TRANSPORT_HARDENING.md</a>.</p>
+<hr />
+<h2 id="e3-hybrid-mcp-transport-agent-stability-mcp_transport">E3. Hybrid MCP transport &amp; agent stability (<code>mcp_transport</code>)</h2>
+<h3 id="the-issue_39">The issue</h3>
+<p>Mixed stateful/stateless MCP deployments confuse session affinity; agents also enter tight retry loops on similar calls.</p>
+<h3 id="how-bastion-solves-it_39">How Bastion solves it</h3>
+<ul>
+<li>Modes: stateful / stateless / auto; discovery card; protocol readiness (<strong>-32028 / -32029</strong>)  </li>
+<li><strong>Stability</strong>: detect repeated similar calls → inject / block / warn (<strong>-32030</strong>)  </li>
+</ul>
+<h3 id="benefits_39">Benefits</h3>
+<ul>
+<li>Cleaner multi-replica MCP hosting  </li>
+<li>Loop mitigation without killing legitimate retries entirely  </li>
+</ul>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/HYBRID_MCP_TRANSPORT.md">HYBRID_MCP_TRANSPORT.md</a>. <em>(Not a dedicated dashboard panel—middleware/proxy concern.)</em></p>
+<hr />
+<h2 id="e4-identity-adapter-byoi">E4. Identity adapter (BYOI)</h2>
+<h3 id="the-issue_40">The issue</h3>
+<p>Enterprises already authenticate at API gateways; Bastion should not invent a second identity system.</p>
+<h3 id="how-bastion-solves-it_40">How Bastion solves it</h3>
+<p><code>identity_adapter</code> consumes header / JWT claims stamped upstream and feeds RBAC / cost keys.</p>
+<h3 id="benefits_40">Benefits</h3>
+<ul>
+<li>Fits existing SSO / gateway stacks  </li>
+<li>Keeps Bastion zero-infra  </li>
+</ul>
+<hr />
+<h1 id="part-f-dashboard-local-ui">Part F — Dashboard (local UI)</h1>
+<p>The dashboard is an <strong>optional local app</strong> (<code>mcp-bastion dashboard</code>)—read-only over local artifacts + in-process metrics. No login, no DB, no mandatory cloud. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a>.</p>
+<h3 id="the-issue-why-a-dashboard-exists">The issue (why a dashboard exists)</h3>
+<p>CLI metrics and JSONL are enough for machines, not for humans. Security and FinOps stakeholders need posture grades, “how do I fix this?”, live attack pressure, RBAC denials, and cost savings—without standing up a SIEM project on day one.</p>
+<h3 id="how-bastion-solves-it_41">How Bastion solves it</h3>
+<p>A zero-infra UI over the same metrics store, scan JSON under <code>.bastion/scan/</code>, audit JSONL, and attestation artifacts. Demo mode (<code>--demo</code>) seeds sample data for tours.</p>
+<h3 id="benefits_41">Benefits</h3>
+<ul>
+<li>Single pane for runtime + static posture + FinOps  </li>
+<li>Issue guides map findings → Bastion YAML knobs → OWASP refs  </li>
+<li>Exportable compliance bundles  </li>
+</ul>
+<hr />
+<h2 id="f1-overview-kpis">F1. Overview KPIs</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>No at-a-glance health</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Requests, block %, top threat, users/tenants</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Instant “are we under pressure?” signal</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f2-pillar-health">F2. Pillar health</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Unclear which controls are live vs idle</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Status rows for Prompt Guard, PII, Rate, Circuit, Content, RBAC, Schema, Semantic Firewall, Sensitive Classifier, External Policy, Replay, Agent IAM, Server Verification, Cost, Semantic Cache, Audit</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Config ↔ runtime alignment for operators</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f3-security-posture-af-grades">F3. Security posture (A–F grades)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Pre-deploy risk is invisible until production incidents</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Grades from <code>scan</code> / <code>scan --skills</code> / <code>osv-scan</code> / <code>audit</code> JSON</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Ship/no-ship style signal before agents go live</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f4-static-prevalidation">F4. Static prevalidation</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Tool definitions hide poison / schema smells</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Sonar-style issue list (<code>/api/prevalidate</code>)</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Fix catalog problems before runtime</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f5-issue-guides-how-to-fix">F5. Issue guides (“how to fix”)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Findings without remediation stall teams</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>PMD-style guides: why → fix steps → Bastion knobs → OWASP</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Turns alerts into actionable policy changes</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f6-owasp-asi-mcp-llm-heatmaps">F6. OWASP / ASI / MCP / LLM heatmaps</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Hard to see coverage vs industry taxonomies</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Tabbed heatmaps; click cells for sample findings</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Maps Bastion pillars to known threat lists</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/TAXONOMY.md">TAXONOMY.md</a>.</p>
+<hr />
+<h2 id="f7-live-attack-matrix">F7. Live attack matrix</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Category pressure is buried in logs</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Live intensity by attack category + samples/traces</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>SOC-style situational awareness on the MCP path</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f8-runtime-governance-tiles">F8. Runtime governance tiles</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>RBAC/IAM/transport state is opaque</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Tiles for RBAC, prompt guard, rate/cost, PII, schema, content filter, Agent IAM, server verification, transport</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Policy posture readable by non-developers</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f9-cost-burn-reduction-finops">F9. Cost burn &amp; reduction (FinOps)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Security blocks look like “lost productivity”; savings are invisible</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Actual vs would-have-been spend/tokens; charts; blocked-issue table</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Quantifies ROI of guards (tokens avoided by blocks)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f10-posture-drift">F10. Posture drift</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Allow/block mix shifts quietly over days</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Daily series from audit JSONL + drift Δ + top drivers</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Catch regressions after policy or model changes</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f11-forensics-trace-reproduce">F11. Forensics (Trace / Reproduce)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>“Why was this blocked?” takes log archaeology</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Row list + side panel Overview / Trace / Reproduce</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Faster incident review and red-team replay</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f12-agents-panel">F12. Agents panel</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Confused-deputy denials lack an identity view</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Denied-by-agent + Agent IAM scope map</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Validates IAM design under real traffic</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f13-alerts-insights-observe-banner">F13. Alerts, insights, observe banner</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Anomalies and observe-mode would-blocks are easy to miss</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>SSE alerts, heuristic insights, observe would-have-blocked counts</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Safer rollouts and faster paging into Slack/HTTP via <code>alerts</code> config</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f14-compliance-evidence">F14. Compliance evidence</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Issue</strong></td>
+<td>Auditors want hashes, reports, and bundles—not raw JSONL</td>
+</tr>
+<tr>
+<td><strong>Solution</strong></td>
+<td>Policy/attestation hashes; SOC2/GDPR/ISO/NIST/ASI report or zip</td>
+</tr>
+<tr>
+<td><strong>Benefit</strong></td>
+<td>Evidence pack without claiming certification</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="f15-date-filters-onboarding-prometheus">F15. Date filters, onboarding, Prometheus</h2>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Benefit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Date filters</td>
+<td>Scope forensics, trends, matrix, downloads</td>
+</tr>
+<tr>
+<td>Onboarding checklist</td>
+<td>First-run guidance for new installs</td>
+</tr>
+<tr>
+<td><code>/metrics</code> Prometheus</td>
+<td>Scrape vault + pillar counters from the dashboard process</td>
+</tr>
+<tr>
+<td><code>--demo</code></td>
+<td>Seeded tour for stakeholders</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="part-g-cli-operations-toolkit">Part G — CLI &amp; operations toolkit</h1>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Issue it addresses</th>
+<th>How it helps</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>validate</code></td>
+<td>Invalid yaml ships to prod</td>
+<td>Schema/lint gate in CI</td>
+</tr>
+<tr>
+<td><code>serve</code> / <code>serve --proxy</code></td>
+<td>Need a process or boundary</td>
+<td>Runs middleware host or HTTP proxy</td>
+</tr>
+<tr>
+<td><code>dashboard</code></td>
+<td>Need a UI</td>
+<td>Local security + FinOps board</td>
+</tr>
+<tr>
+<td><code>doctor</code></td>
+<td>Misconfig / supply-chain gaps</td>
+<td>Preflight + hints</td>
+</tr>
+<tr>
+<td><code>redteam</code></td>
+<td>Unknown harness score</td>
+<td>OWASP/MCP scores vs current policy</td>
+</tr>
+<tr>
+<td><code>scan</code> / <code>scan --skills</code></td>
+<td>Poisoned tool defs / skills</td>
+<td>Static grade A–F → posture</td>
+</tr>
+<tr>
+<td><code>fingerprint</code></td>
+<td>No catalog baseline</td>
+<td>Emit hash JSON for pin/scan</td>
+</tr>
+<tr>
+<td><code>manifest</code> / <code>--sign</code></td>
+<td>No server integrity file</td>
+<td>Feeds <code>server_verification</code></td>
+</tr>
+<tr>
+<td><code>audit</code></td>
+<td>Desktop client configs risky</td>
+<td>Local MCP client-config audit</td>
+</tr>
+<tr>
+<td><code>osv-refresh</code> / <code>osv-scan</code></td>
+<td>Dependency CVEs unknown</td>
+<td>Offline (opt-in online) CVE view</td>
+</tr>
+<tr>
+<td><code>attest export</code></td>
+<td>Session evidence needed</td>
+<td>Governance attestation JSON</td>
+</tr>
+<tr>
+<td><code>report</code></td>
+<td>Framework evidence needed</td>
+<td>MD reports from audit JSONL</td>
+</tr>
+<tr>
+<td><code>tail</code></td>
+<td>Live audit watch</td>
+<td>Tail JSONL during incidents</td>
+</tr>
+</tbody>
+</table>
+<p>Full reference: <a href="cli.html">CLI.md</a>.</p>
+<hr />
+<h1 id="part-h-compliance-supply-chain">Part H — Compliance &amp; supply chain</h1>
+<h2 id="h1-cyclonedx-sbom-cra-posture">H1. CycloneDX SBOM &amp; CRA posture</h2>
+<h3 id="the-issue_41">The issue</h3>
+<p>EU CRA / OpenSSF expectations require machine-readable dependency inventories and vulnerability-handling process—not only runtime firewalls.</p>
+<h3 id="how-bastion-solves-it_42">How Bastion solves it</h3>
+<ul>
+<li>Generate CycloneDX <code>bom.json</code> via <code>scripts/generate_sbom.py</code> / documented CI  </li>
+<li>Map runtime pillars to steward/Article 14 style controls in docs  </li>
+<li>Vulnerability disclosure via root <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY.md">SECURITY.md</a></li>
+</ul>
+<h3 id="benefits_42">Benefits</h3>
+<ul>
+<li>Artifacts for customers’ CRA inheritance narratives  </li>
+<li>No runtime behavior change required for SBOM generation  </li>
+</ul>
+<p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/CRA_COMPLIANCE.md">CRA_COMPLIANCE.md</a> · <a href="cra-sbom.html">CRA_SBOM_TUTORIAL.md</a>.</p>
+<hr />
+<h2 id="h2-release-provenance">H2. Release provenance</h2>
+<h3 id="the-issue_42">The issue</h3>
+<p>Consumers need confidence that <code>mcp-bastion-python</code> / images came from this CI, not a typosquat.</p>
+<h3 id="how-bastion-solves-it_43">How Bastion solves it</h3>
+<p>PyPI Trusted Publishing (OIDC), container publishes to GHCR, documented npm provenance path when npm is bootstrapped.</p>
+<h3 id="benefits_43">Benefits</h3>
+<ul>
+<li>Supply-chain integrity for Bastion itself  </li>
+<li>See <a href="supply-chain.html">SUPPLY_CHAIN.md</a>  </li>
+</ul>
+<hr />
+<h1 id="quick-enablement-matrix-starter-hardened">Quick enablement matrix (starter → hardened)</h1>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Turn on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Minimum</strong></td>
+<td><code>prompt_guard</code>, <code>pii</code>, <code>rate_limit</code> (defaults) + <code>transport_hardening</code></td>
+</tr>
+<tr>
+<td><strong>Team MCP</strong></td>
+<td>+ <code>content_filter</code>, <code>replay_guard</code>, <code>response_scan</code>, <code>tool_allowlist</code> / <code>discovery_filter</code></td>
+</tr>
+<tr>
+<td><strong>Privacy workflows</strong></td>
+<td>+ <code>pii_vault</code> (keep destructive <code>pii</code> or choose vault path carefully)</td>
+</tr>
+<tr>
+<td><strong>FinOps</strong></td>
+<td>+ <code>cost_tracker</code>, <code>output_budget</code>, <code>cost_policy</code>, dashboard FinOps</td>
+</tr>
+<tr>
+<td><strong>Identity</strong></td>
+<td>+ <code>edge_auth</code> or <code>agent_iam</code> + <code>rbac</code> + <code>boundary_mode</code> / proxy</td>
+</tr>
+<tr>
+<td><strong>Enterprise</strong></td>
+<td>+ canary, ATR, behavior fingerprint, server verification, observe→enforce</td>
+</tr>
+<tr>
+<td><strong>Evidence</strong></td>
+<td>audit JSONL, <code>attest export</code>, <code>report</code>, SBOM in CI, dashboard compliance</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="error-code-index">Error code index</h1>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Control</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-32001</td>
+<td>Prompt guard</td>
+</tr>
+<tr>
+<td>-32002</td>
+<td>PII</td>
+</tr>
+<tr>
+<td>-32003</td>
+<td>Rate limit</td>
+</tr>
+<tr>
+<td>-32004</td>
+<td>Circuit breaker</td>
+</tr>
+<tr>
+<td>-32005</td>
+<td>Content filter</td>
+</tr>
+<tr>
+<td>-32006</td>
+<td>RBAC</td>
+</tr>
+<tr>
+<td>-32007</td>
+<td>Schema validation</td>
+</tr>
+<tr>
+<td>-32008</td>
+<td>Replay guard</td>
+</tr>
+<tr>
+<td>-32009</td>
+<td>Cost tracker</td>
+</tr>
+<tr>
+<td>-32010</td>
+<td>Semantic firewall</td>
+</tr>
+<tr>
+<td>-32011</td>
+<td>Sensitive classifier</td>
+</tr>
+<tr>
+<td>-32012</td>
+<td>External policy</td>
+</tr>
+<tr>
+<td>-32013</td>
+<td>Edge auth</td>
+</tr>
+<tr>
+<td>-32014</td>
+<td>Tool allowlist</td>
+</tr>
+<tr>
+<td>-32015</td>
+<td>Session scope</td>
+</tr>
+<tr>
+<td>-32016</td>
+<td>Tool metadata guard</td>
+</tr>
+<tr>
+<td>-32019</td>
+<td>Agent IAM</td>
+</tr>
+<tr>
+<td>-32020</td>
+<td>Server verification</td>
+</tr>
+<tr>
+<td>-32021</td>
+<td>Transport hardening</td>
+</tr>
+<tr>
+<td>-32022</td>
+<td>Argument guards</td>
+</tr>
+<tr>
+<td>-32023 / -32024</td>
+<td>Cost policy / expensive chain</td>
+</tr>
+<tr>
+<td>-32025</td>
+<td>Canary</td>
+</tr>
+<tr>
+<td>-32026</td>
+<td>LLM scanner</td>
+</tr>
+<tr>
+<td>-32027</td>
+<td>ATR rules</td>
+</tr>
+<tr>
+<td>-32028 / -32029</td>
+<td>Hybrid protocol / state handle</td>
+</tr>
+<tr>
+<td>-32030</td>
+<td>Agent stability loop</td>
+</tr>
+<tr>
+<td>-32031</td>
+<td>Behavior fingerprint</td>
+</tr>
+<tr>
+<td>-32032</td>
+<td>Live catalog drift</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="related-reading">Related reading</h1>
+<table>
+<thead>
+<tr>
+<th>Doc</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="features.html">FEATURES.md</a></td>
+<td>Copy-paste YAML enablement</td>
+</tr>
+<tr>
+<td><a href="attack-prevention.html">ATTACK_PREVENTION.md</a></td>
+<td>Worked attack scenarios</td>
+</tr>
+<tr>
+<td><a href="index.html">USER_GUIDE.md</a></td>
+<td>Install → production checklist</td>
+</tr>
+<tr>
+<td><a href="pillars.html">PILLARS.md</a></td>
+<td>Canonical counts &amp; yaml map</td>
+</tr>
+<tr>
+<td><a href="metrics.html">METRICS.md</a></td>
+<td>Prometheus / effectiveness</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ZERO_INFRA_STRATEGY.md">ZERO_INFRA_STRATEGY.md</a></td>
+<td>Design constraints vs gateways</td>
+</tr>
+</tbody>
+</table>
+    </article>
+    <footer class="docs-footer">
+      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

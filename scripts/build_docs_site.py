@@ -33,6 +33,7 @@ PAGES: list[tuple[str, str, str, str]] = [
     ("pii-vault-tutorial", "PII vault tutorial", "PII_VAULT_TUTORIAL.md", "Privacy & context"),
     ("schema-minimize", "Schema minimize & catalog pin", "SCHEMA_MINIMIZE_LIVE_PIN.md", "Privacy & context"),
     ("pillars", "Security pillars", "PILLARS.md", "Security"),
+    ("feature-deep-dive", "Feature deep dive", "FEATURE_DEEP_DIVE.md", "Security"),
     ("features", "Feature enablement", "FEATURES.md", "Security"),
     ("attack-prevention", "Attack prevention", "ATTACK_PREVENTION.md", "Security"),
     ("cli", "CLI reference", "CLI.md", "Reference"),
@@ -159,6 +160,7 @@ def _home_body() -> str:
         ("getting-started.html", "Getting started", "FastMCP, policy-as-code, and CI gate paths."),
         ("pii-vault.html", "PII vault", "Reversible tokenization so models never see raw PII."),
         ("proxy.html", "HTTP proxy & boundary", "Un-bypassable enforcement with the same bastion.yaml."),
+        ("feature-deep-dive.html", "Feature deep dive", "Every control: issue → how Bastion solves it → benefits, including dashboard."),
         ("pillars.html", "Security pillars", "Map concerns to configuration blocks."),
         ("cli.html", "CLI reference", "validate, doctor, serve, fingerprint, redteam."),
     ]
@@ -183,7 +185,7 @@ how-to guides, and reference.</p>
 <ol class="paths">
   <li><strong>Developer (minutes):</strong> Getting started → Feature enablement → CLI</li>
   <li><strong>Platform engineer:</strong> User guide → Configuration → Proxy → Metrics</li>
-  <li><strong>Security / compliance:</strong> Pillars → Attack prevention → PII vault → CRA &amp; SBOM</li>
+  <li><strong>Security / compliance:</strong> Feature deep dive → Pillars → Attack prevention → PII vault → CRA &amp; SBOM</li>
 </ol>
 """
 
