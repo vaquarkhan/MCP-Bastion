@@ -41,7 +41,8 @@ Local: `mcp-bastion dashboard --demo`
 | Install & first green run | [USER_GUIDE.md](USER_GUIDE.md) §3 · [QUICK_START.md](QUICK_START.md) |
 | Every control: issue → solution → benefits | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
 | Runnable attack demos + per-feature GIFs | [ATTACK_DEMOS.md](ATTACK_DEMOS.md) |
-| Dashboard panels explained | [dashboard/README.md](../dashboard/README.md) · Part F in deep dive |
+| Dashboard panels explained | [dashboard/README.md](../dashboard/README.md) · [DASHBOARD_AND_OBSERVABILITY.md](DASHBOARD_AND_OBSERVABILITY.md) · Part F in deep dive |
+| Metrics / OTEL (optional) | [METRICS.md](METRICS.md) · [OTEL.md](OTEL.md) — **OTEL not required** |
 | Java / TS / Go / .NET / Kotlin / Rust | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) · [suite repo](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | YAML reference | [POLICY_AS_CODE.md](POLICY_AS_CODE.md) · [FEATURES.md](FEATURES.md) |
 | CLI | [CLI.md](CLI.md) |

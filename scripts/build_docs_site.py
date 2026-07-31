@@ -43,6 +43,8 @@ PAGES: list[tuple[str, str, str, str]] = [
     ("attack-demos", "Attack demos (GIFs)", "ATTACK_DEMOS.md", "Security"),
     ("cli", "CLI reference", "CLI.md", "Reference"),
     ("metrics", "Metrics", "METRICS.md", "Reference"),
+    ("observability", "Dashboard & observability", "DASHBOARD_AND_OBSERVABILITY.md", "Reference"),
+    ("otel", "OpenTelemetry (optional)", "OTEL.md", "Reference"),
     ("cra-sbom", "CRA & SBOM", "CRA_SBOM_TUTORIAL.md", "Compliance"),
     ("supply-chain", "Supply chain", "SUPPLY_CHAIN.md", "Compliance"),
     ("developer", "Developer guide", "DEVELOPER_GUIDE.md", "Contribute"),
@@ -181,6 +183,7 @@ def _home_body() -> str:
     featured = [
         ("bible.html", "Documentation bible", "Visual tour: attack GIFs, dashboard, features, multi-language."),
         ("demos.html", "Demos hub", "Attacks, payloads, dashboard tour, and every language."),
+        ("observability.html", "Dashboard & observability", "Panels, Prometheus, audit — OTEL optional."),
         ("multi-language.html", "Multi-language suite", "TypeScript, Java, Go, .NET via mcp-bastion-suite."),
         ("feature-deep-dive.html", "Feature deep dive", "Every control: issue → solution → benefits, including dashboard."),
         ("user-guide.html", "User guide (end-to-end)", "Install → configure → proxy → vault → production checklist."),

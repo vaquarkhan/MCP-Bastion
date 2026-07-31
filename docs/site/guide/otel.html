@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PII vault tutorial | MCP-Bastion Docs</title>
-<meta name="description" content="MCP-Bastion documentation — PII vault tutorial">
+<title>OpenTelemetry (optional) | MCP-Bastion Docs</title>
+<meta name="description" content="MCP-Bastion documentation — OpenTelemetry (optional)">
 <meta name="docs-version" content="4.0.0">
 <link rel="stylesheet" href="../assets/guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,7 +45,7 @@
 </ul></div>
 <div class="nav-group"><div class="nav-group-title">Privacy &amp; context</div><ul>
 <li><a href="pii-vault.html">PII vault</a></li>
-<li><a href="pii-vault-tutorial.html" class="active">PII vault tutorial</a></li>
+<li><a href="pii-vault-tutorial.html">PII vault tutorial</a></li>
 <li><a href="schema-minimize.html">Schema minimize &amp; catalog pin</a></li>
 </ul></div>
 <div class="nav-group"><div class="nav-group-title">Security</div><ul>
@@ -59,7 +59,7 @@
 <li><a href="cli.html">CLI reference</a></li>
 <li><a href="metrics.html">Metrics</a></li>
 <li><a href="observability.html">Dashboard &amp; observability</a></li>
-<li><a href="otel.html">OpenTelemetry (optional)</a></li>
+<li><a href="otel.html" class="active">OpenTelemetry (optional)</a></li>
 </ul></div>
 <div class="nav-group"><div class="nav-group-title">Compliance</div><ul>
 <li><a href="cra-sbom.html">CRA &amp; SBOM</a></li>
@@ -74,68 +74,26 @@
     <article class="docs-article">
       <header class="article-header">
         <p class="eyebrow">MCP-Bastion Documentation</p>
-        <h1>PII vault tutorial</h1>
+        <h1>OpenTelemetry (optional)</h1>
       </header>
-      <h1 id="tutorial-reversible-pii-vault">Tutorial: Reversible PII vault</h1>
-<p>Keep tool-calling working while ensuring the LLM never sees raw PII.</p>
-<h2 id="prerequisites">Prerequisites</h2>
+      <h1 id="opentelemetry-otel">OpenTelemetry (OTEL)</h1>
+<p>MCP-Bastion can export spans to an OTLP endpoint for tracing.</p>
+<h2 id="setup">Setup</h2>
+<p>Set the OTLP endpoint:</p>
+<pre><code class="language-bash">export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+</code></pre>
+<p>Install the optional OTEL dependencies:</p>
+<pre><code class="language-bash">pip install mcp-bastion-python[otel]
+# or
+pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc
+</code></pre>
+<h2 id="behavior">Behavior</h2>
 <ul>
-<li><code>mcp-bastion-python</code> installed</li>
-<li>Optional: Redis when running multiple replicas</li>
+<li>When <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> is set, every tool call is recorded as a span (<code>mcp_bastion.tool_call</code>) with attributes: <code>mcp.tool</code>, <code>mcp.action</code>, <code>mcp.latency_ms</code>, and <code>mcp.error</code> when blocked.</li>
+<li>The audit export callback (used when audit is enabled and metrics are wired) calls <code>record_tool_span</code> so no extra wiring is needed if you use <code>build_middleware_from_config()</code> or <code>make_audit_export_callback()</code>.</li>
 </ul>
-<h2 id="step-1-enable-vault-opt-in">Step 1 - Enable vault (opt-in)</h2>
-<pre><code class="language-yaml"># bastion-vault.yaml
-audit:
-  enabled: false
-prompt_guard:
-  enabled: false
-rate_limit:
-  enabled: false
-pii:
-  enabled: true
-pii_vault:
-  enabled: true
-  ttl_seconds: 3600
-  # token_style: low_entropy   # optional: EMAIL_ADDRESS_1 / Person_A
-</code></pre>
-<p>Destructive redaction remains the default when <code>pii_vault.enabled</code> is omitted or <code>false</code>.</p>
-<h2 id="step-2-wrap-your-server-or-run-the-http-proxy">Step 2 - Wrap your server (or run the HTTP proxy)</h2>
-<pre><code class="language-python">from mcp_bastion.config import load_config, build_middleware_from_config
-
-mw = build_middleware_from_config(load_config(&quot;bastion-vault.yaml&quot;))
-# attach mw via compose_middleware / FastMCP as usual
-</code></pre>
-<p>Boundary / proxy deployments get the same abstract + hydrate on the wire (JSON and SSE <code>text/event-stream</code> event frames).</p>
-<h2 id="step-3-observe-abstraction">Step 3 - Observe abstraction</h2>
-<p>When a tool returns <code>"Contact alice@example.com"</code>, the agent receives something like:</p>
-<pre><code class="language-text">Contact {{pii:EMAIL_ADDRESS:a3f9b2c1d4e5}}
-</code></pre>
-<p>With <code>token_style: low_entropy</code>:</p>
-<pre><code class="language-text">Contact EMAIL_ADDRESS_1
-</code></pre>
-<p>Confirm the raw email is absent from the middleware / proxy result.</p>
-<h2 id="step-4-observe-hydration">Step 4 - Observe hydration</h2>
-<p>When the agent calls <code>send_mail</code> with <code>{"to": "{{pii:EMAIL_ADDRESS:a3f9b2c1d4e5}}"}</code>, Bastion restores <code>alice@example.com</code> <strong>before</strong> your tool handler runs (or before the proxy forwards upstream) - so SMTP / calendar APIs receive real addresses.</p>
-<h2 id="step-5-scale-with-redis">Step 5 - Scale with Redis</h2>
-<pre><code class="language-yaml">state_backend:
-  type: redis
-  redis_url: redis://127.0.0.1:6379/0
-</code></pre>
-<p>Vault maps share across workers via the same backend as FinOps / replay.</p>
-<h2 id="step-6-verify-tests-locally">Step 6 - Verify tests locally</h2>
-<pre><code class="language-bash">python -m pytest tests/test_pii_vault.py tests/test_proxy_server_coverage.py -q
-</code></pre>
-<h2 id="non-goals-this-release">Non-goals (this release)</h2>
-<ul>
-<li>Does not replace Presidio with GLiNER</li>
-<li>Does not require Ollama / GuardEx</li>
-<li>Does not change default <code>pii</code> destructive behavior when vault is off</li>
-</ul>
-<h2 id="related">Related</h2>
-<ul>
-<li><a href="pii-vault.html">PII_VAULT.md</a></li>
-<li>Example diagram: <code>images/mcp-bastion-pii-vault.svg</code></li>
-</ul>
+<h2 id="metrics">Metrics</h2>
+<p>Dashboard Prometheus endpoint (<code>GET /metrics</code>) is the primary way to scrape metrics. For OTLP metrics export you can run a collector that scrapes the dashboard or forwards from your existing pipeline.</p>
     </article>
     <footer class="docs-footer">
       <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·

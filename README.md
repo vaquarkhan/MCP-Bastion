@@ -9,6 +9,8 @@
   ·
   <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html"><strong>Demos</strong></a>
   ·
+  <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/observability.html"><strong>Dashboard / Observability</strong></a>
+  ·
   <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/multi-language.html"><strong>Multi-language</strong></a>
   ·
   <a href="CONTRIBUTING.md"><strong>Contributing</strong></a>
@@ -45,6 +47,7 @@
 |-------|------|
 | **Documentation bible** | https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html |
 | **Demos** (attacks, dashboard, payloads, all languages) | https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html |
+| **Dashboard & observability** (OTEL optional) | https://vaquarkhan.github.io/MCP-Bastion/guide/observability.html |
 | **Multi-language suite** | https://vaquarkhan.github.io/MCP-Bastion/guide/multi-language.html · [suite repo](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | **Docs hub** | https://vaquarkhan.github.io/MCP-Bastion/guide/ |
 
