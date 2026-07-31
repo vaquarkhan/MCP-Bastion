@@ -2,13 +2,14 @@
 PII redaction via Microsoft Presidio.
 
 presidio-analyzer, presidio-anonymizer, spaCy. Sanitizes TextContent.
+Optional reversible tokenization is handled by ``pii_vault`` (opt-in).
 """
 
 from __future__ import annotations
 
 import logging
 import re
-from typing import Any
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,12 @@ class PIIRedactor:
             logger.warning("Presidio load failed: %s. PII redaction disabled.", e)
             raise
 
+    def detect_spans(self, text: str) -> list[Any]:
+        """Return ``EntitySpan`` list for reversible vault abstraction."""
+        from mcp_bastion.pillars.pii_vault import detect_entities_presidio
+
+        return detect_entities_presidio(self, text)
+
     def redact_text(self, text: str) -> str:
         """
         Analyze and anonymize PII in the given text.
@@ -100,6 +107,20 @@ class PIIRedactor:
             logger.warning("PII redaction failed: %s. Applying pattern fallback only.", e)
             return _redact_dashed_ssn_patterns(text)
 
+    def vault_text(
+        self,
+        text: str,
+        vault: Any,
+        session_key: str,
+        *,
+        detect: Callable[[str], list[Any]] | None = None,
+    ) -> str:
+        """Abstract PII into vault tokens (reversible). Falls back to regex detect."""
+        if vault is None:
+            return self.redact_text(text)
+        detector = detect or self.detect_spans
+        return vault.abstract_text(text, session_key, detect=detector)
+
     def redact_content_items(self, content: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Redact PII from MCP content items.
@@ -122,3 +143,19 @@ class PIIRedactor:
             else:
                 result.append(item)
         return result
+
+    def vault_content_items(
+        self,
+        content: list[dict[str, Any]],
+        vault: Any,
+        session_key: str,
+        *,
+        detect: Callable[[str], list[Any]] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Vault-abstract text content items (reversible)."""
+        if not content:
+            return content
+        if vault is None:
+            return self.redact_content_items(content)
+        detector = detect or self.detect_spans
+        return vault.abstract_content_items(content, session_key, detect=detector)

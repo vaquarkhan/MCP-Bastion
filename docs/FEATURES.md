@@ -25,7 +25,7 @@ prompt_guard:
 
 ### 2. PII redaction (`pii`)
 
-Scrubs emails, phones, SSN-style patterns from tool outputs before they reach the model.
+Scrubs emails, phones, SSN-style patterns from tool outputs before they reach the model (destructive Presidio placeholders by default).
 
 ```yaml
 pii:
@@ -35,6 +35,7 @@ pii:
 - **Enable:** `pii.enabled: true`
 - **Error code:** -32002 (block) or silent redact depending on path
 - **Dashboard:** PII row in `pillar_health`
+- **Reversible mode (opt-in):** see [PII_VAULT.md](PII_VAULT.md) - `pii_vault.enabled: true` uses `{{pii:TYPE:id}}` tokens and hydrates tool args.
 
 ### 3. Rate limiting (`rate_limit`)
 

@@ -24,6 +24,7 @@ from mcp_bastion.pillars.cost_tracker import CostTracker
 from mcp_bastion.pillars.sensitive_classifier import SensitiveContentClassifier
 from mcp_bastion.pillars.metrics import MetricsStore
 from mcp_bastion.pillars.pii_redaction import PIIRedactor
+from mcp_bastion.pillars.pii_vault import PiiVault
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
 from mcp_bastion.pillars.rate_limit import TokenBucketRateLimiter
 from mcp_bastion.pillars.rbac import RBAC
@@ -73,6 +74,8 @@ class BastionConfig:
     prompt_guard_heuristic_fallback: bool = True
     prompt_guard_model_id: str = "ProtectAI/deberta-v3-base-prompt-injection-v2"
     pii: bool = True
+    pii_vault: bool = False  # reversible tokenization; default OFF (opt-in)
+    pii_vault_ttl_seconds: float = 3600.0
     rate_limit: bool = True
     rate_limit_max_iterations: int = 15
     rate_limit_timeout_seconds: float = 60.0
@@ -318,6 +321,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     hot_reload = data.get("hot_reload", {})
     ahc = data.get("audit_hash_chain", {}) or {}
     bf = data.get("behavior_fingerprint", {}) or {}
+    pv = data.get("pii_vault", {}) or {}
     ca = data.get("cost_attribution", {}) or {}
     pe = data.get("policy_engine", {}) or {}
     mt = data.get("multi_tenant", {}) or {}
@@ -365,6 +369,10 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
             pg.get("model_id", "ProtectAI/deberta-v3-base-prompt-injection-v2")
         ),
         pii=data.get("pii", {}).get("enabled", True),
+        pii_vault=(
+            bool(pv.get("enabled", False)) if isinstance(pv, dict) else bool(pv)
+        ),
+        pii_vault_ttl_seconds=float(pv.get("ttl_seconds", 3600)) if isinstance(pv, dict) else 3600.0,
         rate_limit=data.get("rate_limit", {}).get("enabled", True),
         rate_limit_max_iterations=data.get("rate_limit", {}).get("max_iterations", 15),
         rate_limit_timeout_seconds=float(data.get("rate_limit", {}).get("timeout_seconds", 60)),
@@ -767,6 +775,12 @@ def _build_chain(config: BastionConfig) -> Any:
             rate_spike_multiplier=config.behavior_fingerprint_rate_spike_multiplier,
             backend=state_backend,
         )
+    pii_vault: PiiVault | None = None
+    if config.pii_vault and config.pii:
+        pii_vault = PiiVault(
+            backend=state_backend,
+            ttl_seconds=config.pii_vault_ttl_seconds,
+        )
     shared_backend = state_backend if config.state_backend.strip().lower() == "redis" else None
 
     agent_iam: AgentIAM | None = None
@@ -897,6 +911,8 @@ def _build_chain(config: BastionConfig) -> Any:
         replay_guard=ReplayGuard(require_nonce=config.replay_require_nonce, backend=shared_backend),
         enable_prompt_guard=config.prompt_guard,
         enable_pii_redaction=config.pii,
+        pii_vault=pii_vault,
+        enable_pii_vault=config.pii_vault and pii_vault is not None,
         enable_rate_limit=config.rate_limit,
         enable_circuit_breaker=config.circuit_breaker,
         enable_content_filter=config.content_filter,

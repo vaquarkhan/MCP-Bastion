@@ -8,6 +8,7 @@ from mcp_bastion.pillars.content_filter import ContentFilter
 from mcp_bastion.pillars.cost_tracker import CostTracker
 from mcp_bastion.pillars.metrics import DashboardMetrics, MetricsStore
 from mcp_bastion.pillars.pii_redaction import PIIRedactor
+from mcp_bastion.pillars.pii_vault import PiiVault, BufferedTokenRestorer
 from mcp_bastion.pillars.prompt_guard import PromptGuardEngine
 from mcp_bastion.pillars.rate_limit import TokenBucketRateLimiter
 from mcp_bastion.pillars.rbac import RBAC
@@ -34,6 +35,8 @@ __all__ = [
     "CircuitBreakerOpenError",
     "ContentFilterError",
     "PIIRedactor",
+    "PiiVault",
+    "BufferedTokenRestorer",
     "PromptGuardEngine",
     "RBAC",
     "ReplayGuard",

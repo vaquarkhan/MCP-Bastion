@@ -73,6 +73,7 @@ Hub with all files: [Docs README](README.md).
 - [Benchmarks (RBAC & context reduction)](BENCHMARKS.md)  -  measured output-budget, discovery, cache, RBAC matrix
 - [Supply chain & releases](SUPPLY_CHAIN.md)  -  CI merge gates, automated releases, npm provenance, PyPI OIDC, CycloneDX SBOM
 - [CRA compliance (SBOM + Article 14)](CRA_COMPLIANCE.md)  -  OpenSSF steward MVP docs without changing runtime middleware
+- [Reversible PII vault](PII_VAULT.md)  -  opt-in abstract + hydrate (destructive redact still default)
 - [Integration models](INTEGRATION_MODELS.md)  -  middleware vs URL-swap gateways; how each stack gets Bastion in front of MCP
 - [Detailed Tutorial](DETAILED_TUTORIAL.md)
 - [Policy as Code](POLICY_AS_CODE.md)

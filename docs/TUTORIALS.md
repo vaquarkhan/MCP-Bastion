@@ -227,6 +227,19 @@ Tutorial: **[CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md)** · posture: [CRA_COMP
 
 ---
 
+## Reversible PII vault (opt-in)
+
+Keep tool calling working while the LLM never sees raw emails/SSNs:
+
+```yaml
+pii_vault:
+  enabled: true
+```
+
+Tutorial: **[PII_VAULT_TUTORIAL.md](PII_VAULT_TUTORIAL.md)** · [PII_VAULT.md](PII_VAULT.md).
+
+---
+
 ## Summary
 
 | Scenario | Approach |
@@ -236,5 +249,6 @@ Tutorial: **[CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md)** · posture: [CRA_COMP
 | Third-party / GitHub / open-source MCP server | Run a Bastion-wrapped proxy that forwards to the upstream server, or run a wrapper process that injects middleware if the server supports it. |
 | Stateless MCP + legacy sessions (same proxy) | Enable `mcp_transport` in `bastion.yaml`; use `serve --proxy` + discovery card. [HYBRID_TRANSPORT_TUTORIAL.md](HYBRID_TRANSPORT_TUTORIAL.md) |
 | CRA / SBOM evidence | `python scripts/generate_sbom.py` - [CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md) |
+| Reversible PII (LLM never sees raw) | `pii_vault.enabled: true` - [PII_VAULT_TUTORIAL.md](PII_VAULT_TUTORIAL.md) |
 
 For more examples, see [examples/README.md](../examples/README.md), [SETUP_GUIDE.md](../SETUP_GUIDE.md), and [LLM_INTEGRATION.md](LLM_INTEGRATION.md) for client-side (OpenAI, Claude, etc.) setup.

@@ -25,6 +25,8 @@ Current Python package release: **`mcp-bastion-python==3.3.1`** ([PyPI](https://
 | [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) | **2.0.0:** full MCP method guards + Redis `state_backend` for multi-replica deploys |
 | [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) | **Opt-in:** stateful + stateless MCP transport, discovery card, agent stability |
 | [BEHAVIOR_FINGERPRINT.md](BEHAVIOR_FINGERPRINT.md) | **3.3.0 (opt-in):** per-agent baseline drift + rate spikes |
+| [PII_VAULT.md](PII_VAULT.md) | **Opt-in:** reversible PII tokenization (abstract + hydrate) |
+| [PII_VAULT_TUTORIAL.md](PII_VAULT_TUTORIAL.md) | Enable vault, verify abstract/hydrate, Redis tip |
 | [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) | **CRA / OpenSSF:** SBOM + Article 14 posture (no runtime change) |
 | [CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md) | Generate / download CycloneDX `bom.json` |
 | [REDTEAM.md](REDTEAM.md) | Interpreting harness scores; **`mcp-bastion redteam`** |
