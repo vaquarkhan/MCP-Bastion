@@ -34,6 +34,7 @@ def test_from_env_reads_vars(monkeypatch):
     monkeypatch.setenv("BASTION_CEDAR_BINARY", "cedar-bin")
     monkeypatch.setenv("BASTION_CEDAR_POLICIES_DIR", "/cedar")
     monkeypatch.setenv("BASTION_CEDAR_SCHEMA", "/schema.cedarschema")
+    monkeypatch.setenv("BASTION_CEDAR_ENTITIES", "/entities.json")
     ev = ExternalPolicyEvaluator.from_env()
     assert ev._cfg.engine == "opa"
     assert ev._cfg.opa_binary == "opa-bin"
@@ -42,6 +43,7 @@ def test_from_env_reads_vars(monkeypatch):
     assert ev._cfg.cedar_binary == "cedar-bin"
     assert ev._cfg.cedar_policies_dir == "/cedar"
     assert ev._cfg.cedar_schema_path == "/schema.cedarschema"
+    assert ev._cfg.cedar_entities_path == "/entities.json"
 
 
 def test_opa_skips_when_policy_dir_missing(tmp_path):
@@ -178,12 +180,14 @@ def test_cedar_skips_when_policies_dir_missing(tmp_path):
 def test_cedar_denies_when_only_deny_in_output(tmp_path):
     pol = tmp_path / "policies"
     pol.mkdir()
-    fake = mock.Mock(returncode=0, stdout="DECISION DENY\n", stderr="")
+    (pol / "p.cedar").write_text('permit (principal, action, resource);\n', encoding="utf-8")
+    # Real cedar CLI uses exit code 2 for DENY — must still deny, not fail-open.
+    fake = mock.Mock(returncode=2, stdout="DENY\n", stderr="")
     ev = ExternalPolicyEvaluator(
         ExternalPolicyConfig(engine="cedar", cedar_policies_dir=str(pol), cedar_binary="cedar")
     )
     with mock.patch("subprocess.run", return_value=fake):
-        ok, reason = ev.evaluate({"ctx": 1})
+        ok, reason = ev.evaluate({"tool": "x", "session_id": "s1"})
     assert ok is False
     assert "denied" in (reason or "").lower()
 
@@ -191,25 +195,29 @@ def test_cedar_denies_when_only_deny_in_output(tmp_path):
 def test_cedar_allows_when_permit_present(tmp_path):
     pol = tmp_path / "policies"
     pol.mkdir()
-    fake = mock.Mock(returncode=0, stdout="DENY but PERMIT wins\n", stderr="")
+    (pol / "p.cedar").write_text('permit (principal, action, resource);\n', encoding="utf-8")
+    fake = mock.Mock(returncode=0, stdout="ALLOW\n", stderr="")
     ev = ExternalPolicyEvaluator(
         ExternalPolicyConfig(engine="cedar", cedar_policies_dir=str(pol), cedar_binary="cedar")
     )
     with mock.patch("subprocess.run", return_value=fake):
-        ok, reason = ev.evaluate({"ctx": 1})
+        ok, reason = ev.evaluate({"tool": "x", "session_id": "s1"})
     assert ok is True
 
 
-def test_cedar_adds_schema_flag_when_file_exists(tmp_path):
+def test_cedar_adds_schema_and_entities_flags(tmp_path):
     pol = tmp_path / "policies"
     pol.mkdir()
+    (pol / "p.cedar").write_text('permit (principal, action, resource);\n', encoding="utf-8")
     schema = tmp_path / "schema.json"
     schema.write_text("{}", encoding="utf-8")
+    entities = tmp_path / "entities.json"
+    entities.write_text("[]", encoding="utf-8")
     captured = {}
 
     def run(cmd, **kwargs):
         captured["cmd"] = cmd
-        return mock.Mock(returncode=0, stdout="PERMIT\n", stderr="")
+        return mock.Mock(returncode=0, stdout="ALLOW\n", stderr="")
 
     ev = ExternalPolicyEvaluator(
         ExternalPolicyConfig(
@@ -217,20 +225,29 @@ def test_cedar_adds_schema_flag_when_file_exists(tmp_path):
             cedar_policies_dir=str(pol),
             cedar_binary="cedar",
             cedar_schema_path=str(schema),
+            cedar_entities_path=str(entities),
         )
     )
     with mock.patch("subprocess.run", side_effect=run):
-        ev.evaluate({"a": 1})
+        ev.evaluate({"tool": "safe_tool", "session_id": "alice"})
     assert "--schema" in captured["cmd"]
     assert str(schema) in captured["cmd"]
     assert "authorize" in captured["cmd"]
     assert "evaluate" not in captured["cmd"]
-    assert "--request-json" in captured["cmd"]
+    assert "--entities" in captured["cmd"]
+    assert "--principal" in captured["cmd"]
+    assert "--action" in captured["cmd"]
+    assert "--resource" in captured["cmd"]
+    assert 'User::"alice"' in captured["cmd"]
+    assert 'Action::"invoke"' in captured["cmd"]
+    assert 'Tool::"safe_tool"' in captured["cmd"]
+    assert "--request-json" not in captured["cmd"]
 
 
 def test_cedar_nonzero_returncode_allows(tmp_path, caplog):
     pol = tmp_path / "policies"
     pol.mkdir()
+    (pol / "p.cedar").write_text('permit (principal, action, resource);\n', encoding="utf-8")
     fake = mock.Mock(returncode=2, stdout="", stderr="cedar err")
     ev = ExternalPolicyEvaluator(
         ExternalPolicyConfig(
@@ -242,7 +259,7 @@ def test_cedar_nonzero_returncode_allows(tmp_path, caplog):
     )
     with caplog.at_level("WARNING"):
         with mock.patch("subprocess.run", return_value=fake):
-            ok, reason = ev.evaluate({"a": 1})
+            ok, reason = ev.evaluate({"tool": "a", "session_id": "s"})
     assert ok is True
 
 
@@ -302,6 +319,7 @@ def test_cedar_fail_closed_when_policies_dir_missing(tmp_path):
 def test_cedar_oserror_allows(tmp_path, caplog):
     pol = tmp_path / "policies"
     pol.mkdir()
+    (pol / "p.cedar").write_text('permit (principal, action, resource);\n', encoding="utf-8")
     ev = ExternalPolicyEvaluator(
         ExternalPolicyConfig(
             engine="cedar",
@@ -312,7 +330,7 @@ def test_cedar_oserror_allows(tmp_path, caplog):
     )
     with caplog.at_level("WARNING"):
         with mock.patch("subprocess.run", side_effect=OSError("nope")):
-            ok, reason = ev.evaluate({"a": 1})
+            ok, reason = ev.evaluate({"tool": "a", "session_id": "s"})
     assert ok is True
 
 
@@ -353,3 +371,109 @@ def test_opa_real_binary_smoke(tmp_path):
     ok2, reason2 = ev.evaluate({"role": "guest"})
     assert ok2 is False
     assert reason2 is not None
+
+
+def test_cedar_real_binary_smoke(tmp_path):
+    """Run real `cedar authorize --entities` when cedar is on PATH (skips otherwise)."""
+    import shutil
+
+    cedar = shutil.which("cedar")
+    if not cedar:
+        import pytest
+
+        pytest.skip("cedar binary not on PATH")
+
+    pol = tmp_path / "policies"
+    pol.mkdir()
+    (pol / "allow_alice.cedar").write_text(
+        'permit (\n'
+        '  principal == User::"alice",\n'
+        '  action == Action::"invoke",\n'
+        '  resource == Tool::"safe_tool"\n'
+        ');\n',
+        encoding="utf-8",
+    )
+    (pol / "entities.json").write_text("[]", encoding="utf-8")
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_binary=cedar,
+            cedar_policies_dir=str(pol),
+            cedar_entities_path=str(pol / "entities.json"),
+            fail_closed=True,
+        )
+    )
+    ok, reason = ev.evaluate({"tool": "safe_tool", "session_id": "alice"})
+    assert ok is True, reason
+    ok2, reason2 = ev.evaluate({"tool": "safe_tool", "session_id": "bob"})
+    assert ok2 is False
+    assert reason2 is not None
+    assert "denied" in reason2.lower()
+
+
+def test_cedar_combines_multiple_policy_files(tmp_path):
+    """Multiple *.cedar files are concatenated into a temp policies file."""
+    pol = tmp_path / "policies"
+    pol.mkdir()
+    (pol / "a.cedar").write_text("permit (principal, action, resource);\n", encoding="utf-8")
+    (pol / "b.cedar").write_text(
+        'forbid (principal == User::"bob", action, resource);\n', encoding="utf-8"
+    )
+    entities = tmp_path / "entities.json"
+    entities.write_text(
+        '{"entities": [{"uid": {"type": "User", "id": "alice"}, "attrs": {}, "parents": []}]}',
+        encoding="utf-8",
+    )
+    captured = {}
+
+    def run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return mock.Mock(returncode=0, stdout="ALLOW\n", stderr="")
+
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(pol),
+            cedar_binary="cedar",
+            cedar_entities_path=str(entities),
+        )
+    )
+    with mock.patch("subprocess.run", side_effect=run):
+        ok, _ = ev.evaluate({"tool": "t", "session_id": "alice"})
+    assert ok is True
+    assert "--policies" in captured["cmd"]
+
+
+def test_cedar_entities_invalid_json_fail_open(tmp_path):
+    pol = tmp_path / "policies"
+    pol.mkdir()
+    (pol / "p.cedar").write_text("permit (principal, action, resource);\n", encoding="utf-8")
+    bad = tmp_path / "entities.json"
+    bad.write_text("{not-json", encoding="utf-8")
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(pol),
+            cedar_binary="cedar",
+            cedar_entities_path=str(bad),
+            fail_closed=False,
+        )
+    )
+    ok, reason = ev.evaluate({"tool": "x", "session_id": "s"})
+    assert ok is True
+
+
+def test_cedar_empty_policy_dir_unavailable(tmp_path):
+    pol = tmp_path / "empty"
+    pol.mkdir()
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(pol),
+            cedar_binary="cedar",
+            fail_closed=True,
+        )
+    )
+    ok, reason = ev.evaluate({"tool": "x"})
+    assert ok is False
+    assert reason is not None

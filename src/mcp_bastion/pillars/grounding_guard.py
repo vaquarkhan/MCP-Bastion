@@ -13,13 +13,34 @@ from mcp_bastion.errors import GroundingViolationError
 
 GroundingAction = Literal["warn", "block", "strip"]
 
-# Common path-like references in tool output (Unix + Windows-ish).
+_EXTENSIONS = (
+    "py|ts|tsx|js|jsx|go|rs|java|kt|rb|php|cs|cpp|c|h|"
+    "yaml|yml|json|toml|md|txt|sql|sh|ps1|vue|svelte|dart|swift|scala|r"
+)
+
+# Strong path signals only (B-3): do NOT match slash idioms like 24/7, TCP/IP, read/write, and/or.
 _PATH_PATTERN = re.compile(
     r"(?<![A-Za-z0-9_])"
-    r"(?:\./|\../|[A-Za-z]:[\\/]|/[A-Za-z0-9_.-]+/|[A-Za-z0-9_.-]+/"
-    r"|[A-Za-z0-9_.-]+\.(?:py|ts|tsx|js|jsx|go|rs|java|kt|rb|php|cs|cpp|c|h|"
-    r"yaml|yml|json|toml|md|txt|sql|sh|ps1|vue|svelte|dart|swift|scala|r))"
-    r"(?:[A-Za-z0-9_./\\-]+)?",
+    r"(?:"
+    # Relative / absolute / drive prefixes with at least one more segment
+    r"(?:\.\.?[\\/]|[A-Za-z]:[\\/]|/(?:etc|var|usr|home|tmp|opt|root|Users|windows|Windows|mnt|data)[\\/])"
+    r"[A-Za-z0-9_./\\-]+"
+    r"|"
+    # Multi-segment path that ends with a known source/config extension
+    r"[A-Za-z0-9_.-]+(?:[\\/][A-Za-z0-9_.-]+)+\.(?:" + _EXTENSIONS + r")"
+    r"|"
+    # Bare filename with a known extension (src/app.py still matched via multi-segment)
+    r"[A-Za-z0-9_.-]+\.(?:" + _EXTENSIONS + r")"
+    r")"
+)
+
+# Explicit non-paths (defense in depth if regex drifts).
+_SLASH_IDIOM = re.compile(
+    r"(?ix)^(?:"
+    r"\d+\s*/\s*\d+"  # 24/7
+    r"|and/or|read/write|input/output|i/o|tcp/ip|udp/ip|http/https|os/2"
+    r"|he/she|his/her|yes/no|on/off|up/down|in/out"
+    r")$"
 )
 
 
@@ -63,6 +84,12 @@ class GroundingGuard:
         for match in _PATH_PATTERN.finditer(text):
             token = match.group(0).strip().strip("'\"`,;:")
             if len(token) < 3 or token in seen:
+                continue
+            if _SLASH_IDIOM.match(token):
+                continue
+            # Reject pure slash-idioms captured as a larger token (e.g. "TCP/IP.")
+            core = token.rstrip(".,;:)")
+            if _SLASH_IDIOM.match(core):
                 continue
             seen.add(token)
             out.append(token)

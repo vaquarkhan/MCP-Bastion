@@ -3,6 +3,9 @@ Rate limiting: token bucket per session.
 
 Max 15 iterations, 60s timeout, optional token budget (50k default), optional per-tool caps.
 Supports pluggable StateBackend (Redis) for multi-replica deployments.
+
+Session clocks use wall time (``time.time()``) so Redis-shared ``started_at`` remains
+valid across processes/replicas (monotonic clocks are process-local — A-6).
 """
 
 from __future__ import annotations
@@ -25,6 +28,11 @@ DEFAULT_TOKEN_BUDGET = 50_000
 RateLimitViolation = Literal["ok", "timeout", "iterations", "token_budget", "per_tool"]
 
 
+def _wall_clock() -> float:
+    """Wall-clock seconds; safe to serialize across processes (unlike monotonic)."""
+    return time.time()
+
+
 @dataclass(frozen=True)
 class RateLimitCheckResult:
     allowed: bool
@@ -37,7 +45,7 @@ class SessionState:
     """Per-session rate limit state."""
 
     iterations: int = 0
-    started_at: float = field(default_factory=time.monotonic)
+    started_at: float = field(default_factory=_wall_clock)
     tokens_used: int = 0
     tool_iterations: dict[str, int] = field(default_factory=dict)
 
@@ -53,7 +61,7 @@ class SessionState:
     def from_dict(cls, data: dict) -> SessionState:
         return cls(
             iterations=int(data.get("iterations", 0)),
-            started_at=float(data.get("started_at", time.monotonic())),
+            started_at=float(data.get("started_at", _wall_clock())),
             tokens_used=int(data.get("tokens_used", 0)),
             tool_iterations={
                 str(k): int(v) for k, v in (data.get("tool_iterations") or {}).items()
@@ -126,31 +134,17 @@ class TokenBucketRateLimiter:
             return
         self._backend.delete(self._storage_key(session_key))
 
+    def _elapsed(self, state: SessionState) -> float:
+        return _wall_clock() - float(state.started_at)
+
     def _cleanup_expired(self, session_key: str) -> None:
         state = self._load_state(session_key)
-        elapsed = time.monotonic() - state.started_at
-        if elapsed > self.timeout_seconds:
+        if self._elapsed(state) > self.timeout_seconds:
             self._delete_state(session_key)
 
-    def check_iteration(
-        self,
-        request_id: str | None = None,
-        session_id: str | None = None,
-        tool_name: str | None = None,
-    ) -> RateLimitCheckResult:
-        """
-        Check if another iteration is allowed.
-
-        Returns RateLimitCheckResult with violation kind when blocked.
-        """
-        key = self._get_session_id(request_id, session_id)
-        self._cleanup_expired(key)
-
-        state = self._load_state(key)
-        elapsed = time.monotonic() - state.started_at
-
+    def _evaluate(self, state: SessionState, tool_name: str | None) -> RateLimitCheckResult:
+        elapsed = self._elapsed(state)
         if elapsed > self.timeout_seconds:
-            self._delete_state(key)
             return RateLimitCheckResult(
                 False,
                 "Session timeout exceeded (60s limit)",
@@ -182,6 +176,26 @@ class TokenBucketRateLimiter:
 
         return RateLimitCheckResult(True, None, "ok")
 
+    def check_iteration(
+        self,
+        request_id: str | None = None,
+        session_id: str | None = None,
+        tool_name: str | None = None,
+    ) -> RateLimitCheckResult:
+        """
+        Check if another iteration is allowed.
+
+        Returns RateLimitCheckResult with violation kind when blocked.
+        """
+        key = self._get_session_id(request_id, session_id)
+        self._cleanup_expired(key)
+
+        state = self._load_state(key)
+        result = self._evaluate(state, tool_name)
+        if result.violation == "timeout":
+            self._delete_state(key)
+        return result
+
     def consume_iteration(
         self,
         request_id: str | None = None,
@@ -210,6 +224,74 @@ class TokenBucketRateLimiter:
             if tool_name:
                 tool_key = str(tool_name)
                 state.tool_iterations[tool_key] = state.tool_iterations.get(tool_key, 0) + 1
+
+    def check_and_consume(
+        self,
+        request_id: str | None = None,
+        session_id: str | None = None,
+        tokens: int = 0,
+        tool_name: str | None = None,
+    ) -> RateLimitCheckResult:
+        """Atomically check limits then consume one iteration (A-7)."""
+        if tokens < 0:
+            raise ValueError("tokens must be >= 0")
+        key = self._get_session_id(request_id, session_id)
+        with self._lock:
+            if self._uses_shared_backend:
+                state = self._load_state(key)
+            else:
+                state = self._sessions[key]
+            if self._elapsed(state) > self.timeout_seconds:
+                if self._uses_shared_backend:
+                    self._backend.delete(self._storage_key(key))
+                else:
+                    self._sessions.pop(key, None)
+                state = SessionState()
+                if not self._uses_shared_backend:
+                    self._sessions[key] = state
+            result = self._evaluate(state, tool_name)
+            if not result.allowed:
+                if result.violation == "timeout":
+                    if self._uses_shared_backend:
+                        self._backend.delete(self._storage_key(key))
+                    else:
+                        self._sessions.pop(key, None)
+                return result
+            state.iterations += 1
+            state.tokens_used += tokens
+            if tool_name:
+                tool_key = str(tool_name)
+                state.tool_iterations[tool_key] = state.tool_iterations.get(tool_key, 0) + 1
+            if self._uses_shared_backend:
+                self._backend.set_json(
+                    self._storage_key(key),
+                    state.to_dict(),
+                    ttl_seconds=self.timeout_seconds,
+                )
+            else:
+                self._sessions[key] = state
+            return RateLimitCheckResult(True, None, "ok")
+
+    def add_tokens(
+        self,
+        request_id: str | None = None,
+        session_id: str | None = None,
+        tokens: int = 0,
+    ) -> None:
+        """Add token usage without consuming another iteration (post-call accounting)."""
+        if tokens < 0:
+            raise ValueError("tokens must be >= 0")
+        if tokens == 0:
+            return
+        key = self._get_session_id(request_id, session_id)
+        with self._lock:
+            if self._uses_shared_backend:
+                state = self._load_state(key)
+                state.tokens_used += tokens
+                self._save_state(key, state)
+            else:
+                state = self._sessions[key]
+                state.tokens_used += tokens
 
     def reset_session(
         self,
@@ -247,10 +329,9 @@ class RateLimiter:
         """Raise :class:`RateLimitExceededError` when the iteration cap is hit."""
         from mcp_bastion.errors import RateLimitExceededError
 
-        result = self._inner.check_iteration(
+        result = self._inner.check_and_consume(
             session_id=self._session_id,
             tool_name=tool_name,
         )
         if not result.allowed:
             raise RateLimitExceededError(result.message or "Rate limit exceeded")
-        self._inner.consume_iteration(session_id=self._session_id, tool_name=tool_name)

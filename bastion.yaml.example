@@ -11,6 +11,10 @@ prompt_guard:
   fail_open: false         # when ML unavailable: block unverified payloads (dev: set true)
   # Default: ungated ProtectAI model (no Hugging Face login). Works out of the box with transformers+torch.
   use_ungated_default: true
+  # N-2: require injection-intent markers before trusting ML "malicious" (suppresses business-verb FPs).
+  # Set require_ml_corroboration: false for max-recall (higher FP) deployments.
+  require_ml_corroboration: true
+  # ml_corroboration_ceiling: 1.01  # ProtectAI is uncalibrated; leave default (ceiling effectively off)
   # Optional gated Llama model: set use_ungated_default: false and model_id below, then `huggingface-cli login`
   # model_id: meta-llama/Llama-Prompt-Guard-2-86M
 
@@ -66,8 +70,8 @@ circuit_breaker:
 
 content_filter:
   enabled: true
-  # Code/path patterns are OFF by default in the library (too many false positives for
-  # coding assistants). Enable deliberately for high-risk tools:
+  # Defaults ON with scoped patterns: shell/exfil (curl|bash, rm -rf) and sensitive
+  # paths (/etc/passwd, ../). Discussing eval() / markdown fences is allowed.
   block_code_execution: true
   block_file_paths: true
   block_urls: false
@@ -264,8 +268,11 @@ policy_engine:
     query: data.bastion.allow
   cedar:
     binary: cedar
-    policies_dir: ./policies/cedar
-    schema: ./policies/cedar/schema.cedarschema
+    policies_dir: ./policies/cedar   # directory of *.cedar files (CLI needs a file; Bastion concatenates)
+    entities: ./policies/cedar/entities.json   # optional; request User/Action/Tool entities are merged in
+    schema: ./policies/cedar/schema.cedarschema   # optional
+    # Authz maps MCP calls to: principal User::"<session_id>", action Action::"invoke",
+    # resource Tool::"<tool_name>" via `cedar authorize --entities ...`.
 
 # Hybrid stateful / stateless MCP transport (opt-in; default OFF).
 # Prepares for stateless MCP (SEP-2575) while preserving legacy session-based clients.

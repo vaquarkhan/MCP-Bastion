@@ -35,3 +35,22 @@ def test_grounding_guard_warn_does_not_raise(tmp_path):
     guard = GroundingGuard(workspace_root=tmp_path, on_violation="warn")
     result = guard.check_text("src/ghost.py")
     assert result.violations
+
+
+def test_grounding_guard_ignores_slash_idioms(tmp_path):
+    """B-3: ordinary slashed text must not be treated as file paths."""
+    guard = GroundingGuard(workspace_root=tmp_path, on_violation="block")
+    for phrase in (
+        "We support 24/7 coverage.",
+        "Uses TCP/IP networking.",
+        "Supports read/write access.",
+        "Choose and/or continue.",
+    ):
+        assert guard.extract_paths(phrase) == []
+        guard.check_text(phrase)  # must not raise
+
+
+def test_grounding_guard_still_flags_fake_source_file(tmp_path):
+    guard = GroundingGuard(workspace_root=tmp_path, on_violation="warn")
+    result = guard.check_text("See src/nonexistent_fake_file.py for details")
+    assert any(v.endswith(".py") for v in result.violations)

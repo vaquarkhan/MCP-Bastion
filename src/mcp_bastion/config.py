@@ -118,8 +118,8 @@ class BastionConfig:
     grounding_guard_on_violation: str = "warn"
     circuit_breaker: bool = False
     content_filter: bool = False
-    content_filter_block_code_execution: bool = False
-    content_filter_block_file_paths: bool = False
+    content_filter_block_code_execution: bool = True
+    content_filter_block_file_paths: bool = True
     content_filter_block_urls: bool = False
     content_filter_block_secrets: bool = True
     content_filter_allowlist_patterns: list[str] = field(default_factory=list)
@@ -140,6 +140,8 @@ class BastionConfig:
     cost_policy_enabled: bool = False
     cost_policy_config: dict[str, Any] = field(default_factory=dict)
     prompt_guard_use_ungated_default: bool = True
+    prompt_guard_require_ml_corroboration: bool = True
+    prompt_guard_ml_corroboration_ceiling: float = 1.01
     boundary_mode_enabled: bool = False
     governance_attestation_enabled: bool = True
     identity_adapter_enabled: bool = False
@@ -185,6 +187,7 @@ class BastionConfig:
     cedar_binary: str = "cedar"
     cedar_policies_dir: str | None = None
     cedar_schema_path: str | None = None
+    cedar_entities_path: str | None = None
     multi_tenant_enabled: bool = False
     multi_tenant_config_dir: str | None = None
     multi_tenant_default_tenant: str = "default"
@@ -317,10 +320,16 @@ def validate_bastion_config(config: BastionConfig) -> None:
                 )
         if engine == "cedar":
             pol = config.cedar_policies_dir
-            if not pol or not Path(pol).is_dir():
+            p = Path(pol) if pol else None
+            if not p or not p.exists() or not (p.is_dir() or (p.is_file() and p.suffix == ".cedar")):
                 raise BastionConfigError(
                     "policy_engine.fail_closed is true but policy_engine.cedar.policies_dir "
-                    "is missing or not a directory"
+                    "is missing or not a directory / .cedar file"
+                )
+            if p.is_dir() and not any(p.glob("*.cedar")):
+                raise BastionConfigError(
+                    "policy_engine.fail_closed is true but policy_engine.cedar.policies_dir "
+                    "contains no *.cedar files"
                 )
 
 
@@ -394,6 +403,8 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         prompt_guard_fail_open=bool(pg.get("fail_open", False)),
         prompt_guard_heuristic_fallback=bool(pg.get("heuristic_fallback", True)),
         prompt_guard_use_ungated_default=bool(pg.get("use_ungated_default", True)),
+        prompt_guard_require_ml_corroboration=bool(pg.get("require_ml_corroboration", True)),
+        prompt_guard_ml_corroboration_ceiling=float(pg.get("ml_corroboration_ceiling", 1.01)),
         prompt_guard_model_id=str(
             pg.get("model_id", "ProtectAI/deberta-v3-base-prompt-injection-v2")
         ),
@@ -437,9 +448,9 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         grounding_guard_on_violation=str(data.get("grounding_guard", {}).get("on_violation", "warn")),
         circuit_breaker=data.get("circuit_breaker", {}).get("enabled", False),
         content_filter=content_filter.get("enabled", False),
-        content_filter_block_code_execution=content_filter.get("block_code_execution", False),
-        content_filter_block_file_paths=content_filter.get("block_file_paths", False),
-        content_filter_block_urls=content_filter.get("block_urls", False),
+        content_filter_block_code_execution=bool(content_filter.get("block_code_execution", True)),
+        content_filter_block_file_paths=bool(content_filter.get("block_file_paths", True)),
+        content_filter_block_urls=bool(content_filter.get("block_urls", False)),
         content_filter_block_secrets=bool(content_filter.get("block_secrets", True)),
         content_filter_allowlist_patterns=list(content_filter.get("allowlist_patterns", [])),
         content_filter_denylist_patterns=list(
@@ -532,6 +543,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         cedar_binary=str(cedar_pe.get("binary") or os.environ.get("BASTION_CEDAR_BINARY", "cedar")),
         cedar_policies_dir=cedar_pe.get("policies_dir") or os.environ.get("BASTION_CEDAR_POLICIES_DIR"),
         cedar_schema_path=cedar_pe.get("schema") or os.environ.get("BASTION_CEDAR_SCHEMA"),
+        cedar_entities_path=cedar_pe.get("entities") or os.environ.get("BASTION_CEDAR_ENTITIES"),
         multi_tenant_enabled=bool(mt.get("enabled", False)),
         multi_tenant_config_dir=mt.get("config_dir") or os.environ.get("BASTION_TENANT_CONFIG_DIR"),
         multi_tenant_default_tenant=str(mt.get("default_tenant", "default")),
@@ -790,6 +802,7 @@ def _build_chain(config: BastionConfig) -> Any:
         cedar_binary=config.cedar_binary,
         cedar_policies_dir=config.cedar_policies_dir,
         cedar_schema_path=config.cedar_schema_path,
+        cedar_entities_path=config.cedar_entities_path,
         fail_closed=config.policy_engine_fail_closed,
     )
     external_evaluator = ExternalPolicyEvaluator(ext_cfg)
@@ -966,6 +979,8 @@ def _build_chain(config: BastionConfig) -> Any:
         fail_open=config.prompt_guard_fail_open,
         heuristic_fallback=config.prompt_guard_heuristic_fallback,
         use_ungated_default=config.prompt_guard_use_ungated_default,
+        require_ml_corroboration=config.prompt_guard_require_ml_corroboration,
+        ml_corroboration_ceiling=config.prompt_guard_ml_corroboration_ceiling,
         heuristic_extra_patterns=threat_feed_extra_heuristics or None,
     )
 

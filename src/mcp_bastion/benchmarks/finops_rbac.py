@@ -27,14 +27,20 @@ def text_with_approx_tokens(
     *,
     token_counter: Callable[[str], int] | None = None,
 ) -> str:
-    """Build text whose token count is at least ``target`` (tiktoken or char/4 estimate)."""
+    """Build text whose token count is at least ``target`` (tiktoken or char/4 estimate).
+
+    Grows in batches so we do not call the tokenizer once per word (O(n²) with tiktoken).
+    """
     counter = token_counter or count_text_tokens
     if target <= 0:
         return ""
     word = "measurement "
-    text = ""
-    while counter(text) < target:
-        text += word
+    # Char heuristic first (~4 chars/token), then pad in batches if under target.
+    text = word * max(1, target)
+    counted = counter(text)
+    while counted < target:
+        text += word * max(1, target - counted)
+        counted = counter(text)
     return text
 
 

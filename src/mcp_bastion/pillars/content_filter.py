@@ -2,6 +2,9 @@
 Content filtering beyond PII for MCP-Bastion.
 
 Block/flag code execution, file paths, URLs, and custom patterns.
+
+Default posture (N-1): block high-confidence *shell/exfil* and sensitive *paths* ON,
+without flagging ordinary discussion of ``eval()`` or markdown code fences.
 """
 
 from __future__ import annotations
@@ -15,31 +18,30 @@ from mcp_bastion.pillars.content_normalize import normalize_for_scan
 
 logger = logging.getLogger(__name__)
 
-# Default patterns
+# High-confidence shell / RCE / pipe-to-shell (ON by default).
+# Intentionally excludes bare eval()/markdown fences (those cause B-1 FPs).
 DEFAULT_CODE_PATTERNS = [
-    r"```[\s\S]*?```",  # Markdown code blocks
-    r"`[^`]+`",  # Inline code
-    r"eval\s*\(",
-    r"exec\s*\(",
-    r"__import__\s*\(",
-    r"subprocess\.(run|call|Popen)",
-    r"os\.system\s*\(",
-    r"shell\s*=\s*True",
     r"(?i)\brm\s+-rf\b",
     r"(?i)\bcurl\s+[^\n|]*\|\s*(?:ba)?sh\b",
     r"(?i)\bwget\s+[^\n|]*\|\s*(?:ba)?sh\b",
     r"(?i)\bchmod\s+\+x\b",
     r"(?i)base64\s+-d[^\n|]*\|\s*(?:ba)?sh\b",
-    r"(?i)\|\s*(?:ba)?sh\s*$",
+    r"(?i)\|\s*(?:ba)?sh\b",
+    r"(?i)\b(?:ba)?sh\s+-c\s+['\"]",
+    r"subprocess\.(?:run|call|Popen)\s*\([^)]*shell\s*=\s*True",
+    r"os\.system\s*\(",
+    r"(?i)\bpowershell\s+(?:-enc|-encodedcommand)\b",
+    r"(?i)\binvoke-expression\b|\biex\s*\(",
 ]
 
+# Narrow sensitive paths / traversal (ON by default) — not every slash idiom.
 DEFAULT_PATH_PATTERNS = [
-    r"(?:^|[\s/\\])(?:/etc/|/var/|/usr/|C:\\|/root/|~/)",
+    r"(?:^|[\s\"'=])(?:/etc/(?:passwd|shadow|sudoers)|/var/run/docker\.sock|/root/)",
+    r"(?:^|[\s\"'=])C:\\(?:Windows\\System32|Users\\[^\\\s]+\\(?:\.ssh|\.aws))",
     r"(?:^|[\s/\\])\.\./",  # Path traversal
     r"(?:^|[\s/\\])\.\.\\",
-    r"/etc/passwd",
-    r"/etc/shadow",
-    r"\.env",
+    r"(?:^|[\s\"'=])~/?\.ssh/",
+    r"(?:^|[\s\"'=])(?:\.env(?:\.local)?)\b",
 ]
 
 DEFAULT_URL_PATTERN = r"https?://[^\s]+"
@@ -66,8 +68,8 @@ class ContentFilter:
     def __init__(
         self,
         *,
-        block_code_execution: bool = False,
-        block_file_paths: bool = False,
+        block_code_execution: bool = True,
+        block_file_paths: bool = True,
         block_urls: bool = False,
         block_secrets: bool = True,
         allowlist_patterns: list[str] | None = None,
@@ -192,4 +194,3 @@ class ContentFilter:
                     "Content blocked: URL not allowed",
                     matched_pattern=DEFAULT_URL_PATTERN,
                 )
-
