@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Documentation bible | MCP-Bastion Docs</title>
 <meta name="description" content="MCP-Bastion documentation — Documentation bible">
-<meta name="docs-version" content="4.0.0">
+<meta name="docs-version" content="4.0.1">
 <link rel="stylesheet" href="../assets/guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,12 +16,12 @@
 <header class="docs-header">
   <div class="header-inner">
     <a class="brand" href="../index.html">MCP-Bastion</a>
-    <span class="version-badge">4.0.0</span>
+    <span class="version-badge">4.0.1</span>
     <nav class="header-links">
       <a href="index.html" class="current">Docs</a>
       <a href="../integrations.html">Integrations</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
-      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.1/">PyPI</a>
     </nav>
   </div>
 </header>
@@ -93,6 +93,11 @@ Live: <code>PYTHONPATH=src python -m examples.attack_demos --strict</code> · Pe
 <p><em>Posture, OWASP heatmaps, attack matrix, governance, forensics, FinOps.</em><br />
 Local: <code>mcp-bastion dashboard --demo</code></p>
 <h3 id="architecture-at-a-glance">Architecture at a glance</h3>
+<pre class="mermaid">flowchart LR
+  Scan[Scan&lt;br/&gt;catalog checks] --&gt; Test[Test&lt;br/&gt;redteam]
+  Test --&gt; Enforce[Enforce&lt;br/&gt;middleware / proxy]
+  Enforce --&gt; Tools[MCP tools]
+</pre>
 <table>
 <thead>
 <tr>
@@ -102,16 +107,20 @@ Local: <code>mcp-bastion dashboard --demo</code></p>
 </thead>
 <tbody>
 <tr>
-<td><img alt="Scan Test Enforce" src="../assets/mcp-bastion-scan-test-enforce.png" /></td>
+<td><img alt="Scan Test Enforce" src="../assets/mcp-bastion-scan-test-enforce.svg" /></td>
 <td>Scan → Test → Enforce lifecycle</td>
 </tr>
 <tr>
-<td><img alt="PII vault" src="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/images/mcp-bastion-pii-vault.svg" /></td>
+<td><img alt="PII vault" src="../assets/mcp-bastion-pii-vault.svg" /></td>
 <td>Reversible PII abstract / hydrate</td>
 </tr>
 <tr>
-<td><img alt="Hybrid transport" src="https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/images/mcp-bastion-hybrid-transport.svg" /></td>
+<td><img alt="Hybrid transport" src="../assets/mcp-bastion-hybrid-transport.svg" /></td>
 <td>Hybrid MCP transport paths</td>
+</tr>
+<tr>
+<td><img alt="Runtime governance" src="../assets/mcp-bastion-runtime-governance-3.0.svg" /></td>
+<td>Opt-in enterprise pillars</td>
 </tr>
 </tbody>
 </table>
@@ -168,16 +177,14 @@ Local: <code>mcp-bastion dashboard --demo</code></p>
 <hr />
 <h2 id="part-1-what-bastion-is">Part 1 — What Bastion is</h2>
 <p>MCP-Bastion is <strong>security and governance middleware</strong> for the <a href="https://modelcontextprotocol.io/">Model Context Protocol</a>. It sits on the request/response path of tools, resources, and prompts — enforcing policy <strong>before</strong> untrusted model-driven actions reach your systems, and <strong>before</strong> sensitive output re-enters the model.</p>
-<pre><code class="language-text">AI agent / MCP client
-        │  JSON-RPC
-        ▼
-┌───────────────────────────┐
-│  MCP-Bastion              │  pillars: allow / block / redact / vault / observe
-│  middleware or HTTP proxy │
-└─────────────┬─────────────┘
-              ▼
-        Your MCP server / tools
-</code></pre>
+<pre class="mermaid">flowchart TB
+  Client[AI agent / MCP client]
+  Bastion[MCP-Bastion&lt;br/&gt;middleware or HTTP proxy]
+  Tools[Your MCP server / tools]
+
+  Client --&gt;|&quot;JSON-RPC&quot;| Bastion
+  Bastion --&gt;|&quot;allow / block / redact / vault / observe&quot;| Tools
+</pre>
 <table>
 <thead>
 <tr>
@@ -283,8 +290,14 @@ Regenerate: <code>python scripts/generate_attack_demo_gifs.py</code></p>
 </tr>
 </tbody>
 </table>
-<p><img alt="Enterprise controls" src="../assets/mcp-bastion-enterprise-controls.png" /></p>
-<p>Deep panel guide: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> · <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a> Part F · <a href="metrics.html">METRICS.md</a></p>
+<pre class="mermaid">flowchart LR
+  ATR[ATR YAML] --&gt; CF[content_filter]
+  Feeds[Threat feeds] --&gt; CF
+  CF --&gt; Decision[Block / allow]
+  Audit[Audit JSONL] --&gt; Report[mcp-bastion report]
+</pre>
+<p><img alt="Enterprise controls" src="../assets/mcp-bastion-enterprise-controls.svg" /></p>
+<p>Deep panel guide: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> · <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md</a> Part F · <a href="metrics.html">METRICS.md</a> · <a href="observability.html">DASHBOARD_AND_OBSERVABILITY.md</a></p>
 <hr />
 <h2 id="part-4-feature-map-all-pillars">Part 4 — Feature map (all pillars)</h2>
 <p>Use the deep dive for <strong>issue → how Bastion solves it → benefits</strong> on every control:</p>
@@ -327,7 +340,15 @@ Regenerate: <code>python scripts/generate_attack_demo_gifs.py</code></p>
 <p>Enablement YAML: <a href="features.html">FEATURES.md</a> · Counts: <a href="pillars.html">PILLARS.md</a></p>
 <hr />
 <h2 id="part-5-multi-language-suite">Part 5 — Multi-language (suite)</h2>
-<p><img alt="Runtime governance" src="../assets/mcp-bastion-runtime-governance-3.0.png" /></p>
+<pre class="mermaid">flowchart TB
+  App[Your app&lt;br/&gt;Nest / Spring / FastAPI / .NET / Go / …]
+  Suite[mcp-bastion-suite&lt;br/&gt;adapters · sidecar · proxy]
+  Engine[mcp-bastion-python&lt;br/&gt;Scan → Test → Enforce]
+
+  App --&gt; Suite
+  Suite --&gt;|&quot;shared bastion.yaml&quot;| Engine
+</pre>
+<p><img alt="Runtime governance" src="../assets/mcp-bastion-runtime-governance-3.0.svg" /></p>
 <table>
 <thead>
 <tr>
@@ -434,6 +455,10 @@ Regenerate: <code>python scripts/generate_attack_demo_gifs.py</code></p>
 <td><code>docs/images/mcp-bastion-dashboard.png</code></td>
 </tr>
 <tr>
+<td>Architecture SVGs</td>
+<td><code>images/mcp-bastion-*-*.svg</code> (scan/enforce, governance, canary, …)</td>
+</tr>
+<tr>
 <td>Site copies</td>
 <td><code>docs/site/assets/</code> (+ <code>attack-demos/</code>)</td>
 </tr>
@@ -450,10 +475,14 @@ Regenerate: <code>python scripts/generate_attack_demo_gifs.py</code></p>
 </ul>
     </article>
     <footer class="docs-footer">
-      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <p>MCP-Bastion 4.0.1 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
       <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
     </footer>
   </main>
 </div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
 </body>
 </html>

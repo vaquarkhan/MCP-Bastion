@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" role="img" aria-labelledby="title desc">
+  <title id="title">MCP-Bastion Scan ’ Test ’ Enforce</title>
+  <desc id="desc">Lifecycle: scan tool definitions, test with red-team harness, enforce at runtime</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="320" rx="16" fill="url(#bg)"/>
+  <text x="480" y="42" text-anchor="middle" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700">Scan ’ Test ’ Enforce</text>
+  <text x="480" y="68" text-anchor="middle" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="13">No other tool has all three  one policy, one engine</text>
+
+  <rect x="48" y="100" width="240" height="160" rx="12" fill="#0c4a6e" stroke="#38bdf8" stroke-width="2"/>
+  <text x="168" y="140" text-anchor="middle" fill="#7dd3fc" font-family="Segoe UI, system-ui, sans-serif" font-size="20" font-weight="700">SCAN</text>
+  <text x="168" y="170" text-anchor="middle" fill="#e0f2fe" font-family="Segoe UI, system-ui, sans-serif" font-size="13">Static catalog checks</text>
+  <text x="168" y="195" text-anchor="middle" fill="#bae6fd" font-family="Consolas, monospace" font-size="11">mcp-bastion scan</text>
+  <text x="168" y="220" text-anchor="middle" fill="#7dd3fc" font-family="Segoe UI, system-ui, sans-serif" font-size="12">injection · secrets · drift</text>
+
+  <path d="M300 180 L340 180" stroke="#64748b" stroke-width="3" marker-end="url(#arr)"/>
+  <polygon points="336,174 348,180 336,186" fill="#94a3b8"/>
+
+  <rect x="360" y="100" width="240" height="160" rx="12" fill="#78350f" stroke="#fbbf24" stroke-width="2"/>
+  <text x="480" y="140" text-anchor="middle" fill="#fde68a" font-family="Segoe UI, system-ui, sans-serif" font-size="20" font-weight="700">TEST</text>
+  <text x="480" y="170" text-anchor="middle" fill="#fef3c7" font-family="Segoe UI, system-ui, sans-serif" font-size="13">Red-team harness</text>
+  <text x="480" y="195" text-anchor="middle" fill="#fde68a" font-family="Consolas, monospace" font-size="11">mcp-bastion redteam</text>
+  <text x="480" y="220" text-anchor="middle" fill="#fbbf24" font-family="Segoe UI, system-ui, sans-serif" font-size="12">policy vs attack payloads</text>
+
+  <polygon points="648,174 660,180 648,186" fill="#94a3b8"/>
+  <path d="M612 180 L648 180" stroke="#64748b" stroke-width="3"/>
+
+  <rect x="672" y="100" width="240" height="160" rx="12" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+  <text x="792" y="140" text-anchor="middle" fill="#6ee7b7" font-family="Segoe UI, system-ui, sans-serif" font-size="20" font-weight="700">ENFORCE</text>
+  <text x="792" y="170" text-anchor="middle" fill="#d1fae5" font-family="Segoe UI, system-ui, sans-serif" font-size="13">Runtime middleware / proxy</text>
+  <text x="792" y="195" text-anchor="middle" fill="#a7f3d0" font-family="Consolas, monospace" font-size="11">secure_fastmcp / serve --proxy</text>
+  <text x="792" y="220" text-anchor="middle" fill="#34d399" font-family="Segoe UI, system-ui, sans-serif" font-size="12">allow · block · redact · vault</text>
+
+  <text x="480" y="300" text-anchor="middle" fill="#64748b" font-family="Segoe UI, system-ui, sans-serif" font-size="12">Shared bastion.yaml across Scan, Test, and Enforce</text>
+</svg>

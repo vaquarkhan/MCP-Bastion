@@ -26,11 +26,19 @@ Local: `mcp-bastion dashboard --demo`
 
 ### Architecture at a glance
 
+```mermaid
+flowchart LR
+  Scan[Scan<br/>catalog checks] --> Test[Test<br/>redteam]
+  Test --> Enforce[Enforce<br/>middleware / proxy]
+  Enforce --> Tools[MCP tools]
+```
+
 | Diagram | What it shows |
 |---------|----------------|
-| ![Scan Test Enforce](images/mcp-bastion-scan-test-enforce.png) | Scan → Test → Enforce lifecycle |
+| ![Scan Test Enforce](../images/mcp-bastion-scan-test-enforce.svg) | Scan → Test → Enforce lifecycle |
 | ![PII vault](../images/mcp-bastion-pii-vault.svg) | Reversible PII abstract / hydrate |
 | ![Hybrid transport](../images/mcp-bastion-hybrid-transport.svg) | Hybrid MCP transport paths |
+| ![Runtime governance](../images/mcp-bastion-runtime-governance-3.0.svg) | Opt-in enterprise pillars |
 
 ---
 
@@ -57,16 +65,14 @@ Local: `mcp-bastion dashboard --demo`
 
 MCP-Bastion is **security and governance middleware** for the [Model Context Protocol](https://modelcontextprotocol.io/). It sits on the request/response path of tools, resources, and prompts — enforcing policy **before** untrusted model-driven actions reach your systems, and **before** sensitive output re-enters the model.
 
-```text
-AI agent / MCP client
-        │  JSON-RPC
-        ▼
-┌───────────────────────────┐
-│  MCP-Bastion              │  pillars: allow / block / redact / vault / observe
-│  middleware or HTTP proxy │
-└─────────────┬─────────────┘
-              ▼
-        Your MCP server / tools
+```mermaid
+flowchart TB
+  Client[AI agent / MCP client]
+  Bastion[MCP-Bastion<br/>middleware or HTTP proxy]
+  Tools[Your MCP server / tools]
+
+  Client -->|"JSON-RPC"| Bastion
+  Bastion -->|"allow / block / redact / vault / observe"| Tools
 ```
 
 | Property | Choice |
@@ -139,9 +145,17 @@ Zero-infra local UI: `mcp-bastion dashboard --demo` → http://127.0.0.1:7000/
 | Compliance evidence | Hashes + SOC2/GDPR/ISO/NIST/ASI packs |
 | Observe banner | Would-have-blocked when `mode: observe` |
 
-![Enterprise controls](images/mcp-bastion-enterprise-controls.png)
+```mermaid
+flowchart LR
+  ATR[ATR YAML] --> CF[content_filter]
+  Feeds[Threat feeds] --> CF
+  CF --> Decision[Block / allow]
+  Audit[Audit JSONL] --> Report[mcp-bastion report]
+```
 
-Deep panel guide: [dashboard/README.md](../dashboard/README.md) · [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) Part F · [METRICS.md](METRICS.md)
+![Enterprise controls](../images/mcp-bastion-enterprise-controls.svg)
+
+Deep panel guide: [dashboard/README.md](../dashboard/README.md) · [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) Part F · [METRICS.md](METRICS.md) · [DASHBOARD_AND_OBSERVABILITY.md](DASHBOARD_AND_OBSERVABILITY.md)
 
 ---
 
@@ -168,7 +182,17 @@ Enablement YAML: [FEATURES.md](FEATURES.md) · Counts: [PILLARS.md](PILLARS.md)
 
 ## Part 5 — Multi-language (suite)
 
-![Runtime governance](images/mcp-bastion-runtime-governance-3.0.png)
+```mermaid
+flowchart TB
+  App[Your app<br/>Nest / Spring / FastAPI / .NET / Go / …]
+  Suite[mcp-bastion-suite<br/>adapters · sidecar · proxy]
+  Engine[mcp-bastion-python<br/>Scan → Test → Enforce]
+
+  App --> Suite
+  Suite -->|"shared bastion.yaml"| Engine
+```
+
+![Runtime governance](../images/mcp-bastion-runtime-governance-3.0.svg)
 
 | Stack | Path |
 |-------|------|
@@ -213,6 +237,7 @@ Enablement YAML: [FEATURES.md](FEATURES.md) · Counts: [PILLARS.md](PILLARS.md)
 | Per-feature GIFs | `docs/images/attack-demos/*.gif` |
 | Dashboard tour GIF | `docs/images/mcp-bastion-dashboard-tour.gif` |
 | Dashboard collage | `docs/images/mcp-bastion-dashboard.png` |
+| Architecture SVGs | `images/mcp-bastion-*-*.svg` (scan/enforce, governance, canary, …) |
 | Site copies | `docs/site/assets/` (+ `attack-demos/`) |
 
 ---

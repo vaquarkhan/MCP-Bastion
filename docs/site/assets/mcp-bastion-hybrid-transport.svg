@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 640" role="img" aria-labelledby="title desc">
+  <title id="title">MCP-Bastion hybrid stateful and stateless MCP transport</title>
+  <desc id="desc">Diagram showing legacy session-based and stateless state-handle requests flowing through Bastion middleware with discovery, security pillars, Redis-backed limits, and upstream MCP.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#172033"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <rect width="1120" height="640" fill="url(#bg)"/>
+  <rect x="24" y="20" width="1072" height="72" rx="14" fill="url(#card)" stroke="#334155"/>
+  <text x="48" y="52" fill="#f8fafc" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700">MCP-Bastion  Hybrid Stateful / Stateless Transport</text>
+  <text x="48" y="76" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="13">Opt-in `mcp_transport` · default OFF · zero-infra drop-in middleware · pairs with `state_backend: redis`</text>
+
+  <!-- Clients -->
+  <rect x="40" y="130" width="210" height="150" rx="12" fill="url(#card)" stroke="#475569" filter="url(#shadow)"/>
+  <text x="60" y="160" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700">MCP clients</text>
+  <text x="60" y="188" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="12">Stateful (legacy)</text>
+  <text x="72" y="208" fill="#cbd5e1" font-family="Consolas, monospace" font-size="11">MCP-Session-Id</text>
+  <text x="72" y="226" fill="#cbd5e1" font-family="Consolas, monospace" font-size="11">initialize handshake</text>
+  <text x="60" y="252" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="12">Stateless (SEP-2575)</text>
+  <text x="72" y="272" fill="#cbd5e1" font-family="Consolas, monospace" font-size="11">state_handle in args</text>
+
+  <!-- Discovery -->
+  <rect x="40" y="310" width="210" height="88" rx="12" fill="#0b1220" stroke="#38bdf8" stroke-dasharray="6 4"/>
+  <text x="60" y="338" fill="#7dd3fc" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700">GET /.well-known/mcp.json</text>
+  <text x="60" y="360" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Cacheable server card</text>
+  <text x="60" y="378" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">No initialize required</text>
+
+  <!-- Bastion -->
+  <rect x="300" y="118" width="360" height="404" rx="16" fill="url(#card)" stroke="#64748b" filter="url(#shadow)"/>
+  <rect x="300" y="118" width="360" height="34" rx="16" fill="url(#accent)"/>
+  <rect x="300" y="136" width="360" height="16" fill="url(#accent)"/>
+  <text x="330" y="142" fill="#0f172a" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700">Bastion middleware / HTTP proxy</text>
+
+  <rect x="322" y="170" width="316" height="72" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="338" y="194" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700">1. Transport identity</text>
+  <text x="338" y="216" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">auto | stateful | stateless · validate handles</text>
+  <text x="338" y="234" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Per-request protocol version (optional)</text>
+
+  <rect x="322" y="254" width="316" height="88" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="338" y="278" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700">2. Security pillars</text>
+  <text x="338" y="300" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">PromptGuard · PII · RBAC · replay · content filter</text>
+  <text x="338" y="318" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Full MCP surface guards (2.0+)</text>
+
+  <rect x="322" y="354" width="316" height="72" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="338" y="378" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700">3. FinOps keys</text>
+  <text x="338" y="400" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">tenant | principal | session OR handle</text>
+  <text x="338" y="418" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Deterministic across load-balanced replicas</text>
+
+  <rect x="322" y="438" width="316" height="72" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="338" y="462" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700">4. Agent stability (opt-in)</text>
+  <text x="338" y="484" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Detect repetitive tool-output loops</text>
+  <text x="338" y="502" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">inject | block | warn</text>
+
+  <!-- Redis -->
+  <rect x="710" y="170" width="170" height="120" rx="12" fill="url(#card)" stroke="#ef4444" filter="url(#shadow)"/>
+  <text x="730" y="200" fill="#fecaca" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700">state_backend</text>
+  <text x="730" y="224" fill="#fca5a5" font-family="Consolas, monospace" font-size="12">redis</text>
+  <text x="730" y="248" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Token buckets</text>
+  <text x="730" y="266" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Cost caps · replay · scope</text>
+
+  <!-- Upstream -->
+  <rect x="910" y="170" width="170" height="120" rx="12" fill="url(#card)" stroke="#22c55e" filter="url(#shadow)"/>
+  <text x="930" y="200" fill="#bbf7d0" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700">Upstream MCP</text>
+  <text x="930" y="224" fill="#86efac" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Stateful or stateless</text>
+  <text x="930" y="248" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Loopback-only in</text>
+  <text x="930" y="266" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">boundary mode</text>
+
+  <!-- Legend -->
+  <rect x="710" y="330" width="370" height="192" rx="12" fill="#0b1220" stroke="#334155"/>
+  <text x="730" y="358" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700">What Bastion does / does not do</text>
+  <circle cx="742" cy="382" r="5" fill="#22c55e"/>
+  <text x="756" y="386" fill="#cbd5e1" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Consumes explicit state handles for rate/cost/stability keys</text>
+  <circle cx="742" cy="408" r="5" fill="#22c55e"/>
+  <text x="756" y="412" fill="#cbd5e1" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Serves discovery card on HTTP proxy when enabled</text>
+  <circle cx="742" cy="434" r="5" fill="#22c55e"/>
+  <text x="756" y="438" fill="#cbd5e1" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Backward compatible: disabled = identical to pre-3.2 behavior</text>
+  <circle cx="742" cy="460" r="5" fill="#f97316"/>
+  <text x="756" y="464" fill="#cbd5e1" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Does not mint MCP server state or run edge WASM ML stacks</text>
+  <circle cx="742" cy="486" r="5" fill="#f97316"/>
+  <text x="756" y="490" fill="#cbd5e1" font-family="Segoe UI, system-ui, sans-serif" font-size="11">Does not replace a full SaaS API gateway product</text>
+
+  <!-- Arrows -->
+  <line x1="250" y1="205" x2="300" y2="260" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="250" y1="354" x2="300" y2="320" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="660" y1="280" x2="710" y2="230" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="880" y1="230" x2="910" y2="230" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="795" y1="290" x2="795" y2="330" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+</svg>

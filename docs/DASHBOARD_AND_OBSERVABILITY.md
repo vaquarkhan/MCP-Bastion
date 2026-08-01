@@ -26,16 +26,25 @@ Setup when you want it: [OTEL.md](OTEL.md) · `pip install mcp-bastion-python[ot
 
 ## Observability stack (how pieces fit)
 
-```text
-MCP tool calls
-      │
-      ▼
-MCP-Bastion middleware / proxy
-      │
-      ├── MetricsStore ──► Dashboard UI ──► /metrics (Prometheus)
-      ├── Audit JSONL  ──► SIEM / `mcp-bastion report` / posture drift
-      ├── Alerts       ──► Slack / HTTP webhooks
-      └── (optional) OTEL spans ──► OTLP collector / APM
+```mermaid
+flowchart TB
+  Calls[MCP tool calls]
+  Bastion[MCP-Bastion middleware / proxy]
+  Metrics[MetricsStore]
+  Dash[Dashboard UI]
+  Prom["/metrics Prometheus"]
+  Audit[Audit JSONL]
+  SIEM[SIEM / report / drift]
+  Alerts[Alerts]
+  Hook[Slack / HTTP webhooks]
+  OTEL["OTEL spans optional"]
+  APM[OTLP collector / APM]
+
+  Calls --> Bastion
+  Bastion --> Metrics --> Dash --> Prom
+  Bastion --> Audit --> SIEM
+  Bastion --> Alerts --> Hook
+  Bastion -.-> OTEL --> APM
 ```
 
 Same policy (`bastion.yaml`) drives blocks; observability only **records** what happened.
@@ -123,25 +132,61 @@ Dashboard **observe banner** shows would-have-blocked counts — tune before `en
 
 ---
 
-## OpenTelemetry (optional)
+## OpenTelemetry (optional — when it adds value)
 
 | | |
 |--|--|
-| **When to enable** | You already have Jaeger / Tempo / Datadog / Honeycomb / ADOT / etc. |
+| **When to enable** | Multi-service agent stacks; existing Jaeger / Tempo / Datadog / Honeycomb / ADOT |
 | **When to skip** | Solo / small team; dashboard + Prometheus is enough |
-| **What it adds** | Per-`tools/call` span: tool name, action, latency, error when blocked |
+| **What it adds** | Per-`tools/call` span beside app spans: tool, action, latency, error on block |
 | **What it does *not* replace** | Dashboard, Prometheus scrape, or audit JSONL |
+
+```mermaid
+sequenceDiagram
+  participant Agent
+  participant Bastion
+  participant Tool
+  participant APM as OTLP / APM
+
+  Agent->>Bastion: tools/call
+  Bastion->>Bastion: pillars
+  alt blocked
+    Bastion-->>Agent: JSON-RPC error
+    Bastion-->>APM: span error + mcp.error
+  else allowed
+    Bastion->>Tool: forward
+    Tool-->>Bastion: result
+    Bastion-->>Agent: result
+    Bastion-->>APM: span OK + mcp.latency_ms
+  end
+```
 
 ```bash
 pip install "mcp-bastion-python[otel]"
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 ```
 
-Full notes: [OTEL.md](OTEL.md).
+Full notes (value table, Jaeger local, recommended combos): [OTEL.md](OTEL.md).
 
 ---
 
 ## Recommended setups
+
+```mermaid
+flowchart LR
+  subgraph laptop [Laptop]
+    D1[Dashboard demo]
+  end
+  subgraph team [Team]
+    D2[Dashboard]
+    P2[Prometheus]
+    A2[Audit JSONL]
+  end
+  subgraph ent [Enterprise + APM]
+    D3[Dashboard + SIEM]
+    O3[Optional OTEL]
+  end
+```
 
 | Environment | Enable |
 |-------------|--------|

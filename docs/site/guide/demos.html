@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Demos (attack + dashboard) | MCP-Bastion Docs</title>
 <meta name="description" content="MCP-Bastion documentation — Demos (attack + dashboard)">
-<meta name="docs-version" content="4.0.0">
+<meta name="docs-version" content="4.0.1">
 <link rel="stylesheet" href="../assets/guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,12 +16,12 @@
 <header class="docs-header">
   <div class="header-inner">
     <a class="brand" href="../index.html">MCP-Bastion</a>
-    <span class="version-badge">4.0.0</span>
+    <span class="version-badge">4.0.1</span>
     <nav class="header-links">
       <a href="index.html" class="current">Docs</a>
       <a href="../integrations.html">Integrations</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
-      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.1/">PyPI</a>
     </nav>
   </div>
 </header>
@@ -280,14 +280,13 @@ python scripts/generate_attack_demo_gifs.py
 <h2 id="4-how-demos-work-in-every-language">4. How demos work in every language</h2>
 <p><strong>Same <code>bastion.yaml</code>. Same engine (<code>mcp-bastion-python</code>).</strong><br />
 Non-Python stacks use <a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a> adapters or HTTP proxy — attack payloads still hit Bastion the same way.</p>
-<pre><code class="language-text">Your app (Nest / Spring / .NET / Go / …)
-        │  MCP HTTP / JSON-RPC
-        ▼
-mcp-bastion-suite adapter or proxy   +  bastion.yaml
-        │
-        ▼
-mcp-bastion-python  (Scan → Test → Enforce)
-</code></pre>
+<pre class="mermaid">flowchart TB
+  App[Your app&lt;br/&gt;Nest / Spring / .NET / Go / …]
+  Suite[mcp-bastion-suite adapter or proxy&lt;br/&gt;+ bastion.yaml]
+  Engine[mcp-bastion-python&lt;br/&gt;Scan → Test → Enforce]
+
+  App --&gt;|&quot;MCP HTTP / JSON-RPC&quot;| Suite --&gt; Engine
+</pre>
 <table>
 <thead>
 <tr>
@@ -393,10 +392,14 @@ mcp-bastion-python  (Scan → Test → Enforce)
 </ul>
     </article>
     <footer class="docs-footer">
-      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <p>MCP-Bastion 4.0.1 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
       <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
     </footer>
   </main>
 </div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
 </body>
 </html>

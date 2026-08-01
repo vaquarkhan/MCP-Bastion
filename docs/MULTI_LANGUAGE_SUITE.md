@@ -12,23 +12,14 @@
 
 ## How the two repos relate
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│  Your app (Nest, Spring, FastAPI, .NET, Go, Rust, …)    │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-        ┌───────────────────▼───────────────────┐
-        │  mcp-bastion-suite                       │
-        │  adapters · YAML/CLI · sidecar · proxy   │
-        │  https://github.com/vaquarkhan/mcp-bastion-suite
-        └───────────────────┬───────────────────┘
-                            │  bastion.yaml (shared policy)
-                            ▼
-        ┌───────────────────────────────────────┐
-        │  mcp-bastion-python  (this project)     │
-        │  Scan → Test → Enforce · dashboard      │
-        │  pip install mcp-bastion-python         │
-        └───────────────────────────────────────┘
+```mermaid
+flowchart TB
+  App[Your app<br/>Nest · Spring · FastAPI · .NET · Go · Rust · …]
+  Suite[mcp-bastion-suite<br/>adapters · YAML/CLI · sidecar · proxy]
+  Engine[mcp-bastion-python<br/>Scan → Test → Enforce · dashboard]
+
+  App --> Suite
+  Suite -->|"bastion.yaml shared policy"| Engine
 ```
 
 | Repo | Role |

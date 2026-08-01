@@ -61,6 +61,8 @@ def _build_shadow_config(base: BastionConfig | None, overrides: dict[str, Any] |
             cfg.cedar_policies_dir = cedar.get("policies_dir")
         if cedar.get("schema") is not None:
             cfg.cedar_schema_path = cedar.get("schema")
+        if cedar.get("entities") is not None:
+            cfg.cedar_entities_path = cedar.get("entities")
     if isinstance(data.get("rate_limit"), dict):
         rl = data["rate_limit"]
         cfg.rate_limit_max_iterations = int(rl.get("max_iterations", cfg.rate_limit_max_iterations))
@@ -84,6 +86,7 @@ def _build_shadow_middleware(config: BastionConfig) -> MCPBastionMiddleware:
             cedar_binary=getattr(config, "cedar_binary", "cedar"),
             cedar_policies_dir=getattr(config, "cedar_policies_dir", None),
             cedar_schema_path=getattr(config, "cedar_schema_path", None),
+            cedar_entities_path=getattr(config, "cedar_entities_path", None),
             fail_closed=bool(getattr(config, "policy_engine_fail_closed", False)),
         )
     )

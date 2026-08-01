@@ -241,6 +241,15 @@ body {
   display: block;
 }
 
+.docs-article pre.mermaid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 1.25rem;
+  overflow-x: auto;
+  text-align: center;
+}
+
 .docs-footer {
   margin-top: 3rem;
   padding-top: 1rem;

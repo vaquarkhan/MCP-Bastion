@@ -1,10 +1,27 @@
 ﻿# Changelog
 
-**Current release:** **4.0.0** (2026-07-31) - [PyPI](https://pypi.org/project/mcp-bastion-python/4.0.0/) · [Docker `v4.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **4.0.1** (2026-08-01) - [PyPI](https://pypi.org/project/mcp-bastion-python/4.0.1/) · [Docker `v4.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [4.0.1] - 2026-08-01
+
+Patch: **Cedar CLI authz proof**, integration republish, Mermaid/SVG docs.
+
+### Fixed
+
+- **Cedar external policy:** call real `cedar authorize --policies … --entities …` with `User::"<session>"` / `Action::"invoke"` / `Tool::"<name>"`. Honor ALLOW/DENY from stdout (DENY uses exit code 2 — no longer treated as engine failure / fail-open). Optional `policy_engine.cedar.entities` (+ `BASTION_CEDAR_ENTITIES`); request entities are merged automatically. Skip-if-missing real-binary smoke test.
+- **Policy simulator tests:** assert content-filter blocks on secrets (path blocks remain opt-in after 4.0.0 devil-tester defaults).
+
+### Docs
+
+- Mermaid diagrams + SVG architecture assets; docs site loads Mermaid.js; expanded optional OTEL guide.
+
+### Packaging
+
+- Core + 17 integration packages bumped to **4.0.1** for PyPI republish (`publish-mcp.yml` / `publish-integrations.yml`).
 
 ## [4.0.0] - 2026-07-31
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Feature deep dive | MCP-Bastion Docs</title>
 <meta name="description" content="MCP-Bastion documentation — Feature deep dive">
-<meta name="docs-version" content="4.0.0">
+<meta name="docs-version" content="4.0.1">
 <link rel="stylesheet" href="../assets/guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,12 +16,12 @@
 <header class="docs-header">
   <div class="header-inner">
     <a class="brand" href="../index.html">MCP-Bastion</a>
-    <span class="version-badge">4.0.0</span>
+    <span class="version-badge">4.0.1</span>
     <nav class="header-links">
       <a href="index.html" class="current">Docs</a>
       <a href="../integrations.html">Integrations</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
-      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.1/">PyPI</a>
     </nav>
   </div>
 </header>
@@ -115,17 +115,14 @@
 </blockquote>
 <hr />
 <h2 id="how-to-read-this-guide">How to read this guide</h2>
-<pre><code class="language-text">AI agent / MCP client
-        │  JSON-RPC (tools, resources, prompts, …)
-        ▼
-┌───────────────────────────┐
-│  MCP-Bastion middleware   │  ← pillars evaluate here
-│  or HTTP boundary proxy   │
-└─────────────┬─────────────┘
-              │ allowed / redacted / vaulted
-              ▼
-        Your MCP server / tools
-</code></pre>
+<pre class="mermaid">flowchart TB
+  Client[AI agent / MCP client]
+  Bastion[MCP-Bastion middleware&lt;br/&gt;or HTTP boundary proxy]
+  Tools[Your MCP server / tools]
+
+  Client --&gt;|&quot;JSON-RPC tools · resources · prompts · …&quot;| Bastion
+  Bastion --&gt;|&quot;allowed / redacted / vaulted&quot;| Tools
+</pre>
 <p>Each pillar can <strong>allow</strong>, <strong>block</strong>, <strong>redact</strong>, <strong>tokenise</strong>, or <strong>observe</strong> (log would-be blocks without denying). Dashboard and Prometheus consume the same metrics store.</p>
 <hr />
 <h2 id="part-a-core-request-path-pillars-10">Part A — Core request-path pillars (10)</h2>
@@ -1686,10 +1683,14 @@ discovery_filter:
 </table>
     </article>
     <footer class="docs-footer">
-      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <p>MCP-Bastion 4.0.1 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
       <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
     </footer>
   </main>
 </div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
 </body>
 </html>
