@@ -8,6 +8,7 @@ Current Python package release: **`mcp-bastion-python==4.0.0`** ([PyPI](https://
 
 | Doc | Description |
 |-----|-------------|
+| **[../MCP-Security-Deck-v3.pdf](../MCP-Security-Deck-v3.pdf)** | **Security + benchmark slide deck (v3)** — shareable proof pack ([raw download](https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf)) |
 | [USER_GUIDE.md](USER_GUIDE.md) | **End-to-end handbook** (concepts → install → config → proxy → vault → ops) — also published at [GitHub Pages Docs](https://vaquarkhan.github.io/MCP-Bastion/guide/) |
 | [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) | **System bible** — attack GIFs, dashboard tour, feature map, multi-language ([live](https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html)) |
 | [DEMOS.md](DEMOS.md) | **Demo hub** — all attacks, payloads, dashboard, every language ([live](https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html)) |
@@ -28,7 +29,7 @@ Current Python package release: **`mcp-bastion-python==4.0.0`** ([PyPI](https://
 | [../dashboard/README.md](../dashboard/README.md) | **Local dashboard (3.1.0)** - posture, prevalidate, issue guides, FinOps actual vs would-have-been |
 | [PUBLISHING_NPM_AND_REGISTRY.md](PUBLISHING_NPM_AND_REGISTRY.md) | npm bootstrap + MCP Registry OIDC publisher pin |
 | [TAXONOMY.md](TAXONOMY.md) | ASI / MCP / LLM finding tags |
-| [BENCHMARKS.md](BENCHMARKS.md) | **Measured** RBAC matrix, output-budget reduction, discovery filter, lexical cache - pytest + `scripts/generate_benchmark_report.py` |
+| [BENCHMARKS.md](BENCHMARKS.md) | **Measured** RBAC / FinOps / injection — pytest + report generator · **slide deck:** [MCP-Security-Deck-v3.pdf](../MCP-Security-Deck-v3.pdf) |
 | [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) | **2.0.0:** full MCP method guards + Redis `state_backend` for multi-replica deploys |
 | [HYBRID_MCP_TRANSPORT.md](HYBRID_MCP_TRANSPORT.md) | **Opt-in:** stateful + stateless MCP transport, discovery card, agent stability |
 | [BEHAVIOR_FINGERPRINT.md](BEHAVIOR_FINGERPRINT.md) | **3.3.0 (opt-in):** per-agent baseline drift + rate spikes |
@@ -36,6 +37,8 @@ Current Python package release: **`mcp-bastion-python==4.0.0`** ([PyPI](https://
 | [PII_VAULT_TUTORIAL.md](PII_VAULT_TUTORIAL.md) | Enable vault, verify abstract/hydrate, Redis tip |
 | [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) | **CRA / OpenSSF:** SBOM + Article 14 posture (no runtime change) |
 | [CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md) | Generate / download CycloneDX `bom.json` |
+| [THREAT_MODEL.md](THREAT_MODEL.md) | **Public threat model** — assets, actors, trust boundaries, controls |
+| [BASTION_AND_TEST_HARNESS.md](BASTION_AND_TEST_HARNESS.md) | **End-to-end with MCP Test Harness** — CI test → redteam → enforce → attest |
 | [REDTEAM.md](REDTEAM.md) | Interpreting harness scores; **`mcp-bastion redteam`** |
 | [Advanced_Tutorials.md](Advanced_Tutorials.md) | Index of deeper docs (points to **DETAILED_TUTORIAL**, **TUTORIALS**, **PILLARS**, …) |
 | [CLI.md](CLI.md) | `mcp-bastion` CLI (`validate`, `serve`, `serve --proxy`, `attest export`, …) |

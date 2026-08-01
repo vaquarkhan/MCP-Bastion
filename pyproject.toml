@@ -43,6 +43,9 @@ policy = [
     "pyyaml>=6.0",
     "jsonpath-ng>=1.6.0",
 ]
+oidc = [
+    "PyJWT[crypto]>=2.8.0",
+]
 dashboard = [
     "fastapi>=0.100.0",
     "uvicorn>=0.22.0",
@@ -60,6 +63,8 @@ redis = [
 Homepage = "https://github.com/vaquarkhan/MCP-Bastion"
 Repository = "https://github.com/vaquarkhan/MCP-Bastion"
 Documentation = "https://github.com/vaquarkhan/MCP-Bastion#readme"
+Benchmark = "https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf"
+Changelog = "https://github.com/vaquarkhan/MCP-Bastion/blob/main/CHANGELOG.md"
 
 [project.scripts]
 mcp-bastion = "mcp_bastion.cli:main"

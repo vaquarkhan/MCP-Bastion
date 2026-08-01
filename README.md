@@ -13,7 +13,7 @@
   ·
   <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/multi-language.html"><strong>Multi-language</strong></a>
   ·
-  <a href="CONTRIBUTING.md"><strong>Contributing</strong></a>
+  <a href="MCP-Security-Deck-v3.pdf"><strong>Benchmark</strong></a>
   ·
   <a href="LICENSE"><strong>License</strong></a>
   ·
@@ -37,6 +37,7 @@
 [![Docker dashboard (GHCR)](https://img.shields.io/badge/GHCR-mcp--bastion--dashboard-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
 [![Docs](https://img.shields.io/badge/docs-handbook%20%2B%20bible-0B5FFF?logo=readthedocs&logoColor=white)](https://vaquarkhan.github.io/MCP-Bastion/guide/)
 [![Demos](https://img.shields.io/badge/demos-attack%20%2B%20dashboard-22C55E?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html)
+[![Benchmark deck](https://img.shields.io/badge/benchmark-security%20deck%20v3-E11D48?logo=adobeacrobatreader&logoColor=white)](MCP-Security-Deck-v3.pdf)
 [![Multi-language](https://img.shields.io/badge/suite-TS%20Java%20Go%20.NET-7C3AED)](https://vaquarkhan.github.io/MCP-Bastion/guide/multi-language.html)
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
@@ -45,15 +46,29 @@
 
 | Go to | Link |
 |-------|------|
+| **Benchmark / security deck (PDF)** | **[MCP-Security-Deck-v3.pdf](MCP-Security-Deck-v3.pdf)** · [raw download](https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf) |
 | **Documentation bible** | https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html |
 | **Demos** (attacks, dashboard, payloads, all languages) | https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html |
 | **Dashboard & observability** (OTEL optional) | https://vaquarkhan.github.io/MCP-Bastion/guide/observability.html |
 | **Multi-language suite** | https://vaquarkhan.github.io/MCP-Bastion/guide/multi-language.html · [suite repo](https://github.com/vaquarkhan/mcp-bastion-suite) |
+| **MCP Test Harness** (sister product — CI gate for MCP servers) | https://github.com/vaquarkhan/mcp-test-harness · [use with Bastion E2E](docs/BASTION_AND_TEST_HARNESS.md) |
 | **Docs hub** | https://vaquarkhan.github.io/MCP-Bastion/guide/ |
+| **Measured benchmarks (reproducible)** | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
 
 **The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
 
 **Guiding rule:** Stay a **zero-infra, drop-in library**  -  the guardrail brain that composes with any gateway, not a gateway itself. Strategy: [docs/ZERO_INFRA_STRATEGY.md](docs/ZERO_INFRA_STRATEGY.md).
+
+### Measured proof (offline, reproducible)
+
+**Slide deck (share with evaluators):** **[MCP-Security-Deck-v3.pdf](MCP-Security-Deck-v3.pdf)** — security + FinOps proof pack ([direct download](https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf)).
+
+| Gate | Result | How to reproduce |
+|------|--------|------------------|
+| Injection heuristics | **100%** attack block · **0%** benign FP on the published corpus | `pytest tests/test_injection_efficacy.py` · [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
+| Tool catalog scan | Injection / secrets / homoglyphs / **shadow tools** / nested weak schemas | `mcp-bastion scan examples/fixtures/tools-poisoned.json` |
+| FinOps | Up to **~99.7%** output-budget savings · **~85%** fewer discovery tokens | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
+| Toxic-flow taint | Session PII/secret → egress tool with URL/email args blocked in-process | `toxic_flow` in `bastion.yaml` · [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) |
 
 <p align="center">
   <img
@@ -70,7 +85,7 @@
 |-------|------|---------|
 | **Scan** | Static tool-definition checks before deploy (injection, secrets, homoglyphs, fingerprint drift, schema preconditions) | `mcp-bastion scan tools.json` |
 | **Audit** | Local MCP client-config risk report (over-broad tools, standing credentials, filesystem servers) | `mcp-bastion audit` |
-| **Test** | Integrated red-team harness against your `bastion.yaml` policy | `mcp-bastion redteam` |
+| **Test** | Integrated red-team against `bastion.yaml` + pair with **[MCP Test Harness](https://github.com/vaquarkhan/mcp-test-harness)** in CI | `mcp-bastion redteam` · [docs/BASTION_AND_TEST_HARNESS.md](docs/BASTION_AND_TEST_HARNESS.md) |
 | **Enforce** | Runtime middleware on every MCP method | `secure_fastmcp(mcp)` or `bastion.yaml` |
 
 **`scan` vs `audit` - different inputs, different questions**
@@ -1398,6 +1413,11 @@ See also:
 
 ---
 
-## Product overview deck
+## Product overview & security decks
 
-**[MCP-Bastion features deck (PDF)](docs/mcp-bastian-features-deck.pdf)**  -  cost-aware runtime governance, pillar map, FinOps benchmarks, and deployment patterns in a short slide deck for evaluators and stakeholders.
+| Deck | Use when |
+|------|----------|
+| **[MCP-Security-Deck-v3.pdf](MCP-Security-Deck-v3.pdf)** | **Primary** — security / FinOps / benchmark proof for buyers, security reviews, and LinkedIn / sales share ([raw](https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf)) |
+| **[docs/mcp-bastian-features-deck.pdf](docs/mcp-bastian-features-deck.pdf)** | Longer features / pillar map for deep-dive stakeholders |
+
+Reproducible numbers behind the decks: **[docs/BENCHMARKS.md](docs/BENCHMARKS.md)** · threat model: **[docs/THREAT_MODEL.md](docs/THREAT_MODEL.md)**.

@@ -49,14 +49,16 @@ With dashboard metrics, Prometheus endpoint, and OTEL hooks, your security and p
 
 ## Fast path
 
+- **[Benchmark / security deck (PDF)](../MCP-Security-Deck-v3.pdf)**  -  shareable proof pack ([raw download](https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf))  
 - **[Quick start (minimal code + CI)](QUICK_START.md)**  -  wrap FastMCP or load `bastion.yaml` in two lines; validate in pipelines  
 - **[Discovery checklist](DISCOVERY.md)**  -  registries and lists for ecosystem visibility  
-- **[Contributing](../CONTRIBUTING.md)**  -  **`good first issue`**-friendly tasks  
+- **[Measured benchmarks](BENCHMARKS.md)**  -  reproducible numbers behind the deck  
 
 ## Documentation map
 
 | Your goal | Start here |
 |-------------|------------|
+| **Share proof with security / buyers** | [MCP-Security-Deck-v3.pdf](../MCP-Security-Deck-v3.pdf) → [BENCHMARKS.md](BENCHMARKS.md) |
 | **Configure `bastion.yaml`** | [PILLARS.md](PILLARS.md) → [POLICY_AS_CODE.md](POLICY_AS_CODE.md) → repo `bastion.yaml.example` |
 | **Connect Claude, ChatGPT, OpenAI, Gemini, …** | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) → [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) |
 | **FastMCP, npm server, or proxy patterns** | [TUTORIALS.md](TUTORIALS.md) → [DETAILED_TUTORIAL.md](DETAILED_TUTORIAL.md) |
