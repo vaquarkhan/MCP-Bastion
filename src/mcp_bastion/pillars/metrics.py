@@ -403,6 +403,23 @@ class MetricsStore:
             usd = tokens * 0.40 / 1_000_000.0
         return tokens, float(usd)
 
+    @staticmethod
+    def _enrich_blocked_incident(inc: dict[str, Any]) -> dict[str, Any]:
+        """Attach human category label + OWASP/ASI/LLM/MCP taxonomy ids for the dashboard."""
+        row = dict(inc)
+        kind = str(row.get("kind") or "other")
+        try:
+            from mcp_bastion.dashboard_local import ATTACK_KIND_META
+
+            meta = ATTACK_KIND_META.get(kind) or ATTACK_KIND_META.get("other") or {}
+        except Exception:
+            meta = {}
+        row["category_label"] = str(meta.get("label") or kind.replace("_", " "))
+        row["asi"] = list(meta.get("asi") or [])
+        row["mcp"] = list(meta.get("mcp") or [])
+        row["llm"] = list(meta.get("llm") or [])
+        return row
+
     def record_blocked(
         self,
         reason: str,
@@ -973,20 +990,28 @@ class MetricsStore:
                 "total_blocks": int(blk_kinds.get("agent_iam", 0))
                 + int(blk_kinds.get("server_verification", 0)),
             }
-            d["blocked_incidents"] = list(reversed(self._blocked_incidents))
+            d["blocked_incidents"] = [
+                self._enrich_blocked_incident(inc)
+                for inc in reversed(self._blocked_incidents)
+            ]
             # Recent blocked issues for FinOps panel (what was blocked + estimated avoidance)
             cr = d.get("cost_reduction") or {}
             samples = []
             for inc in list(reversed(self._blocked_incidents))[:12]:
+                enriched = self._enrich_blocked_incident(inc)
                 samples.append(
                     {
-                        "ts": inc.get("ts"),
-                        "kind": inc.get("kind"),
-                        "pillar": inc.get("pillar"),
-                        "tool": inc.get("tool"),
-                        "reason": (inc.get("reason") or "")[:180],
-                        "estimated_tokens_avoided": inc.get("estimated_tokens_avoided"),
-                        "estimated_usd_avoided": inc.get("estimated_usd_avoided"),
+                        "ts": enriched.get("ts"),
+                        "kind": enriched.get("kind"),
+                        "category_label": enriched.get("category_label"),
+                        "asi": enriched.get("asi"),
+                        "mcp": enriched.get("mcp"),
+                        "llm": enriched.get("llm"),
+                        "pillar": enriched.get("pillar"),
+                        "tool": enriched.get("tool"),
+                        "reason": (enriched.get("reason") or "")[:180],
+                        "estimated_tokens_avoided": enriched.get("estimated_tokens_avoided"),
+                        "estimated_usd_avoided": enriched.get("estimated_usd_avoided"),
                     }
                 )
             cr["blocked_issues"] = samples
