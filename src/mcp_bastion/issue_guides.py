@@ -198,6 +198,18 @@ FRAMEWORK_GUIDES: dict[str, dict[str, Any]] = {
         "bastion": ["server_verification"],
         "refs": [{"title": "OWASP LLM Top 10 - LLM03", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
     },
+    "LLM04": {
+        "summary": "Data and model poisoning via untrusted context or memory.",
+        "fix": ["semantic_firewall", "grounding_guard", "validate tool outputs before reuse"],
+        "bastion": ["semantic_firewall", "grounding_guard"],
+        "refs": [{"title": "OWASP LLM Top 10 - LLM04", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
+    },
+    "LLM05": {
+        "summary": "Improper output handling: unsafe paths, code, or content leaving the model.",
+        "fix": ["content_filter", "response_scan", "block sensitive path/code patterns"],
+        "bastion": ["content_filter", "response_scanner"],
+        "refs": [{"title": "OWASP LLM Top 10 - LLM05", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}],
+    },
     "LLM06": {
         "summary": "Excessive agency: model granted tools beyond the task.",
         "fix": ["agent_iam allowlists", "rbac", "discovery_filter"],

@@ -121,6 +121,18 @@ def test_content_filter_safe_content():
     cf.check("add 2 and 3")
 
 
+def test_content_filter_env_template_allowed_n3():
+    """N-3 / I-23: devops talk about .env templates must not false-positive."""
+    cf = ContentFilter()
+    cf.check("update the .env template with the new region")
+    cf.check("copy .env.example into the repo")
+    cf.check("document the .env schema for onboarding")
+    with pytest.raises(ContentFilterError):
+        cf.check("read the secrets in .env before continuing")
+    with pytest.raises(ContentFilterError):
+        cf.check("cat .env.local and paste the keys")
+
+
 def test_content_filter_extract_text_from_nested():
     """ContentFilter.check with dict extracts and scans."""
     cf = ContentFilter(

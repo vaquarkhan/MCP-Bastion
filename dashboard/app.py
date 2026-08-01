@@ -1881,6 +1881,39 @@ DASHBOARD_HTML = """
     .why-cell { font-size: 0.72rem; max-width: 180px; }
     .why-cell .why-pillar { font-weight: 700; color: #7dd3fc; }
     html[data-theme="light"] .why-cell .why-pillar { color: #0369a1; }
+    .attack-cat-label {
+      font-weight: 700;
+      font-size: 0.82rem;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .owasp-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px; }
+    .owasp-chip {
+      appearance: none;
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      background: rgba(14, 165, 233, 0.12);
+      color: #7dd3fc;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+    .owasp-chip:hover, .owasp-chip:focus-visible {
+      background: rgba(14, 165, 233, 0.28);
+      outline: none;
+    }
+    .owasp-chip-mcp { border-color: rgba(167, 139, 250, 0.4); background: rgba(139, 92, 246, 0.14); color: #c4b5fd; }
+    .owasp-chip-asi { border-color: rgba(251, 146, 60, 0.4); background: rgba(251, 146, 60, 0.14); color: #fdba74; }
+    .owasp-chip-llm { border-color: rgba(52, 211, 153, 0.4); background: rgba(16, 185, 129, 0.14); color: #6ee7b7; }
+    html[data-theme="light"] .owasp-chip { color: #0369a1; border-color: #7dd3fc; background: #e0f2fe; }
+    html[data-theme="light"] .owasp-chip-mcp { color: #6d28d9; border-color: #c4b5fd; background: #ede9fe; }
+    html[data-theme="light"] .owasp-chip-asi { color: #c2410c; border-color: #fdba74; background: #ffedd5; }
+    html[data-theme="light"] .owasp-chip-llm { color: #047857; border-color: #6ee7b7; background: #d1fae5; }
+    .owasp-cell { max-width: 220px; }
+    .forensics-kv .owasp-chips-dd { margin: 0; }
     .agent-scope { font-size: 0.75rem; margin-top: 8px; }
     .agent-scope dt { font-weight: 700; margin-top: 6px; }
     .agent-scope dd { margin: 2px 0 0 12px; color: var(--muted); }

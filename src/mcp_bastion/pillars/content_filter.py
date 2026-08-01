@@ -41,7 +41,9 @@ DEFAULT_PATH_PATTERNS = [
     r"(?:^|[\s/\\])\.\./",  # Path traversal
     r"(?:^|[\s/\\])\.\.\\",
     r"(?:^|[\s\"'=])~/?\.ssh/",
-    r"(?:^|[\s\"'=])(?:\.env(?:\.local)?)\b",
+    # N-3: secret .env files — not devops talk about templates/examples (I-23 FP).
+    r"(?i)(?:^|[\s\"'=])\.env(?:\.local)?(?!\.(?:example|sample|template|dist|defaults?))"
+    r"(?!\s*(?:template|example|sample|dist|defaults?|schema)\b)\b",
 ]
 
 DEFAULT_URL_PATTERN = r"https?://[^\s]+"

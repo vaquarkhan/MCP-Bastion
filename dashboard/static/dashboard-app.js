@@ -252,15 +252,24 @@
           ['Tenant', row.tenant_id || '-'],
           ['Agent', row.agent_id || '-'],
           ['Tool', row.tool || '-'],
+          ['Category', row.category_label || row.kind || '-'],
           ['Pillar', row.pillar || row.kind || '-'],
           ['Rule', row.rule || '-'],
           ['Trace ID', row.trace_id || '-'],
           ['Request', row.request_id || '-'],
           ['Reason', row.reason || '-']
         ];
+        var tax = []
+          .concat(row.mcp || [])
+          .concat(row.asi || [])
+          .concat(row.llm || []);
         kv.innerHTML = pairs.map(function (p) {
           return '<dt>' + escapeHtml(p[0]) + '</dt><dd>' + escapeHtml(String(p[1])) + '</dd>';
-        }).join('');
+        }).join('')
+          + (tax.length
+            ? '<dt>OWASP / ASI</dt><dd class="owasp-chips-dd">' + owaspChipsHtml(row) + '</dd>'
+            : '');
+        wireOwaspChipClicks(kv);
       }
       var ovRaw = document.getElementById('forensicsOverviewRaw');
       if (ovRaw) {
@@ -336,14 +345,68 @@
     function whyCellHtml(row) {
       var pillar = row.pillar || row.kind || '';
       var rule = row.rule || '';
-      if (!pillar && !rule) {
+      var label = row.category_label || '';
+      var chips = owaspChipsHtml(row);
+      if (!pillar && !rule && !label && !chips) {
         return '<td class="why-cell muted">-</td>';
       }
-      var tip = (pillar ? ('Pillar: ' + pillar) : '') + (rule ? (' · ' + rule) : '');
+      var tip = (label ? ('Category: ' + label + ' · ') : '')
+        + (pillar ? ('Pillar: ' + pillar) : '')
+        + (rule ? (' · ' + rule) : '');
       return '<td class="why-cell" title="' + escapeHtmlAttr(tip) + '">'
+        + (label ? '<div class="attack-cat-label">' + escapeHtml(String(label)) + '</div>' : '')
+        + (chips || '')
         + (pillar ? '<span class="why-pillar">' + escapeHtml(String(pillar)) + '</span>' : '')
         + (rule ? '<div class="muted">' + escapeHtml(String(rule).slice(0, 80)) + '</div>' : '')
         + '</td>';
+    }
+
+    function owaspChipsHtml(row) {
+      var ids = []
+        .concat(row && row.mcp || [])
+        .concat(row && row.asi || [])
+        .concat(row && row.llm || []);
+      var seen = {};
+      var uniq = [];
+      ids.forEach(function (id) {
+        var k = String(id || '').toUpperCase();
+        if (!k || seen[k]) return;
+        seen[k] = true;
+        uniq.push(k);
+      });
+      if (!uniq.length) return '';
+      return '<div class="owasp-chips">'
+        + uniq.slice(0, 6).map(function (id) {
+          var fw = id.indexOf('MCP') === 0 ? 'mcp' : (id.indexOf('ASI') === 0 ? 'asi' : 'llm');
+          return '<button type="button" class="owasp-chip owasp-chip-' + fw + '" data-owasp-id="'
+            + escapeHtmlAttr(id) + '" title="Open OWASP / taxonomy guide for ' + escapeHtmlAttr(id) + '">'
+            + escapeHtml(id) + '</button>';
+        }).join('')
+        + '</div>';
+    }
+
+    function openOwaspGuide(id, fallbackTitle) {
+      var tid = String(id || '').toUpperCase();
+      if (!tid) return;
+      openIssueDetail(
+        fallbackTitle || ('OWASP / taxonomy: ' + tid),
+        'Click a reference link below to read the official OWASP write-up.',
+        [],
+        { id: tid }
+      );
+    }
+
+    function wireOwaspChipClicks(root) {
+      if (!root) return;
+      root.querySelectorAll('[data-owasp-id]').forEach(function (btn) {
+        if (btn.getAttribute('data-owasp-wired') === '1') return;
+        btn.setAttribute('data-owasp-wired', '1');
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          openOwaspGuide(btn.getAttribute('data-owasp-id'));
+        });
+      });
     }
 
     function ensureForensicsMasterDetail() {
@@ -492,6 +555,7 @@
           + tr
           + '</tr>';
       }).join('');
+      wireOwaspChipClicks(tbody);
       if (keepIdx >= 0) {
         selectForensicsRow(keepIdx);
       } else if (rows.length) {
@@ -604,10 +668,20 @@
       }
       var check = rawObj && (rawObj.check || rawObj.rule);
       var id = rawObj && rawObj.id;
+      if (!id) {
+        var taxIds = []
+          .concat(rawObj && rawObj.mcp || [])
+          .concat(rawObj && rawObj.asi || [])
+          .concat(rawObj && rawObj.llm || []);
+        if (taxIds.length) id = taxIds[0];
+      }
       var q = null;
-      if (check) q = '/api/issue-guide?check=' + encodeURIComponent(String(check));
-      else if (id && /^(ASI|MCP|LLM)\d+/i.test(String(id))) {
+      if (check && !/^(ASI|MCP|LLM)\d+/i.test(String(check))) {
+        q = '/api/issue-guide?check=' + encodeURIComponent(String(check));
+      } else if (id && /^(ASI|MCP|LLM)\d+/i.test(String(id))) {
         q = '/api/issue-guide?id=' + encodeURIComponent(String(id));
+      } else if (check && /^(ASI|MCP|LLM)\d+/i.test(String(check))) {
+        q = '/api/issue-guide?id=' + encodeURIComponent(String(check));
       }
       if (!q) {
         paintIssueGuide(null);
@@ -1633,12 +1707,7 @@
         return;
       }
       body.innerHTML = rows.map(function (r, idx) {
-        var tags = []
-          .concat(r.asi || [])
-          .concat(r.mcp || [])
-          .concat(r.llm || [])
-          .slice(0, 6)
-          .join(', ');
+        var chips = owaspChipsHtml(r) || '<span class="muted">-</span>';
         return '<tr>'
           + '<td><strong>' + escapeHtml(r.label || r.kind) + '</strong></td>'
           + '<td><span class="intensity intensity-' + escapeHtml(r.intensity || 'quiet') + '">'
@@ -1646,21 +1715,24 @@
           + '<td>' + (r.count || 0) + '</td>'
           + '<td>' + (r.share_pct || 0) + '%</td>'
           + '<td>' + escapeHtml(r.top_tool || '-') + '</td>'
-          + '<td style="font-size:0.72rem;">' + escapeHtml(tags || '-') + '</td>'
+          + '<td class="owasp-cell">' + chips + '</td>'
           + '<td><button type="button" class="btn-linkish" data-attack-i="' + idx + '">Samples / trace</button></td>'
           + '</tr>';
       }).join('');
+      wireOwaspChipClicks(body);
       body.querySelectorAll('[data-attack-i]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var i = parseInt(btn.getAttribute('data-attack-i'), 10);
           var r = (lastAttackMatrix && lastAttackMatrix.rows || [])[i];
           if (!r) return;
           var sample = (r.samples && r.samples[0]) || null;
+          var primaryId = (r.mcp && r.mcp[0]) || (r.asi && r.asi[0]) || (r.llm && r.llm[0]) || null;
           openIssueDetail(
             'Attack category: ' + (r.label || r.kind),
-            (r.count || 0) + ' blocks · intensity ' + (r.intensity || 'quiet'),
+            (r.count || 0) + ' blocks · intensity ' + (r.intensity || 'quiet')
+              + (primaryId ? ' · ' + primaryId : ''),
             (sample && sample.forensic_trace) || [],
-            r
+            Object.assign({}, r, primaryId ? { id: primaryId } : {})
           );
         });
       });
