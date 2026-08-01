@@ -6,11 +6,13 @@ This is the **Demo hub**: scripted attack→defense GIFs, runnable payloads, the
 
 | Jump | Link |
 |------|------|
+| **Security / benchmark deck (PDF)** | [MCP-Security-Deck-v3.pdf](../MCP-Security-Deck-v3.pdf) · [raw](https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf) |
 | Attack → defense GIFs | [ATTACK_DEMOS.md](ATTACK_DEMOS.md) |
 | Feature deep dive (GIF per pillar) | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
 | Documentation bible | [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) |
 | Multi-language suite | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) · [suite repo](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | Dashboard UI | [dashboard/README.md](../dashboard/README.md) |
+| Measured benchmarks | [BENCHMARKS.md](BENCHMARKS.md) |
 | Payload catalog | [examples/attack_demos/payloads.json](../examples/attack_demos/payloads.json) |
 
 ---

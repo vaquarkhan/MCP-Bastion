@@ -1,0 +1,36 @@
+# Example: MCP Test Harness + Bastion policy gate on every PR.
+# Copy into your app repo as .github/workflows/mcp-quality.yml and adjust paths.
+#
+# Products:
+#   - https://github.com/vaquarkhan/mcp-test-harness  (mcp-test)
+#   - https://github.com/vaquarkhan/MCP-Bastion       (mcp-bastion)
+# Docs: docs/BASTION_AND_TEST_HARNESS.md
+
+name: MCP quality + Bastion policy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          pip install mcp-test-harness "mcp-bastion-python[policy]"
+      - name: MCP Test Harness (server correctness)
+        run: mcp-test --config mcp-test.yaml
+      - name: Bastion validate + redteam
+        run: |
+          mcp-bastion validate --config bastion.yaml
+          mcp-bastion redteam --config bastion.yaml --output bastion-redteam.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bastion-policy-evidence
+          path: bastion-redteam.json

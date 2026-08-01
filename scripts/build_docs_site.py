@@ -134,6 +134,11 @@ def _nav_html(active: str) -> str:
     parts = ['<nav class="docs-nav" aria-label="Documentation">']
     for group, items in groups.items():
         parts.append(f'<div class="nav-group"><div class="nav-group-title">{html.escape(group)}</div><ul>')
+        if group == "Start here":
+            parts.append(
+                '<li><a href="https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf">'
+                "<strong>Benchmark (PDF)</strong></a></li>"
+            )
         for slug, title in items:
             cls = ' class="active"' if slug == active else ""
             href = "index.html" if slug == "index" else f"{slug}.html"
@@ -167,6 +172,7 @@ def _page_shell(title: str, active: str, body: str, *, description: str = "") ->
     <nav class="header-links">
       <a href="index.html" class="current">Docs</a>
       <a href="../integrations.html">Integrations</a>
+      <a href="https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf"><strong>Benchmark</strong></a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
       <a href="https://pypi.org/project/mcp-bastion-python/{VERSION}/">PyPI</a>
     </nav>

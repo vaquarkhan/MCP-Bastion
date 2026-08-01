@@ -68,8 +68,24 @@ python scripts/generate_sbom.py --npm packages/core/package.json --output bom-np
 
 Docs: [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) · tutorial [CRA_SBOM_TUTORIAL.md](CRA_SBOM_TUTORIAL.md) · diagram `images/mcp-bastion-cra-sbom.svg`.
 
+## Sigstore-signed container images
+
+`publish-docker.yml` uses **keyless Cosign** (GitHub OIDC → Sigstore) after pushing GHCR images:
+
+```bash
+# Verify a release tag image (example)
+cosign verify \
+  --certificate-identity-regexp 'https://github.com/vaquarkhan/MCP-Bastion/.github/workflows/publish-docker.yml@.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
+```
+
+PyPI/npm continue to use **Trusted Publishing / npm provenance** (OIDC). Session `mcp-bastion attest export` is **runtime governance evidence**, not release SLSA.
+
 ## Related reading
 
+- [THREAT_MODEL.md](THREAT_MODEL.md) - public threat model  
+- [BASTION_AND_TEST_HARNESS.md](BASTION_AND_TEST_HARNESS.md) - CI pairing with MCP Test Harness  
 - [SECURITY.md](SECURITY.md) - product security behavior and dependency notes  
 - [../SECURITY.md](../SECURITY.md) - vulnerability disclosure + CRA Article 14  
 - [PILLARS.md](PILLARS.md) - policy controls, `bastion.yaml`, and dashboard health rows  
