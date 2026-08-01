@@ -185,6 +185,7 @@ class BastionConfig:
     cedar_binary: str = "cedar"
     cedar_policies_dir: str | None = None
     cedar_schema_path: str | None = None
+    cedar_entities_path: str | None = None
     multi_tenant_enabled: bool = False
     multi_tenant_config_dir: str | None = None
     multi_tenant_default_tenant: str = "default"
@@ -317,10 +318,16 @@ def validate_bastion_config(config: BastionConfig) -> None:
                 )
         if engine == "cedar":
             pol = config.cedar_policies_dir
-            if not pol or not Path(pol).is_dir():
+            p = Path(pol) if pol else None
+            if not p or not p.exists() or not (p.is_dir() or (p.is_file() and p.suffix == ".cedar")):
                 raise BastionConfigError(
                     "policy_engine.fail_closed is true but policy_engine.cedar.policies_dir "
-                    "is missing or not a directory"
+                    "is missing or not a directory / .cedar file"
+                )
+            if p.is_dir() and not any(p.glob("*.cedar")):
+                raise BastionConfigError(
+                    "policy_engine.fail_closed is true but policy_engine.cedar.policies_dir "
+                    "contains no *.cedar files"
                 )
 
 
@@ -532,6 +539,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         cedar_binary=str(cedar_pe.get("binary") or os.environ.get("BASTION_CEDAR_BINARY", "cedar")),
         cedar_policies_dir=cedar_pe.get("policies_dir") or os.environ.get("BASTION_CEDAR_POLICIES_DIR"),
         cedar_schema_path=cedar_pe.get("schema") or os.environ.get("BASTION_CEDAR_SCHEMA"),
+        cedar_entities_path=cedar_pe.get("entities") or os.environ.get("BASTION_CEDAR_ENTITIES"),
         multi_tenant_enabled=bool(mt.get("enabled", False)),
         multi_tenant_config_dir=mt.get("config_dir") or os.environ.get("BASTION_TENANT_CONFIG_DIR"),
         multi_tenant_default_tenant=str(mt.get("default_tenant", "default")),
@@ -790,6 +798,7 @@ def _build_chain(config: BastionConfig) -> Any:
         cedar_binary=config.cedar_binary,
         cedar_policies_dir=config.cedar_policies_dir,
         cedar_schema_path=config.cedar_schema_path,
+        cedar_entities_path=config.cedar_entities_path,
         fail_closed=config.policy_engine_fail_closed,
     )
     external_evaluator = ExternalPolicyEvaluator(ext_cfg)
