@@ -520,20 +520,36 @@ def compliance_report(
     framework: str = "soc2",
     date_from: str | None = None,
     date_to: str | None = None,
+    format: str = "pdf",
 ):
-    """Generate a local compliance evidence markdown report."""
+    """Generate a local compliance evidence report (PDF by default; format=md for markdown)."""
     try:
-        from mcp_bastion.dashboard_local import generate_compliance_report_markdown
+        from mcp_bastion.dashboard_local import (
+            generate_compliance_report_markdown,
+            generate_compliance_report_pdf,
+        )
 
         fw = (framework or "soc2").strip().lower()
-        body = generate_compliance_report_markdown(
+        fmt = (format or "pdf").strip().lower()
+        if fmt in ("md", "markdown"):
+            body = generate_compliance_report_markdown(
+                framework=fw, date_from=date_from, date_to=date_to
+            )
+            return Response(
+                content=body,
+                media_type="text/markdown; charset=utf-8",
+                headers={
+                    "Content-Disposition": f'attachment; filename="bastion-{fw}-evidence.md"',
+                },
+            )
+        pdf = generate_compliance_report_pdf(
             framework=fw, date_from=date_from, date_to=date_to
         )
         return Response(
-            content=body,
-            media_type="text/markdown; charset=utf-8",
+            content=pdf,
+            media_type="application/pdf",
             headers={
-                "Content-Disposition": f'attachment; filename="bastion-{fw}-evidence.md"',
+                "Content-Disposition": f'attachment; filename="bastion-{fw}-evidence.pdf"',
             },
         )
     except Exception as e:
@@ -1730,6 +1746,29 @@ DASHBOARD_HTML = """
       gap: 10px;
       margin-top: 8px;
     }
+    .grade-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.35);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    html[data-theme="light"] .grade-legend { background: rgba(248, 250, 252, 0.9); }
+    .grade-legend .gl-title { font-weight: 700; color: var(--text, #e2e8f0); margin-right: 4px; }
+    .grade-legend .gl-item strong { margin-right: 4px; }
+    .grade-legend .gl-item.grade-A strong { color: #86efac; }
+    .grade-legend .gl-item.grade-B strong { color: #a3e635; }
+    .grade-legend .gl-item.grade-C strong { color: #fbbf24; }
+    .grade-legend .gl-item.grade-D strong { color: #fb923c; }
+    .grade-legend .gl-item.grade-F strong { color: #f87171; }
+    html[data-theme="light"] .grade-legend .gl-item.grade-A strong { color: #047857; }
+    .grade-legend .gl-note { flex-basis: 100%; font-size: 0.72rem; opacity: 0.9; }
     .grade-tile {
       border: 1px solid var(--card-border);
       border-radius: 10px;
@@ -2584,7 +2623,16 @@ DASHBOARD_HTML = """
   <div class="card" id="dash-posture">
     <div class="card-head">
       <h2>Security posture <span class="muted" style="font-weight:600;font-size:0.85rem;">(pre-deploy)</span></h2>
-      <p class="card-desc">Letter grades from local scan JSON under <code>.bastion/scan/</code> - catalog, skills, OSV, and risk audit. Click a finding for OWASP-linked why/how-to-fix (PMD-style). Prevalidation below is the Sonar-style issue list from the same files - no SonarQube server.</p>
+      <p class="card-desc">Letter grades from local scan JSON under <code>.bastion/scan/</code> — catalog, skills, OSV, and risk audit. Click a tile for findings (PMD-style why/how-to-fix). Prevalidation below is the Sonar-style issue list from the same files.</p>
+    </div>
+    <div class="grade-legend" id="gradeLegend" aria-label="Grade meaning">
+      <span class="gl-title">What the letter means</span>
+      <span class="gl-item grade-A"><strong>A</strong> clean / info only</span>
+      <span class="gl-item grade-B"><strong>B</strong> low severity findings</span>
+      <span class="gl-item grade-C"><strong>C</strong> medium severity</span>
+      <span class="gl-item grade-D"><strong>D</strong> high severity</span>
+      <span class="gl-item grade-F"><strong>F</strong> critical findings</span>
+      <span class="gl-note">Combined = worst grade among present checks. Empty checks show “-” until you run scan/audit.</span>
     </div>
     <div class="posture-grid" id="postureGrid">
       <div class="grade-tile grade-none"><div class="g-label">Loading…</div><div class="g-letter">-</div></div>
@@ -2669,7 +2717,8 @@ DASHBOARD_HTML = """
           <option value="asi">OWASP ASI Top 10 (evidence)</option>
         </select>
       </label>
-      <button type="button" class="btn-export" id="btnGenReport">Generate report</button>
+      <button type="button" class="btn-export" id="btnGenReport">Download PDF report</button>
+      <button type="button" class="btn-export" id="btnGenReportMd" title="Markdown for git/diff">Download MD</button>
       <button type="button" class="btn-export" id="btnGenBundle">Download evidence bundle</button>
     </div>
   </div>

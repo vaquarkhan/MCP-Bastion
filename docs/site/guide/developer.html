@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Developer guide</h1>
       </header>
-      <h1 id="developer-guide">Developer guide</h1>
-<p>Everything you need to develop, test, extend, and release MCP-Bastion locally.</p>
+      <p>Everything you need to develop, test, extend, and release MCP-Bastion locally.</p>
 <h2 id="repository-layout">Repository layout</h2>
 <pre><code>MCP-Bastion/
 ├── src/mcp_bastion/          # Core Python package (PyPI: mcp-bastion-python)
@@ -113,30 +112,30 @@ mcp-bastion validate --config bastion.yaml.example
 mcp-bastion doctor
 </code></pre>
 <h3 id="run-tests">Run tests</h3>
-<pre><code class="language-bash"># Full suite with coverage gate (matches CI)
+<pre><code class="language-bash">## Full suite with coverage gate (matches CI)
 pytest --cov=mcp_bastion --cov-fail-under=92
 
-# TypeScript
+## TypeScript
 npm test
 
-# Single module
+## Single module
 pytest tests/test_rbac.py -v
 </code></pre>
 <h3 id="run-locally">Run locally</h3>
-<pre><code class="language-bash"># Example MCP server with middleware
+<pre><code class="language-bash">## Example MCP server with middleware
 python examples/llm_server.py --http 8080
 
-# With your bastion.yaml
+## With your bastion.yaml
 mcp-bastion serve --config bastion.yaml --http 8080
 
-# Proxy boundary mode (forwards to upstream MCP)
+## Proxy boundary mode (forwards to upstream MCP)
 mcp-bastion serve --config bastion.yaml --proxy http://127.0.0.1:9000/mcp --http 8080
 
-# Dashboard (demo seed shows posture / FinOps / issue guides)
+## Dashboard (demo seed shows posture / FinOps / issue guides)
 mcp-bastion dashboard --port 7000 --demo
-# or: PYTHONPATH=src MCP_BASTION_DEMO=1 python dashboard/app.py
+## or: PYTHONPATH=src MCP_BASTION_DEMO=1 python dashboard/app.py
 
-# Feed local scan JSON into posture + prevalidate panels
+## Feed local scan JSON into posture + prevalidate panels
 mkdir -p .bastion/scan
 mcp-bastion scan tools.json --format json -o .bastion/scan/catalog.json
 </code></pre>

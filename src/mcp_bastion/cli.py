@@ -585,16 +585,40 @@ def cmd_report(
     output: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    format: str = "pdf",
 ) -> int:
-    """Generate compliance evidence report from audit JSONL."""
+    """Generate compliance evidence report from audit JSONL (PDF by default)."""
     from mcp_bastion import __version__
-    from mcp_bastion.pillars.compliance_report import generate_report_markdown
+    from mcp_bastion.pillars.compliance_report import generate_report_markdown, generate_report_pdf
 
     p = Path(audit_path)
     if not p.is_file():
         logger.error("Audit log not found: %s", audit_path)
         return 1
-    report = generate_report_markdown(
+    fmt = (format or "pdf").lower().strip()
+    if output:
+        out = Path(output)
+        # Infer format from extension when not explicit
+        if out.suffix.lower() == ".md":
+            fmt = "md"
+        elif out.suffix.lower() == ".pdf":
+            fmt = "pdf"
+    if fmt in ("md", "markdown"):
+        report = generate_report_markdown(
+            framework=framework,
+            audit_path=p,
+            date_from=date_from,
+            date_to=date_to,
+            version=__version__,
+        )
+        if output:
+            Path(output).write_text(report, encoding="utf-8")
+            logger.info("Wrote compliance report to %s", output)
+        else:
+            print(report)
+        return 0
+
+    pdf = generate_report_pdf(
         framework=framework,
         audit_path=p,
         date_from=date_from,
@@ -603,10 +627,15 @@ def cmd_report(
     )
     if output:
         out = Path(output)
-        out.write_text(report, encoding="utf-8")
-        logger.info("Wrote compliance report to %s", out)
+        if out.suffix.lower() != ".pdf":
+            out = out.with_suffix(".pdf")
+        out.write_bytes(pdf)
+        logger.info("Wrote compliance PDF report to %s", out)
     else:
-        print(report)
+        # stdout binary is awkward; require -o for PDF
+        default_out = Path(f"bastion-{framework.lower()}-evidence.pdf")
+        default_out.write_bytes(pdf)
+        logger.info("Wrote compliance PDF report to %s", default_out)
     return 0
 
 
@@ -900,7 +929,13 @@ def main() -> int:
         required=True,
         help="Path to audit JSONL log",
     )
-    report_parser.add_argument("--output", "-o", help="Write markdown report to file")
+    report_parser.add_argument("--output", "-o", help="Write report to file (.pdf default, .md for markdown)")
+    report_parser.add_argument(
+        "--format",
+        choices=("pdf", "md", "markdown"),
+        default="pdf",
+        help="Report format (default: pdf)",
+    )
     report_parser.add_argument("--from", dest="date_from", help="Filter events from ISO date")
     report_parser.add_argument("--to", dest="date_to", help="Filter events to ISO date")
     report_parser.set_defaults(
@@ -910,6 +945,7 @@ def main() -> int:
             output=kw.get("output"),
             date_from=kw.get("date_from"),
             date_to=kw.get("date_to"),
+            format=kw.get("format") or "pdf",
         )
     )
 

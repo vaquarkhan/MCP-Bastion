@@ -114,7 +114,7 @@ Open [http://localhost:7000/](http://localhost:7000/).
 | GET /api/taxonomy?framework=asi\|mcp\|llm | OWASP heatmaps |
 | GET /api/attack-matrix | Live attack categories |
 | GET /api/compliance | Attestation + policy hash |
-| GET /api/compliance/report | Evidence markdown download |
+| GET /api/compliance/report | Evidence PDF download (`?format=md` for markdown) |
 | GET /api/compliance/bundle | Zip evidence bundle |
 | GET /api/observe | Observe-mode banner data |
 | GET /api/agents | Denied-by-agent + Agent IAM scope |

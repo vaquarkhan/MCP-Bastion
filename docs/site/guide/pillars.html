@@ -229,7 +229,7 @@
 <tr>
 <td>External policy (OPA / Cedar)</td>
 <td><code>policy_engine</code></td>
-<td>Delegates allow/deny to <strong>OPA</strong> or <strong>Cedar</strong> CLI (<code>opa eval -d</code> / <code>cedar evaluate</code>). Set <code>fail_closed: true</code> to deny when the engine is unavailable.</td>
+<td>Delegates allow/deny to <strong>OPA</strong> (<code>opa eval -f raw</code>) or <strong>Cedar</strong> (<code>cedar authorize</code>). Set <code>fail_closed: true</code> to deny when the engine is unavailable.</td>
 </tr>
 <tr>
 <td>Edge authentication</td>

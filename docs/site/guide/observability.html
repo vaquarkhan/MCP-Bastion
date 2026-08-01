@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Dashboard &amp; observability</h1>
       </header>
-      <h1 id="dashboard-observability-and-opentelemetry">Dashboard, observability, and OpenTelemetry</h1>
-<p><strong>Live:</strong> https://vaquarkhan.github.io/MCP-Bastion/guide/observability.html  </p>
+      <p><strong>Live:</strong> https://vaquarkhan.github.io/MCP-Bastion/guide/observability.html  </p>
 <p>This page covers the <strong>local dashboard</strong>, built-in metrics/audit hooks, and whether you need <strong>OpenTelemetry (OTEL)</strong>.</p>
 <hr />
 <h2 id="short-answer-do-you-need-opentelemetry">Short answer: do you need OpenTelemetry?</h2>
@@ -135,7 +134,7 @@ Effectiveness numbers: <a href="metrics.html">METRICS.md</a></p>
 <h2 id="dashboard-features-full-board">Dashboard features (full board)</h2>
 <p>Zero-infra local UI — <strong>no login, no DB, no cloud</strong>.</p>
 <pre><code class="language-bash">mcp-bastion dashboard --demo          # seeded tour data
-# open http://127.0.0.1:7000/
+## open http://127.0.0.1:7000/
 mcp-bastion dashboard --port 7000     # live MetricsStore when wired
 </code></pre>
 <p><img alt="Dashboard tour" src="../assets/mcp-bastion-dashboard-tour.gif" /></p>
@@ -160,7 +159,7 @@ mcp-bastion dashboard --port 7000     # live MetricsStore when wired
 </tr>
 <tr>
 <td><strong>Security posture A–F</strong></td>
-<td>Grades from <code>scan</code> / <code>osv-scan</code> / <code>audit</code> JSON</td>
+<td>Worst finding severity → letter: <strong>A</strong> info/clean · <strong>B</strong> low · <strong>C</strong> medium · <strong>D</strong> high · <strong>F</strong> critical (from <code>scan</code> / <code>osv-scan</code> / <code>audit</code> JSON)</td>
 <td>Pre-deploy ship/no-ship</td>
 </tr>
 <tr>
@@ -327,13 +326,13 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 </table>
 <hr />
 <h2 id="quick-commands">Quick commands</h2>
-<pre><code class="language-bash"># Dashboard
+<pre><code class="language-bash">## Dashboard
 mcp-bastion dashboard --demo
 
-# Prometheus scrape (while dashboard running)
+## Prometheus scrape (while dashboard running)
 curl -s http://127.0.0.1:7000/metrics | head
 
-# Optional OTEL
+## Optional OTEL
 pip install &quot;mcp-bastion-python[otel]&quot;
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 </code></pre>

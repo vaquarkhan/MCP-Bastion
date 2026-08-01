@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Configuration reference</h1>
       </header>
-      <h1 id="policy-as-code-bastionyaml">Policy-as-Code (bastion.yaml)</h1>
-<p>Single config file controls MCP-Bastion policy. Use <code>bastion.yaml</code> in project root or set <code>BASTION_CONFIG</code> to a path.</p>
+      <p>Single config file controls MCP-Bastion policy. Use <code>bastion.yaml</code> in project root or set <code>BASTION_CONFIG</code> to a path.</p>
 <p><strong>Canonical pillar list and counts</strong> (request-path vs <code>bastion.yaml</code> vs dashboard): see <a href="pillars.html">PILLARS.md</a>.</p>
 <h2 id="example">Example</h2>
 <p>Copy <code>bastion.yaml.example</code> to <code>bastion.yaml</code>:</p>
@@ -135,10 +134,10 @@ hot_reload:
 <h2 id="load-in-code">Load in code</h2>
 <pre><code class="language-python">from mcp_bastion import load_config, build_middleware_from_config
 
-# Load from bastion.yaml or BASTION_CONFIG; optional: load_config(&quot;path/to/bastion.yaml&quot;)
+## Load from bastion.yaml or BASTION_CONFIG; optional: load_config(&quot;path/to/bastion.yaml&quot;)
 config = load_config()
 middleware = build_middleware_from_config(config)
-# Wire middleware into your MCP server
+## Wire middleware into your MCP server
 </code></pre>
 <p>One-liner (load + build in one call):</p>
 <pre><code class="language-python">from mcp_bastion import build_middleware_from_config

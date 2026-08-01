@@ -219,3 +219,38 @@ class TokenBucketRateLimiter:
         """Reset session state (e.g., on new request)."""
         key = self._get_session_id(request_id, session_id)
         self._delete_state(key)
+
+
+class RateLimiter:
+    """Compatibility wrapper for framework integrations (pre-4.0 API).
+
+    Older packages imported ``RateLimiter(max_requests=…, window_seconds=…)`` and
+    called ``.check()``. Map that onto :class:`TokenBucketRateLimiter`.
+    """
+
+    def __init__(
+        self,
+        max_requests: int = 60,
+        window_seconds: float = 60,
+        *,
+        session_id: str = "integration-default",
+        backend: StateBackend | None = None,
+    ) -> None:
+        self._session_id = session_id
+        self._inner = TokenBucketRateLimiter(
+            max_iterations=max(1, int(max_requests)),
+            timeout_seconds=float(window_seconds) if float(window_seconds) > 0 else 60.0,
+            backend=backend,
+        )
+
+    def check(self, *, tool_name: str | None = None) -> None:
+        """Raise :class:`RateLimitExceededError` when the iteration cap is hit."""
+        from mcp_bastion.errors import RateLimitExceededError
+
+        result = self._inner.check_iteration(
+            session_id=self._session_id,
+            tool_name=tool_name,
+        )
+        if not result.allowed:
+            raise RateLimitExceededError(result.message or "Rate limit exceeded")
+        self._inner.consume_iteration(session_id=self._session_id, tool_name=tool_name)

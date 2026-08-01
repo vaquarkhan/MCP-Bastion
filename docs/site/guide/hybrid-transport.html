@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Hybrid MCP transport</h1>
       </header>
-      <h1 id="hybrid-stateful-stateless-mcp-transport-tutorial">Hybrid stateful / stateless MCP transport tutorial</h1>
-<p>Step-by-step guide for running MCP-Bastion with <strong>legacy session-based</strong> clients and <strong>stateless</strong> clients (explicit state handles) on the same proxy - without breaking either path.</p>
+      <p>Step-by-step guide for running MCP-Bastion with <strong>legacy session-based</strong> clients and <strong>stateless</strong> clients (explicit state handles) on the same proxy - without breaking either path.</p>
 <p><strong>Canonical reference:</strong> <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/HYBRID_MCP_TRANSPORT.md">HYBRID_MCP_TRANSPORT.md</a></p>
 <p align="center">
   <img
@@ -108,12 +107,12 @@ mcp-bastion validate --config bastion.yaml
 <hr />
 <h2 id="step-2-start-upstream-mcp-loopback">Step 2 - Start upstream MCP (loopback)</h2>
 <p>Bind upstream to <strong>127.0.0.1</strong> only so clients cannot bypass Bastion:</p>
-<pre><code class="language-bash"># Terminal A - example upstream
+<pre><code class="language-bash">## Terminal A - example upstream
 mcp-bastion serve --http 9000 --host 127.0.0.1
 </code></pre>
 <hr />
 <h2 id="step-3-start-bastion-http-proxy">Step 3 - Start Bastion HTTP proxy</h2>
-<pre><code class="language-bash"># Terminal B - boundary proxy with hybrid transport
+<pre><code class="language-bash">## Terminal B - boundary proxy with hybrid transport
 mcp-bastion serve --proxy http://127.0.0.1:9000/mcp --http 8080 --host 0.0.0.0 --config bastion.yaml
 </code></pre>
 <p>Clients connect to <strong>port 8080</strong>, not 9000.</p>

@@ -76,10 +76,10 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Multi-language suite</h1>
       </header>
-      <h1 id="multi-language-suite-mcp-bastion-suite">Multi-language suite (<a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a>)</h1>
-<p><strong>MCP-Bastion</strong> (this repo) is the <strong>security engine</strong> published as <a href="https://pypi.org/project/mcp-bastion-python/"><code>mcp-bastion-python</code></a> on PyPI—middleware, pillars, dashboard, CLI (<code>validate</code>, <code>scan</code>, <code>serve --proxy</code>, …).</p>
-<p><strong><a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a></strong> is the <strong>multi-language connector layer</strong>: shared <code>bastion.yaml</code>, native adapters (TypeScript, Java/Kotlin, Go, .NET), tutorials, Docker, and a GitHub Action. It does <strong>not</strong> vendor Bastion source; the engine always comes from PyPI.</p>
+      <p><strong>MCP-Bastion</strong> (this repo) is the <strong>security engine</strong> published as <a href="https://pypi.org/project/mcp-bastion-python/"><code>mcp-bastion-python</code></a> on PyPI—middleware, pillars, dashboard, CLI (<code>validate</code>, <code>scan</code>, <code>serve --proxy</code>, …).</p>
+<p><strong><a href="https://github.com/vaquarkhan/mcp-bastion-suite">mcp-bastion-suite</a></strong> is the <strong>multi-language connector layer</strong>: shared <code>bastion.yaml</code>, language adapters, tutorials, Docker, and a GitHub Action. It does <strong>not</strong> vendor Bastion source; the engine always comes from PyPI.</p>
 <blockquote>
+<p><strong>Honest scope today:</strong> full in-process pillars are <strong>Python</strong>. Scan / red-team / <code>serve --proxy</code> work for any language over MCP HTTP. Suite Java / Go / .NET adapters are <strong>CLI wrappers</strong> around the Python engine (require <code>mcp-bastion</code> / Python on <code>PATH</code>). <code>@mcp-bastion/core</code> (Node) has native rate limiting; ML pillars need a Python sidecar. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/MULTI-LANGUAGE-STRATEGY.md">MULTI-LANGUAGE-STRATEGY.md</a>.</p>
 <p>Keep deep language tutorials and framework packs in the suite repo so this README stays light. This page is the bridge.</p>
 </blockquote>
 <hr />
@@ -201,7 +201,7 @@ https://github.com/vaquarkhan/mcp-bastion-suite/releases/download/v0.1.0/pom.xml
 </code></pre>
 <p><strong>Important:</strong> The Java adapter is a thin connector. The security engine is still <strong><code>mcp-bastion-python</code></strong> (CLI / sidecar / proxy). Install the engine:</p>
 <pre><code class="language-bash">pip install &quot;mcp-bastion-python&gt;=4.0.0,&lt;5&quot;
-# or use suite Docker: ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0
+## or use suite Docker: ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0
 </code></pre>
 <p>Tutorial: <a href="https://github.com/vaquarkhan/mcp-bastion-suite/blob/main/docs/tutorials/java.md">suite java.md</a></p>
 <p>Shared policy sketch (same file in every language):</p>

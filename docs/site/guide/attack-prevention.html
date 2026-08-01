@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Attack prevention</h1>
       </header>
-      <h1 id="how-mcp-bastion-prevents-real-attacks">How MCP-Bastion Prevents Real Attacks</h1>
-<p>This document shows concrete attack scenarios and how MCP-Bastion blocks or mitigates them.</p>
+      <p>This document shows concrete attack scenarios and how MCP-Bastion blocks or mitigates them.</p>
 <p><strong>Runnable demos (preferred):</strong> <a href="attack-demos.html">ATTACK_DEMOS.md</a> — <code>PYTHONPATH=src python -m examples.attack_demos</code></p>
 <p>Also: <code>examples/full_demo.py</code> (legacy combined script).</p>
 <hr />
@@ -87,7 +86,7 @@
 <p><strong>Without MCP-Bastion:</strong> The tool might execute the intent (e.g. run a dangerous command or return sensitive text).</p>
 <p><strong>With MCP-Bastion:</strong> PromptGuard evaluates the tool arguments. If the payload is classified as malicious (above threshold), the request is <strong>blocked</strong> before the tool runs. The client receives a structured error (e.g. <code>PromptInjectionError</code>, code -32001).</p>
 <p><strong>Example (from full_demo.py):</strong></p>
-<pre><code class="language-python"># Malicious payload in tool arguments
+<pre><code class="language-python">## Malicious payload in tool arguments
 ctx = MiddlewareContext(
     message={
         &quot;method&quot;: &quot;tools/call&quot;,
@@ -98,7 +97,7 @@ ctx = MiddlewareContext(
     },
     request_id=&quot;req4&quot;,
 )
-# Result: PromptInjectionError raised; tool never runs
+## Result: PromptInjectionError raised; tool never runs
 </code></pre>
 <p><strong>Dashboard:</strong> Blocked count and <code>blocked_by_reason</code> (e.g. prompt injection) increase; alerts can be sent to Slack/webhook.</p>
 <hr />
@@ -107,8 +106,8 @@ ctx = MiddlewareContext(
 <p><strong>Without MCP-Bastion:</strong> Raw PII is in tool responses and may be logged or sent to the model.</p>
 <p><strong>With MCP-Bastion:</strong> PII redaction (Presidio) scans outbound tool/resource content and replaces entities (e.g. SSN, email, phone, person name) with placeholders (e.g. <code>&lt;US_SSN&gt;</code>, <code>&lt;EMAIL_ADDRESS&gt;</code>). The downstream LLM or client never sees the raw PII.</p>
 <p><strong>Example:</strong></p>
-<pre><code class="language-python"># Tool returns: &quot;User John Doe, SSN 123-45-6789, john@example.com&quot;
-# After MCP-Bastion: &quot;User &lt;PERSON&gt;, SSN &lt;US_SSN&gt;, &lt;EMAIL_ADDRESS&gt;&quot;
+<pre><code class="language-python">## Tool returns: &quot;User John Doe, SSN 123-45-6789, john@example.com&quot;
+## After MCP-Bastion: &quot;User &lt;PERSON&gt;, SSN &lt;US_SSN&gt;, &lt;EMAIL_ADDRESS&gt;&quot;
 </code></pre>
 <p><strong>Dashboard:</strong> <code>pii_redacted_total</code> increases; you can correlate with tools that return user data.</p>
 <hr />
@@ -117,8 +116,8 @@ ctx = MiddlewareContext(
 <p><strong>Without MCP-Bastion:</strong> The server may accept unlimited calls per session, leading to high cost or DoS.</p>
 <p><strong>With MCP-Bastion:</strong> Rate limiting (token bucket) enforces a maximum number of tool calls per session and an optional timeout. When the limit is exceeded, further calls are <strong>blocked</strong> (<code>RateLimitExceededError</code>, -32002). Cost tracker can also block when session cost exceeds a budget.</p>
 <p><strong>Example (from full_demo.py):</strong></p>
-<pre><code class="language-python"># 6th call in same session with max_iterations=5
-# Result: RateLimitExceededError on 6th call
+<pre><code class="language-python">## 6th call in same session with max_iterations=5
+## Result: RateLimitExceededError on 6th call
 </code></pre>
 <p><strong>Dashboard:</strong> Blocked by reason shows "rate_limit" and "Maximum iterations exceeded"; alerts can fire on rate_limit.</p>
 <hr />
@@ -134,7 +133,7 @@ ctx = MiddlewareContext(
     },
     request_id=&quot;req5&quot;,
 )
-# Result: ContentFilterError; read_file not called
+## Result: ContentFilterError; read_file not called
 </code></pre>
 <p><strong>Dashboard:</strong> Blocked by reason shows "content_filter" or "Content blocked: suspicious file path".</p>
 <hr />
@@ -143,13 +142,13 @@ ctx = MiddlewareContext(
 <p><strong>Without MCP-Bastion:</strong> The server might allow the call if it does not enforce roles.</p>
 <p><strong>With MCP-Bastion:</strong> RBAC pillar checks the request’s role (e.g. from metadata) against a permission map. If the role is not allowed to call the tool, the request is <strong>blocked</strong> (<code>RBACError</code>).</p>
 <p><strong>Example (from full_demo.py):</strong></p>
-<pre><code class="language-python"># role &quot;viewer&quot; cannot call &quot;write&quot;
+<pre><code class="language-python">## role &quot;viewer&quot; cannot call &quot;write&quot;
 ctx = MiddlewareContext(
     message={&quot;method&quot;: &quot;tools/call&quot;, &quot;params&quot;: {&quot;name&quot;: &quot;write&quot;, &quot;arguments&quot;: {}}},
     request_id=&quot;req7&quot;,
     metadata={&quot;role&quot;: &quot;viewer&quot;},
 )
-# Result: RBACError
+## Result: RBACError
 </code></pre>
 <p><strong>Dashboard:</strong> Blocked by reason shows "rbac" or "Role 'viewer' cannot access tool 'write'".</p>
 <hr />
@@ -158,7 +157,7 @@ ctx = MiddlewareContext(
 <p><strong>Without MCP-Bastion:</strong> The server may process the same request multiple times.</p>
 <p><strong>With MCP-Bastion:</strong> Replay guard (nonce) tracks seen nonces per session (or global). If the same nonce is sent again, the request is <strong>blocked</strong> (<code>ReplayAttackError</code>).</p>
 <p><strong>Example (from full_demo.py):</strong></p>
-<pre><code class="language-python"># First request with nonce=&quot;n1&quot; succeeds; second request with same nonce blocked
+<pre><code class="language-python">## First request with nonce=&quot;n1&quot; succeeds; second request with same nonce blocked
 </code></pre>
 <hr />
 <h2 id="7-schema-bypass-invalid-input">7. Schema Bypass / Invalid Input</h2>
@@ -166,8 +165,8 @@ ctx = MiddlewareContext(
 <p><strong>Without MCP-Bastion:</strong> The tool might receive invalid input and crash or behave unexpectedly.</p>
 <p><strong>With MCP-Bastion:</strong> Schema validation checks tool arguments against a JSON schema. If validation fails, the request is <strong>blocked</strong> (<code>SchemaValidationError</code>) before the tool runs.</p>
 <p><strong>Example (from full_demo.py):</strong></p>
-<pre><code class="language-python"># add(a, b) called with only {&quot;a&quot;: 1} (missing &quot;b&quot;)
-# Result: SchemaValidationError
+<pre><code class="language-python">## add(a, b) called with only {&quot;a&quot;: 1} (missing &quot;b&quot;)
+## Result: SchemaValidationError
 </code></pre>
 <hr />
 <h2 id="running-the-attack-prevention-demo">Running the Attack-Prevention Demo</h2>

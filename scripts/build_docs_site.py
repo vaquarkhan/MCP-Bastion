@@ -82,6 +82,9 @@ def _md_to_html(text: str) -> str:
             return f"[{label}](https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/{path})"
         if path.startswith("../"):
             return f"[{label}](https://github.com/vaquarkhan/MCP-Bastion/blob/main/{path[3:]})"
+        # GIF / asset links under docs/images → site assets
+        if path.startswith("images/"):
+            return f"[{label}](../assets/{path[len('images/'):]})"
         return m.group(0)
 
     def img_sub(m: re.Match[str]) -> str:
@@ -103,11 +106,25 @@ def _md_to_html(text: str) -> str:
 
     text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", img_sub, text)
     text = re.sub(r"(?<!!)\[([^\]]+)\]\(([^)]+)\)", link_sub, text)
-    return markdown.markdown(
+    # Shell already provides the page H1 — strip the markdown document title H1
+    # and demote any remaining ATX H1s so we do not show the heading twice.
+    text = re.sub(r"(?m)^#\s+[^\n]+\n+", "", text, count=1)
+    text = re.sub(r"(?m)^#\s+", "## ", text)
+    html_body = markdown.markdown(
         text,
         extensions=["fenced_code", "tables", "toc", "nl2br", "sane_lists"],
         extension_configs={"toc": {"permalink": False}},
     )
+    # Mermaid: fenced ```mermaid → <pre class="mermaid"> for mermaid.js (if present)
+    html_body = re.sub(
+        r'<pre><code class="language-mermaid">(.*?)</code></pre>',
+        r'<pre class="mermaid">\1</pre>',
+        html_body,
+        flags=re.DOTALL,
+    )
+    # Safety: no body H1 left (shell owns the only H1)
+    html_body = html_body.replace("<h1>", "<h2>").replace("</h1>", "</h2>")
+    return html_body
 
 
 def _nav_html(active: str) -> str:

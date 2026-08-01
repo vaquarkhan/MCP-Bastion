@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>User guide (end-to-end)</h1>
       </header>
-      <h1 id="mcp-bastion-user-guide">MCP-Bastion User Guide</h1>
-<p><strong>Version:</strong> 4.0.0<br />
+      <p><strong>Version:</strong> 4.0.0<br />
 <strong>Audience:</strong> Platform engineers, security architects, and developers deploying Model Context Protocol (MCP) servers with AI agents<br />
 <strong>Last updated:</strong> 2026-07-31</p>
 <p>This guide is the end-to-end handbook for MCP-Bastion: from first install through production proxy deployment, privacy controls, security pillars, and release hygiene. It follows the same documentation shape used by large open-source and cloud platforms—<strong>concepts → getting started → how-to → reference → operations</strong>.</p>
@@ -183,13 +182,13 @@ def hello(name: str) -&gt; str:
 <p>This enables core defaults (prompt guard, PII redaction, rate limit). For full policy, use <code>bastion.yaml</code> (next section).</p>
 <h3 id="34-policy-as-code-path">3.4 Policy-as-code path</h3>
 <pre><code class="language-bash">cp bastion.yaml.example bastion.yaml
-# edit bastion.yaml
+## edit bastion.yaml
 export BASTION_CONFIG=./bastion.yaml
 </code></pre>
 <pre><code class="language-python">from mcp_bastion.config import build_middleware_from_config, load_config
 
 mw = build_middleware_from_config(load_config())
-# compose mw onto your MCP server request path
+## compose mw onto your MCP server request path
 </code></pre>
 <p>Validate before deploy:</p>
 <pre><code class="language-bash">mcp-bastion validate
