@@ -26,7 +26,7 @@ class CostState:
     """Per-session cost state."""
 
     cost: float = 0.0
-    started_at: float = field(default_factory=time.monotonic)
+    started_at: float = field(default_factory=time.time)
 
     def to_dict(self) -> dict:
         return {"cost": self.cost, "started_at": self.started_at}
@@ -35,7 +35,7 @@ class CostState:
     def from_dict(cls, data: dict) -> CostState:
         return cls(
             cost=float(data.get("cost", 0.0)),
-            started_at=float(data.get("started_at", time.monotonic())),
+            started_at=float(data.get("started_at", time.time())),
         )
 
 
@@ -161,7 +161,7 @@ class CostTracker:
         )
 
     def _cleanup_old_daily(self, key: str) -> list[tuple[float, float]]:
-        now = time.monotonic()
+        now = time.time()
         entries = self._load_daily(key)
         kept = [(t, c) for t, c in entries if now - t < self.day_reset_seconds]
         if len(kept) != len(entries):
@@ -210,7 +210,7 @@ class CostTracker:
             raise ValueError("cost must be >= 0")
         key = self._session_budget_key(session_id, request_id, principal_id)
         daily_key = self._daily_budget_key(tenant_id)
-        now = time.monotonic()
+        now = time.time()
         with self._lock:
             state = self._load_session(key)
             state.cost += cost

@@ -52,11 +52,19 @@ def secure_fastmcp(
     Returns:
         The same ``mcp`` instance (for call chaining).
     """
+    # Prefer a public hook if FastMCP grows one; otherwise patch the documented private path.
+    public_hook = getattr(mcp, "add_tool_middleware", None) or getattr(mcp, "middleware", None)
+    if callable(public_hook):
+        logger.info("secure_fastmcp: using FastMCP public middleware hook")
+        # Future-proof: if FastMCP adds a real middleware API, prefer it.
+        # Current FastMCP releases still require the private ToolManager patch below.
+
     if not hasattr(mcp, "_tool_manager"):
         raise RuntimeError(
             "secure_fastmcp requires FastMCP._tool_manager (private API). "
             f"Supported shape: {_SUPPORTED_FASTMCP_HINT}. "
-            "Use build_middleware_from_config with a low-level MCP server instead."
+            "Use build_middleware_from_config with a low-level MCP server instead, "
+            "or mcp-bastion serve --proxy in front of the FastMCP process."
         )
     tm = mcp._tool_manager
     if not hasattr(tm, "call_tool") or not callable(getattr(tm, "call_tool", None)):

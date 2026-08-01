@@ -91,6 +91,23 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
                     "detail": f"{mod} missing ({e}). Hint: {hint}",
                 }
             )
+
+    # D-3: suite / non-Python adapters shell out to the Python CLI
+    bastion_cli = shutil.which("mcp-bastion")
+    if bastion_cli:
+        checks.append({"id": "cli_on_path", "ok": True, "detail": bastion_cli})
+    else:
+        checks.append(
+            {
+                "id": "cli_on_path",
+                "ok": False,
+                "detail": (
+                    "mcp-bastion not on PATH. Java/Go/.NET/suite adapters require the Python "
+                    "engine CLI at runtime (not just build time). "
+                    "Install: pip install 'mcp-bastion-python' and ensure Scripts/bin is on PATH."
+                ),
+            }
+        )
     try:
         import spacy  # type: ignore
 

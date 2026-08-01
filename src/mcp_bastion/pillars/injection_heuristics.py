@@ -31,7 +31,11 @@ DEFAULT_INJECTION_PATTERNS = [
     r"(?i)role[\s-]*play\s+as\s+(?:an?\s+)?(?:unrestricted|unfiltered)",
     # Role-play / social-engineering jailbreaks (C-2)
     r"(?i)grandma(?:ma)?\s+(?:used\s+to|would)\b",
-    r"(?i)for\s+(?:a\s+|the\s+)?novel\b.{0,40}\b(?:bypass|villain|filter|jailbreak)",
+    r"(?i)(?:my\s+)?(?:deceased|late|dead)\s+grandm(?:a|other)\b",
+    r"(?i)grandm(?:a|other).{0,120}\b(?:used\s+to|would|taught|told)\b.{0,80}\b(?:napalm|bomb|hack|password|secret|bypass|exploit|weapon)",
+    r"(?i)for\s+(?:a\s+|the\s+|my\s+)?novel\b.{0,80}\b(?:bypass|villain|filter|jailbreak|how\s+to|weapon|bomb|hack|ignore\s+previous)",
+    r"(?i)(?:write|tell|explain|describe|act|role[\s-]*play).{0,60}\b(?:for|as|in)\s+(?:a\s+|the\s+|my\s+)?(?:novel|fiction|story|screenplay)\b.{0,80}\b(?:bypass|villain|hack|weapon|bomb|password|exploit|jailbreak|how\s+to)",
+    r"(?i)(?:write|tell|explain).{0,40}\bfor\s+(?:a\s+|the\s+|my\s+)?novel\b",
     r"(?i)let'?s\s+play\s+a\s+game\b.{0,80}\b(?:no\s+restrictions|unrestricted|FreeGPT|DAN)",
     r"(?i)\bSYSTEM\s*:\s*(?:from\s+this\s+point|you\s+are\s+now|ignore)",
     r"(?i)act\s+as\s+an?\s+unrestricted\s+assistant",

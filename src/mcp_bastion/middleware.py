@@ -1509,7 +1509,7 @@ class MCPBastionMiddleware(Middleware[Any]):
                 agent_limiter = self.agent_iam.rate_limiter_for(agent_policy)
                 if agent_limiter is not None:
                     limiter = agent_limiter
-            check = limiter.check_iteration(
+            check = limiter.check_and_consume(
                 request_id=request_id,
                 session_id=rate_session,
                 tool_name=surface_key,
@@ -1540,11 +1540,10 @@ class MCPBastionMiddleware(Middleware[Any]):
             tokens = estimate_text_tokens(inbound_text, _extract_text_from_value(result))
             consume_limiter = context.metadata.get("_rate_limiter") or self.rate_limiter
             consume_session = context.metadata.get("_rate_session") or session_id
-            consume_limiter.consume_iteration(
+            consume_limiter.add_tokens(
                 request_id=request_id,
                 session_id=consume_session,
                 tokens=tokens,
-                tool_name=surface_key,
             )
 
         if self.enable_cost_tracker:
@@ -1908,7 +1907,7 @@ class MCPBastionMiddleware(Middleware[Any]):
                 agent_limiter = self.agent_iam.rate_limiter_for(agent_policy)
                 if agent_limiter is not None:
                     limiter = agent_limiter
-            check = limiter.check_iteration(
+            check = limiter.check_and_consume(
                 request_id=request_id,
                 session_id=rate_session,
                 tool_name=tool_name,
@@ -2112,11 +2111,10 @@ class MCPBastionMiddleware(Middleware[Any]):
                 started = time.perf_counter()
                 consume_limiter = context.metadata.get("_rate_limiter") or self.rate_limiter
                 consume_session = context.metadata.get("_rate_session") or session_id
-                consume_limiter.consume_iteration(
+                consume_limiter.add_tokens(
                     request_id=request_id,
                     session_id=consume_session,
                     tokens=tokens,
-                    tool_name=tool_name,
                 )
                 _trace_append(trace, pillar="rate_limit_consume", status="ok", started=started)
 

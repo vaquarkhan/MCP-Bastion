@@ -61,7 +61,7 @@ def test_rate_limiter_session_timeout_exceeded():
     limiter.consume_iteration(session_id="s1")
     with patch.object(limiter, "_cleanup_expired"):
         state = limiter._sessions["s1"]
-        state.started_at = time.monotonic() - 100
+        state.started_at = time.time() - 100
         check = limiter.check_iteration(session_id="s1")
         assert not check.allowed
         assert check.violation == "timeout"
@@ -78,6 +78,34 @@ def test_rate_limiter_reset_session():
     limiter.reset_session(session_id="s1")
     check = limiter.check_iteration(session_id="s1")
     assert check.allowed
+
+
+def test_rate_limiter_redis_wall_clock_across_peers():
+    """A-6: started_at is wall clock so Redis peers share a comparable clock."""
+    from mcp_bastion.pillars.state_backend import MemoryStateBackend
+
+    backend = MemoryStateBackend()
+    a = TokenBucketRateLimiter(max_iterations=10, timeout_seconds=60, backend=backend)
+    a.consume_iteration(session_id="shared")
+    raw = backend.get_json("ratelimit:shared")
+    assert raw is not None
+    raw["started_at"] = time.time() - 120
+    backend.set_json("ratelimit:shared", raw, ttl_seconds=60)
+    b = TokenBucketRateLimiter(max_iterations=10, timeout_seconds=60, backend=backend)
+    check = b.check_iteration(session_id="shared")
+    assert check.allowed  # expired session cleaned → fresh
+    for _ in range(10):
+        assert b.check_and_consume(session_id="shared").allowed
+    assert not b.check_and_consume(session_id="shared").allowed
+
+
+def test_rate_limiter_check_and_consume_is_atomic():
+    """A-7: check_and_consume increments under one lock."""
+    limiter = TokenBucketRateLimiter(max_iterations=2)
+    assert limiter.check_and_consume(session_id="s1").allowed
+    assert limiter.check_and_consume(session_id="s1").allowed
+    assert not limiter.check_and_consume(session_id="s1").allowed
+    assert limiter._sessions["s1"].iterations == 2
 
 
 def test_rate_limiter_rejects_negative_tokens():

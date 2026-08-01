@@ -41,13 +41,21 @@ _PHONE_RE = re.compile(r"\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{
 _CC_RE = re.compile(r"\b(?:\d[ -]*?){13,19}\b")
 _IPV4_RE = re.compile(r"\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b")
 _IBAN_RE = re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b")
-_PASSPORT_RE = re.compile(r"\b[A-Z]\d{8}\b")  # US passport-ish
+_PASSPORT_RE = re.compile(
+    r"(?i)\bpassport(?:\s*(?:no\.?|number|num|#))?[\s:]+([A-Z]\d{8}|\d{9})\b"
+    r"|\b([A-Z]\d{8})\b"
+)
 _DOB_RE = re.compile(
     r"\b(?:(?:0?[1-9]|1[0-2])[/-](?:0?[1-9]|[12]\d|3[01])[/-](?:19|20)\d{2}|"
     r"(?:19|20)\d{2}[/-](?:0?[1-9]|1[0-2])[/-](?:0?[1-9]|[12]\d|3[01]))\b"
 )
 _AWS_KEY_RE = re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b")
-_PERSON_NAME_RE = re.compile(r"\b(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b")
+_PERSON_NAME_RE = re.compile(
+    r"(?x)"
+    r"(?:(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+))"
+    r"|(?:(?:name|patient|customer|employee|user)\s*[:=]\s*)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)"
+    r"|\b([A-Z][a-z]{2,}\s+[A-Z][a-z]{2,})\b(?=\s*(?:,|\.|$|\s+(?:lives|works|ssn|email|phone|passport|dob)))"
+)
 
 
 def _index_to_letters(n: int) -> str:
@@ -108,13 +116,21 @@ def detect_entities_regex(text: str) -> list[EntitySpan]:
     for m in _IBAN_RE.finditer(text):
         spans.append(EntitySpan(m.start(), m.end(), "IBAN_CODE", m.group(0)))
     for m in _PASSPORT_RE.finditer(text):
-        spans.append(EntitySpan(m.start(), m.end(), "US_PASSPORT", m.group(0)))
+        val = next((g for g in m.groups() if g), m.group(0))
+        # Prefer the captured passport id span when present
+        start = m.start(1) if m.lastindex and m.group(1) else (m.start(2) if m.lastindex and m.lastindex >= 2 and m.group(2) else m.start())
+        end = start + len(val)
+        spans.append(EntitySpan(start, end, "US_PASSPORT", val))
     for m in _DOB_RE.finditer(text):
         spans.append(EntitySpan(m.start(), m.end(), "DATE_TIME", m.group(0)))
     for m in _AWS_KEY_RE.finditer(text):
         spans.append(EntitySpan(m.start(), m.end(), "AWS_ACCESS_KEY", m.group(0)))
     for m in _PERSON_NAME_RE.finditer(text):
-        spans.append(EntitySpan(m.start(), m.end(), "PERSON", m.group(0)))
+        val = next((g for g in m.groups() if g), m.group(0))
+        # Locate the name substring inside the match
+        idx = m.group(0).find(val)
+        start = m.start() + (idx if idx >= 0 else 0)
+        spans.append(EntitySpan(start, start + len(val), "PERSON", val))
     return _dedupe_spans(spans)
 
 
