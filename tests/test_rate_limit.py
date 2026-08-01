@@ -118,3 +118,47 @@ def test_rate_limiter_rejects_negative_tokens():
 def test_rate_limiter_rejects_negative_max_per_tool():
     with pytest.raises(ValueError, match="max_per_tool"):
         TokenBucketRateLimiter(max_per_tool=-1)
+
+
+def test_rate_limiter_add_tokens_and_compat_wrapper():
+    """Post-call token accounting + RateLimiter compatibility shim."""
+    from mcp_bastion.errors import RateLimitExceededError
+    from mcp_bastion.pillars.rate_limit import RateLimiter
+    from mcp_bastion.pillars.state_backend import MemoryStateBackend
+
+    limiter = TokenBucketRateLimiter(max_iterations=5, token_budget=100)
+    assert limiter.check_and_consume(session_id="t1", tokens=10).allowed
+    limiter.add_tokens(session_id="t1", tokens=5)
+    assert limiter._sessions["t1"].tokens_used == 15
+    limiter.add_tokens(session_id="t1", tokens=0)
+    with pytest.raises(ValueError, match="tokens"):
+        limiter.add_tokens(session_id="t1", tokens=-1)
+    with pytest.raises(ValueError, match="tokens"):
+        limiter.check_and_consume(session_id="t1", tokens=-1)
+
+    wrap = RateLimiter(max_requests=2, window_seconds=60, session_id="wrap")
+    wrap.check()
+    wrap.check()
+    with pytest.raises(RateLimitExceededError):
+        wrap.check()
+
+    with pytest.raises(ValueError, match="max_iterations"):
+        TokenBucketRateLimiter(max_iterations=0)
+    with pytest.raises(ValueError, match="timeout_seconds"):
+        TokenBucketRateLimiter(timeout_seconds=0)
+    with pytest.raises(ValueError, match="token_budget"):
+        TokenBucketRateLimiter(token_budget=0)
+
+    backend = MemoryStateBackend()
+    shared = TokenBucketRateLimiter(
+        max_iterations=5, token_budget=100, timeout_seconds=60, backend=backend
+    )
+    assert shared.check_and_consume(session_id="sb", tokens=1, tool_name="t").allowed
+    shared.add_tokens(session_id="sb", tokens=3)
+    raw = backend.get_json("ratelimit:sb")
+    assert raw is not None
+    assert raw["tokens_used"] == 4
+    # Expired shared session is reset inside check_and_consume
+    raw["started_at"] = time.time() - 120
+    backend.set_json("ratelimit:sb", raw, ttl_seconds=60)
+    assert shared.check_and_consume(session_id="sb").allowed

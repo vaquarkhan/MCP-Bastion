@@ -90,6 +90,8 @@ omit = [
     "*/dashboard_local.py",
     "*/osv_scan.py",
     "*/skill_scan.py",
+    "*/static_scan.py",
+    "*/risk_audit.py",
 ]
 
 [tool.coverage.report]

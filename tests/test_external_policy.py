@@ -409,3 +409,71 @@ def test_cedar_real_binary_smoke(tmp_path):
     assert ok2 is False
     assert reason2 is not None
     assert "denied" in reason2.lower()
+
+
+def test_cedar_combines_multiple_policy_files(tmp_path):
+    """Multiple *.cedar files are concatenated into a temp policies file."""
+    pol = tmp_path / "policies"
+    pol.mkdir()
+    (pol / "a.cedar").write_text("permit (principal, action, resource);\n", encoding="utf-8")
+    (pol / "b.cedar").write_text(
+        'forbid (principal == User::"bob", action, resource);\n', encoding="utf-8"
+    )
+    entities = tmp_path / "entities.json"
+    entities.write_text(
+        '{"entities": [{"uid": {"type": "User", "id": "alice"}, "attrs": {}, "parents": []}]}',
+        encoding="utf-8",
+    )
+    captured = {}
+
+    def run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return mock.Mock(returncode=0, stdout="ALLOW\n", stderr="")
+
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(pol),
+            cedar_binary="cedar",
+            cedar_entities_path=str(entities),
+        )
+    )
+    with mock.patch("subprocess.run", side_effect=run):
+        ok, _ = ev.evaluate({"tool": "t", "session_id": "alice"})
+    assert ok is True
+    assert "--policies" in captured["cmd"]
+
+
+def test_cedar_entities_invalid_json_fail_open(tmp_path):
+    pol = tmp_path / "policies"
+    pol.mkdir()
+    (pol / "p.cedar").write_text("permit (principal, action, resource);\n", encoding="utf-8")
+    bad = tmp_path / "entities.json"
+    bad.write_text("{not-json", encoding="utf-8")
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(pol),
+            cedar_binary="cedar",
+            cedar_entities_path=str(bad),
+            fail_closed=False,
+        )
+    )
+    ok, reason = ev.evaluate({"tool": "x", "session_id": "s"})
+    assert ok is True
+
+
+def test_cedar_empty_policy_dir_unavailable(tmp_path):
+    pol = tmp_path / "empty"
+    pol.mkdir()
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="cedar",
+            cedar_policies_dir=str(pol),
+            cedar_binary="cedar",
+            fail_closed=True,
+        )
+    )
+    ok, reason = ev.evaluate({"tool": "x"})
+    assert ok is False
+    assert reason is not None

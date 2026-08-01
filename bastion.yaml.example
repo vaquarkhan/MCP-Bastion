@@ -11,6 +11,10 @@ prompt_guard:
   fail_open: false         # when ML unavailable: block unverified payloads (dev: set true)
   # Default: ungated ProtectAI model (no Hugging Face login). Works out of the box with transformers+torch.
   use_ungated_default: true
+  # N-2: require injection-intent markers before trusting ML "malicious" (suppresses business-verb FPs).
+  # Set require_ml_corroboration: false for max-recall (higher FP) deployments.
+  require_ml_corroboration: true
+  # ml_corroboration_ceiling: 1.01  # ProtectAI is uncalibrated; leave default (ceiling effectively off)
   # Optional gated Llama model: set use_ungated_default: false and model_id below, then `huggingface-cli login`
   # model_id: meta-llama/Llama-Prompt-Guard-2-86M
 

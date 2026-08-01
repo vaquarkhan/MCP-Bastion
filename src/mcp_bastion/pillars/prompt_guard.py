@@ -14,7 +14,11 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from mcp_bastion.errors import PromptGuardUnavailableError
-from mcp_bastion.pillars.injection_heuristics import compile_injection_patterns, find_injection_match
+from mcp_bastion.pillars.injection_heuristics import (
+    compile_injection_patterns,
+    find_injection_match,
+    has_injection_intent,
+)
 
 if TYPE_CHECKING:
     import torch
@@ -42,6 +46,8 @@ class PromptGuardEngine:
         heuristic_fallback: bool = True,
         heuristic_extra_patterns: list[str] | None = None,
         use_ungated_default: bool = True,
+        require_ml_corroboration: bool = True,
+        ml_corroboration_ceiling: float = 1.01,
     ) -> None:
         self.threshold = threshold
         self.temperature = temperature
@@ -56,6 +62,14 @@ class PromptGuardEngine:
         self._ml_loaded = False
         self._ml_load_failed = False
         self._ml_unavailable_reason: str | None = None
+        # N-2 fix: when the ML flags malicious but there is no injection-intent marker and no
+        # heuristic match, treat it as the known business-verb false positive and allow. Set
+        # require_ml_corroboration=False for max-recall (higher false-positive) deployments.
+        self.require_ml_corroboration = require_ml_corroboration
+        # ProtectAI is uncalibrated and returns ~1.0 even for the business-verb false positives,
+        # so a confidence "ceiling" cannot separate them. Default 1.01 = ceiling effectively off;
+        # corroboration is decided purely by the injection-intent marker.
+        self.ml_corroboration_ceiling = ml_corroboration_ceiling
 
     def heuristic_match(self, text: str) -> str | None:
         """Return matched heuristic pattern, if any."""
@@ -164,7 +178,24 @@ class PromptGuardEngine:
             return True
 
         try:
-            return self.score(text) >= self.threshold
+            score = self.score(text)
+            if score < self.threshold:
+                return False
+            # ML says malicious. Corroborate to suppress the business-verb false positives (N-2):
+            # a real injection targets the model's control surface (intent markers) or matches the
+            # heuristic regexes above. If neither holds and the model isn't near-certain, allow.
+            if (
+                self.require_ml_corroboration
+                and score < self.ml_corroboration_ceiling
+                and not has_injection_intent(text)
+            ):
+                logger.info(
+                    "PromptGuard: ML score %.3f but no injection-intent marker; "
+                    "treating as benign (N-2 false-positive guard)",
+                    score,
+                )
+                return False
+            return True
         except Exception as e:
             self._ml_unavailable_reason = str(e)
             if self.fail_open:

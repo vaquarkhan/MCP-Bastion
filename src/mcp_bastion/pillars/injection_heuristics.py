@@ -118,6 +118,53 @@ def is_benign_allowlisted(text: str) -> bool:
 
 _BENIGN_COMPILED = [re.compile(p) for p in BENIGN_ALLOWLIST_PATTERNS]
 
+# Injection-intent markers: evidence the text targets the MODEL's control surface
+# (its instructions / prompt / rules / persona), as opposed to benign business use of the same
+# verbs on domain objects ("repeat the order", "override the hold"). Used to corroborate the
+# ML verdict and suppress the N-2 false-positive class without an exact-phrase allowlist.
+INJECTION_INTENT_MARKERS = [
+    # trigger verb aimed at the model's directives
+    r"(?i)\b(?:ignore|disregard|forget|override|bypass|drop|delete|remove)\b[^.]{0,40}\b"
+    r"(?:instruction|instructions|prompt|rule|rules|guideline|guidelines|directive|directives|"
+    r"restriction|restrictions|filter|filters|policy|policies|guardrail|guardrails)\b",
+    # references to prior/system directives
+    r"(?i)\b(?:previous|prior|above|earlier|initial|original|system|the\s+system)\s+"
+    r"(?:instruction|instructions|prompt|message|rule|rules|guideline|guidelines)\b",
+    r"(?i)\bsystem\s+prompt\b",
+    r"(?i)\byour\s+(?:rules|guidelines|instructions|programming|training|system\s+prompt)\b",
+    # persona / role reassignment
+    r"(?i)\byou\s+are\s+now\b",
+    r"(?i)\b(?:act|behave|respond|roleplay|role-play)\s+as\b",
+    r"(?i)\bpretend\s+(?:to\s+be|you(?:'re| are|r))\b",
+    # "no restrictions" style
+    r"(?i)\bno\s+(?:restrictions|rules|limits|filters|guidelines|boundaries)\b",
+    r"(?i)\b(?:developer|admin|god|dan|jailbreak|unrestricted|unfiltered)\s*mode\b",
+    r"(?i)\bjailbreak\b|\bdan\s+mode\b",
+    # reveal/leak the prompt
+    r"(?i)\b(?:reveal|show|print|output|expose|leak|repeat)\b[^.]{0,30}\b"
+    r"(?:system\s+prompt|your\s+prompt|instructions?)\b",
+    # disable safety
+    r"(?i)\b(?:bypass|disable|turn\s+off|remove|circumvent)\b[^.]{0,30}\b"
+    r"(?:filter|filters|safety|guardrail|guardrails|restriction|restrictions|protection|protections)\b",
+    # structural markers
+    r"(?i)<\s*/?\s*system\s*>",
+    r"(?i)\[INST\]",
+    # exfiltration intent
+    r"(?i)\bexfiltrate\b",
+]
+
+_INTENT_COMPILED = [re.compile(p) for p in INJECTION_INTENT_MARKERS]
+
+
+def has_injection_intent(text: str) -> bool:
+    """True if text shows evidence of targeting the model's control surface (see markers above)."""
+    if not text or not isinstance(text, str):
+        return False
+    from mcp_bastion.pillars.content_normalize import normalize_for_scan
+
+    normalized = normalize_for_scan(text)
+    return any(rx.search(normalized) for rx in _INTENT_COMPILED)
+
 
 def compile_injection_patterns(extra: Iterable[str] | None = None) -> list[re.Pattern[str]]:
     """Compile default + optional extra injection regex patterns."""

@@ -140,6 +140,8 @@ class BastionConfig:
     cost_policy_enabled: bool = False
     cost_policy_config: dict[str, Any] = field(default_factory=dict)
     prompt_guard_use_ungated_default: bool = True
+    prompt_guard_require_ml_corroboration: bool = True
+    prompt_guard_ml_corroboration_ceiling: float = 1.01
     boundary_mode_enabled: bool = False
     governance_attestation_enabled: bool = True
     identity_adapter_enabled: bool = False
@@ -401,6 +403,8 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         prompt_guard_fail_open=bool(pg.get("fail_open", False)),
         prompt_guard_heuristic_fallback=bool(pg.get("heuristic_fallback", True)),
         prompt_guard_use_ungated_default=bool(pg.get("use_ungated_default", True)),
+        prompt_guard_require_ml_corroboration=bool(pg.get("require_ml_corroboration", True)),
+        prompt_guard_ml_corroboration_ceiling=float(pg.get("ml_corroboration_ceiling", 1.01)),
         prompt_guard_model_id=str(
             pg.get("model_id", "ProtectAI/deberta-v3-base-prompt-injection-v2")
         ),
@@ -975,6 +979,8 @@ def _build_chain(config: BastionConfig) -> Any:
         fail_open=config.prompt_guard_fail_open,
         heuristic_fallback=config.prompt_guard_heuristic_fallback,
         use_ungated_default=config.prompt_guard_use_ungated_default,
+        require_ml_corroboration=config.prompt_guard_require_ml_corroboration,
+        ml_corroboration_ceiling=config.prompt_guard_ml_corroboration_ceiling,
         heuristic_extra_patterns=threat_feed_extra_heuristics or None,
     )
 
