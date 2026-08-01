@@ -118,14 +118,13 @@ Details: [DASHBOARD_AND_OBSERVABILITY.md](DASHBOARD_AND_OBSERVABILITY.md) · [da
 **Same `bastion.yaml`. Same engine (`mcp-bastion-python`).**  
 Non-Python stacks use [mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite) adapters or HTTP proxy — attack payloads still hit Bastion the same way.
 
-```text
-Your app (Nest / Spring / .NET / Go / …)
-        │  MCP HTTP / JSON-RPC
-        ▼
-mcp-bastion-suite adapter or proxy   +  bastion.yaml
-        │
-        ▼
-mcp-bastion-python  (Scan → Test → Enforce)
+```mermaid
+flowchart TB
+  App[Your app<br/>Nest / Spring / .NET / Go / …]
+  Suite[mcp-bastion-suite adapter or proxy<br/>+ bastion.yaml]
+  Engine[mcp-bastion-python<br/>Scan → Test → Enforce]
+
+  App -->|"MCP HTTP / JSON-RPC"| Suite --> Engine
 ```
 
 | Language | How to demo attack → defense | Suite tutorial / example |

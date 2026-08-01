@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>User guide (end-to-end) | MCP-Bastion Docs</title>
 <meta name="description" content="MCP-Bastion documentation — User guide (end-to-end)">
-<meta name="docs-version" content="4.0.0">
+<meta name="docs-version" content="4.0.1">
 <link rel="stylesheet" href="../assets/guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,12 +16,12 @@
 <header class="docs-header">
   <div class="header-inner">
     <a class="brand" href="../index.html">MCP-Bastion</a>
-    <span class="version-badge">4.0.0</span>
+    <span class="version-badge">4.0.1</span>
     <nav class="header-links">
       <a href="index.html" class="current">Docs</a>
       <a href="../integrations.html">Integrations</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
-      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.1/">PyPI</a>
     </nav>
   </div>
 </header>
@@ -134,17 +134,14 @@
 <p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
 <hr />
 <h2 id="2-architecture-overview">2. Architecture overview</h2>
-<pre><code class="language-text">┌──────────────┐     JSON-RPC / MCP      ┌─────────────────────┐
-│  AI agent /  │ ───────────────────────►│  MCP-Bastion        │
-│  MCP client  │◄─────────────────────── │  middleware / proxy │
-└──────────────┘   redacted / vaulted    └──────────┬──────────┘
-                                                    │ allowed + hydrated
-                                                    ▼
-                                         ┌─────────────────────┐
-                                         │  Your MCP server /  │
-                                         │  upstream tools     │
-                                         └─────────────────────┘
-</code></pre>
+<pre class="mermaid">flowchart LR
+  Client[AI agent / MCP client]
+  Bastion[MCP-Bastion&lt;br/&gt;middleware / proxy]
+  Tools[Your MCP server / upstream tools]
+
+  Client &lt;--&gt;|&quot;JSON-RPC / MCP&lt;br/&gt;redacted · vaulted&quot;| Bastion
+  Bastion --&gt;|&quot;allowed + hydrated&quot;| Tools
+</pre>
 <p><strong>Two deployment shapes</strong></p>
 <ol>
 <li><strong>In-process middleware</strong> — wrap your Python MCP server; Bastion runs in the same process.  </li>
@@ -502,10 +499,14 @@ mcp-bastion redteam
 <p><em>This guide describes MCP-Bastion 4.0.0. Feature availability depends on your installed package version and <code>bastion.yaml</code> settings.</em></p>
     </article>
     <footer class="docs-footer">
-      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <p>MCP-Bastion 4.0.1 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
       <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
     </footer>
   </main>
 </div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
 </body>
 </html>

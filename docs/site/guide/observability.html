@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard &amp; observability | MCP-Bastion Docs</title>
 <meta name="description" content="MCP-Bastion documentation — Dashboard &amp; observability">
-<meta name="docs-version" content="4.0.0">
+<meta name="docs-version" content="4.0.1">
 <link rel="stylesheet" href="../assets/guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,12 +16,12 @@
 <header class="docs-header">
   <div class="header-inner">
     <a class="brand" href="../index.html">MCP-Bastion</a>
-    <span class="version-badge">4.0.0</span>
+    <span class="version-badge">4.0.1</span>
     <nav class="header-links">
       <a href="index.html" class="current">Docs</a>
       <a href="../integrations.html">Integrations</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
-      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.1/">PyPI</a>
     </nav>
   </div>
 </header>
@@ -117,16 +117,25 @@ If you do <strong>not</strong> have OTEL today, start with <strong>dashboard + P
 <p>Setup when you want it: <a href="otel.html">OTEL.md</a> · <code>pip install mcp-bastion-python[otel]</code> · set <code>OTEL_EXPORTER_OTLP_ENDPOINT</code>.</p>
 <hr />
 <h2 id="observability-stack-how-pieces-fit">Observability stack (how pieces fit)</h2>
-<pre><code class="language-text">MCP tool calls
-      │
-      ▼
-MCP-Bastion middleware / proxy
-      │
-      ├── MetricsStore ──► Dashboard UI ──► /metrics (Prometheus)
-      ├── Audit JSONL  ──► SIEM / `mcp-bastion report` / posture drift
-      ├── Alerts       ──► Slack / HTTP webhooks
-      └── (optional) OTEL spans ──► OTLP collector / APM
-</code></pre>
+<pre class="mermaid">flowchart TB
+  Calls[MCP tool calls]
+  Bastion[MCP-Bastion middleware / proxy]
+  Metrics[MetricsStore]
+  Dash[Dashboard UI]
+  Prom[&quot;/metrics Prometheus&quot;]
+  Audit[Audit JSONL]
+  SIEM[SIEM / report / drift]
+  Alerts[Alerts]
+  Hook[Slack / HTTP webhooks]
+  OTEL[&quot;OTEL spans optional&quot;]
+  APM[OTLP collector / APM]
+
+  Calls --&gt; Bastion
+  Bastion --&gt; Metrics --&gt; Dash --&gt; Prom
+  Bastion --&gt; Audit --&gt; SIEM
+  Bastion --&gt; Alerts --&gt; Hook
+  Bastion -.-&gt; OTEL --&gt; APM
+</pre>
 <p>Same policy (<code>bastion.yaml</code>) drives blocks; observability only <strong>records</strong> what happened.</p>
 <p>Deep SIEM / fleet patterns: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a><br />
 Effectiveness numbers: <a href="metrics.html">METRICS.md</a></p>
@@ -265,7 +274,7 @@ Feature deep dive Part F: <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md<
 </code></pre>
 <p>Dashboard <strong>observe banner</strong> shows would-have-blocked counts — tune before <code>enforce</code>.</p>
 <hr />
-<h2 id="opentelemetry-optional">OpenTelemetry (optional)</h2>
+<h2 id="opentelemetry-optional-when-it-adds-value">OpenTelemetry (optional — when it adds value)</h2>
 <table>
 <thead>
 <tr>
@@ -276,7 +285,7 @@ Feature deep dive Part F: <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md<
 <tbody>
 <tr>
 <td><strong>When to enable</strong></td>
-<td>You already have Jaeger / Tempo / Datadog / Honeycomb / ADOT / etc.</td>
+<td>Multi-service agent stacks; existing Jaeger / Tempo / Datadog / Honeycomb / ADOT</td>
 </tr>
 <tr>
 <td><strong>When to skip</strong></td>
@@ -284,7 +293,7 @@ Feature deep dive Part F: <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md<
 </tr>
 <tr>
 <td><strong>What it adds</strong></td>
-<td>Per-<code>tools/call</code> span: tool name, action, latency, error when blocked</td>
+<td>Per-<code>tools/call</code> span beside app spans: tool, action, latency, error on block</td>
 </tr>
 <tr>
 <td><strong>What it does <em>not</em> replace</strong></td>
@@ -292,12 +301,44 @@ Feature deep dive Part F: <a href="feature-deep-dive.html">FEATURE_DEEP_DIVE.md<
 </tr>
 </tbody>
 </table>
+<pre class="mermaid">sequenceDiagram
+  participant Agent
+  participant Bastion
+  participant Tool
+  participant APM as OTLP / APM
+
+  Agent-&gt;&gt;Bastion: tools/call
+  Bastion-&gt;&gt;Bastion: pillars
+  alt blocked
+    Bastion--&gt;&gt;Agent: JSON-RPC error
+    Bastion--&gt;&gt;APM: span error + mcp.error
+  else allowed
+    Bastion-&gt;&gt;Tool: forward
+    Tool--&gt;&gt;Bastion: result
+    Bastion--&gt;&gt;Agent: result
+    Bastion--&gt;&gt;APM: span OK + mcp.latency_ms
+  end
+</pre>
 <pre><code class="language-bash">pip install &quot;mcp-bastion-python[otel]&quot;
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 </code></pre>
-<p>Full notes: <a href="otel.html">OTEL.md</a>.</p>
+<p>Full notes (value table, Jaeger local, recommended combos): <a href="otel.html">OTEL.md</a>.</p>
 <hr />
 <h2 id="recommended-setups">Recommended setups</h2>
+<pre class="mermaid">flowchart LR
+  subgraph laptop [Laptop]
+    D1[Dashboard demo]
+  end
+  subgraph team [Team]
+    D2[Dashboard]
+    P2[Prometheus]
+    A2[Audit JSONL]
+  end
+  subgraph ent [Enterprise + APM]
+    D3[Dashboard + SIEM]
+    O3[Optional OTEL]
+  end
+</pre>
 <table>
 <thead>
 <tr>
@@ -373,10 +414,14 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 </table>
     </article>
     <footer class="docs-footer">
-      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <p>MCP-Bastion 4.0.1 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
       <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
     </footer>
   </main>
 </div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
 </body>
 </html>

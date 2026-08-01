@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Multi-language suite | MCP-Bastion Docs</title>
 <meta name="description" content="MCP-Bastion documentation — Multi-language suite">
-<meta name="docs-version" content="4.0.0">
+<meta name="docs-version" content="4.0.1">
 <link rel="stylesheet" href="../assets/guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,12 +16,12 @@
 <header class="docs-header">
   <div class="header-inner">
     <a class="brand" href="../index.html">MCP-Bastion</a>
-    <span class="version-badge">4.0.0</span>
+    <span class="version-badge">4.0.1</span>
     <nav class="header-links">
       <a href="index.html" class="current">Docs</a>
       <a href="../integrations.html">Integrations</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
-      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.1/">PyPI</a>
     </nav>
   </div>
 </header>
@@ -84,23 +84,14 @@
 </blockquote>
 <hr />
 <h2 id="how-the-two-repos-relate">How the two repos relate</h2>
-<pre><code class="language-text">┌─────────────────────────────────────────────────────────┐
-│  Your app (Nest, Spring, FastAPI, .NET, Go, Rust, …)    │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-        ┌───────────────────▼───────────────────┐
-        │  mcp-bastion-suite                       │
-        │  adapters · YAML/CLI · sidecar · proxy   │
-        │  https://github.com/vaquarkhan/mcp-bastion-suite
-        └───────────────────┬───────────────────┘
-                            │  bastion.yaml (shared policy)
-                            ▼
-        ┌───────────────────────────────────────┐
-        │  mcp-bastion-python  (this project)     │
-        │  Scan → Test → Enforce · dashboard      │
-        │  pip install mcp-bastion-python         │
-        └───────────────────────────────────────┘
-</code></pre>
+<pre class="mermaid">flowchart TB
+  App[Your app&lt;br/&gt;Nest · Spring · FastAPI · .NET · Go · Rust · …]
+  Suite[mcp-bastion-suite&lt;br/&gt;adapters · YAML/CLI · sidecar · proxy]
+  Engine[mcp-bastion-python&lt;br/&gt;Scan → Test → Enforce · dashboard]
+
+  App --&gt; Suite
+  Suite --&gt;|&quot;bastion.yaml shared policy&quot;| Engine
+</pre>
 <table>
 <thead>
 <tr>
@@ -359,10 +350,14 @@ docker run --rm -v &quot;$PWD&quot;:/work -w /work ghcr.io/vaquarkhan/mcp-bastio
 </table>
     </article>
     <footer class="docs-footer">
-      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <p>MCP-Bastion 4.0.1 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
       <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
     </footer>
   </main>
 </div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
 </body>
 </html>

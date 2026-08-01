@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 520" role="img" aria-labelledby="title desc">
+  <title id="title">MCP-Bastion 3.2  dual-path stateful and stateless request flow</title>
+  <desc id="desc">Side-by-side comparison of legacy stateful session traffic and modern stateless state-handle traffic through Bastion pillars.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <rect width="1120" height="520" fill="url(#bg)"/>
+
+  <text x="48" y="48" fill="#f8fafc" font-family="Segoe UI, system-ui, sans-serif" font-size="24" font-weight="700">3.2 Hybrid Transport  One proxy, two MCP modes</text>
+  <text x="48" y="76" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="14">Same bastion.yaml pillars · opt-in mcp_transport · zero-infra drop-in</text>
+
+  <!-- Stateful column -->
+  <rect x="40" y="100" width="500" height="380" rx="16" fill="url(#card)" stroke="#0ea5e9"/>
+  <rect x="40" y="100" width="500" height="44" rx="16" fill="url(#blue)"/>
+  <rect x="40" y="128" width="500" height="16" fill="url(#blue)"/>
+  <text x="60" y="128" fill="#0f172a" font-family="Segoe UI, system-ui, sans-serif" font-size="16" font-weight="700">Stateful (legacy)</text>
+
+  <rect x="64" y="168" width="452" height="52" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="80" y="190" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">Client + MCP-Session-Id</text>
+  <text x="80" y="208" fill="#94a3b8" font-family="Consolas, monospace" font-size="11">initialize handshake · sticky affinity risk</text>
+
+  <line x1="290" y1="220" x2="290" y2="248" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="64" y="252" width="452" height="52" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="80" y="274" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">Bastion identity ’ session key</text>
+  <text x="80" y="292" fill="#94a3b8" font-family="Consolas, monospace" font-size="11">tenant|principal|session:&</text>
+
+  <line x1="290" y1="304" x2="290" y2="332" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="64" y="336" width="452" height="52" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="80" y="358" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">Pillars unchanged</text>
+  <text x="80" y="376" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">PromptGuard · PII · RBAC · rate / cost · audit</text>
+
+  <line x1="290" y1="388" x2="290" y2="416" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="64" y="420" width="452" height="40" rx="10" fill="#052e16" stroke="#22c55e"/>
+  <text x="80" y="446" fill="#bbf7d0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">Forward to upstream MCP </text>
+
+  <!-- Stateless column -->
+  <rect x="580" y="100" width="500" height="380" rx="16" fill="url(#card)" stroke="#8b5cf6"/>
+  <rect x="580" y="100" width="500" height="44" rx="16" fill="url(#violet)"/>
+  <rect x="580" y="128" width="500" height="16" fill="url(#violet)"/>
+  <text x="600" y="128" fill="#0f172a" font-family="Segoe UI, system-ui, sans-serif" font-size="16" font-weight="700">Stateless (SEP-2575 ready)</text>
+
+  <rect x="604" y="168" width="452" height="52" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="620" y="190" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">Client + explicit state_handle</text>
+  <text x="620" y="208" fill="#94a3b8" font-family="Consolas, monospace" font-size="11">MCP-Protocol-Version · no sticky sessions</text>
+
+  <line x1="830" y1="220" x2="830" y2="248" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="604" y="252" width="452" height="52" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="620" y="274" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">Bastion identity ’ handle key</text>
+  <text x="620" y="292" fill="#94a3b8" font-family="Consolas, monospace" font-size="11">tenant|principal|handle:& (+ Redis)</text>
+
+  <line x1="830" y1="304" x2="830" y2="332" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="604" y="336" width="452" height="52" rx="10" fill="#0b1220" stroke="#334155"/>
+  <text x="620" y="358" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">+ Discovery + stability</text>
+  <text x="620" y="376" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">/.well-known/mcp.json · loop detect inject/block</text>
+
+  <line x1="830" y1="388" x2="830" y2="416" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="604" y="420" width="452" height="40" rx="10" fill="#052e16" stroke="#22c55e"/>
+  <text x="620" y="446" fill="#bbf7d0" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">Forward to upstream MCP </text>
+</svg>

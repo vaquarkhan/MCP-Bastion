@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import html
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -51,7 +52,7 @@ PAGES: list[tuple[str, str, str, str]] = [
 ]
 
 SITE_BASE = "https://vaquarkhan.github.io/MCP-Bastion"
-VERSION = "4.0.0"
+VERSION = "4.0.1"
 
 
 def _require_markdown():
@@ -95,11 +96,9 @@ def _md_to_html(text: str) -> str:
         if path.startswith("images/"):
             return f"![{alt}](../assets/{path[len('images/'):]})"
         if path.startswith("../images/"):
-            # repo-root images/ (SVGs) — GitHub raw for site
+            # Prefer site-local copy under assets/ (copied in main)
             rel = path[len("../images/") :]
-            return (
-                f"![{alt}](https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/images/{rel})"
-            )
+            return f"![{alt}](../assets/{rel})"
         if path.startswith("../dashboard/") or path.startswith("../"):
             return m.group(0)
         return m.group(0)
@@ -115,7 +114,7 @@ def _md_to_html(text: str) -> str:
         extensions=["fenced_code", "tables", "toc", "nl2br", "sane_lists"],
         extension_configs={"toc": {"permalink": False}},
     )
-    # Mermaid: fenced ```mermaid → <pre class="mermaid"> for mermaid.js (if present)
+    # Mermaid: fenced ```mermaid → <pre class="mermaid"> for mermaid.js
     html_body = re.sub(
         r'<pre><code class="language-mermaid">(.*?)</code></pre>',
         r'<pre class="mermaid">\1</pre>',
@@ -190,6 +189,10 @@ def _page_shell(title: str, active: str, body: str, *, description: str = "") ->
     </footer>
   </main>
 </div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({{ startOnLoad: true, theme: "neutral", securityLevel: "loose" }});
+</script>
 </body>
 </html>
 """
@@ -242,6 +245,20 @@ def main() -> None:
     css_src = ROOT / "docs" / "site" / "assets" / "guide.css"
     if not css_src.exists():
         print("warn: guide.css missing — run after writing assets/guide.css", file=sys.stderr)
+
+    # Copy architecture SVGs (+ keep existing PNGs/GIFs already in assets)
+    images_root = ROOT / "images"
+    for svg in images_root.glob("mcp-bastion-*.svg"):
+        shutil.copy2(svg, ASSETS / svg.name)
+        print(f"copied assets/{svg.name}")
+    docs_images = DOCS / "images"
+    if docs_images.is_dir():
+        for pattern in ("*.gif", "*.png", "attack-demos/*"):
+            for src in docs_images.glob(pattern):
+                if src.is_file():
+                    dest = ASSETS / src.relative_to(docs_images)
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dest)
 
     built = 0
     for slug, title, src, _group in PAGES:

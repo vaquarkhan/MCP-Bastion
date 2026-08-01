@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OpenTelemetry (optional) | MCP-Bastion Docs</title>
 <meta name="description" content="MCP-Bastion documentation — OpenTelemetry (optional)">
-<meta name="docs-version" content="4.0.0">
+<meta name="docs-version" content="4.0.1">
 <link rel="stylesheet" href="../assets/guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,12 +16,12 @@
 <header class="docs-header">
   <div class="header-inner">
     <a class="brand" href="../index.html">MCP-Bastion</a>
-    <span class="version-badge">4.0.0</span>
+    <span class="version-badge">4.0.1</span>
     <nav class="header-links">
       <a href="index.html" class="current">Docs</a>
       <a href="../integrations.html">Integrations</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion">GitHub</a>
-      <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/">PyPI</a>
+      <a href="https://pypi.org/project/mcp-bastion-python/4.0.1/">PyPI</a>
     </nav>
   </div>
 </header>
@@ -76,29 +76,213 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>OpenTelemetry (optional)</h1>
       </header>
-      <p>MCP-Bastion can export spans to an OTLP endpoint for tracing.</p>
+      <p>MCP-Bastion can export <strong>spans</strong> to an OTLP endpoint so Bastion decisions show up next to the rest of your services in Jaeger, Grafana Tempo, Datadog, Honeycomb, AWS ADOT, etc.</p>
+<p><strong>You do not need OTEL to run Bastion.</strong> Dashboard + Prometheus + audit JSONL cover most teams. Use OTEL when you already have (or want) distributed tracing.</p>
+<p>Full observability map: <a href="observability.html">DASHBOARD_AND_OBSERVABILITY.md</a>.</p>
+<hr />
+<h2 id="when-otel-adds-value">When OTEL adds value</h2>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>OTEL value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Multi-service agent stack (gateway → Bastion → tools → LLM)</td>
+<td>One trace ID across hops; see where latency/blocks happen</td>
+</tr>
+<tr>
+<td>Existing APM / SRE dashboards</td>
+<td>Bastion spans land beside app spans — no second UI to learn</td>
+</tr>
+<tr>
+<td>Incident forensics</td>
+<td>Correlate a blocked <code>-32001</code> with upstream request id</td>
+</tr>
+<tr>
+<td>SLO / latency budgets</td>
+<td><code>mcp.latency_ms</code> on each tool span</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Skip OTEL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Laptop / first demo</td>
+<td>Use <code>mcp-bastion dashboard --demo</code></td>
+</tr>
+<tr>
+<td>No tracing backend yet</td>
+<td>Prometheus scrape + audit is enough</td>
+</tr>
+<tr>
+<td>Strict zero new deps</td>
+<td>Leave <code>[otel]</code> extra uninstalled</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="architecture">Architecture</h2>
+<pre class="mermaid">flowchart LR
+  Client[MCP client / agent]
+  Bastion[MCP-Bastion middleware or proxy]
+  Tool[MCP tool server]
+  Dash[Dashboard /metrics]
+  Collector[OTLP collector]
+  APM[APM / Jaeger / Tempo / Datadog]
+
+  Client --&gt; Bastion
+  Bastion --&gt; Tool
+  Bastion --&gt; Dash
+  Bastion -.-&gt;|&quot;optional spans&quot;| Collector
+  Collector --&gt; APM
+  Dash --&gt;|&quot;Prometheus scrape&quot;| Prom[Grafana / AMP]
+</pre>
+<hr />
 <h2 id="setup">Setup</h2>
-<p>Set the OTLP endpoint:</p>
-<pre><code class="language-bash">export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+<pre><code class="language-bash">pip install &quot;mcp-bastion-python[otel]&quot;
+## or: pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc
+
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+## optional:
+## export OTEL_SERVICE_NAME=mcp-bastion
 </code></pre>
-<p>Install the optional OTEL dependencies:</p>
-<pre><code class="language-bash">pip install mcp-bastion-python[otel]
-## or
-pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc
+<p>Then run your server / <code>mcp-bastion serve --proxy</code> as usual. No Bastion code changes if you use <code>build_middleware_from_config()</code> or the audit export callback.</p>
+<h3 id="local-collector-example">Local collector (example)</h3>
+<pre><code class="language-bash">## Jaeger all-in-one (OTLP gRPC 4317)
+docker run --rm -p 16686:16686 -p 4317:4317 jaegertracing/all-in-one:1.57
+## UI: http://localhost:16686
 </code></pre>
+<hr />
 <h2 id="behavior">Behavior</h2>
+<p>When <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> is set, each tool call becomes a span:</p>
+<table>
+<thead>
+<tr>
+<th>Span / attribute</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mcp_bastion.tool_call</code></td>
+<td>Span name</td>
+</tr>
+<tr>
+<td><code>mcp.tool</code></td>
+<td>Tool name</td>
+</tr>
+<tr>
+<td><code>mcp.action</code></td>
+<td>allow / block / redact path</td>
+</tr>
+<tr>
+<td><code>mcp.latency_ms</code></td>
+<td>Bastion path latency</td>
+</tr>
+<tr>
+<td><code>mcp.error</code></td>
+<td>Set when a pillar blocks (includes error context)</td>
+</tr>
+</tbody>
+</table>
+<p>The audit export callback (when audit + metrics are wired) calls <code>record_tool_span</code>, so policy-as-code setups get spans without extra hooks.</p>
+<pre class="mermaid">sequenceDiagram
+  participant Agent
+  participant Bastion
+  participant Tool
+  participant OTLP as OTLP collector
+
+  Agent-&gt;&gt;Bastion: tools/call
+  Bastion-&gt;&gt;Bastion: evaluate pillars
+  alt blocked
+    Bastion--&gt;&gt;Agent: JSON-RPC error (-32001…)
+    Bastion--&gt;&gt;OTLP: span status=error + mcp.error
+  else allowed
+    Bastion-&gt;&gt;Tool: forward
+    Tool--&gt;&gt;Bastion: result
+    Bastion--&gt;&gt;Agent: result (maybe redacted)
+    Bastion--&gt;&gt;OTLP: span OK + mcp.latency_ms
+  end
+</pre>
+<hr />
+<h2 id="metrics-vs-traces">Metrics vs traces</h2>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Primary path</th>
+<th>OTEL role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Counters / block rates</td>
+<td>Dashboard <strong>Prometheus</strong> <code>GET /metrics</code></td>
+<td>Optional: scrape via collector</td>
+</tr>
+<tr>
+<td>Human investigation</td>
+<td>Dashboard forensics / attack matrix</td>
+<td>Traces add cross-service context</td>
+</tr>
+<tr>
+<td>Compliance evidence</td>
+<td>Audit JSONL / <code>mcp-bastion report</code></td>
+<td>Keep JSONL even if OTEL is on</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="recommended-combinations">Recommended combinations</h2>
+<pre class="mermaid">flowchart TB
+  subgraph minimal [Minimal]
+    D1[Dashboard]
+    P1[Prometheus]
+  end
+  subgraph team [Team / prod]
+    D2[Dashboard]
+    P2[Prometheus]
+    A2[Audit JSONL]
+    AL[Alerts]
+  end
+  subgraph enterprise [Enterprise + APM]
+    D3[Dashboard]
+    P3[Prometheus]
+    A3[Audit + SIEM]
+    O3[OTEL OTLP]
+  end
+</pre>
+<ol>
+<li><strong>Minimal:</strong> dashboard only  </li>
+<li><strong>Team:</strong> dashboard + Prometheus + audit (+ alerts)  </li>
+<li><strong>Enterprise with APM:</strong> team stack <strong>+</strong> OTEL  </li>
+</ol>
+<hr />
+<h2 id="related">Related</h2>
 <ul>
-<li>When <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> is set, every tool call is recorded as a span (<code>mcp_bastion.tool_call</code>) with attributes: <code>mcp.tool</code>, <code>mcp.action</code>, <code>mcp.latency_ms</code>, and <code>mcp.error</code> when blocked.</li>
-<li>The audit export callback (used when audit is enabled and metrics are wired) calls <code>record_tool_span</code> so no extra wiring is needed if you use <code>build_middleware_from_config()</code> or <code>make_audit_export_callback()</code>.</li>
+<li><a href="observability.html">DASHBOARD_AND_OBSERVABILITY.md</a> — panels + “do I need OTEL?”  </li>
+<li><a href="metrics.html">METRICS.md</a> — effectiveness &amp; overhead  </li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY_OBSERVABILITY.md">SECURITY_OBSERVABILITY.md</a> — SIEM / fleet  </li>
 </ul>
-<h2 id="metrics">Metrics</h2>
-<p>Dashboard Prometheus endpoint (<code>GET /metrics</code>) is the primary way to scrape metrics. For OTLP metrics export you can run a collector that scrapes the dashboard or forwards from your existing pipeline.</p>
     </article>
     <footer class="docs-footer">
-      <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
+      <p>MCP-Bastion 4.0.1 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·
       <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/">Source markdown</a></p>
     </footer>
   </main>
 </div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
 </body>
 </html>

@@ -20,17 +20,14 @@ This document walks **every major MCP-Bastion capability**—request-path pillar
 
 ## How to read this guide
 
-```text
-AI agent / MCP client
-        │  JSON-RPC (tools, resources, prompts, …)
-        ▼
-┌───────────────────────────┐
-│  MCP-Bastion middleware   │  ← pillars evaluate here
-│  or HTTP boundary proxy   │
-└─────────────┬─────────────┘
-              │ allowed / redacted / vaulted
-              ▼
-        Your MCP server / tools
+```mermaid
+flowchart TB
+  Client[AI agent / MCP client]
+  Bastion[MCP-Bastion middleware<br/>or HTTP boundary proxy]
+  Tools[Your MCP server / tools]
+
+  Client -->|"JSON-RPC tools · resources · prompts · …"| Bastion
+  Bastion -->|"allowed / redacted / vaulted"| Tools
 ```
 
 Each pillar can **allow**, **block**, **redact**, **tokenise**, or **observe** (log would-be blocks without denying). Dashboard and Prometheus consume the same metrics store.

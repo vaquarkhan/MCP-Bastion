@@ -46,17 +46,14 @@ See [CHANGELOG.md](../CHANGELOG.md).
 
 ## 2. Architecture overview
 
-```text
-┌──────────────┐     JSON-RPC / MCP      ┌─────────────────────┐
-│  AI agent /  │ ───────────────────────►│  MCP-Bastion        │
-│  MCP client  │◄─────────────────────── │  middleware / proxy │
-└──────────────┘   redacted / vaulted    └──────────┬──────────┘
-                                                    │ allowed + hydrated
-                                                    ▼
-                                         ┌─────────────────────┐
-                                         │  Your MCP server /  │
-                                         │  upstream tools     │
-                                         └─────────────────────┘
+```mermaid
+flowchart LR
+  Client[AI agent / MCP client]
+  Bastion[MCP-Bastion<br/>middleware / proxy]
+  Tools[Your MCP server / upstream tools]
+
+  Client <-->|"JSON-RPC / MCP<br/>redacted · vaulted"| Bastion
+  Bastion -->|"allowed + hydrated"| Tools
 ```
 
 **Two deployment shapes**

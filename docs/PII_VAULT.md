@@ -8,12 +8,22 @@ Opt-in privacy mode that **tokenizes** PII instead of permanently destroying it 
 
 Destructive masking breaks tool calling:
 
-```text
-Agent: "send invite to alice@example.com"
-Destructive: "send invite to <EMAIL_ADDRESS>"  → calendar tool fails
-Vault:       "send invite to {{pii:EMAIL_ADDRESS:a3f9…}}"
-  → LLM never sees alice@…
-  → next tools/call args hydrated back to alice@… before the MCP server runs
+| Approach | What the model sees | Tool call |
+|----------|---------------------|-----------|
+| Destructive Presidio | `<EMAIL_ADDRESS>` | Often fails (no real address) |
+| **PII vault** | `{{pii:EMAIL_ADDRESS:a3f9…}}` | Hydrated to real value before MCP server runs |
+
+```mermaid
+sequenceDiagram
+  participant Agent
+  participant Bastion
+  participant Tool
+
+  Agent->>Bastion: tools/call result with alice@example.com
+  Bastion-->>Agent: {{pii:EMAIL_ADDRESS:…}} abstract
+  Note over Agent: LLM never sees raw PII
+  Agent->>Bastion: next tools/call with token
+  Bastion->>Tool: hydrate → alice@example.com
 ```
 
 ## Diagram

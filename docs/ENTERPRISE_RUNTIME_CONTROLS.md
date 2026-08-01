@@ -3,9 +3,23 @@
 MCP-Bastion 3.0 adds optional runtime governance pillars for production MCP deployments.
 All features are **opt-in** via `bastion.yaml`; defaults preserve existing 2.x behavior.
 
+```mermaid
+flowchart TB
+  subgraph pillars [Opt-in pillars]
+    C[Canary]
+    A[ATR / feeds]
+    L[LLM scanner]
+    R[Auto-repave]
+    S[Secret redact]
+    O[Observe mode]
+  end
+  B[MCP-Bastion middleware / proxy]
+  pillars --> B
+```
+
 <p align="center">
   <img
-    src="../images/mcp-bastion-runtime-governance-3.0.png"
+    src="../images/mcp-bastion-runtime-governance-3.0.svg"
     alt="MCP-Bastion 3.0 runtime governance pillars overview"
     width="960"
     style="max-width:100%; height:auto; border-radius:12px;"
@@ -26,9 +40,21 @@ All features are **opt-in** via `bastion.yaml`; defaults preserve existing 2.x b
 
 ## Exfiltration canary
 
+```mermaid
+sequenceDiagram
+  participant Surface as prompts/get · resources/read
+  participant Bastion
+  participant Tool as tools/call
+
+  Surface->>Bastion: request
+  Bastion-->>Surface: + canary trailing block
+  Tool->>Bastion: args contain canary?
+  Bastion-->>Tool: BLOCK −32025
+```
+
 <p align="center">
   <img
-    src="../images/mcp-bastion-canary-exfiltration.png"
+    src="../images/mcp-bastion-canary-exfiltration.svg"
     alt="Exfiltration canary detects when tool arguments echo a session token"
     width="860"
     style="max-width:100%; height:auto; border-radius:12px;"
@@ -50,7 +76,7 @@ canary_goallock:
 
 <p align="center">
   <img
-    src="../images/mcp-bastion-enterprise-controls.png"
+    src="../images/mcp-bastion-enterprise-controls.svg"
     alt="ATR rules, threat feeds, and compliance report workflow"
     width="860"
     style="max-width:100%; height:auto; border-radius:12px;"
@@ -71,7 +97,7 @@ Supported framework keys: `soc2`, `iso27001`, `gdpr`, `nist_ai_rmf`.
 
 <p align="center">
   <img
-    src="../images/mcp-bastion-secret-redaction.png"
+    src="../images/mcp-bastion-secret-redaction.svg"
     alt="Secret redaction strategies on outbound tool results"
     width="860"
     style="max-width:100%; height:auto; border-radius:12px;"

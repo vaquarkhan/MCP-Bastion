@@ -264,8 +264,11 @@ policy_engine:
     query: data.bastion.allow
   cedar:
     binary: cedar
-    policies_dir: ./policies/cedar
-    schema: ./policies/cedar/schema.cedarschema
+    policies_dir: ./policies/cedar   # directory of *.cedar files (CLI needs a file; Bastion concatenates)
+    entities: ./policies/cedar/entities.json   # optional; request User/Action/Tool entities are merged in
+    schema: ./policies/cedar/schema.cedarschema   # optional
+    # Authz maps MCP calls to: principal User::"<session_id>", action Action::"invoke",
+    # resource Tool::"<tool_name>" via `cedar authorize --entities ...`.
 
 # Hybrid stateful / stateless MCP transport (opt-in; default OFF).
 # Prepares for stateless MCP (SEP-2575) while preserving legacy session-based clients.
