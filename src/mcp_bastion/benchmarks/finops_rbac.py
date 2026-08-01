@@ -35,8 +35,9 @@ def text_with_approx_tokens(
     if target <= 0:
         return ""
     word = "measurement "
-    # Char heuristic first (~4 chars/token), then pad in batches if under target.
-    text = word * max(1, target)
+    # Seed near the target via the ~4 chars/token heuristic, then pad in batches.
+    seed_words = max(1, (target * 4) // len(word))
+    text = word * seed_words
     counted = counter(text)
     while counted < target:
         text += word * max(1, target - counted)
