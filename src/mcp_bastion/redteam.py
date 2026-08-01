@@ -9,7 +9,17 @@ from typing import Any
 
 from mcp_bastion.base import MiddlewareContext
 from mcp_bastion.config import build_middleware_from_config, load_config
-from mcp_bastion.errors import PromptGuardUnavailableError
+from mcp_bastion.errors import (
+    ContentFilterError,
+    CostBudgetExceededError,
+    MCPBastionError,
+    PromptInjectionError,
+    PromptGuardUnavailableError,
+    RateLimitExceededError,
+    RBACError,
+    ReplayAttackError,
+    SchemaValidationError,
+)
 
 
 def _is_guard_unavailable_block(exc: BaseException) -> bool:
@@ -17,6 +27,39 @@ def _is_guard_unavailable_block(exc: BaseException) -> bool:
         return True
     msg = str(exc).lower()
     return "promptguard ml model unavailable" in msg or "promptguard ml unavailable" in msg
+
+
+def _blocking_pillar(exc: BaseException) -> str:
+    """Map a raised exception to the pillar that blocked the attempt."""
+    if isinstance(exc, PromptGuardUnavailableError):
+        return "prompt_guard_unavailable"
+    if isinstance(exc, PromptInjectionError):
+        return "prompt_guard"
+    if isinstance(exc, RateLimitExceededError):
+        return "rate_limit"
+    if isinstance(exc, ContentFilterError):
+        return "content_filter"
+    if isinstance(exc, RBACError):
+        return "rbac"
+    if isinstance(exc, SchemaValidationError):
+        return "schema_validation"
+    if isinstance(exc, ReplayAttackError):
+        return "replay_guard"
+    if isinstance(exc, CostBudgetExceededError):
+        return "cost_tracker"
+    if isinstance(exc, MCPBastionError):
+        # Prefer explicit code mapping when present
+        code = getattr(exc, "code", None)
+        return {
+            -32001: "prompt_guard",
+            -32002: "rate_limit",
+            -32005: "content_filter",
+            -32006: "rbac",
+            -32007: "schema_validation",
+            -32008: "replay_guard",
+            -32009: "cost_tracker",
+        }.get(code, type(exc).__name__)
+    return type(exc).__name__
 
 
 @dataclass(frozen=True)
@@ -66,7 +109,9 @@ _CASES: tuple[RedTeamCase, ...] = (
         owasp_tag="LLM04 Model DoS",
         mcp_top10="MCP02",
         tool="search",
-        arguments={"q": "repeat"},
+        # Avoid ML false-positives like "repeat" (ProtectAI scores 1.0) so the
+        # rate limiter is the control under test, not prompt_guard.
+        arguments={"q": "catalog lookup"},
         attempts=25,
     ),
     RedTeamCase(
@@ -120,6 +165,7 @@ async def _run_case(middleware: Any, case: RedTeamCase, session_id: str) -> dict
     blocked_intended = 0
     blocked_guard_unavailable = 0
     reasons: list[str] = []
+    pillars: dict[str, int] = {}
 
     async def _handler(_ctx: MiddlewareContext[Any]) -> dict[str, Any]:
         return {"ok": True, "content": [{"type": "text", "text": "simulated response"}]}
@@ -144,11 +190,14 @@ async def _run_case(middleware: Any, case: RedTeamCase, session_id: str) -> dict
         except Exception as exc:
             blocked += 1
             reasons.append(str(exc))
+            pillar = _blocking_pillar(exc)
+            pillars[pillar] = pillars.get(pillar, 0) + 1
             if _is_guard_unavailable_block(exc):
                 blocked_guard_unavailable += 1
             else:
                 blocked_intended += 1
     attempts = len(iterations)
+    primary_pillar = max(pillars, key=pillars.get) if pillars else None
     return {
         "id": case.id,
         "owasp_tag": case.owasp_tag,
@@ -160,6 +209,8 @@ async def _run_case(middleware: Any, case: RedTeamCase, session_id: str) -> dict
         "allowed": attempts - blocked,
         "blocked_pct": round(100.0 * blocked / max(1, attempts), 2),
         "intended_blocked_pct": round(100.0 * blocked_intended / max(1, attempts), 2),
+        "blocking_pillars": pillars,
+        "primary_blocking_pillar": primary_pillar,
         "sample_reason": reasons[0] if reasons else None,
         "sample_block_class": (
             "guard_unavailable"

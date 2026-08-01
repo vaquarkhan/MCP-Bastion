@@ -163,8 +163,8 @@ mcp-bastion tail --config bastion.yaml -n 50
 Generate a **compliance evidence** markdown report from audit JSONL. Maps pillar activity to framework controls (evidence only, not certification).
 
 ```bash
-mcp-bastion report --framework soc2 --audit .bastion/audit.jsonl
-mcp-bastion report --framework iso27001 --audit audit.jsonl -o report.md
+mcp-bastion report --framework soc2 --audit .bastion/audit.jsonl -o report.pdf
+mcp-bastion report --framework iso27001 --audit audit.jsonl -o report.md --format md
 mcp-bastion report --framework gdpr --audit audit.jsonl --from 2026-01-01 --to 2026-12-31
 ```
 

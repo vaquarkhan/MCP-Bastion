@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Attack demos (GIFs)</h1>
       </header>
-      <h1 id="attack-defense-demos">Attack → defense demos</h1>
-<p><strong>Scripted GIF videos</strong> (terminal-style) plus runnable Python scenarios so users <strong>see Bastion value</strong> for each hero feature: attack → intercept → block/redact → <em>how it helps you</em>.</p>
+      <p><strong>Scripted GIF videos</strong> (terminal-style) plus runnable Python scenarios so users <strong>see Bastion value</strong> for each hero feature: attack → intercept → block/redact → <em>how it helps you</em>.</p>
 <table>
 <thead>
 <tr>
@@ -113,10 +112,10 @@ PYTHONPATH=src python -m examples.attack_demos --strict   # live scripted demos
 </code></pre>
 <hr />
 <h2 id="quick-run-live-same-scenarios">Quick run (live, same scenarios)</h2>
-<pre><code class="language-bash"># Windows PowerShell
+<pre><code class="language-bash">## Windows PowerShell
 $env:PYTHONPATH=&quot;src&quot;; python -m examples.attack_demos
 
-# Linux / macOS
+## Linux / macOS
 PYTHONPATH=src python -m examples.attack_demos
 
 PYTHONPATH=src python -m examples.attack_demos --only rate_limit
@@ -161,8 +160,8 @@ PYTHONPATH=src python -m examples.attack_demos --strict
 <h2 id="dashboard-runtime-view-of-the-same-defenses">Dashboard (runtime view of the same defenses)</h2>
 <p><img alt="Dashboard tour" src="../assets/mcp-bastion-dashboard-tour.gif" /></p>
 <pre><code class="language-bash">mcp-bastion dashboard --demo
-# optional recapture:
-# python scripts/capture_dashboard_demo.py
+## optional recapture:
+## python scripts/capture_dashboard_demo.py
 </code></pre>
 <p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> and the <a href="bible.html">Documentation bible</a>.</p>
 <hr />
@@ -183,56 +182,56 @@ PYTHONPATH=src python -m examples.attack_demos --strict
 <td><code>prompt_guard</code></td>
 <td>Jailbreak in args</td>
 <td><strong>-32001</strong></td>
-<td><a href="images/attack-demos/01-prompt-guard.gif">gif</a></td>
+<td><a href="../assets/attack-demos/01-prompt-guard.gif">gif</a></td>
 </tr>
 <tr>
 <td>02</td>
 <td><code>pii</code></td>
 <td>SSN/email in output</td>
 <td>Redact</td>
-<td><a href="images/attack-demos/02-pii.gif">gif</a></td>
+<td><a href="../assets/attack-demos/02-pii.gif">gif</a></td>
 </tr>
 <tr>
 <td>03</td>
 <td><code>rate_limit</code></td>
 <td>Agent loop</td>
 <td><strong>-32002</strong></td>
-<td><a href="images/attack-demos/03-rate-limit.gif">gif</a></td>
+<td><a href="../assets/attack-demos/03-rate-limit.gif">gif</a></td>
 </tr>
 <tr>
 <td>04</td>
 <td><code>content_filter</code></td>
 <td><code>/etc/passwd</code></td>
 <td><strong>-32005</strong></td>
-<td><a href="images/attack-demos/04-content-filter.gif">gif</a></td>
+<td><a href="../assets/attack-demos/04-content-filter.gif">gif</a></td>
 </tr>
 <tr>
 <td>05</td>
 <td><code>rbac</code></td>
 <td>viewer→write</td>
 <td><strong>-32006</strong></td>
-<td><a href="images/attack-demos/05-rbac.gif">gif</a></td>
+<td><a href="../assets/attack-demos/05-rbac.gif">gif</a></td>
 </tr>
 <tr>
 <td>06</td>
 <td><code>schema_validation</code></td>
 <td>Bad args</td>
 <td><strong>-32007</strong></td>
-<td><a href="images/attack-demos/06-schema.gif">gif</a></td>
+<td><a href="../assets/attack-demos/06-schema.gif">gif</a></td>
 </tr>
 <tr>
 <td>07</td>
 <td><code>replay_guard</code></td>
 <td>Dup nonce</td>
 <td><strong>-32008</strong></td>
-<td><a href="images/attack-demos/07-replay.gif">gif</a></td>
+<td><a href="../assets/attack-demos/07-replay.gif">gif</a></td>
 </tr>
 <tr>
 <td>08</td>
 <td><code>cost_tracker</code></td>
 <td>Over budget</td>
 <td><strong>-32009</strong></td>
-<td><a href="images/attack-demos/08-cost.gif">gif</a></td>
+<td><a href="../assets/attack-demos/08-cost.gif">gif</a></td>
 </tr>
 </tbody>
 </table>

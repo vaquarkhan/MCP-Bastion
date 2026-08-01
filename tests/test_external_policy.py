@@ -94,12 +94,21 @@ def test_opa_allows_on_true_stdout(tmp_path):
     policies = tmp_path / "policies"
     policies.mkdir()
     fake = mock.Mock(returncode=0, stdout="true", stderr="")
+    captured = {}
+
+    def run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return fake
+
     ev = ExternalPolicyEvaluator(
         ExternalPolicyConfig(engine="opa", opa_policy_dir=str(policies), opa_binary="opa")
     )
-    with mock.patch("subprocess.run", return_value=fake):
+    with mock.patch("subprocess.run", side_effect=run):
         ok, reason = ev.evaluate({"a": 1})
     assert ok is True and reason is None
+    assert "-f" in captured["cmd"]
+    assert "raw" in captured["cmd"]
+    assert "value" not in captured["cmd"]
 
 
 def test_opa_nonzero_returncode_allows_with_warning(tmp_path, caplog):
@@ -214,6 +223,9 @@ def test_cedar_adds_schema_flag_when_file_exists(tmp_path):
         ev.evaluate({"a": 1})
     assert "--schema" in captured["cmd"]
     assert str(schema) in captured["cmd"]
+    assert "authorize" in captured["cmd"]
+    assert "evaluate" not in captured["cmd"]
+    assert "--request-json" in captured["cmd"]
 
 
 def test_cedar_nonzero_returncode_allows(tmp_path, caplog):
@@ -309,3 +321,35 @@ def test_from_env_reads_fail_closed(monkeypatch):
     monkeypatch.setenv("BASTION_POLICY_FAIL_CLOSED", "true")
     ev = ExternalPolicyEvaluator.from_env()
     assert ev._cfg.fail_closed is True
+
+
+def test_opa_real_binary_smoke(tmp_path):
+    """Run real `opa eval -f raw` when opa is on PATH (skips otherwise)."""
+    import shutil
+
+    opa = shutil.which("opa")
+    if not opa:
+        import pytest
+
+        pytest.skip("opa binary not on PATH")
+
+    policies = tmp_path / "policies"
+    policies.mkdir()
+    (policies / "bastion.rego").write_text(
+        'package bastion\n\ndefault allow := false\n\nallow if {\n  input.role == "admin"\n}\n',
+        encoding="utf-8",
+    )
+    ev = ExternalPolicyEvaluator(
+        ExternalPolicyConfig(
+            engine="opa",
+            opa_binary=opa,
+            opa_policy_dir=str(policies),
+            opa_query="data.bastion.allow",
+            fail_closed=True,
+        )
+    )
+    ok, reason = ev.evaluate({"role": "admin"})
+    assert ok is True, reason
+    ok2, reason2 = ev.evaluate({"role": "guest"})
+    assert ok2 is False
+    assert reason2 is not None

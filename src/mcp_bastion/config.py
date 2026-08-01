@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import threading
 import time
 from dataclasses import dataclass, field
@@ -55,6 +56,23 @@ from mcp_bastion.tenant import resolve_tenant_id
 
 logger = logging.getLogger(__name__)
 
+_UNRESOLVED_PLACEHOLDER = re.compile(r"^\$\{[^}]+\}$")
+
+
+def _resolve_optional_url(raw: Any) -> str | None:
+    """Return a configured URL, expanding ${ENV} or skipping unresolved placeholders."""
+    if raw is None:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    if _UNRESOLVED_PLACEHOLDER.match(s):
+        env_key = s[2:-1]
+        return os.environ.get(env_key) or None
+    if s.startswith("env:"):
+        return os.environ.get(s[4:], "") or None
+    return s
+
 
 def _bastion_distribution_version() -> str:
     try:
@@ -103,14 +121,16 @@ class BastionConfig:
     content_filter_block_code_execution: bool = True
     content_filter_block_file_paths: bool = True
     content_filter_block_urls: bool = False
-    content_filter_block_secrets: bool = False
+    content_filter_block_secrets: bool = True
     content_filter_allowlist_patterns: list[str] = field(default_factory=list)
     content_filter_denylist_patterns: list[str] = field(default_factory=list)
     rbac: bool = False
     rbac_permissions: dict[str, list[str]] = field(default_factory=dict)
     rbac_require_authenticated_identity: bool = True
     schema_validation: bool = False
+    schema_validation_strict: bool = False
     schema_validation_schemas: dict[str, dict[str, type]] = field(default_factory=dict)
+    schema_validation_optional_args: dict[str, set[str]] = field(default_factory=dict)
     replay_guard: bool = False
     replay_require_nonce: bool = False
     cost_tracker: bool = False
@@ -338,6 +358,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     tmg = data.get("tool_metadata_guard", {}) or {}
     edge = data.get("edge_auth", {}) or {}
     schemav = data.get("schema_validation", {}) or {}
+    _schemas, _optional_args = parse_tool_schemas(schemav.get("schemas"))
     tal = data.get("tool_allowlist", {}) or {}
     iam = data.get("agent_iam", {}) or {}
     sv = data.get("server_verification", {}) or {}
@@ -419,7 +440,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         content_filter_block_code_execution=content_filter.get("block_code_execution", True),
         content_filter_block_file_paths=content_filter.get("block_file_paths", True),
         content_filter_block_urls=content_filter.get("block_urls", False),
-        content_filter_block_secrets=bool(content_filter.get("block_secrets", False)),
+        content_filter_block_secrets=bool(content_filter.get("block_secrets", True)),
         content_filter_allowlist_patterns=list(content_filter.get("allowlist_patterns", [])),
         content_filter_denylist_patterns=list(
             content_filter.get("denylist_patterns", content_filter.get("custom_patterns", []))
@@ -430,7 +451,9 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
             data.get("rbac", {}).get("require_authenticated_identity", True)
         ),
         schema_validation=bool(schemav.get("enabled", False)),
-        schema_validation_schemas=parse_tool_schemas(schemav.get("schemas")),
+        schema_validation_strict=bool(schemav.get("strict", False)),
+        schema_validation_schemas=_schemas,
+        schema_validation_optional_args=_optional_args,
         replay_guard=data.get("replay_guard", {}).get("enabled", False),
         replay_require_nonce=data.get("replay_guard", {}).get("require_nonce", False),
         cost_tracker=data.get("cost_tracker", {}).get("enabled", False),
@@ -457,9 +480,17 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         sensitive_classifier_block_labels=list(sc.get("block_labels", ["sensitive_business"])),
         audit=bool(audit_cfg.get("enabled", True)),
         audit_jsonl_path=audit_cfg.get("jsonl_path") or audit_cfg.get("path") or os.environ.get("BASTION_AUDIT_JSONL"),
-        alerts_slack_webhook=alerts.get("slack_webhook") or os.environ.get("SLACK_WEBHOOK_URL"),
-        alerts_webhook_url=alerts.get("webhook_url") or os.environ.get("BASTION_WEBHOOK_URL"),
-        alerts_webhooks=alerts.get("webhooks", []),
+        alerts_slack_webhook=_resolve_optional_url(alerts.get("slack_webhook"))
+        or os.environ.get("SLACK_WEBHOOK_URL"),
+        alerts_webhook_url=_resolve_optional_url(alerts.get("webhook_url"))
+        or os.environ.get("BASTION_WEBHOOK_URL"),
+        alerts_webhooks=[
+            u
+            for u in (
+                _resolve_optional_url(x) for x in (alerts.get("webhooks") or [])
+            )
+            if u
+        ],
         alerts_on=alerts.get("alert_on", ["injection", "rate_limit", "cost"]),
         alerts_retry_attempts=int(alerts.get("retry_attempts", 3)),
         alerts_retry_backoff_seconds=float(alerts.get("retry_backoff_seconds", 0.25)),
@@ -468,7 +499,8 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         hot_reload=bool(hot_reload.get("enabled", False)),
         hot_reload_poll_seconds=float(hot_reload.get("poll_seconds", 2.0)),
         audit_hash_chain_anchor_every=int(ahc.get("anchor_every", 0)),
-        audit_anchor_webhook_url=ahc.get("anchor_webhook_url") or os.environ.get("BASTION_ANCHOR_WEBHOOK_URL"),
+        audit_anchor_webhook_url=_resolve_optional_url(ahc.get("anchor_webhook_url"))
+        or os.environ.get("BASTION_ANCHOR_WEBHOOK_URL"),
         behavior_fingerprint=(
             bool(bf.get("enabled", False)) if isinstance(bf, dict) else bool(bf)
         ),
@@ -883,7 +915,11 @@ def _build_chain(config: BastionConfig) -> Any:
             "schema_validation enabled but schema_validation.schemas is empty in bastion.yaml - "
             "enforcement is a no-op until tool schemas are configured"
         )
-    schema_validator = SchemaValidator(config.schema_validation_schemas)
+    schema_validator = SchemaValidator(
+        config.schema_validation_schemas,
+        strict=config.schema_validation_strict,
+        optional_args=config.schema_validation_optional_args,
+    )
 
     argument_guards: ArgumentGuardEngine | None = None
     if config.argument_guards_enabled:

@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Demos (attack + dashboard)</h1>
       </header>
-      <h1 id="demos-attack-defense-dashboard-and-every-language">Demos — attack, defense, dashboard, and every language</h1>
-<p><strong>Live:</strong> https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html  </p>
+      <p><strong>Live:</strong> https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html  </p>
 <p>This is the <strong>Demo hub</strong>: scripted attack→defense GIFs, runnable payloads, the local dashboard tour, and how the same policy works in Python / TypeScript / Java / Go / .NET / Kotlin / Rust.</p>
 <table>
 <thead>
@@ -116,13 +115,13 @@
 <hr />
 <h2 id="1-master-attack-defense-tour">1. Master attack → defense tour</h2>
 <p><img alt="Attack defense tour" src="../assets/mcp-bastion-attack-defense-tour.gif" /></p>
-<pre><code class="language-bash"># Live scripted demos (same scenarios as GIFs)
+<pre><code class="language-bash">## Live scripted demos (same scenarios as GIFs)
 PYTHONPATH=src python -m examples.attack_demos --strict
 
-# One feature
+## One feature
 PYTHONPATH=src python -m examples.attack_demos --only content_filter
 
-# Regenerate GIFs
+## Regenerate GIFs
 python scripts/generate_attack_demo_gifs.py
 </code></pre>
 <h3 id="all-attack-types-covered">All attack types covered</h3>
@@ -142,56 +141,56 @@ python scripts/generate_attack_demo_gifs.py
 <td>Prompt injection / jailbreak</td>
 <td><code>prompt_guard</code></td>
 <td><strong>-32001</strong></td>
-<td><a href="images/attack-demos/01-prompt-guard.gif">gif</a></td>
+<td><a href="../assets/attack-demos/01-prompt-guard.gif">gif</a></td>
 </tr>
 <tr>
 <td>02</td>
 <td>PII leak in tool output</td>
 <td><code>pii</code></td>
 <td>Redact</td>
-<td><a href="images/attack-demos/02-pii.gif">gif</a></td>
+<td><a href="../assets/attack-demos/02-pii.gif">gif</a></td>
 </tr>
 <tr>
 <td>03</td>
 <td>Agent loop / denial-of-wallet</td>
 <td><code>rate_limit</code></td>
 <td><strong>-32002</strong></td>
-<td><a href="images/attack-demos/03-rate-limit.gif">gif</a></td>
+<td><a href="../assets/attack-demos/03-rate-limit.gif">gif</a></td>
 </tr>
 <tr>
 <td>04</td>
 <td>Path traversal (<code>/etc/passwd</code>)</td>
 <td><code>content_filter</code></td>
 <td><strong>-32005</strong></td>
-<td><a href="images/attack-demos/04-content-filter.gif">gif</a></td>
+<td><a href="../assets/attack-demos/04-content-filter.gif">gif</a></td>
 </tr>
 <tr>
 <td>05</td>
 <td>Unauthorized tool (RBAC)</td>
 <td><code>rbac</code></td>
 <td><strong>-32006</strong></td>
-<td><a href="images/attack-demos/05-rbac.gif">gif</a></td>
+<td><a href="../assets/attack-demos/05-rbac.gif">gif</a></td>
 </tr>
 <tr>
 <td>06</td>
 <td>Schema / type bypass</td>
 <td><code>schema_validation</code></td>
 <td><strong>-32007</strong></td>
-<td><a href="images/attack-demos/06-schema.gif">gif</a></td>
+<td><a href="../assets/attack-demos/06-schema.gif">gif</a></td>
 </tr>
 <tr>
 <td>07</td>
 <td>Replay (dup nonce)</td>
 <td><code>replay_guard</code></td>
 <td><strong>-32008</strong></td>
-<td><a href="images/attack-demos/07-replay.gif">gif</a></td>
+<td><a href="../assets/attack-demos/07-replay.gif">gif</a></td>
 </tr>
 <tr>
 <td>08</td>
 <td>Cost overrun</td>
 <td><code>cost_tracker</code></td>
 <td><strong>-32009</strong></td>
-<td><a href="images/attack-demos/08-cost.gif">gif</a></td>
+<td><a href="../assets/attack-demos/08-cost.gif">gif</a></td>
 </tr>
 </tbody>
 </table>
@@ -232,10 +231,10 @@ python scripts/generate_attack_demo_gifs.py
 <p><img alt="Dashboard tour" src="../assets/mcp-bastion-dashboard-tour.gif" /></p>
 <p>See posture grades, attack matrix, governance tiles, forensics, FinOps, and compliance — the same defenses visualized for operators.</p>
 <pre><code class="language-bash">mcp-bastion dashboard --demo
-# open http://127.0.0.1:7000/
+## open http://127.0.0.1:7000/
 
-# Optional: recapture tour GIF
-# python scripts/capture_dashboard_demo.py
+## Optional: recapture tour GIF
+## python scripts/capture_dashboard_demo.py
 </code></pre>
 <table>
 <thead>

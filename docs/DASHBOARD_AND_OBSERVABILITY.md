@@ -61,7 +61,7 @@ mcp-bastion dashboard --port 7000     # live MetricsStore when wired
 |--------------------|---------------|----------------|
 | **Overview KPIs** | Requests, block %, top threat, users/tenants | Instant “are we under pressure?” |
 | **Pillar health** | Which guards are live vs idle | Config ↔ runtime alignment |
-| **Security posture A–F** | Grades from `scan` / `osv-scan` / `audit` JSON | Pre-deploy ship/no-ship |
+| **Security posture A–F** | Worst finding severity → letter: **A** info/clean · **B** low · **C** medium · **D** high · **F** critical (from `scan` / `osv-scan` / `audit` JSON) | Pre-deploy ship/no-ship |
 | **Static prevalidation** | Sonar-style issue list | Fix catalog smells before runtime |
 | **Issue guides** | Why / fix steps / Bastion knobs / OWASP | Turns findings into YAML changes |
 | **OWASP / ASI / MCP / LLM heatmaps** | Coverage tabs | Map pillars to taxonomies |

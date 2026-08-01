@@ -76,15 +76,14 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>OpenTelemetry (optional)</h1>
       </header>
-      <h1 id="opentelemetry-otel">OpenTelemetry (OTEL)</h1>
-<p>MCP-Bastion can export spans to an OTLP endpoint for tracing.</p>
+      <p>MCP-Bastion can export spans to an OTLP endpoint for tracing.</p>
 <h2 id="setup">Setup</h2>
 <p>Set the OTLP endpoint:</p>
 <pre><code class="language-bash">export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 </code></pre>
 <p>Install the optional OTEL dependencies:</p>
 <pre><code class="language-bash">pip install mcp-bastion-python[otel]
-# or
+## or
 pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc
 </code></pre>
 <h2 id="behavior">Behavior</h2>

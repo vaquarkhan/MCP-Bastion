@@ -73,10 +73,11 @@ def test_parse_tool_schemas_from_yaml_types():
         "create_report": {"year": "integer", "amount": "number"},
         "greet": {"name": "string"},
     }
-    parsed = parse_tool_schemas(raw)
+    parsed, optional = parse_tool_schemas(raw)
     assert parsed["create_report"]["year"] is int
     assert parsed["create_report"]["amount"] is float
     assert parsed["greet"]["name"] is str
+    assert optional == {}
 
 
 def test_parse_tool_schemas_unknown_type_raises():

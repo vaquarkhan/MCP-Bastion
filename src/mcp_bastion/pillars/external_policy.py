@@ -90,12 +90,14 @@ class ExternalPolicyEvaluator:
                 json.dump(input_obj, f)
                 in_path = f.name
             try:
+                # OPA 1.x accepts: json|values|bindings|pretty|source|raw|discard
+                # Use "raw" for a bare true/false line (not the invalid singular "value").
                 proc = subprocess.run(
                     [
                         opa,
                         "eval",
                         "-f",
-                        "value",
+                        "raw",
                         "-d",
                         policy_dir,
                         "-i",
@@ -135,7 +137,17 @@ class ExternalPolicyEvaluator:
                 json.dump({"context": input_obj}, f)
                 in_path = f.name
             try:
-                cmd = [cedar, "evaluate", "--policies", pol_dir, "--request", in_path]
+                # Cedar CLI authz is `authorize` (not expression-level `evaluate`).
+                # Request JSON is the MCP context; entities file may be required by
+                # newer CLIs — missing entities surfaces via fail_closed.
+                cmd = [
+                    cedar,
+                    "authorize",
+                    "--policies",
+                    pol_dir,
+                    "--request-json",
+                    in_path,
+                ]
                 if self._cfg.cedar_schema_path and os.path.isfile(self._cfg.cedar_schema_path):
                     cmd.extend(["--schema", self._cfg.cedar_schema_path])
                 proc = subprocess.run(cmd, capture_output=True, text=True, timeout=8)
@@ -145,15 +157,18 @@ class ExternalPolicyEvaluator:
                 except OSError:
                     pass
             if proc.returncode != 0:
-                detail = (proc.stderr or proc.stdout or "Cedar evaluate failed").strip()
-                return self._on_unavailable(f"Cedar evaluate failed: {detail}")
+                detail = (proc.stderr or proc.stdout or "Cedar authorize failed").strip()
+                return self._on_unavailable(f"Cedar authorize failed: {detail}")
             combined = (proc.stdout + proc.stderr).upper()
-            if "DENY" in combined and "PERMIT" not in combined:
+            if "DENY" in combined and "ALLOW" not in combined and "PERMIT" not in combined:
                 return False, "external_policy: Cedar denied"
-            return True, None
+            if "ALLOW" in combined or "PERMIT" in combined:
+                return True, None
+            # Ambiguous output — treat as deny when fail_closed, else allow.
+            return self._on_unavailable(f"Cedar authorize returned unrecognized output: {proc.stdout!r}")
         except subprocess.TimeoutExpired:
-            return self._on_unavailable("Cedar evaluate timed out")
+            return self._on_unavailable("Cedar authorize timed out")
         except FileNotFoundError:
             return self._on_unavailable(f"Cedar binary not found: {self._cfg.cedar_binary!r}")
         except OSError as e:
-            return self._on_unavailable(f"Cedar eval error: {e}")
+            return self._on_unavailable(f"Cedar authorize error: {e}")

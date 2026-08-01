@@ -88,7 +88,6 @@
 <li><strong>How it’s measured:</strong> <code>scripts/validate_checklist.py</code> runs 100 requests without Bastion (baseline) and 100 with Bastion (rate limit only), then computes the difference.</li>
 </ul>
 <pre><code class="language-bash">PYTHONPATH=src python scripts/validate_checklist.py
-# Look for: &quot;Proxy overhead &lt; 5ms (excl. ML)&quot; and &quot;Overhead: X.XXms&quot;
 </code></pre>
 <ul>
 <li><strong>Typical result:</strong> On a modern machine, overhead is well under 5 ms (often &lt; 1 ms for the rate-limit-only path).</li>

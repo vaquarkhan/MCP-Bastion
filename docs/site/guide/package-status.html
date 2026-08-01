@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Package registry status</h1>
       </header>
-      <h1 id="package-registry-status-org-friendly-installs">Package registry status (org-friendly installs)</h1>
-<p><strong>Last checked:</strong> 2026-07-31<br />
+      <p><strong>Last checked:</strong> 2026-07-31<br />
 <strong>Goal:</strong> Every language can install from a <strong>public registry</strong> without downloading GitHub Release assets locally (many orgs block that).</p>
 <h2 id="status-matrix">Status matrix</h2>
 <table>
@@ -171,15 +170,15 @@
 </tbody>
 </table>
 <h2 id="what-works-today-in-locked-down-orgs">What works today in locked-down orgs</h2>
-<pre><code class="language-bash"># Engine + integrations (recommended for everyone)
+<pre><code class="language-bash">## Engine + integrations (recommended for everyone)
 pip install &quot;mcp-bastion-python==4.0.0&quot;
 pip install &quot;mcp-bastion-openai==4.0.0&quot;
 
-# Boundary / CLI without language adapters
+## Boundary / CLI without language adapters
 docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
 docker pull ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0
 
-# Go adapter (public module proxy)
+## Go adapter (public module proxy)
 go get github.com/vaquarkhan/mcp-bastion-suite/adapters/go@v0.1.0
 </code></pre>
 <p>Java / TypeScript / .NET <strong>cannot</strong> currently resolve from Maven Central / npmjs / NuGet.org. Point those stacks at the <strong>Docker proxy</strong> + shared <code>bastion.yaml</code> until public packages exist:</p>

@@ -66,9 +66,12 @@ circuit_breaker:
 
 content_filter:
   enabled: true
+  # Code/path patterns are strict; tune or allowlist if coding assistants over-block.
   block_code_execution: true
   block_file_paths: true
   block_urls: false
+  # High-confidence secrets (AKIA…, sk-…, ghp_…) — default on for security priority.
+  block_secrets: true
   allowlist_patterns: []
   denylist_patterns: []
 
@@ -82,14 +85,17 @@ rbac:
     admin: ["*"]
 
 # Enable when you attach JSON schemas to tools (see schema_validation.schemas).
+# strict: reject unexpected args; mark optional fields with `type?` or required: false.
 schema_validation:
   enabled: false
+  strict: false
   schemas:
     create_report:
       year: integer
       amount: number
     submit_form:
       email: string
+      nickname: string?   # optional
 
 replay_guard:
   enabled: true

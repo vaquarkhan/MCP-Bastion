@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Installation &amp; tutorials</h1>
       </header>
-      <h1 id="detailed-tutorial-from-zero-to-production-beginner-proof">Detailed Tutorial: From Zero to Production (Beginner-Proof)</h1>
-<p>This tutorial is intentionally very detailed. If you follow it line by line, you can get MCP-Bastion running even with minimal MCP experience.</p>
+      <p>This tutorial is intentionally very detailed. If you follow it line by line, you can get MCP-Bastion running even with minimal MCP experience.</p>
 <hr />
 <h2 id="what-you-will-build">What you will build</h2>
 <p>By the end of this tutorial you will have:</p>
@@ -262,7 +261,7 @@ prompt_guard=True pii=True rate_limit=True
 <pre><code class="language-python">from mcp_bastion import build_middleware_from_config
 
 middleware = build_middleware_from_config()  # loads bastion.yaml
-# Attach `middleware` at your MCP request handling boundary.
+## Attach `middleware` at your MCP request handling boundary.
 </code></pre>
 <p>If your framework supports middleware chains directly, register it there.<br />
 If not, wrap your request handler so every call goes through <code>middleware(context, call_next)</code>.</p>
@@ -359,19 +358,19 @@ If not, wrap your request handler so every call goes through <code>middleware(co
 </ol>
 <hr />
 <h2 id="13-fast-command-reference">13) Fast command reference</h2>
-<pre><code class="language-bash"># Install local package in editable mode
+<pre><code class="language-bash">## Install local package in editable mode
 pip install -e .
 
-# Validate policy
+## Validate policy
 mcp-bastion validate --config bastion.yaml
 
-# Start protected sample server
+## Start protected sample server
 mcp-bastion serve --config bastion.yaml --http 8080
 
-# Start dashboard
+## Start dashboard
 mcp-bastion dashboard --port 7000
 
-# Run tests
+## Run tests
 pytest
 </code></pre>
 <hr />

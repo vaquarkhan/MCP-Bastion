@@ -1455,6 +1455,13 @@
       risk_audit: 'Risk audit',
       combined: 'Combined posture'
     };
+    var GRADE_MEANING = {
+      A: 'A = clean / info only',
+      B: 'B = low severity findings',
+      C: 'C = medium severity',
+      D: 'D = high severity',
+      F: 'F = critical findings'
+    };
 
     function renderPosture(data) {
       lastPosture = data;
@@ -1474,7 +1481,8 @@
         else if (c.present && c.finding_count != null) meta = c.finding_count + ' finding(s)';
         else if (c.hint) meta = String(c.hint).slice(0, 90);
         else meta = 'No artifact';
-        return '<button type="button" class="grade-tile ' + cls + '" data-posture-kind="' + key + '" title="' + escapeHtmlAttr(c.path || c.hint || '') + '">'
+        var tip = GRADE_MEANING[grade] || c.path || c.hint || 'No scan artifact yet';
+        return '<button type="button" class="grade-tile ' + cls + '" data-posture-kind="' + key + '" title="' + escapeHtmlAttr(tip) + '">'
           + '<div class="g-label">' + escapeHtml(POSTURE_LABELS[key] || key) + '</div>'
           + '<div class="g-letter">' + escapeHtml(String(letter)) + '</div>'
           + '<div class="g-meta">' + escapeHtml(meta) + '</div>'
@@ -1783,18 +1791,25 @@
 
     function wireReportActions() {
       var gen = document.getElementById('btnGenReport');
+      var genMd = document.getElementById('btnGenReportMd');
       var bun = document.getElementById('btnGenBundle');
-      function buildUrl(base) {
+      function buildUrl(base, extra) {
         var fwEl = document.getElementById('reportFramework');
         var fw = (fwEl && fwEl.value) || 'soc2';
         var q = ['framework=' + encodeURIComponent(fw)];
         if (filterDateFrom) q.push('date_from=' + encodeURIComponent(filterDateFrom));
         if (filterDateTo) q.push('date_to=' + encodeURIComponent(filterDateTo));
+        if (extra) q.push(extra);
         return base + '?' + q.join('&');
       }
       if (gen) {
         gen.addEventListener('click', function () {
-          window.location.href = buildUrl('/api/compliance/report');
+          window.location.href = buildUrl('/api/compliance/report', 'format=pdf');
+        });
+      }
+      if (genMd) {
+        genMd.addEventListener('click', function () {
+          window.location.href = buildUrl('/api/compliance/report', 'format=md');
         });
       }
       if (bun) {

@@ -2,7 +2,9 @@
 
 **MCP-Bastion** (this repo) is the **security engine** published as [`mcp-bastion-python`](https://pypi.org/project/mcp-bastion-python/) on PyPI—middleware, pillars, dashboard, CLI (`validate`, `scan`, `serve --proxy`, …).
 
-**[mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite)** is the **multi-language connector layer**: shared `bastion.yaml`, native adapters (TypeScript, Java/Kotlin, Go, .NET), tutorials, Docker, and a GitHub Action. It does **not** vendor Bastion source; the engine always comes from PyPI.
+**[mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite)** is the **multi-language connector layer**: shared `bastion.yaml`, language adapters, tutorials, Docker, and a GitHub Action. It does **not** vendor Bastion source; the engine always comes from PyPI.
+
+> **Honest scope today:** full in-process pillars are **Python**. Scan / red-team / `serve --proxy` work for any language over MCP HTTP. Suite Java / Go / .NET adapters are **CLI wrappers** around the Python engine (require `mcp-bastion` / Python on `PATH`). `@mcp-bastion/core` (Node) has native rate limiting; ML pillars need a Python sidecar. See [MULTI-LANGUAGE-STRATEGY.md](MULTI-LANGUAGE-STRATEGY.md).
 
 > Keep deep language tutorials and framework packs in the suite repo so this README stays light. This page is the bridge.
 

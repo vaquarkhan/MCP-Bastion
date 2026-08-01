@@ -92,6 +92,9 @@ class SlackAlertSink(AlertSink):
         severity: str = "warning",
         details: dict[str, Any] | None = None,
     ) -> None:
+        url = (self.webhook_url or "").strip()
+        if not url or (url.startswith("${") and url.endswith("}")):
+            return
         color = "#ff0000" if severity == "critical" else "#ffa500" if severity == "warning" else "#36a64f"
         payload = {
             "attachments": [
@@ -166,6 +169,9 @@ class WebhookAlertSink(AlertSink):
         severity: str = "warning",
         details: dict[str, Any] | None = None,
     ) -> None:
+        url = (self.url or "").strip()
+        if not url or (url.startswith("${") and url.endswith("}")):
+            return
         payload = {
             "source": "mcp-bastion",
             "kind": kind,

@@ -44,7 +44,7 @@ DEFAULT_PATH_PATTERNS = [
 
 DEFAULT_URL_PATTERN = r"https?://[^\s]+"
 
-# High-confidence credential / key material (MCP01). Enable via block_secrets=True.
+# High-confidence credential / key material (MCP01). On by default.
 DEFAULT_SECRET_PATTERNS = [
     r"AKIA[0-9A-Z]{16}",  # AWS access key id
     r"ASIA[0-9A-Z]{16}",  # AWS STS temporary key id
@@ -69,7 +69,7 @@ class ContentFilter:
         block_code_execution: bool = True,
         block_file_paths: bool = True,
         block_urls: bool = False,
-        block_secrets: bool = False,
+        block_secrets: bool = True,
         allowlist_patterns: list[str] | None = None,
         denylist_patterns: list[str] | None = None,
         custom_patterns: list[str] | None = None,
@@ -130,6 +130,10 @@ class ContentFilter:
         if isinstance(value, (list, tuple)):
             return " ".join(self._extract_text(v) for v in value)
         return str(value)
+
+    def scan(self, text: str | dict | list | None) -> None:
+        """Alias for :meth:`check` (compat for framework integration packages)."""
+        self.check(text)
 
     def check(self, text: str | dict | list | None) -> None:
         """

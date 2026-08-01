@@ -76,8 +76,7 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>Feature deep dive</h1>
       </header>
-      <h1 id="feature-deep-dive-issue-solution-and-benefits">Feature deep dive — issue, solution, and benefits</h1>
-<p><strong>Version:</strong> 4.0.0<br />
+      <p><strong>Version:</strong> 4.0.0<br />
 <strong>Audience:</strong> Security architects, platform engineers, and reviewers who need <em>why</em> each control exists—not only how to flip a YAML switch<br />
 <strong>Companion docs:</strong> <a href="bible.html">DOCUMENTATION_BIBLE.md</a> (visual bible), <a href="features.html">FEATURES.md</a> (enablement), <a href="pillars.html">PILLARS.md</a> (counts &amp; mapping), <a href="attack-demos.html">ATTACK_DEMOS.md</a> (runnable + GIFs), <a href="multi-language.html">MULTI_LANGUAGE_SUITE.md</a> (all languages), <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a> (UI), <a href="index.html">USER_GUIDE.md</a> (end-to-end handbook)</p>
 <p>This document walks <strong>every major MCP-Bastion capability</strong>—request-path pillars, privacy, FinOps, runtime governance, proxy/transport, the <strong>local dashboard</strong>, CLI/ops, and compliance—using a fixed template:</p>
@@ -129,7 +128,7 @@
 </code></pre>
 <p>Each pillar can <strong>allow</strong>, <strong>block</strong>, <strong>redact</strong>, <strong>tokenise</strong>, or <strong>observe</strong> (log would-be blocks without denying). Dashboard and Prometheus consume the same metrics store.</p>
 <hr />
-<h1 id="part-a-core-request-path-pillars-10">Part A — Core request-path pillars (10)</h1>
+<h2 id="part-a-core-request-path-pillars-10">Part A — Core request-path pillars (10)</h2>
 <h2 id="a1-prompt-injection-defense-prompt_guard">A1. Prompt injection defense (<code>prompt_guard</code>)</h2>
 <h3 id="the-issue">The issue</h3>
 <p>Agents pass untrusted text into tool arguments. Attackers (or poisoned retrieved content) embed jailbreaks—“ignore previous instructions”, exfiltrate secrets, escalate privileges. Without inbound screening, a single successful injection can drive arbitrary tool use.</p>
@@ -575,7 +574,7 @@ Run: <code>PYTHONPATH=src python -m examples.attack_demos --only cost</code></p>
 </tbody>
 </table>
 <hr />
-<h1 id="part-b-extended-request-path-finops-controls">Part B — Extended request-path &amp; FinOps controls</h1>
+<h2 id="part-b-extended-request-path-finops-controls">Part B — Extended request-path &amp; FinOps controls</h2>
 <h2 id="b1-semantic-firewall-semantic_firewall">B1. Semantic firewall (<code>semantic_firewall</code>)</h2>
 <h3 id="the-issue_10">The issue</h3>
 <p>Individually benign tools become dangerous in <strong>sequence</strong> (e.g. read secrets → send email → delete). Single-call scanners miss multi-step abuse.</p>
@@ -749,7 +748,7 @@ discovery_filter:
 <li>Clear forensics (“which path matched”)  </li>
 </ul>
 <hr />
-<h1 id="part-c-privacy-secrets">Part C — Privacy &amp; secrets</h1>
+<h2 id="part-c-privacy-secrets">Part C — Privacy &amp; secrets</h2>
 <h2 id="c1-reversible-pii-vault-pii_vault">C1. Reversible PII vault (<code>pii_vault</code>)</h2>
 <h3 id="the-issue_23">The issue</h3>
 <p>Destructive redaction breaks workflows: CRM tools need the real email to send mail; DBs need the real customer id. Teams either leak PII to the model or break the tool.</p>
@@ -797,7 +796,7 @@ discovery_filter:
 <li>Aligns with zero-infra posture  </li>
 </ul>
 <hr />
-<h1 id="part-d-runtime-governance-enterprise">Part D — Runtime governance &amp; enterprise</h1>
+<h2 id="part-d-runtime-governance-enterprise">Part D — Runtime governance &amp; enterprise</h2>
 <h2 id="d1-agent-iam-agent_iam">D1. Agent IAM (<code>agent_iam</code>)</h2>
 <h3 id="the-issue_26">The issue</h3>
 <p><strong>Confused deputy:</strong> a powerful MCP server acts on behalf of whoever calls it. Without per-agent identity, one stolen session owns all tools.</p>
@@ -951,7 +950,7 @@ discovery_filter:
 </tbody>
 </table>
 <hr />
-<h1 id="part-e-proxy-transport-stability">Part E — Proxy, transport &amp; stability</h1>
+<h2 id="part-e-proxy-transport-stability">Part E — Proxy, transport &amp; stability</h2>
 <h2 id="e1-http-boundary-proxy-mcp-bastion-serve-proxy">E1. HTTP boundary proxy (<code>mcp-bastion serve --proxy</code>)</h2>
 <h3 id="the-issue_37">The issue</h3>
 <p>In-process middleware only protects servers that opt in. Desktop clients and third-party MCP URLs need a URL-swap enforcement point.</p>
@@ -1001,7 +1000,7 @@ discovery_filter:
 <li>Keeps Bastion zero-infra  </li>
 </ul>
 <hr />
-<h1 id="part-f-dashboard-local-ui">Part F — Dashboard (local UI)</h1>
+<h2 id="part-f-dashboard-local-ui">Part F — Dashboard (local UI)</h2>
 <p>The dashboard is an <strong>optional local app</strong> (<code>mcp-bastion dashboard</code>)—read-only over local artifacts + in-process metrics. No login, no DB, no mandatory cloud. See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md">dashboard/README.md</a>.</p>
 <h3 id="the-issue-why-a-dashboard-exists">The issue (why a dashboard exists)</h3>
 <p>CLI metrics and JSONL are enough for machines, not for humans. Security and FinOps stakeholders need posture grades, “how do I fix this?”, live attack pressure, RBAC denials, and cost savings—without standing up a SIEM project on day one.</p>
@@ -1379,7 +1378,7 @@ discovery_filter:
 </tbody>
 </table>
 <hr />
-<h1 id="part-g-cli-operations-toolkit">Part G — CLI &amp; operations toolkit</h1>
+<h2 id="part-g-cli-operations-toolkit">Part G — CLI &amp; operations toolkit</h2>
 <table>
 <thead>
 <tr>
@@ -1458,7 +1457,7 @@ discovery_filter:
 </table>
 <p>Full reference: <a href="cli.html">CLI.md</a>.</p>
 <hr />
-<h1 id="part-h-compliance-supply-chain">Part H — Compliance &amp; supply chain</h1>
+<h2 id="part-h-compliance-supply-chain">Part H — Compliance &amp; supply chain</h2>
 <h2 id="h1-cyclonedx-sbom-cra-posture">H1. CycloneDX SBOM &amp; CRA posture</h2>
 <h3 id="the-issue_41">The issue</h3>
 <p>EU CRA / OpenSSF expectations require machine-readable dependency inventories and vulnerability-handling process—not only runtime firewalls.</p>
@@ -1486,7 +1485,7 @@ discovery_filter:
 <li>See <a href="supply-chain.html">SUPPLY_CHAIN.md</a>  </li>
 </ul>
 <hr />
-<h1 id="quick-enablement-matrix-starter-hardened">Quick enablement matrix (starter → hardened)</h1>
+<h2 id="quick-enablement-matrix-starter-hardened">Quick enablement matrix (starter → hardened)</h2>
 <table>
 <thead>
 <tr>
@@ -1526,7 +1525,7 @@ discovery_filter:
 </tbody>
 </table>
 <hr />
-<h1 id="error-code-index">Error code index</h1>
+<h2 id="error-code-index">Error code index</h2>
 <table>
 <thead>
 <tr>
@@ -1650,7 +1649,7 @@ discovery_filter:
 </tbody>
 </table>
 <hr />
-<h1 id="related-reading">Related reading</h1>
+<h2 id="related-reading">Related reading</h2>
 <table>
 <thead>
 <tr>

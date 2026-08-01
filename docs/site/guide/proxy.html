@@ -127,7 +127,6 @@ agent_iam:
 </ol>
 <h2 id="docker-quick-start-boundary">Docker quick start (boundary)</h2>
 <pre><code class="language-bash">docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.0
-# Set BASTION_EDGE_SECRET; mount bastion.yaml with edge_auth + pillars enabled
 docker run -p 8080:8080 -e BASTION_EDGE_SECRET=... ghcr.io/vaquarkhan/mcp-bastion-proxy:v2.0.0
 </code></pre>
 <p>Clients must send the edge token in request metadata (<code>bastion_edge_token</code> by default). Without it, requests fail closed when <code>edge_auth.enabled: true</code>.</p>

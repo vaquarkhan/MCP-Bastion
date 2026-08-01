@@ -76,15 +76,14 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>PII vault tutorial</h1>
       </header>
-      <h1 id="tutorial-reversible-pii-vault">Tutorial: Reversible PII vault</h1>
-<p>Keep tool-calling working while ensuring the LLM never sees raw PII.</p>
+      <p>Keep tool-calling working while ensuring the LLM never sees raw PII.</p>
 <h2 id="prerequisites">Prerequisites</h2>
 <ul>
 <li><code>mcp-bastion-python</code> installed</li>
 <li>Optional: Redis when running multiple replicas</li>
 </ul>
 <h2 id="step-1-enable-vault-opt-in">Step 1 - Enable vault (opt-in)</h2>
-<pre><code class="language-yaml"># bastion-vault.yaml
+<pre><code class="language-yaml">## bastion-vault.yaml
 audit:
   enabled: false
 prompt_guard:
@@ -103,7 +102,7 @@ pii_vault:
 <pre><code class="language-python">from mcp_bastion.config import load_config, build_middleware_from_config
 
 mw = build_middleware_from_config(load_config(&quot;bastion-vault.yaml&quot;))
-# attach mw via compose_middleware / FastMCP as usual
+## attach mw via compose_middleware / FastMCP as usual
 </code></pre>
 <p>Boundary / proxy deployments get the same abstract + hydrate on the wire (JSON and SSE <code>text/event-stream</code> event frames).</p>
 <h2 id="step-3-observe-abstraction">Step 3 - Observe abstraction</h2>

@@ -840,6 +840,27 @@ def generate_compliance_report_markdown(
     )
 
 
+def generate_compliance_report_pdf(
+    framework: str = "soc2",
+    *,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> bytes:
+    from mcp_bastion.pillars.compliance_report import generate_report_pdf
+
+    try:
+        from mcp_bastion import __version__ as ver
+    except Exception:
+        ver = "unknown"
+    return generate_report_pdf(
+        framework=framework,
+        audit_path=audit_jsonl_path(),
+        date_from=date_from,
+        date_to=date_to,
+        version=str(ver),
+    )
+
+
 def build_evidence_bundle_zip(
     framework: str = "soc2",
     *,
@@ -852,7 +873,11 @@ def build_evidence_bundle_zip(
     report_md = generate_compliance_report_markdown(
         framework=framework, date_from=date_from, date_to=date_to
     )
+    report_pdf = generate_compliance_report_pdf(
+        framework=framework, date_from=date_from, date_to=date_to
+    )
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(f"compliance-{framework}.pdf", report_pdf)
         zf.writestr(f"compliance-{framework}.md", report_md)
         zf.writestr(
             "README.txt",
