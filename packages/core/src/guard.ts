@@ -113,6 +113,15 @@ export function wrapCallToolHandler(
         logger.warn("prompt_guard_sidecar_unavailable", err);
         return createMcpError(-32001, "Prompt guard sidecar unavailable");
       }
+    } else if (opts.enablePromptGuard && !sidecarUrl) {
+      logger.error(
+        "prompt_guard_enabled_without_sidecar",
+        "enablePromptGuard is true but sidecarUrl/MCP_BASTION_URL is empty — failing closed"
+      );
+      return createMcpError(
+        -32001,
+        "Prompt guard enabled but no sidecar URL (set sidecarUrl or MCP_BASTION_URL)"
+      );
     }
 
     rateLimiter.consumeIteration(requestId, sessionId);

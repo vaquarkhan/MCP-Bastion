@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp-bastion-python>=2.0.0",
+    "mcp-bastion-python>=4.0.0,<5",
     "langchain-core>=0.2.0",
 ]
 

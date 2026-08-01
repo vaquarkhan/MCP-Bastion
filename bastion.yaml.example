@@ -66,11 +66,12 @@ circuit_breaker:
 
 content_filter:
   enabled: true
-  # Code/path patterns are strict; tune or allowlist if coding assistants over-block.
+  # Code/path patterns are OFF by default in the library (too many false positives for
+  # coding assistants). Enable deliberately for high-risk tools:
   block_code_execution: true
   block_file_paths: true
   block_urls: false
-  # High-confidence secrets (AKIA…, sk-…, ghp_…) — default on for security priority.
+  # High-confidence secrets (AKIA…, sk-…, ghp_…) — library default is on.
   block_secrets: true
   allowlist_patterns: []
   denylist_patterns: []

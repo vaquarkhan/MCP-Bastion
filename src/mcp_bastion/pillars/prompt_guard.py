@@ -147,9 +147,15 @@ class PromptGuardEngine:
         """
         True if text should be blocked.
 
-        Order: regex heuristics (no deps) → ML score → fail-closed on ML error.
+        Order: benign allowlist → regex heuristics → ML score → fail-closed on ML error.
         """
         if not text or not text.strip():
+            return False
+
+        from mcp_bastion.pillars.injection_heuristics import is_benign_allowlisted
+
+        if is_benign_allowlisted(text):
+            logger.debug("PromptGuard benign allowlist hit; skipping ML")
             return False
 
         matched = self.heuristic_match(text)

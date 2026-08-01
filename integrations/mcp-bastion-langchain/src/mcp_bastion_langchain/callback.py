@@ -6,8 +6,9 @@ from typing import Any
 
 from langchain_core.callbacks import BaseCallbackHandler
 
+from mcp_bastion.errors import RateLimitExceededError
 from mcp_bastion.pillars.content_filter import ContentFilter
-from mcp_bastion.pillars.rate_limit import RateLimiter
+from mcp_bastion.pillars.rate_limit import TokenBucketRateLimiter
 
 
 class BastionSecurityCallback(BaseCallbackHandler):
@@ -31,18 +32,25 @@ class BastionSecurityCallback(BaseCallbackHandler):
         super().__init__()
         self._content_filter = ContentFilter() if enable_content_filter else None
         self._rate_limiter = (
-            RateLimiter(max_requests=max_requests, window_seconds=window_seconds)
+            TokenBucketRateLimiter(
+                max_iterations=max_requests, timeout_seconds=float(window_seconds)
+            )
             if enable_rate_limit
             else None
         )
+        self._session = "langchain-default"
 
     def on_llm_start(self, serialized: dict[str, Any], prompts: list[str], **kwargs: Any) -> None:
         if self._rate_limiter:
-            self._rate_limiter.check()
+            check = self._rate_limiter.check_iteration(session_id=self._session)
+            if not check.allowed:
+                raise RateLimitExceededError(check.message or "Rate limit exceeded")
         if self._content_filter:
             for prompt in prompts:
-                self._content_filter.scan(prompt)
+                self._content_filter.check(prompt)
+        if self._rate_limiter:
+            self._rate_limiter.consume_iteration(session_id=self._session)
 
     def on_tool_start(self, serialized: dict[str, Any], input_str: str, **kwargs: Any) -> None:
         if self._content_filter:
-            self._content_filter.scan(input_str)
+            self._content_filter.check(input_str)

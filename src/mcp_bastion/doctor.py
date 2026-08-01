@@ -74,6 +74,46 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
     except Exception as e:
         checks.append({"id": "prompt_guard_ml", "ok": False, "detail": str(e)})
 
+    # Offline / first-run dependency hints (D-4)
+    for mod, hint in (
+        ("transformers", "pip install 'mcp-bastion-python[ml]' or transformers torch"),
+        ("torch", "pip install torch (CPU wheels OK)"),
+        ("presidio_analyzer", "pip install 'mcp-bastion-python[pii]' (Presidio)"),
+    ):
+        try:
+            __import__(mod)
+            checks.append({"id": f"dep_{mod}", "ok": True, "detail": f"{mod} importable"})
+        except Exception as e:
+            checks.append(
+                {
+                    "id": f"dep_{mod}",
+                    "ok": False,
+                    "detail": f"{mod} missing ({e}). Hint: {hint}",
+                }
+            )
+    try:
+        import spacy  # type: ignore
+
+        try:
+            spacy.load("en_core_web_sm")
+            checks.append({"id": "dep_spacy_model", "ok": True, "detail": "en_core_web_sm loaded"})
+        except Exception:
+            checks.append(
+                {
+                    "id": "dep_spacy_model",
+                    "ok": False,
+                    "detail": "spaCy present but en_core_web_sm missing — run: python -m spacy download en_core_web_sm",
+                }
+            )
+    except Exception:
+        checks.append(
+            {
+                "id": "dep_spacy_model",
+                "ok": False,
+                "detail": "spaCy not installed (optional for Presidio NLP)",
+            }
+        )
+
     try:
         from mcp_bastion.config import load_config as _load_cfg2
         from mcp_bastion.config import _load_server_manifest

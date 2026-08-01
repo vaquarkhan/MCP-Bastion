@@ -4,7 +4,7 @@
 
 **[mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite)** is the **multi-language connector layer**: shared `bastion.yaml`, language adapters, tutorials, Docker, and a GitHub Action. It does **not** vendor Bastion source; the engine always comes from PyPI.
 
-> **Honest scope today:** full in-process pillars are **Python**. Scan / red-team / `serve --proxy` work for any language over MCP HTTP. Suite Java / Go / .NET adapters are **CLI wrappers** around the Python engine (require `mcp-bastion` / Python on `PATH`). `@mcp-bastion/core` (Node) has native rate limiting; ML pillars need a Python sidecar. See [MULTI-LANGUAGE-STRATEGY.md](MULTI-LANGUAGE-STRATEGY.md).
+> **Honest scope today:** full in-process pillars are **Python**. Scan / red-team / `serve --proxy` work for any language over MCP HTTP. Suite Java / Go / .NET adapters are **CLI wrappers** around the Python engine (require `mcp-bastion` / Python on `PATH` — run `mcp-bastion doctor` early). `@mcp-bastion/core` (Node) has native rate limiting; ML pillars need a Python sidecar URL (`sidecarUrl` / `MCP_BASTION_URL`) and **fail closed** if prompt guard is enabled without one. The suite TypeScript package is a config helper only — use `@mcp-bastion/core` for runtime. See [MULTI-LANGUAGE-STRATEGY.md](MULTI-LANGUAGE-STRATEGY.md).
 
 > Keep deep language tutorials and framework packs in the suite repo so this README stays light. This page is the bridge.
 

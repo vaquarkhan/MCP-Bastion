@@ -71,7 +71,7 @@ describe("guard", () => {
     );
   });
 
-  it("does not call fetch when sidecarUrl and MCP_BASTION_URL both empty", async () => {
+  it("fails closed when prompt guard enabled without sidecar URL", async () => {
     const fetchMock = vi.mocked(fetch);
     const handler = vi.fn().mockResolvedValue({
       content: [{ type: "text", text: "3" }],
@@ -84,8 +84,11 @@ describe("guard", () => {
     });
     const result = await wrapped(mockToolRequest);
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(handler).toHaveBeenCalled();
-    expect((result.content[0] as { type: string; text: string }).text).toBe("3");
+    expect(handler).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect((result.content[0] as { type: string; text: string }).text).toContain(
+      "no sidecar URL"
+    );
   });
 
   it("returns error when prompt guard says malicious", async () => {
