@@ -42,7 +42,7 @@ DEFAULT_INJECTION_PATTERNS = [
     r"(?i)no\s+restrictions\s*\((?:FreeGPT|DAN|Jailbreak)",
 ]
 
-# ProtectAI over-scores some short business phrases (B-2). Allowlist before ML.
+# ProtectAI over-scores some short business phrases (B-2 / N-2). Allowlist before ML.
 BENIGN_ALLOWLIST_PATTERNS = [
     r"(?i)^repeat$",
     r"(?i)^repeat\s+(?:order|the\s+search|customer|that)$",
@@ -57,19 +57,62 @@ BENIGN_ALLOWLIST_PATTERNS = [
     r"(?i)^what\s+is\s+the\s+weather(?:\s+today)?$",
 ]
 
+# Sentence-level business markers (N-2): allow when these dominate and no jailbreak.
+_BENIGN_BUSINESS_MARKERS = [
+    re.compile(r"(?i)\b(?:please|refund|invoice|order|ticket|customer|hold|search|catalog)\b"),
+    re.compile(r"(?i)\brepeat\s+(?:the\s+)?(?:refund|search|order|that)\b"),
+    re.compile(r"(?i)\boverride\s+(?:the\s+)?(?:hold|limit|cap|flag)\b"),
+    re.compile(r"(?i)\bignore\s+case\b"),
+    re.compile(r"(?i)\brepeat\s+the\s+search\b"),
+]
+
+_JAILBREAK_MARKERS = [
+    re.compile(r"(?i)\b(?:jailbreak|DAN\s+mode|system\s+prompt|ignore\s+previous\s+instructions)\b"),
+    re.compile(r"(?i)\bno\s+restrictions\b|\bunrestricted\s+assistant\b|\bFreeGPT\b"),
+    re.compile(r"(?i)\b(?:deceased|late)\s+grandm"),
+    re.compile(r"(?i)\bfor\s+(?:a\s+)?novel\b.{0,40}\b(?:bypass|hack|weapon)"),
+]
+
 
 def is_benign_allowlisted(text: str) -> bool:
-    """True for short phrases that ProtectAI often false-positives."""
+    """True for short phrases / business sentences that ProtectAI often false-positives."""
     if not text or not isinstance(text, str):
         return False
     from mcp_bastion.pillars.content_normalize import normalize_for_scan
 
     normalized = normalize_for_scan(text).strip()
-    if not normalized or len(normalized) > 120:
+    if not normalized:
         return False
-    for rx in _BENIGN_COMPILED:
-        if rx.search(normalized):
-            return True
+    # Exact / short allowlist (original B-2)
+    if len(normalized) <= 120:
+        for rx in _BENIGN_COMPILED:
+            if rx.search(normalized):
+                return True
+    # Sentence-level (N-2): business ops wording without jailbreak markers
+    if len(normalized) > 280:
+        return False
+    for bad in _JAILBREAK_MARKERS:
+        if bad.search(normalized):
+            return False
+    marker_hits = sum(1 for rx in _BENIGN_BUSINESS_MARKERS if rx.search(normalized))
+    if marker_hits >= 2:
+        return True
+    # Single strong business construction
+    if re.search(
+        r"(?i)please\s+.*\b(?:repeat|override|ignore\s+case)\b.*\b(?:refund|hold|search|invoice|order)\b",
+        normalized,
+    ):
+        return True
+    if re.search(
+        r"(?i)\bignore\s+case\b.*\brepeat\s+the\s+search\b",
+        normalized,
+    ):
+        return True
+    if re.search(
+        r"(?i)\brepeat\s+the\s+refund\b.*\boverride\s+the\s+hold\b",
+        normalized,
+    ):
+        return True
     return False
 
 

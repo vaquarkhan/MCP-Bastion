@@ -118,8 +118,8 @@ class BastionConfig:
     grounding_guard_on_violation: str = "warn"
     circuit_breaker: bool = False
     content_filter: bool = False
-    content_filter_block_code_execution: bool = False
-    content_filter_block_file_paths: bool = False
+    content_filter_block_code_execution: bool = True
+    content_filter_block_file_paths: bool = True
     content_filter_block_urls: bool = False
     content_filter_block_secrets: bool = True
     content_filter_allowlist_patterns: list[str] = field(default_factory=list)
@@ -444,9 +444,9 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         grounding_guard_on_violation=str(data.get("grounding_guard", {}).get("on_violation", "warn")),
         circuit_breaker=data.get("circuit_breaker", {}).get("enabled", False),
         content_filter=content_filter.get("enabled", False),
-        content_filter_block_code_execution=content_filter.get("block_code_execution", False),
-        content_filter_block_file_paths=content_filter.get("block_file_paths", False),
-        content_filter_block_urls=content_filter.get("block_urls", False),
+        content_filter_block_code_execution=bool(content_filter.get("block_code_execution", True)),
+        content_filter_block_file_paths=bool(content_filter.get("block_file_paths", True)),
+        content_filter_block_urls=bool(content_filter.get("block_urls", False)),
         content_filter_block_secrets=bool(content_filter.get("block_secrets", True)),
         content_filter_allowlist_patterns=list(content_filter.get("allowlist_patterns", [])),
         content_filter_denylist_patterns=list(

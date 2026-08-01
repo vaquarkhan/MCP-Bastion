@@ -66,8 +66,8 @@ circuit_breaker:
 
 content_filter:
   enabled: true
-  # Code/path patterns are OFF by default in the library (too many false positives for
-  # coding assistants). Enable deliberately for high-risk tools:
+  # Defaults ON with scoped patterns: shell/exfil (curl|bash, rm -rf) and sensitive
+  # paths (/etc/passwd, ../). Discussing eval() / markdown fences is allowed.
   block_code_execution: true
   block_file_paths: true
   block_urls: false
