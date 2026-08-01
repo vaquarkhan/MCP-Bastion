@@ -25,10 +25,10 @@ def secure_tool(func: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         for arg in args:
             if isinstance(arg, str):
-                _filter.scan(arg)
+                _filter.check(arg)
         for val in kwargs.values():
             if isinstance(val, str):
-                _filter.scan(val)
+                _filter.check(val)
         return func(*args, **kwargs)
 
     wrapper.__name__ = getattr(func, "__name__", "secure_tool")

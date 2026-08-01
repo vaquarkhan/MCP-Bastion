@@ -2,8 +2,9 @@
 from __future__ import annotations
 from typing import Any
 from openai import AzureOpenAI
+from mcp_bastion.errors import RateLimitExceededError
 from mcp_bastion.pillars.content_filter import ContentFilter
-from mcp_bastion.pillars.rate_limit import RateLimiter
+from mcp_bastion.pillars.rate_limit import TokenBucketRateLimiter
 
 
 class SecureAzureOpenAI:
@@ -24,11 +25,17 @@ class SecureAzureOpenAI:
                  max_requests: int = 60, window_seconds: int = 60) -> None:
         self._client = AzureOpenAI(azure_endpoint=azure_endpoint, api_key=api_key, api_version=api_version)
         self._filter = ContentFilter()
-        self._limiter = RateLimiter(max_requests=max_requests, window_seconds=window_seconds)
+        self._limiter = TokenBucketRateLimiter(
+            max_iterations=max_requests, timeout_seconds=float(window_seconds)
+        )
+        self._session = "azure-default"
 
     def chat(self, prompt: str, model: str = "gpt-4o", **kwargs: Any) -> str:
-        self._limiter.check()
-        self._filter.scan(prompt)
+        check = self._limiter.check_iteration(session_id=self._session)
+        if not check.allowed:
+            raise RateLimitExceededError(check.message or "Rate limit exceeded")
+        self._filter.check(prompt)
         response = self._client.chat.completions.create(
             model=model, messages=[{"role": "user", "content": prompt}], **kwargs)
+        self._limiter.consume_iteration(session_id=self._session)
         return response.choices[0].message.content or ""

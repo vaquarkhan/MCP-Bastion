@@ -1,11 +1,17 @@
 """FastMCP server wrapper with MCP-Bastion security."""
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Any
 
 from mcp_bastion import MCPBastionMiddleware, compose_middleware
 from mcp_bastion.base import MiddlewareContext
+
+logger = logging.getLogger(__name__)
+
+# FastMCP versions this wrapper was validated against (private API may change).
+_SUPPORTED_FASTMCP_HINT = "mcp[cli] / mcp.server.fastmcp (call_tool on ToolManager)"
 
 
 def secure_fastmcp(
@@ -46,6 +52,24 @@ def secure_fastmcp(
     Returns:
         The same ``mcp`` instance (for call chaining).
     """
+    if not hasattr(mcp, "_tool_manager"):
+        raise RuntimeError(
+            "secure_fastmcp requires FastMCP._tool_manager (private API). "
+            f"Supported shape: {_SUPPORTED_FASTMCP_HINT}. "
+            "Use build_middleware_from_config with a low-level MCP server instead."
+        )
+    tm = mcp._tool_manager
+    if not hasattr(tm, "call_tool") or not callable(getattr(tm, "call_tool", None)):
+        raise RuntimeError(
+            "secure_fastmcp: ToolManager has no callable call_tool — "
+            "FastMCP internals may have changed; pin a known mcp package version."
+        )
+    logger.warning(
+        "secure_fastmcp patches FastMCP._tool_manager.call_tool (private API). "
+        "Pin your mcp/FastMCP version and re-test after upgrades. Prefer "
+        "build_middleware_from_config when you control the transport."
+    )
+
     bastion = MCPBastionMiddleware(
         enable_prompt_guard=enable_prompt_guard,
         enable_pii_redaction=enable_pii_redaction,
@@ -53,7 +77,6 @@ def secure_fastmcp(
     )
     chain = compose_middleware(bastion)
 
-    tm = mcp._tool_manager
     _orig = tm.call_tool
 
     async def _guarded_call_tool(

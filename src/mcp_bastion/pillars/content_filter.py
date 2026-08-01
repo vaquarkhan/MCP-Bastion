@@ -66,8 +66,8 @@ class ContentFilter:
     def __init__(
         self,
         *,
-        block_code_execution: bool = True,
-        block_file_paths: bool = True,
+        block_code_execution: bool = False,
+        block_file_paths: bool = False,
         block_urls: bool = False,
         block_secrets: bool = True,
         allowlist_patterns: list[str] | None = None,

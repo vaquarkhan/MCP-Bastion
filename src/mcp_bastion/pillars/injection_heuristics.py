@@ -29,7 +29,47 @@ DEFAULT_INJECTION_PATTERNS = [
     r"(?i)jailbreak",
     r"(?i)act\s+as\s+(?:if\s+you\s+have\s+)?no\s+(?:restrictions|rules|limits)",
     r"(?i)role[\s-]*play\s+as\s+(?:an?\s+)?(?:unrestricted|unfiltered)",
+    # Role-play / social-engineering jailbreaks (C-2)
+    r"(?i)grandma(?:ma)?\s+(?:used\s+to|would)\b",
+    r"(?i)for\s+(?:a\s+|the\s+)?novel\b.{0,40}\b(?:bypass|villain|filter|jailbreak)",
+    r"(?i)let'?s\s+play\s+a\s+game\b.{0,80}\b(?:no\s+restrictions|unrestricted|FreeGPT|DAN)",
+    r"(?i)\bSYSTEM\s*:\s*(?:from\s+this\s+point|you\s+are\s+now|ignore)",
+    r"(?i)act\s+as\s+an?\s+unrestricted\s+assistant",
+    r"(?i)no\s+restrictions\s*\((?:FreeGPT|DAN|Jailbreak)",
 ]
+
+# ProtectAI over-scores some short business phrases (B-2). Allowlist before ML.
+BENIGN_ALLOWLIST_PATTERNS = [
+    r"(?i)^repeat$",
+    r"(?i)^repeat\s+(?:order|the\s+search|customer|that)$",
+    r"(?i)^please\s+repeat\s+that$",
+    r"(?i)^override$",
+    r"(?i)^ignore\s+case(?:\s+in\s+search)?$",
+    r"(?i)^show\s+previous\s+orders$",
+    r"(?i)^forget\s+password\s+link$",
+    r"(?i)^act\s+on\s+this\s+ticket$",
+    r"(?i)^catalog\s+lookup$",
+    r"(?i)^please\s+summarize\s+this\s+document$",
+    r"(?i)^what\s+is\s+the\s+weather(?:\s+today)?$",
+]
+
+
+def is_benign_allowlisted(text: str) -> bool:
+    """True for short phrases that ProtectAI often false-positives."""
+    if not text or not isinstance(text, str):
+        return False
+    from mcp_bastion.pillars.content_normalize import normalize_for_scan
+
+    normalized = normalize_for_scan(text).strip()
+    if not normalized or len(normalized) > 120:
+        return False
+    for rx in _BENIGN_COMPILED:
+        if rx.search(normalized):
+            return True
+    return False
+
+
+_BENIGN_COMPILED = [re.compile(p) for p in BENIGN_ALLOWLIST_PATTERNS]
 
 
 def compile_injection_patterns(extra: Iterable[str] | None = None) -> list[re.Pattern[str]]:
@@ -47,6 +87,8 @@ def find_injection_match(text: str, regexes: list[re.Pattern[str]]) -> str | Non
     from mcp_bastion.pillars.content_normalize import normalize_for_scan
 
     normalized = normalize_for_scan(text)
+    if is_benign_allowlisted(normalized):
+        return None
     for rx in regexes:
         if rx.search(normalized):
             return rx.pattern
