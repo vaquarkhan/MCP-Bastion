@@ -66,6 +66,7 @@ from mcp_bastion.pillars.pricing import estimate_llm_usd
 from mcp_bastion.pillars.semantic_cache import SemanticCache
 from mcp_bastion.pillars.sensitive_classifier import SensitiveContentClassifier
 from mcp_bastion.pillars.semantic_firewall import SemanticFirewall
+from mcp_bastion.pillars.toxic_flow import ToxicFlowTracker
 from mcp_bastion.pillars.state_backend import MemoryStateBackend, StateBackend
 from mcp_bastion.pillars.agent_stability import AgentStabilityMonitor
 from mcp_bastion.pillars.behavior_fingerprint import BehaviorFingerprintMonitor
@@ -495,6 +496,7 @@ class MCPBastionMiddleware(Middleware[Any]):
         tool_metadata_guard_use_content_filter: bool = True,
         enable_response_scan: bool = False,
         response_scan_extra_patterns: list[str] | None = None,
+        response_scan_use_prompt_guard: bool = False,
         enable_discovery_filter: bool = False,
         discovery_filter_minimize_schemas: bool = False,
         discovery_filter_max_description_chars: int = 160,
@@ -537,6 +539,9 @@ class MCPBastionMiddleware(Middleware[Any]):
         behavior_fingerprint: BehaviorFingerprintMonitor | None = None,
         enable_behavior_fingerprint: bool = False,
         behavior_fingerprint_on_detect: str = "warn",
+        enable_toxic_flow: bool = False,
+        toxic_flow_tracker: ToxicFlowTracker | None = None,
+        toxic_flow_on_violation: str = "block",
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -588,9 +593,23 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.tool_metadata_guard_on_poison = (tool_metadata_guard_on_poison or "remove_tool").strip().lower()
         self.tool_metadata_guard_use_content_filter = bool(tool_metadata_guard_use_content_filter)
         self.enable_response_scan = enable_response_scan
+        self.response_scan_use_prompt_guard = bool(response_scan_use_prompt_guard)
         self.response_scanner = response_scanner or ResponseInjectionScanner(
-            extra_patterns=response_scan_extra_patterns or []
+            extra_patterns=response_scan_extra_patterns or [],
+            prompt_guard=self.prompt_guard,
+            use_prompt_guard=self.response_scan_use_prompt_guard,
         )
+        if response_scanner is not None and self.response_scan_use_prompt_guard:
+            self.response_scanner.prompt_guard = self.prompt_guard
+            self.response_scanner.use_prompt_guard = True
+        self.enable_toxic_flow = bool(enable_toxic_flow)
+        self.toxic_flow = toxic_flow_tracker or ToxicFlowTracker(
+            enabled=self.enable_toxic_flow,
+            on_violation=toxic_flow_on_violation,
+        )
+        if self.enable_toxic_flow:
+            self.toxic_flow.enabled = True
+            self.toxic_flow.on_violation = toxic_flow_on_violation if toxic_flow_on_violation in ("block", "warn") else "block"
         self.enable_discovery_filter = enable_discovery_filter
         self.discovery_filter_minimize_schemas = bool(discovery_filter_minimize_schemas)
         self.discovery_filter_max_description_chars = max(0, int(discovery_filter_max_description_chars))
@@ -1396,6 +1415,12 @@ class MCPBastionMiddleware(Middleware[Any]):
             result = self._redact_result_content(result, context=context)
             pillar = "pii_vault_abstract" if self.enable_pii_vault else "pii_redaction"
             _trace_append(trace, pillar=pillar, status="ok", started=started)
+            if self.enable_toxic_flow:
+                kinds = context.metadata.pop("_bastion_taint_kinds", None) or []
+                if kinds:
+                    self.toxic_flow.mark(
+                        context.session_id, kinds=kinds, tool=surface_key or method
+                    )
         result = self._apply_output_budget_to_result(context, result, tool_name=surface_key or method)
         result = self._apply_grounding_to_result(context, result, trace=trace)
         if self.enable_response_scan:
@@ -2080,6 +2105,22 @@ class MCPBastionMiddleware(Middleware[Any]):
                     context=context, trace=trace, pillar="semantic_firewall", started=started, error=e
                 )
 
+        if self.enable_toxic_flow and params:
+            started = time.perf_counter()
+            try:
+                arguments = params.get("arguments") or params
+                if isinstance(arguments, str):
+                    try:
+                        arguments = json.loads(arguments)
+                    except json.JSONDecodeError:
+                        arguments = {"raw": arguments}
+                self.toxic_flow.check_egress(tool_name, arguments, context.session_id)
+                _trace_append(trace, pillar="toxic_flow", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="toxic_flow", started=started, error=e
+                )
+
         self._enforce_session_tool_scope(
             context=context, trace=trace, session_id=session_id, tool_name=tool_name
         )
@@ -2149,6 +2190,10 @@ class MCPBastionMiddleware(Middleware[Any]):
             result = self._redact_result_content(result, context=context)
             pillar = "pii_vault_abstract" if self.enable_pii_vault else "pii_redaction"
             _trace_append(trace, pillar=pillar, status="ok", started=started)
+            if self.enable_toxic_flow and context is not None:
+                kinds = context.metadata.pop("_bastion_taint_kinds", None) or []
+                if kinds:
+                    self.toxic_flow.mark(context.session_id, kinds=kinds, tool=tool_name)
 
         if result is not None:
             started = time.perf_counter()
@@ -2233,6 +2278,7 @@ class MCPBastionMiddleware(Middleware[Any]):
         content = _get_content_from_result(result)
         if not content:
             return result
+        taint_kinds: list[str] = []
         if self.enable_pii_vault and self.pii_vault is not None and context is not None:
             from mcp_bastion.pillars.pii_vault import count_vault_tokens
 
@@ -2247,15 +2293,32 @@ class MCPBastionMiddleware(Middleware[Any]):
             n = max(0, count_vault_tokens(after) - count_vault_tokens(before))
             if n:
                 MetricsStore.get().record_pii_vault_abstract(n)
+                taint_kinds.append("pii")
         else:
+            before_txt = " ".join(
+                str(i.get("text", "")) for i in content if isinstance(i, dict) and i.get("type") == "text"
+            )
             redacted = self.pii_redactor.redact_content_items(content)
+            after_txt = " ".join(
+                str(i.get("text", "")) for i in redacted if isinstance(i, dict) and i.get("type") == "text"
+            )
+            if before_txt != after_txt:
+                taint_kinds.append("pii")
         if self.enable_secret_redaction and self.secret_redactor is not None:
             out = []
+            changed = False
             for item in redacted:
                 if isinstance(item, dict) and item.get("type") == "text" and "text" in item:
-                    out.append({**item, "text": self.secret_redactor.redact_text(str(item["text"]))})
+                    new_t = self.secret_redactor.redact_text(str(item["text"]))
+                    if new_t != item["text"]:
+                        changed = True
+                    out.append({**item, "text": new_t})
                 else:
                     out.append(item)
             redacted = out
+            if changed:
+                taint_kinds.append("secret")
+        if context is not None and taint_kinds:
+            context.metadata["_bastion_taint_kinds"] = list(dict.fromkeys(taint_kinds))
         _set_content_in_result(result, redacted)
         return result

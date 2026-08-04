@@ -40,6 +40,13 @@ DEFAULT_INJECTION_PATTERNS = [
     r"(?i)\bSYSTEM\s*:\s*(?:from\s+this\s+point|you\s+are\s+now|ignore)",
     r"(?i)act\s+as\s+an?\s+unrestricted\s+assistant",
     r"(?i)no\s+restrictions\s*\((?:FreeGPT|DAN|Jailbreak)",
+    # Sensitive-action + external sink (exfil without control-surface verbs)
+    r"(?i)\bemail\s+all\s+(?:the\s+)?files?\s+to\b",
+    r"(?i)\b(?:send|forward|mail)\s+(?:all\s+)?(?:the\s+)?(?:files?|secrets?|credentials?|passwords?|tokens?)\s+to\b",
+    r"(?i)\b(?:upload|post|publish)\s+(?:all\s+)?(?:the\s+)?(?:files?|secrets?|data|credentials?)\s+(?:to|at)\b",
+    r"(?i)\b(?:please\s+)?delete\s+(?:the\s+)?(?:all\s+)?audit\s+logs?\b",
+    r"(?i)\bexfiltrat(?:e|ion)\b",
+    r"(?i)\b(?:send|post|upload)\b.{0,48}\b(?:secret|credential|api[_-]?key|password|token)s?\b.{0,48}https?://",
 ]
 
 # ProtectAI over-scores some short business phrases (B-2 / N-2). Allowlist before ML.
@@ -149,8 +156,13 @@ INJECTION_INTENT_MARKERS = [
     # structural markers
     r"(?i)<\s*/?\s*system\s*>",
     r"(?i)\[INST\]",
-    # exfiltration intent
-    r"(?i)\bexfiltrate\b",
+    # exfiltration / destructive sink intent (corroborates ML without jailbreak verbs)
+    r"(?i)\bexfiltrat(?:e|ion)\b",
+    r"(?i)\bemail\s+all\s+(?:the\s+)?files?\s+to\b",
+    r"(?i)\b(?:send|forward|mail)\s+(?:all\s+)?(?:the\s+)?(?:files?|secrets?|credentials?|passwords?|tokens?)\s+to\b",
+    r"(?i)\b(?:upload|post|publish)\s+(?:all\s+)?(?:the\s+)?(?:files?|secrets?|data|credentials?)\s+(?:to|at)\b",
+    r"(?i)\b(?:please\s+)?delete\s+(?:the\s+)?(?:all\s+)?audit\s+logs?\b",
+    r"(?i)\b(?:send|post|upload)\b.{0,48}\b(?:secret|credential|api[_-]?key|password|token)s?\b.{0,48}https?://",
 ]
 
 _INTENT_COMPILED = [re.compile(p) for p in INJECTION_INTENT_MARKERS]

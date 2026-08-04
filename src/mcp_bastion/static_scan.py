@@ -153,6 +153,56 @@ def _find_homoglyph_pairs(tools: list[dict[str, Any]]) -> list[ScanFinding]:
     return findings
 
 
+def _tool_server_label(entry: dict[str, Any]) -> str | None:
+    for key in ("server", "serverName", "server_name", "source"):
+        val = entry.get(key)
+        if val is not None and str(val).strip():
+            return str(val).strip()
+    meta = entry.get("_meta")
+    if isinstance(meta, dict):
+        for key in ("server", "serverName", "server_name"):
+            val = meta.get(key)
+            if val is not None and str(val).strip():
+                return str(val).strip()
+    return None
+
+
+def _find_shadow_tools(tools: list[dict[str, Any]]) -> list[ScanFinding]:
+    """Flag duplicate / cross-server shadow tools (same name from 2+ sources)."""
+    by_key: dict[str, list[tuple[str, str | None]]] = {}
+    for entry in tools:
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name") or "").strip()
+        if not name:
+            continue
+        key = name.casefold()
+        by_key.setdefault(key, []).append((name, _tool_server_label(entry)))
+
+    findings: list[ScanFinding] = []
+    for _key, items in by_key.items():
+        if len(items) < 2:
+            continue
+        display = items[0][0]
+        servers = sorted({s for _, s in items if s})
+        if len(servers) >= 2:
+            detail = f"name={display!r} servers={servers!r}"
+            msg = "Shadow tool: same name exposed by multiple servers"
+        else:
+            detail = f"name={display!r} occurrences={len(items)}"
+            msg = "Duplicate tool name in catalog (possible shadow / merge conflict)"
+        findings.append(
+            ScanFinding(
+                tool=display,
+                check="shadow_tool",
+                severity="high",
+                message=msg,
+                detail=detail,
+            )
+        )
+    return findings
+
+
 def _scan_tool_entry(
     entry: dict[str, Any],
     *,
@@ -230,6 +280,135 @@ _STRING_CONSTRAINTS = ("maxLength", "enum", "pattern", "const", "format")
 _NUMBER_CONSTRAINTS = ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "enum", "const")
 
 
+def _scan_props_recursive(
+    props: dict[str, Any],
+    *,
+    tool_name: str,
+    path_prefix: str,
+    risky: tuple[str, ...],
+    required: set[str],
+    findings: list[ScanFinding],
+    depth: int = 0,
+) -> None:
+    """Walk nested object/array schemas for weak/unbounded shapes."""
+    if depth > 8:
+        return
+    for pname, spec in props.items():
+        if not isinstance(spec, dict):
+            continue
+        path = f"{path_prefix}{pname}"
+        pl = str(pname).lower()
+        is_risky = pl in risky
+        ptype = spec.get("type")
+
+        if ptype == "string" and not any(k in spec for k in _STRING_CONSTRAINTS):
+            findings.append(
+                ScanFinding(
+                    tool=tool_name,
+                    check="unbounded_string",
+                    severity="high" if is_risky else "medium",
+                    message=(
+                        f"Unbounded string parameter '{path}' "
+                        "(no maxLength/enum/pattern)"
+                    ),
+                )
+            )
+
+        if ptype in ("number", "integer") and pl in _SIZE_NAMES:
+            if not any(k in spec for k in _NUMBER_CONSTRAINTS):
+                findings.append(
+                    ScanFinding(
+                        tool=tool_name,
+                        check="unconstrained_numeric",
+                        severity="medium",
+                        message=(
+                            f"Unconstrained numeric parameter '{path}' "
+                            "(no minimum/maximum/enum)"
+                        ),
+                    )
+                )
+
+        if isinstance(ptype, str) and ptype == "object":
+            nested_props = spec.get("properties")
+            nested_add = spec.get("additionalProperties", True)
+            if (not isinstance(nested_props, dict) or not nested_props) and nested_add is not False:
+                findings.append(
+                    ScanFinding(
+                        tool=tool_name,
+                        check="weak_schema",
+                        severity="medium",
+                        message=f"Object parameter '{path}' is free-form (no properties)",
+                    )
+                )
+            elif isinstance(nested_props, dict) and nested_props:
+                nested_req_raw = spec.get("required") or []
+                nested_req = (
+                    {str(x) for x in nested_req_raw} if isinstance(nested_req_raw, list) else set()
+                )
+                _scan_props_recursive(
+                    nested_props,
+                    tool_name=tool_name,
+                    path_prefix=f"{path}.",
+                    risky=risky,
+                    required=nested_req,
+                    findings=findings,
+                    depth=depth + 1,
+                )
+
+        if isinstance(ptype, str) and ptype == "array":
+            items = spec.get("items")
+            if isinstance(items, dict):
+                item_type = items.get("type")
+                if item_type == "object":
+                    item_props = items.get("properties")
+                    item_add = items.get("additionalProperties", True)
+                    if (not isinstance(item_props, dict) or not item_props) and item_add is not False:
+                        findings.append(
+                            ScanFinding(
+                                tool=tool_name,
+                                check="weak_schema",
+                                severity="medium",
+                                message=f"Array items at '{path}' are free-form objects",
+                            )
+                        )
+                    elif isinstance(item_props, dict) and item_props:
+                        item_req_raw = items.get("required") or []
+                        item_req = (
+                            {str(x) for x in item_req_raw}
+                            if isinstance(item_req_raw, list)
+                            else set()
+                        )
+                        _scan_props_recursive(
+                            item_props,
+                            tool_name=tool_name,
+                            path_prefix=f"{path}[].",
+                            risky=risky,
+                            required=item_req,
+                            findings=findings,
+                            depth=depth + 1,
+                        )
+                elif item_type == "string" and not any(k in items for k in _STRING_CONSTRAINTS):
+                    findings.append(
+                        ScanFinding(
+                            tool=tool_name,
+                            check="unbounded_string",
+                            severity="medium",
+                            message=f"Unbounded string array items at '{path}'",
+                        )
+                    )
+
+        # Only flag optional risky args at the top-level path segment match
+        if depth == 0 and is_risky and pname not in required and str(pname) not in required:
+            findings.append(
+                ScanFinding(
+                    tool=tool_name,
+                    check="risky_arg_optional",
+                    severity="low",
+                    message=f"Security-relevant parameter '{pname}' is not in required[]",
+                )
+            )
+
+
 def _scan_input_schema(
     entry: dict[str, Any],
     name: str,
@@ -280,62 +459,15 @@ def _scan_input_schema(
             )
         )
 
-    for pname, spec in props.items():
-        if not isinstance(spec, dict):
-            continue
-        pl = str(pname).lower()
-        is_risky = pl in risky
-        ptype = spec.get("type")
-
-        if ptype == "string" and not any(k in spec for k in _STRING_CONSTRAINTS):
-            findings.append(
-                ScanFinding(
-                    tool=name,
-                    check="unbounded_string",
-                    severity="high" if is_risky else "medium",
-                    message=(
-                        f"Unbounded string parameter '{pname}' "
-                        "(no maxLength/enum/pattern)"
-                    ),
-                )
-            )
-
-        if ptype in ("number", "integer") and pl in _SIZE_NAMES:
-            if not any(k in spec for k in _NUMBER_CONSTRAINTS):
-                findings.append(
-                    ScanFinding(
-                        tool=name,
-                        check="unconstrained_numeric",
-                        severity="medium",
-                        message=(
-                            f"Unconstrained numeric parameter '{pname}' "
-                            "(no minimum/maximum/enum)"
-                        ),
-                    )
-                )
-
-        if isinstance(ptype, str) and ptype == "object":
-            nested_props = spec.get("properties")
-            nested_add = spec.get("additionalProperties", True)
-            if (not isinstance(nested_props, dict) or not nested_props) and nested_add is not False:
-                findings.append(
-                    ScanFinding(
-                        tool=name,
-                        check="weak_schema",
-                        severity="medium",
-                        message=f"Object parameter '{pname}' is free-form (no properties)",
-                    )
-                )
-
-        if is_risky and pname not in required and str(pname) not in required:
-            findings.append(
-                ScanFinding(
-                    tool=name,
-                    check="risky_arg_optional",
-                    severity="low",
-                    message=f"Security-relevant parameter '{pname}' is not in required[]",
-                )
-            )
+    if props:
+        _scan_props_recursive(
+            props,
+            tool_name=name,
+            path_prefix="",
+            risky=risky,
+            required=required,
+            findings=findings,
+        )
 
     return findings
 
@@ -401,6 +533,7 @@ def scan_tools(
         )
 
     findings.extend(_find_homoglyph_pairs(tools))
+    findings.extend(_find_shadow_tools(tools))
     findings.sort(key=lambda f: (-_SEVERITY_RANK[f.severity], f.tool, f.check))
     return ScanReport(tool_count=len(tools), fingerprint=fp, findings=findings, baseline_match=baseline_match)
 

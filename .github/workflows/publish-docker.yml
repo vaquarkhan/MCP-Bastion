@@ -24,6 +24,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Check out
@@ -98,6 +99,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and push proxy
+        id: push-proxy
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -106,9 +108,25 @@ jobs:
           tags: ${{ steps.tlist.outputs.proxy }}
 
       - name: Build and push dashboard
+        id: push-dash
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile.dashboard
           push: true
           tags: ${{ steps.tlist.outputs.dash }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign images with Sigstore (keyless OIDC)
+        env:
+          O: ${{ steps.o.outputs.owner }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ steps.push-proxy.outputs.digest }}" ]; then
+            cosign sign --yes "ghcr.io/${O}/mcp-bastion-proxy@${{ steps.push-proxy.outputs.digest }}"
+          fi
+          if [ -n "${{ steps.push-dash.outputs.digest }}" ]; then
+            cosign sign --yes "ghcr.io/${O}/mcp-bastion-dashboard@${{ steps.push-dash.outputs.digest }}"
+          fi

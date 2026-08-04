@@ -41,6 +41,12 @@ rate_limit:
 response_scan:
   enabled: true     # block jailbreak patterns in outbound tool/resource text
   extra_patterns: []
+  # use_prompt_guard: false  # optional: reuse inbound PromptGuard ML on tool outputs
+
+# Toxic-flow taint: PII/secret on a prior result → later egress tool with URL/email args.
+toxic_flow:
+  enabled: false
+  on_violation: block   # block | warn
 
 discovery_filter:
   enabled: false    # strip non-allowlisted tools from tools/list (requires tool_allowlist)
@@ -145,6 +151,15 @@ identity_adapter:
   jwt_metadata_key: bastion_jwt
   principal_claim: sub
   role_claim: scope
+  # Optional crypto verify (still BYOI — no OAuth login server):
+  # verify: true
+  # issuer: https://idp.example
+  # audience: mcp-bastion
+  # jwks_url: https://idp.example/.well-known/jwks.json
+  # hmac_secret_env: BASTION_JWT_HMAC_SECRET   # HS256 without PyJWT
+  # scope_map:
+  #   tools:read: analyst
+  #   tools:admin: admin
 
 # BYO vault for secret refs (default: env). See pillars/secrets_resolver.py.
 secrets:

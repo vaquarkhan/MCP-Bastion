@@ -1,0 +1,4 @@
+"""MCP-Bastion security integration for Microsoft AutoGen."""
+__version__ = "4.0.0"
+from mcp_bastion_autogen.middleware import SecureAutoGen
+__all__ = ["SecureAutoGen"]

@@ -210,6 +210,16 @@ class ExpensiveChainError(MCPBastionError):
         super().__init__(message, code=-32024)
 
 
+class ToxicFlowError(MCPBastionError):
+    """Raised when sensitive session taint flows into an external-write tool call."""
+
+    def __init__(
+        self,
+        message: str = "Request blocked: toxic data-flow (sensitive read → external write)",
+    ) -> None:
+        super().__init__(message, code=-32042)
+
+
 class CanaryExfiltrationError(MCPBastionError):
     """Raised when runtime canary token appears in outbound tool arguments."""
 

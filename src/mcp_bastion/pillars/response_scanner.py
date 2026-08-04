@@ -7,7 +7,7 @@ in tool results before they reach the agent (MCP03 / MCP06 / MCP10).
 
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Any, Iterable
 
 from mcp_bastion.errors import PromptInjectionError
 from mcp_bastion.pillars.injection_heuristics import (
@@ -33,17 +33,21 @@ DEFAULT_RESPONSE_INJECTION_PATTERNS = DEFAULT_INJECTION_PATTERNS + RESPONSE_EXTR
 
 
 class ResponseInjectionScanner:
-    """Regex-based scan of outbound text content for injection markers."""
+    """Regex-based scan of outbound text; optional PromptGuard ML corroboration."""
 
     def __init__(
         self,
         *,
         extra_patterns: Iterable[str] | None = None,
+        prompt_guard: Any | None = None,
+        use_prompt_guard: bool = False,
     ) -> None:
         merged = list(RESPONSE_EXTRA_PATTERNS)
         if extra_patterns:
             merged.extend(str(p) for p in extra_patterns if str(p).strip())
         self._regexes = compile_injection_patterns(merged)
+        self.prompt_guard = prompt_guard
+        self.use_prompt_guard = bool(use_prompt_guard) and prompt_guard is not None
 
     def find_match(self, text: str) -> str | None:
         """Return matched pattern source if text is suspicious."""
@@ -56,6 +60,17 @@ class ResponseInjectionScanner:
             raise PromptInjectionError(
                 "Response blocked: suspected prompt injection in tool/resource output"
             )
+        if self.use_prompt_guard and self.prompt_guard is not None and text and text.strip():
+            try:
+                if self.prompt_guard.is_malicious(text):
+                    raise PromptInjectionError(
+                        "Response blocked: PromptGuard flagged tool/resource output as injection"
+                    )
+            except PromptInjectionError:
+                raise
+            except Exception:
+                # Fail soft on outbound ML errors — regex already ran.
+                pass
 
     def check_content_items(self, content: list[dict]) -> None:
         """Scan MCP text content items."""

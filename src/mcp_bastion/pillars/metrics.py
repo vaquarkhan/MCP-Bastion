@@ -211,6 +211,8 @@ class MetricsStore:
             or "dangerous tool chain" in lower
         ):
             return "semantic_firewall"
+        if "toxic" in lower or "taint" in lower or "data-flow" in lower:
+            return "toxic_flow"
         if "injection" in lower or "prompt" in lower:
             return "injection"
         if "rate" in lower or "iteration" in lower:

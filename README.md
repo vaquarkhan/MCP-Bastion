@@ -42,7 +42,7 @@
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**Current release: [4.0.0](https://pypi.org/project/mcp-bastion-python/4.0.0/)** · Docker `v4.0.0` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
+**Current release: [4.0.0](https://pypi.org/project/mcp-bastion-python/4.0.0/)** · Docker `v4.0.0` · **26** PyPI packages · [CHANGELOG](CHANGELOG.md)
 
 | Go to | Link |
 |-------|------|
@@ -941,6 +941,14 @@ Drop-in security for your favorite LLM framework. Each package auto-installs `mc
 | [mcp-bastion-deepseek](https://pypi.org/project/mcp-bastion-deepseek/) | DeepSeek AI | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-deepseek)](https://pypi.org/project/mcp-bastion-deepseek/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-deepseek?label=downloads)](https://pepy.tech/projects/mcp-bastion-deepseek) · [pypistats](https://pypistats.org/packages/mcp-bastion-deepseek) |
 | [mcp-bastion-together](https://pypi.org/project/mcp-bastion-together/) | Together AI | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-together)](https://pypi.org/project/mcp-bastion-together/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-together?label=downloads)](https://pepy.tech/projects/mcp-bastion-together) · [pypistats](https://pypistats.org/packages/mcp-bastion-together) |
 | [mcp-bastion-fireworks](https://pypi.org/project/mcp-bastion-fireworks/) | Fireworks AI | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-fireworks)](https://pypi.org/project/mcp-bastion-fireworks/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-fireworks?label=downloads)](https://pepy.tech/projects/mcp-bastion-fireworks) · [pypistats](https://pypistats.org/packages/mcp-bastion-fireworks) |
+| [mcp-bastion-litellm](https://pypi.org/project/mcp-bastion-litellm/) | LiteLLM (100+ providers) | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-litellm)](https://pypi.org/project/mcp-bastion-litellm/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-litellm?label=downloads)](https://pepy.tech/projects/mcp-bastion-litellm) · [pypistats](https://pypistats.org/packages/mcp-bastion-litellm) |
+| [mcp-bastion-ollama](https://pypi.org/project/mcp-bastion-ollama/) | Ollama local models | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-ollama)](https://pypi.org/project/mcp-bastion-ollama/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-ollama?label=downloads)](https://pepy.tech/projects/mcp-bastion-ollama) · [pypistats](https://pypistats.org/packages/mcp-bastion-ollama) |
+| [mcp-bastion-openrouter](https://pypi.org/project/mcp-bastion-openrouter/) | OpenRouter gateway | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-openrouter)](https://pypi.org/project/mcp-bastion-openrouter/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-openrouter?label=downloads)](https://pepy.tech/projects/mcp-bastion-openrouter) · [pypistats](https://pypistats.org/packages/mcp-bastion-openrouter) |
+| [mcp-bastion-xai](https://pypi.org/project/mcp-bastion-xai/) | xAI Grok | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-xai)](https://pypi.org/project/mcp-bastion-xai/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-xai?label=downloads)](https://pepy.tech/projects/mcp-bastion-xai) · [pypistats](https://pypistats.org/packages/mcp-bastion-xai) |
+| [mcp-bastion-autogen](https://pypi.org/project/mcp-bastion-autogen/) | Microsoft AutoGen | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-autogen)](https://pypi.org/project/mcp-bastion-autogen/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-autogen?label=downloads)](https://pepy.tech/projects/mcp-bastion-autogen) · [pypistats](https://pypistats.org/packages/mcp-bastion-autogen) |
+| [mcp-bastion-langgraph](https://pypi.org/project/mcp-bastion-langgraph/) | LangGraph | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-langgraph)](https://pypi.org/project/mcp-bastion-langgraph/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-langgraph?label=downloads)](https://pepy.tech/projects/mcp-bastion-langgraph) · [pypistats](https://pypistats.org/packages/mcp-bastion-langgraph) |
+| [mcp-bastion-pydantic-ai](https://pypi.org/project/mcp-bastion-pydantic-ai/) | Pydantic AI | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-pydantic-ai)](https://pypi.org/project/mcp-bastion-pydantic-ai/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-pydantic-ai?label=downloads)](https://pepy.tech/projects/mcp-bastion-pydantic-ai) · [pypistats](https://pypistats.org/packages/mcp-bastion-pydantic-ai) |
+| [mcp-bastion-openai-agents](https://pypi.org/project/mcp-bastion-openai-agents/) | OpenAI Agents SDK | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-openai-agents)](https://pypi.org/project/mcp-bastion-openai-agents/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-openai-agents?label=downloads)](https://pepy.tech/projects/mcp-bastion-openai-agents) · [pypistats](https://pypistats.org/packages/mcp-bastion-openai-agents) |
 | [mcp-bastion-fastmcp](https://pypi.org/project/mcp-bastion-fastmcp/) | FastMCP servers | [![PyPI](https://img.shields.io/pypi/v/mcp-bastion-fastmcp)](https://pypi.org/project/mcp-bastion-fastmcp/) | [![PePy](https://img.shields.io/pepy/dt/mcp-bastion-fastmcp?label=downloads)](https://pepy.tech/projects/mcp-bastion-fastmcp) · [pypistats](https://pypistats.org/packages/mcp-bastion-fastmcp) |
 
 ```bash
@@ -960,9 +968,18 @@ pip install mcp-bastion-huggingface    # Hugging Face Inference
 pip install mcp-bastion-deepseek       # DeepSeek AI
 pip install mcp-bastion-together       # Together AI
 pip install mcp-bastion-fireworks      # Fireworks AI
+pip install mcp-bastion-litellm        # LiteLLM (100+ providers)
+pip install mcp-bastion-ollama         # Ollama local models
+pip install mcp-bastion-openrouter     # OpenRouter gateway
+pip install mcp-bastion-xai            # xAI Grok
+pip install mcp-bastion-autogen        # Microsoft AutoGen
+pip install mcp-bastion-langgraph      # LangGraph
+pip install mcp-bastion-pydantic-ai    # Pydantic AI
+pip install mcp-bastion-openai-agents  # OpenAI Agents SDK
 pip install mcp-bastion-fastmcp        # FastMCP servers
 ```
 
+Publish one-by-one: see **[integrations/PUBLISH.md](integrations/PUBLISH.md)**.
 ## Publish (PyPI / npm)
 
 - **PyPI:** `python -m build && twine upload dist/*` (or use GitHub Actions on tag).
