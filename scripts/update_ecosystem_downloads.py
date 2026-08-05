@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Sum PyPI download counts for all Bastion packages into one ecosystem total.
 
-Source: pypistats.org overall API (without_mirrors). New packages may 404 until
-indexed; those are recorded as 0. Writes:
+Primary source: pepy.tech API v2 ``total_downloads`` (all-time cumulative).
+Fallback: pypistats.org overall (rolling window, ~180 days) when PePy has no row yet.
+New packages may 404 on both until indexed; those are recorded as pending.
 
+Writes:
   docs/site/assets/ecosystem-downloads.json
-  docs/site/assets/ecosystem-downloads-badge.json  (Shields.io endpoint format)
+  docs/site/assets/ecosystem-downloads-badge.json
+  docs/site/assets/badges/{package}-downloads.json
 """
 
 from __future__ import annotations
@@ -59,8 +62,8 @@ PACKAGES: list[tuple[str, str]] = [
 UA = {"User-Agent": "MCP-Bastion-ecosystem-downloads/1.0 (+https://github.com/vaquarkhan/MCP-Bastion)"}
 
 
-def _fetch_overall(name: str) -> tuple[int, str]:
-    """Return (downloads, stats_status) where status is indexed or pending."""
+def _fetch_pypistats_overall(name: str) -> int | None:
+    """Rolling-window total from pypistats (~180 days). None if not indexed."""
     url = f"https://pypistats.org/api/packages/{name}/overall"
     req = urllib.request.Request(url, headers=UA)
     try:
@@ -68,19 +71,48 @@ def _fetch_overall(name: str) -> tuple[int, str]:
             payload = json.load(resp)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
-            return 0, "pending"
+            return None
         raise
     rows = payload.get("data") or []
     preferred = [r for r in rows if r.get("category") == "without_mirrors"]
     if not preferred:
         preferred = [r for r in rows if r.get("category") == "with_mirrors"]
-    return int(sum(int(r.get("downloads") or 0) for r in preferred)), "indexed"
+    return int(sum(int(r.get("downloads") or 0) for r in preferred))
+
+
+def _fetch_pepy_total(name: str) -> int | None:
+    """All-time cumulative downloads from pepy.tech. None if not indexed."""
+    url = f"https://pepy.tech/api/v2/projects/{name}"
+    req = urllib.request.Request(url, headers=UA)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            payload = json.load(resp)
+    except urllib.error.HTTPError as exc:
+        if exc.code in {404, 401}:
+            return None
+        raise
+    total = payload.get("total_downloads")
+    return int(total) if total is not None else None
+
+
+def _fetch_downloads(name: str) -> tuple[int, str, str]:
+    """Return (downloads, stats_status, stats_source)."""
+    pepy_total = _fetch_pepy_total(name)
+    if pepy_total is not None:
+        return pepy_total, "indexed", "pepy.tech all-time"
+
+    pypistats_total = _fetch_pypistats_overall(name)
+    if pypistats_total is not None:
+        return pypistats_total, "indexed", "pypistats.org (~180d window)"
+
+    return 0, "pending", "none"
 
 
 def _write_package_badge(name: str, downloads: int, stats_status: str) -> str:
     """Write Shields endpoint JSON for one package; return its raw GitHub URL."""
     BADGES_DIR.mkdir(parents=True, exist_ok=True)
     path = BADGES_DIR / f"{name}-downloads.json"
+    label = "total downloads" if stats_status == "indexed" else "downloads"
     if stats_status == "indexed" and downloads > 0:
         message = _format_count(downloads)
         color = "0B5FFF"
@@ -94,7 +126,7 @@ def _write_package_badge(name: str, downloads: int, stats_status: str) -> str:
         json.dumps(
             {
                 "schemaVersion": 1,
-                "label": "downloads",
+                "label": label,
                 "message": message,
                 "color": color,
                 "cacheSeconds": 3600,
@@ -128,7 +160,7 @@ def main() -> None:
     for i, (name, protects) in enumerate(PACKAGES):
         if i:
             time.sleep(0.35)
-        downloads, stats_status = _fetch_overall(name)
+        downloads, stats_status, stats_source = _fetch_downloads(name)
         total += downloads
         if stats_status == "pending":
             pending_count += 1
@@ -139,6 +171,7 @@ def main() -> None:
                 "protects": protects,
                 "downloads": downloads,
                 "stats_status": stats_status,
+                "stats_source": stats_source,
                 "badge_raw": badge_raw,
                 "badge_shields": _shields_endpoint(badge_raw),
                 "pypi": f"https://pypi.org/project/{name}/",
@@ -146,16 +179,17 @@ def main() -> None:
                 "pypistats": f"https://pypistats.org/packages/{name}",
             }
         )
-        print(f"{name}: {downloads} ({stats_status})")
+        print(f"{name}: {downloads} ({stats_status}, {stats_source})")
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     stats = {
         "updated_at": now,
-        "source": "pypistats.org overall (without_mirrors; with_mirrors fallback)",
+        "source": "pepy.tech total_downloads (all-time); pypistats.org fallback (~180d)",
         "note": (
-            "Sum of indexed packages only. New releases show stats_status=pending until "
-            "pypistats.org indexes them (usually 24–48h). Installing an integration also "
-            "pulls mcp-bastion-python, so core + integration counts can overlap."
+            "All-time cumulative per package when PePy has indexed the project. "
+            "New releases show stats_status=pending until PePy/pypistats index them "
+            "(usually 24–48h). Installing an integration also pulls mcp-bastion-python, "
+            "so core + integration totals can overlap."
         ),
         "package_count": len(PACKAGES),
         "indexed_count": len(PACKAGES) - pending_count,
@@ -170,7 +204,7 @@ def main() -> None:
         json.dumps(
             {
                 "schemaVersion": 1,
-                "label": "ecosystem downloads",
+                "label": "ecosystem total",
                 "message": _format_count(total),
                 "color": "0B5FFF",
                 "namedLogo": "python",

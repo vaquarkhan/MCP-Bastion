@@ -922,7 +922,7 @@ npm install @mcp-bastion/core
 
 ### Framework Integrations
 
-Drop-in security for your favorite LLM framework. Each package auto-installs `mcp-bastion-python`. **Version** and **download** columns use live badges from [ecosystem-downloads.json](docs/site/assets/ecosystem-downloads.json) (pypistats when indexed; **on PyPI** until new packages are indexed). **Trends:** [pypistats.org](https://pypistats.org/).
+Drop-in security for your favorite LLM framework. Each package auto-installs `mcp-bastion-python`. **Version** and **download** columns use live badges from [ecosystem-downloads.json](docs/site/assets/ecosystem-downloads.json) (**all-time total** via PePy when indexed; **on PyPI** until new packages are indexed). **Trends:** [pypistats.org](https://pypistats.org/).
 
 **One-place totals:** [Integrations download dashboard](https://vaquarkhan.github.io/MCP-Bastion/integrations.html) · [ecosystem-downloads.json](docs/site/assets/ecosystem-downloads.json) (sum of all 26 packages, refreshed daily).
 
