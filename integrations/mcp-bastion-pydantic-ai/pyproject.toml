@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-bastion-pydantic-ai"
+version = "4.0.0"
+description = "MCP-Bastion security helpers for Pydantic AI agent prompts and tool args."
+readme = "README.md"
+license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
+requires-python = ">=3.10"
+authors = [{ name = "Vaquar Khan" }]
+keywords = ["mcp", "bastion", "pydantic-ai", "pydantic", "security", "agents"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+dependencies = [
+    "mcp-bastion-python>=4.0.0,<5",
+]
+
+[project.urls]
+Homepage = "https://github.com/vaquarkhan/MCP-Bastion"
+Repository = "https://github.com/vaquarkhan/MCP-Bastion"
+Documentation = "https://github.com/vaquarkhan/MCP-Bastion/tree/main/integrations/mcp-bastion-pydantic-ai"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_bastion_pydantic_ai"]

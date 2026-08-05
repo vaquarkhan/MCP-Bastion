@@ -28,6 +28,7 @@ TAXONOMY: dict[str, dict[str, list[str]]] = {
     # static_scan
     "injection_heuristic": {"llm": ["LLM01"], "mcp": ["MCP05"], "asi": ["ASI01"]},
     "homoglyph": {"mcp": ["MCP03"], "asi": ["ASI04"]},
+    "shadow_tool": {"mcp": ["MCP03"], "asi": ["ASI04"]},
     "unbounded_string": {"mcp": ["MCP05"], "asi": ["ASI02", "ASI05"]},
     "weak_schema": {"mcp": ["MCP05"], "asi": ["ASI02"]},
     "missing_input_schema": {"mcp": ["MCP05"], "asi": ["ASI02"]},

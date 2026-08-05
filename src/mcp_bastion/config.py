@@ -103,6 +103,9 @@ class BastionConfig:
     rate_limit_max_per_tool: int = 0
     response_scan: bool = False
     response_scan_extra_patterns: list[str] = field(default_factory=list)
+    response_scan_use_prompt_guard: bool = False
+    toxic_flow: bool = False
+    toxic_flow_on_violation: str = "block"
     discovery_filter: bool = False
     discovery_filter_minimize_schemas: bool = False
     discovery_filter_max_description_chars: int = 160
@@ -425,6 +428,14 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         rate_limit_max_per_tool=int(data.get("rate_limit", {}).get("max_per_tool", 0)),
         response_scan=bool(data.get("response_scan", {}).get("enabled", False)),
         response_scan_extra_patterns=list(data.get("response_scan", {}).get("extra_patterns", [])),
+        response_scan_use_prompt_guard=bool(
+            data.get("response_scan", {}).get("use_prompt_guard", False)
+        ),
+        toxic_flow=bool(data.get("toxic_flow", {}).get("enabled", False)),
+        toxic_flow_on_violation=str(
+            data.get("toxic_flow", {}).get("on_violation", "block")
+        ).strip().lower()
+        or "block",
         discovery_filter=bool(data.get("discovery_filter", {}).get("enabled", False)),
         discovery_filter_minimize_schemas=bool(
             data.get("discovery_filter", {}).get("minimize_schemas", False)
@@ -1053,6 +1064,9 @@ def _build_chain(config: BastionConfig) -> Any:
         tool_metadata_guard_use_content_filter=config.tool_metadata_guard_use_content_filter,
         enable_response_scan=config.response_scan,
         response_scan_extra_patterns=config.response_scan_extra_patterns,
+        response_scan_use_prompt_guard=config.response_scan_use_prompt_guard,
+        enable_toxic_flow=config.toxic_flow,
+        toxic_flow_on_violation=config.toxic_flow_on_violation,
         enable_discovery_filter=config.discovery_filter,
         discovery_filter_minimize_schemas=config.discovery_filter_minimize_schemas,
         discovery_filter_max_description_chars=config.discovery_filter_max_description_chars,

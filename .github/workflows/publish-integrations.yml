@@ -30,6 +30,14 @@ on:
           - mcp-bastion-together
           - mcp-bastion-fireworks
           - mcp-bastion-fastmcp
+          - mcp-bastion-litellm
+          - mcp-bastion-ollama
+          - mcp-bastion-openrouter
+          - mcp-bastion-xai
+          - mcp-bastion-autogen
+          - mcp-bastion-langgraph
+          - mcp-bastion-pydantic-ai
+          - mcp-bastion-openai-agents
 
 jobs:
   publish-integrations:
@@ -60,6 +68,14 @@ jobs:
           - mcp-bastion-together
           - mcp-bastion-fireworks
           - mcp-bastion-fastmcp
+          - mcp-bastion-litellm
+          - mcp-bastion-ollama
+          - mcp-bastion-openrouter
+          - mcp-bastion-xai
+          - mcp-bastion-autogen
+          - mcp-bastion-langgraph
+          - mcp-bastion-pydantic-ai
+          - mcp-bastion-openai-agents
 
     steps:
       - name: Check out repository

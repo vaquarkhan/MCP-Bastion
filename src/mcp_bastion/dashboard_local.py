@@ -113,6 +113,12 @@ ATTACK_KIND_META: dict[str, dict[str, Any]] = {
         "llm": ["LLM05"],
         "mcp": ["MCP02", "MCP05"],
     },
+    "toxic_flow": {
+        "label": "Toxic data-flow / taint",
+        "asi": ["ASI01", "ASI05"],
+        "llm": ["LLM02", "LLM06"],
+        "mcp": ["MCP03", "MCP05"],
+    },
     "schema_validation": {
         "label": "Schema / tool surface",
         "asi": ["ASI02"],
