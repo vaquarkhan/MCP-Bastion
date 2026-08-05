@@ -19,8 +19,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "docs" / "site" / "assets"
+BADGES_DIR = OUT_DIR / "badges"
 STATS_PATH = OUT_DIR / "ecosystem-downloads.json"
 BADGE_PATH = OUT_DIR / "ecosystem-downloads-badge.json"
+BADGE_RAW_BASE = (
+    "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges"
+)
 
 # Keep in sync with README Framework Integrations + docs/site/integrations.html
 PACKAGES: list[tuple[str, str]] = [
@@ -55,7 +59,8 @@ PACKAGES: list[tuple[str, str]] = [
 UA = {"User-Agent": "MCP-Bastion-ecosystem-downloads/1.0 (+https://github.com/vaquarkhan/MCP-Bastion)"}
 
 
-def _fetch_overall(name: str) -> int:
+def _fetch_overall(name: str) -> tuple[int, str]:
+    """Return (downloads, stats_status) where status is indexed or pending."""
     url = f"https://pypistats.org/api/packages/{name}/overall"
     req = urllib.request.Request(url, headers=UA)
     try:
@@ -63,13 +68,49 @@ def _fetch_overall(name: str) -> int:
             payload = json.load(resp)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
-            return 0
+            return 0, "pending"
         raise
     rows = payload.get("data") or []
     preferred = [r for r in rows if r.get("category") == "without_mirrors"]
     if not preferred:
         preferred = [r for r in rows if r.get("category") == "with_mirrors"]
-    return int(sum(int(r.get("downloads") or 0) for r in preferred))
+    return int(sum(int(r.get("downloads") or 0) for r in preferred)), "indexed"
+
+
+def _write_package_badge(name: str, downloads: int, stats_status: str) -> str:
+    """Write Shields endpoint JSON for one package; return its raw GitHub URL."""
+    BADGES_DIR.mkdir(parents=True, exist_ok=True)
+    path = BADGES_DIR / f"{name}-downloads.json"
+    if stats_status == "indexed" and downloads > 0:
+        message = _format_count(downloads)
+        color = "0B5FFF"
+    elif stats_status == "indexed":
+        message = "0"
+        color = "lightgrey"
+    else:
+        message = "on PyPI"
+        color = "lightgrey"
+    path.write_text(
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "label": "downloads",
+                "message": message,
+                "color": color,
+                "cacheSeconds": 3600,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return f"{BADGE_RAW_BASE}/{name}-downloads.json"
+
+
+def _shields_endpoint(raw_badge_url: str) -> str:
+    from urllib.parse import quote
+
+    return f"https://img.shields.io/endpoint?url={quote(raw_badge_url, safe='')}"
 
 
 def _format_count(n: int) -> str:
@@ -83,32 +124,42 @@ def _format_count(n: int) -> str:
 def main() -> None:
     per_package: list[dict] = []
     total = 0
+    pending_count = 0
     for i, (name, protects) in enumerate(PACKAGES):
         if i:
             time.sleep(0.35)
-        downloads = _fetch_overall(name)
+        downloads, stats_status = _fetch_overall(name)
         total += downloads
+        if stats_status == "pending":
+            pending_count += 1
+        badge_raw = _write_package_badge(name, downloads, stats_status)
         per_package.append(
             {
                 "package": name,
                 "protects": protects,
                 "downloads": downloads,
+                "stats_status": stats_status,
+                "badge_raw": badge_raw,
+                "badge_shields": _shields_endpoint(badge_raw),
                 "pypi": f"https://pypi.org/project/{name}/",
                 "pepy": f"https://pepy.tech/projects/{name}",
                 "pypistats": f"https://pypistats.org/packages/{name}",
             }
         )
-        print(f"{name}: {downloads}")
+        print(f"{name}: {downloads} ({stats_status})")
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     stats = {
         "updated_at": now,
         "source": "pypistats.org overall (without_mirrors; with_mirrors fallback)",
         "note": (
-            "Sum of per-package download rows. Installing an integration also "
+            "Sum of indexed packages only. New releases show stats_status=pending until "
+            "pypistats.org indexes them (usually 24–48h). Installing an integration also "
             "pulls mcp-bastion-python, so core + integration counts can overlap."
         ),
         "package_count": len(PACKAGES),
+        "indexed_count": len(PACKAGES) - pending_count,
+        "pending_count": pending_count,
         "total_downloads": total,
         "packages": per_package,
     }

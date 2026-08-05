@@ -1,14 +1,19 @@
 {
-  "updated_at": "2026-08-05T07:07:30Z",
+  "updated_at": "2026-08-05T07:36:45Z",
   "source": "pypistats.org overall (without_mirrors; with_mirrors fallback)",
-  "note": "Sum of per-package download rows. Installing an integration also pulls mcp-bastion-python, so core + integration counts can overlap.",
+  "note": "Sum of indexed packages only. New releases show stats_status=pending until pypistats.org indexes them (usually 24\u201348h). Installing an integration also pulls mcp-bastion-python, so core + integration counts can overlap.",
   "package_count": 26,
+  "indexed_count": 18,
+  "pending_count": 8,
   "total_downloads": 43035,
   "packages": [
     {
       "package": "mcp-bastion-python",
       "protects": "Core middleware",
       "downloads": 9981,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-python-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-python-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-python/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-python",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-python"
@@ -17,6 +22,9 @@
       "package": "mcp-bastion-langchain",
       "protects": "LangChain",
       "downloads": 1900,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-langchain-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-langchain-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-langchain/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-langchain",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-langchain"
@@ -25,6 +33,9 @@
       "package": "mcp-bastion-openai",
       "protects": "OpenAI GPT",
       "downloads": 1981,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-openai-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-openai-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-openai/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-openai",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-openai"
@@ -33,6 +44,9 @@
       "package": "mcp-bastion-anthropic",
       "protects": "Anthropic Claude",
       "downloads": 1890,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-anthropic-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-anthropic-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-anthropic/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-anthropic",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-anthropic"
@@ -41,6 +55,9 @@
       "package": "mcp-bastion-bedrock",
       "protects": "AWS Bedrock",
       "downloads": 1869,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-bedrock-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-bedrock-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-bedrock/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-bedrock",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-bedrock"
@@ -49,6 +66,9 @@
       "package": "mcp-bastion-gemini",
       "protects": "Google Gemini",
       "downloads": 1884,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-gemini-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-gemini-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-gemini/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-gemini",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-gemini"
@@ -57,6 +77,9 @@
       "package": "mcp-bastion-crewai",
       "protects": "CrewAI",
       "downloads": 1791,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-crewai-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-crewai-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-crewai/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-crewai",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-crewai"
@@ -65,6 +88,9 @@
       "package": "mcp-bastion-llamaindex",
       "protects": "LlamaIndex",
       "downloads": 2236,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-llamaindex-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-llamaindex-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-llamaindex/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-llamaindex",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-llamaindex"
@@ -73,6 +99,9 @@
       "package": "mcp-bastion-groq",
       "protects": "Groq",
       "downloads": 1840,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-groq-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-groq-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-groq/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-groq",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-groq"
@@ -81,6 +110,9 @@
       "package": "mcp-bastion-mistral",
       "protects": "Mistral AI",
       "downloads": 2025,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-mistral-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-mistral-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-mistral/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-mistral",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-mistral"
@@ -89,6 +121,9 @@
       "package": "mcp-bastion-cohere",
       "protects": "Cohere",
       "downloads": 1869,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-cohere-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-cohere-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-cohere/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-cohere",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-cohere"
@@ -97,6 +132,9 @@
       "package": "mcp-bastion-azure",
       "protects": "Azure OpenAI",
       "downloads": 1845,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-azure-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-azure-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-azure/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-azure",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-azure"
@@ -105,6 +143,9 @@
       "package": "mcp-bastion-vertexai",
       "protects": "Vertex AI",
       "downloads": 1868,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-vertexai-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-vertexai-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-vertexai/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-vertexai",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-vertexai"
@@ -113,6 +154,9 @@
       "package": "mcp-bastion-huggingface",
       "protects": "Hugging Face",
       "downloads": 2542,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-huggingface-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-huggingface-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-huggingface/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-huggingface",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-huggingface"
@@ -121,6 +165,9 @@
       "package": "mcp-bastion-deepseek",
       "protects": "DeepSeek AI",
       "downloads": 1968,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-deepseek-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-deepseek-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-deepseek/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-deepseek",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-deepseek"
@@ -129,6 +176,9 @@
       "package": "mcp-bastion-together",
       "protects": "Together AI",
       "downloads": 1852,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-together-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-together-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-together/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-together",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-together"
@@ -137,6 +187,9 @@
       "package": "mcp-bastion-fireworks",
       "protects": "Fireworks AI",
       "downloads": 1858,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-fireworks-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-fireworks-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-fireworks/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-fireworks",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-fireworks"
@@ -145,6 +198,9 @@
       "package": "mcp-bastion-litellm",
       "protects": "LiteLLM (100+ providers)",
       "downloads": 0,
+      "stats_status": "pending",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-litellm-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-litellm-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-litellm/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-litellm",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-litellm"
@@ -153,6 +209,9 @@
       "package": "mcp-bastion-ollama",
       "protects": "Ollama local models",
       "downloads": 0,
+      "stats_status": "pending",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-ollama-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-ollama-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-ollama/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-ollama",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-ollama"
@@ -161,6 +220,9 @@
       "package": "mcp-bastion-openrouter",
       "protects": "OpenRouter gateway",
       "downloads": 0,
+      "stats_status": "pending",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-openrouter-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-openrouter-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-openrouter/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-openrouter",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-openrouter"
@@ -169,6 +231,9 @@
       "package": "mcp-bastion-xai",
       "protects": "xAI Grok",
       "downloads": 0,
+      "stats_status": "pending",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-xai-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-xai-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-xai/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-xai",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-xai"
@@ -177,6 +242,9 @@
       "package": "mcp-bastion-autogen",
       "protects": "Microsoft AutoGen",
       "downloads": 0,
+      "stats_status": "pending",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-autogen-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-autogen-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-autogen/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-autogen",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-autogen"
@@ -185,6 +253,9 @@
       "package": "mcp-bastion-langgraph",
       "protects": "LangGraph",
       "downloads": 0,
+      "stats_status": "pending",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-langgraph-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-langgraph-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-langgraph/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-langgraph",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-langgraph"
@@ -193,6 +264,9 @@
       "package": "mcp-bastion-pydantic-ai",
       "protects": "Pydantic AI",
       "downloads": 0,
+      "stats_status": "pending",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-pydantic-ai-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-pydantic-ai-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-pydantic-ai/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-pydantic-ai",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-pydantic-ai"
@@ -201,6 +275,9 @@
       "package": "mcp-bastion-openai-agents",
       "protects": "OpenAI Agents SDK",
       "downloads": 0,
+      "stats_status": "pending",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-openai-agents-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-openai-agents-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-openai-agents/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-openai-agents",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-openai-agents"
@@ -209,6 +286,9 @@
       "package": "mcp-bastion-fastmcp",
       "protects": "FastMCP servers",
       "downloads": 1836,
+      "stats_status": "indexed",
+      "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-fastmcp-downloads.json",
+      "badge_shields": "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-fastmcp-downloads.json",
       "pypi": "https://pypi.org/project/mcp-bastion-fastmcp/",
       "pepy": "https://pepy.tech/projects/mcp-bastion-fastmcp",
       "pypistats": "https://pypistats.org/packages/mcp-bastion-fastmcp"

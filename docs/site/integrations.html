@@ -51,7 +51,7 @@ tailwind.config = {
     </div>
     <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
       <a href="https://pypi.org/project/mcp-bastion-python/"><img src="https://img.shields.io/pypi/v/mcp-bastion-python?label=core%20PyPI&color=3775A9" alt="PyPI version mcp-bastion-python"></a>
-      <a href="https://pepy.tech/projects/mcp-bastion-python"><img src="https://img.shields.io/pepy/dt/mcp-bastion-python?label=core%20downloads" alt="PePy downloads mcp-bastion-python"></a>
+      <a href="https://pypi.org/project/mcp-bastion-python/" id="core-downloads-badge-link"><img id="core-downloads-badge" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-python-downloads.json" alt="Core downloads"></a>
       <a href="assets/ecosystem-downloads.json"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fecosystem-downloads-badge.json" alt="Ecosystem PyPI downloads"></a>
       <a href="https://github.com/sponsors/vaquarkhan"><img src="https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github" alt="Sponsor MCP-Bastion"></a>
     </div>
@@ -67,7 +67,7 @@ tailwind.config = {
 <section class="py-10 border-y border-white/5 bg-slate-900/40">
   <div class="max-w-6xl mx-auto px-6 overflow-x-auto">
     <h2 class="text-lg font-bold mb-2 text-center">Package versions &amp; downloads</h2>
-    <p class="text-sm text-slate-500 text-center mb-6">26 PyPI packages · live PePy badges per row · ecosystem total above is the summed count from <a class="text-indigo-300 hover:text-white" href="assets/ecosystem-downloads.json">ecosystem-downloads.json</a>.</p>
+    <p class="text-sm text-slate-500 text-center mb-6">26 PyPI packages · download badges from <a class="text-indigo-300 hover:text-white" href="assets/ecosystem-downloads.json">ecosystem-downloads.json</a> (pypistats when indexed; <span class="text-slate-400">on PyPI</span> until then).</p>
     <table class="w-full text-sm text-left border-collapse min-w-[720px]">
       <thead>
         <tr class="text-slate-400 border-b border-white/10">
@@ -84,67 +84,63 @@ tailwind.config = {
   </div>
 </section>
 <script>
-const PKGS = [
-  ["mcp-bastion-python","Core middleware"],
-  ["mcp-bastion-langchain","LangChain"],
-  ["mcp-bastion-openai","OpenAI GPT"],
-  ["mcp-bastion-anthropic","Anthropic Claude"],
-  ["mcp-bastion-bedrock","AWS Bedrock"],
-  ["mcp-bastion-gemini","Google Gemini"],
-  ["mcp-bastion-crewai","CrewAI"],
-  ["mcp-bastion-llamaindex","LlamaIndex"],
-  ["mcp-bastion-groq","Groq"],
-  ["mcp-bastion-mistral","Mistral AI"],
-  ["mcp-bastion-cohere","Cohere"],
-  ["mcp-bastion-azure","Azure OpenAI"],
-  ["mcp-bastion-vertexai","Vertex AI"],
-  ["mcp-bastion-huggingface","Hugging Face"],
-  ["mcp-bastion-deepseek","DeepSeek AI"],
-  ["mcp-bastion-together","Together AI"],
-  ["mcp-bastion-fireworks","Fireworks AI"],
-  ["mcp-bastion-litellm","LiteLLM (100+ providers)"],
-  ["mcp-bastion-ollama","Ollama local models"],
-  ["mcp-bastion-openrouter","OpenRouter gateway"],
-  ["mcp-bastion-xai","xAI Grok"],
-  ["mcp-bastion-autogen","Microsoft AutoGen"],
-  ["mcp-bastion-langgraph","LangGraph"],
-  ["mcp-bastion-pydantic-ai","Pydantic AI"],
-  ["mcp-bastion-openai-agents","OpenAI Agents SDK"],
-  ["mcp-bastion-fastmcp","FastMCP servers"],
-];
-const tbody = document.getElementById("pypi-widget-body");
-PKGS.forEach(([name, protects]) => {
-  const tr = document.createElement("tr");
-  tr.className = "border-b border-white/5 hover:bg-white/[0.02]";
-  tr.innerHTML = `
-    <td class="py-3 pr-4 font-mono text-indigo-300"><a href="https://pypi.org/project/${name}/" class="hover:text-white">${name}</a></td>
-    <td class="py-3 pr-4">${protects}</td>
-    <td class="py-3 pr-4"><a href="https://pypi.org/project/${name}/"><img src="https://img.shields.io/pypi/v/${name}" alt="PyPI ${name}"></a></td>
-    <td class="py-3">
-      <a href="https://pepy.tech/projects/${name}"><img src="https://img.shields.io/pepy/dt/${name}?label=downloads" alt="PePy ${name}"></a>
-      <a href="https://pypistats.org/packages/${name}" class="ml-2 text-xs text-slate-500 hover:text-indigo-300">pypistats</a>
-    </td>`;
-  tbody.appendChild(tr);
-});
-
 function formatCount(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "k";
   return String(n);
 }
 
+function buildDownloadsCell(pkg) {
+  const badge = pkg.badge_shields
+    || `https://img.shields.io/endpoint?url=${encodeURIComponent(
+      `https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/${pkg.package}-downloads.json`
+    )}`;
+  const statsLink = pkg.stats_status === "indexed"
+    ? `<a href="${pkg.pypistats}" class="ml-2 text-xs text-slate-500 hover:text-indigo-300">pypistats</a>`
+    : `<span class="ml-2 text-xs text-slate-600" title="Download stats appear on pypistats.org ~24–48h after first publish">stats pending</span>`;
+  const link = pkg.stats_status === "indexed" ? pkg.pypistats : pkg.pypi;
+  return `<a href="${link}"><img src="${badge}" alt="Downloads ${pkg.package}"></a>${statsLink}`;
+}
+
+function renderPackageTable(packages) {
+  const tbody = document.getElementById("pypi-widget-body");
+  tbody.innerHTML = "";
+  packages.forEach((pkg) => {
+    const tr = document.createElement("tr");
+    tr.className = "border-b border-white/5 hover:bg-white/[0.02]";
+    tr.innerHTML = `
+      <td class="py-3 pr-4 font-mono text-indigo-300"><a href="${pkg.pypi}" class="hover:text-white">${pkg.package}</a></td>
+      <td class="py-3 pr-4">${pkg.protects}</td>
+      <td class="py-3 pr-4"><a href="${pkg.pypi}"><img src="https://img.shields.io/pypi/v/${pkg.package}" alt="PyPI ${pkg.package}"></a></td>
+      <td class="py-3">${buildDownloadsCell(pkg)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
 fetch("assets/ecosystem-downloads.json")
   .then((r) => r.json())
   .then((data) => {
+    renderPackageTable(data.packages || []);
+
     const el = document.getElementById("ecosystem-total-count");
     const meta = document.getElementById("ecosystem-total-meta");
     el.textContent = formatCount(data.total_downloads || 0);
     const updated = (data.updated_at || "").slice(0, 10);
-    meta.textContent = `${data.package_count || PKGS.length} packages · updated ${updated || "—"} · per-package breakdown in JSON`;
+    const pending = data.pending_count || 0;
+    const pendingNote = pending
+      ? ` · ${pending} new package${pending === 1 ? "" : "s"} pending pypistats index`
+      : "";
+    meta.textContent = `${data.indexed_count || data.package_count}/${data.package_count || 26} indexed · updated ${updated || "—"}${pendingNote}`;
+
+    const core = (data.packages || []).find((p) => p.package === "mcp-bastion-python");
+    if (core && core.badge_shields) {
+      document.getElementById("core-downloads-badge").src = core.badge_shields;
+      document.getElementById("core-downloads-badge-link").href = core.stats_status === "indexed" ? core.pypistats : core.pypi;
+    }
   })
   .catch(() => {
     document.getElementById("ecosystem-total-meta").textContent =
-      "Open ecosystem-downloads.json after the daily stats workflow runs.";
+      "Could not load ecosystem-downloads.json — run scripts/update_ecosystem_downloads.py";
   });
 </script>
 
