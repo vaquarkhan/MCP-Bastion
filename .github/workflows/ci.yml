@@ -26,6 +26,21 @@ jobs:
       - name: Install package (editable) + dev + policy + dashboard
         run: pip install -e ".[dev,policy,dashboard]"
 
+      - name: Install new integration packages (smoke tests)
+        run: |
+          for pkg in \
+            mcp-bastion-autogen \
+            mcp-bastion-langgraph \
+            mcp-bastion-litellm \
+            mcp-bastion-ollama \
+            mcp-bastion-openai-agents \
+            mcp-bastion-openrouter \
+            mcp-bastion-pydantic-ai \
+            mcp-bastion-xai
+          do
+            pip install -e "integrations/${pkg}"
+          done
+
       - name: Validate example policy file
         run: mcp-bastion validate --config bastion.yaml.example
 
