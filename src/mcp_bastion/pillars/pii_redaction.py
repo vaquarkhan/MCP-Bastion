@@ -51,6 +51,20 @@ class PIIRedactor:
         if self._analyzer is not None:
             return
         try:
+            try:
+                import spacy
+                from spacy.util import is_package
+            except ImportError as e:
+                raise RuntimeError("spaCy is not installed") from e
+
+            if not is_package("en_core_web_sm"):
+                raise RuntimeError(
+                    "spaCy model en_core_web_sm is not installed — "
+                    "run: python -m spacy download en_core_web_sm"
+                )
+            # Load once here so Presidio does not invoke spaCy's auto-download helper (sys.exit in CI).
+            spacy.load("en_core_web_sm")
+
             from presidio_analyzer import AnalyzerEngine
             from presidio_analyzer.nlp_engine import NlpEngineProvider
             from presidio_anonymizer import AnonymizerEngine

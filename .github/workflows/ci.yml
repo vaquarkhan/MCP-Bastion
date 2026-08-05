@@ -41,6 +41,9 @@ jobs:
             pip install -e "integrations/${pkg}"
           done
 
+      - name: Install spaCy model (PII redaction when Presidio/spaCy present)
+        run: python -m spacy download en_core_web_sm
+
       - name: Validate example policy file
         run: mcp-bastion validate --config bastion.yaml.example
 
