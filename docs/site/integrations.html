@@ -52,7 +52,13 @@ tailwind.config = {
     <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
       <a href="https://pypi.org/project/mcp-bastion-python/"><img src="https://img.shields.io/pypi/v/mcp-bastion-python?label=core%20PyPI&color=3775A9" alt="PyPI version mcp-bastion-python"></a>
       <a href="https://pepy.tech/projects/mcp-bastion-python"><img src="https://img.shields.io/pepy/dt/mcp-bastion-python?label=core%20downloads" alt="PePy downloads mcp-bastion-python"></a>
+      <a href="assets/ecosystem-downloads.json"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fecosystem-downloads-badge.json" alt="Ecosystem PyPI downloads"></a>
       <a href="https://github.com/sponsors/vaquarkhan"><img src="https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github" alt="Sponsor MCP-Bastion"></a>
+    </div>
+    <div id="ecosystem-total" class="mt-8 mx-auto max-w-md glass rounded-2xl px-6 py-5 text-center">
+      <div class="text-xs uppercase tracking-wider text-slate-500 mb-1">All packages · one total</div>
+      <div class="text-4xl font-black text-white" id="ecosystem-total-count">…</div>
+      <div class="text-sm text-slate-400 mt-1" id="ecosystem-total-meta">Loading ecosystem downloads…</div>
     </div>
   </div>
 </section>
@@ -61,7 +67,7 @@ tailwind.config = {
 <section class="py-10 border-y border-white/5 bg-slate-900/40">
   <div class="max-w-6xl mx-auto px-6 overflow-x-auto">
     <h2 class="text-lg font-bold mb-2 text-center">Package versions &amp; downloads</h2>
-    <p class="text-sm text-slate-500 text-center mb-6">Live badges from PyPI and PePy - no manual version bump in docs.</p>
+    <p class="text-sm text-slate-500 text-center mb-6">26 PyPI packages · live PePy badges per row · ecosystem total above is the summed count from <a class="text-indigo-300 hover:text-white" href="assets/ecosystem-downloads.json">ecosystem-downloads.json</a>.</p>
     <table class="w-full text-sm text-left border-collapse min-w-[720px]">
       <thead>
         <tr class="text-slate-400 border-b border-white/10">
@@ -96,6 +102,14 @@ const PKGS = [
   ["mcp-bastion-deepseek","DeepSeek AI"],
   ["mcp-bastion-together","Together AI"],
   ["mcp-bastion-fireworks","Fireworks AI"],
+  ["mcp-bastion-litellm","LiteLLM (100+ providers)"],
+  ["mcp-bastion-ollama","Ollama local models"],
+  ["mcp-bastion-openrouter","OpenRouter gateway"],
+  ["mcp-bastion-xai","xAI Grok"],
+  ["mcp-bastion-autogen","Microsoft AutoGen"],
+  ["mcp-bastion-langgraph","LangGraph"],
+  ["mcp-bastion-pydantic-ai","Pydantic AI"],
+  ["mcp-bastion-openai-agents","OpenAI Agents SDK"],
   ["mcp-bastion-fastmcp","FastMCP servers"],
 ];
 const tbody = document.getElementById("pypi-widget-body");
@@ -112,6 +126,26 @@ PKGS.forEach(([name, protects]) => {
     </td>`;
   tbody.appendChild(tr);
 });
+
+function formatCount(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "k";
+  return String(n);
+}
+
+fetch("assets/ecosystem-downloads.json")
+  .then((r) => r.json())
+  .then((data) => {
+    const el = document.getElementById("ecosystem-total-count");
+    const meta = document.getElementById("ecosystem-total-meta");
+    el.textContent = formatCount(data.total_downloads || 0);
+    const updated = (data.updated_at || "").slice(0, 10);
+    meta.textContent = `${data.package_count || PKGS.length} packages · updated ${updated || "—"} · per-package breakdown in JSON`;
+  })
+  .catch(() => {
+    document.getElementById("ecosystem-total-meta").textContent =
+      "Open ecosystem-downloads.json after the daily stats workflow runs.";
+  });
 </script>
 
 <!-- LLM PROVIDERS -->
@@ -288,6 +322,58 @@ PKGS.forEach(([name, protects]) => {
         <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-fireworks</div>
       </a>
 
+      <a href="https://pypi.org/project/mcp-bastion-litellm/" class="glass rounded-xl p-6 card-hover block border border-violet-500/20">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400 font-bold text-sm">LL</div>
+          <div>
+            <div class="font-semibold">LiteLLM</div>
+            <div class="text-xs text-slate-500">mcp-bastion-litellm</div>
+          </div>
+          <span class="ml-auto text-xs bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">New</span>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper across 100+ LLM providers via LiteLLM</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-litellm</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-ollama/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-stone-500/10 flex items-center justify-center text-stone-300 font-bold text-sm">Ol</div>
+          <div>
+            <div class="font-semibold">Ollama</div>
+            <div class="text-xs text-slate-500">mcp-bastion-ollama</div>
+          </div>
+          <span class="ml-auto text-xs bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">New</span>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for local Ollama models</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-ollama</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-openrouter/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-fuchsia-500/10 flex items-center justify-center text-fuchsia-400 font-bold text-sm">OR</div>
+          <div>
+            <div class="font-semibold">OpenRouter</div>
+            <div class="text-xs text-slate-500">mcp-bastion-openrouter</div>
+          </div>
+          <span class="ml-auto text-xs bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">New</span>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for the OpenRouter multi-model gateway</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-openrouter</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-xai/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-zinc-500/10 flex items-center justify-center text-zinc-200 font-bold text-sm">xAI</div>
+          <div>
+            <div class="font-semibold">xAI Grok</div>
+            <div class="text-xs text-slate-500">mcp-bastion-xai</div>
+          </div>
+          <span class="ml-auto text-xs bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">New</span>
+        </div>
+        <p class="text-sm text-slate-400">Secure wrapper for xAI Grok chat completions</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-xai</div>
+      </a>
+
     </div>
   </div>
 </section>
@@ -347,6 +433,58 @@ PKGS.forEach(([name, protects]) => {
         </div>
         <p class="text-sm text-slate-400">One-line security for any FastMCP server instance</p>
         <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-fastmcp</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-langgraph/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-300 font-bold text-sm">LG</div>
+          <div>
+            <div class="font-semibold">LangGraph</div>
+            <div class="text-xs text-slate-500">mcp-bastion-langgraph</div>
+          </div>
+          <span class="ml-auto text-xs bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">New</span>
+        </div>
+        <p class="text-sm text-slate-400">Security for LangGraph stateful agent graphs</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-langgraph</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-pydantic-ai/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-300 font-bold text-sm">PA</div>
+          <div>
+            <div class="font-semibold">Pydantic AI</div>
+            <div class="text-xs text-slate-500">mcp-bastion-pydantic-ai</div>
+          </div>
+          <span class="ml-auto text-xs bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">New</span>
+        </div>
+        <p class="text-sm text-slate-400">Security for Pydantic AI agents and tools</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-pydantic-ai</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-openai-agents/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-300 font-bold text-sm">OA</div>
+          <div>
+            <div class="font-semibold">OpenAI Agents SDK</div>
+            <div class="text-xs text-slate-500">mcp-bastion-openai-agents</div>
+          </div>
+          <span class="ml-auto text-xs bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">New</span>
+        </div>
+        <p class="text-sm text-slate-400">Security for the OpenAI Agents SDK runtime</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-openai-agents</div>
+      </a>
+
+      <a href="https://pypi.org/project/mcp-bastion-autogen/" class="glass rounded-xl p-6 card-hover block">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-300 font-bold text-sm">AG</div>
+          <div>
+            <div class="font-semibold">Microsoft AutoGen</div>
+            <div class="text-xs text-slate-500">mcp-bastion-autogen</div>
+          </div>
+          <span class="ml-auto text-xs bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">New</span>
+        </div>
+        <p class="text-sm text-slate-400">Security for AutoGen multi-agent conversations</p>
+        <div class="mt-3 text-xs font-mono text-indigo-400 bg-indigo-500/10 rounded px-2 py-1 inline-block">pip install mcp-bastion-autogen</div>
       </a>
 
     </div>

@@ -31,6 +31,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/4.0.0/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
+[![Ecosystem PyPI downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fecosystem-downloads-badge.json)](https://vaquarkhan.github.io/MCP-Bastion/integrations.html)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
 [![Docker proxy (GHCR)](https://img.shields.io/badge/GHCR-mcp--bastion--proxy-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
@@ -46,6 +47,7 @@
 
 | Go to | Link |
 |-------|------|
+| **Integrations & download totals** | https://vaquarkhan.github.io/MCP-Bastion/integrations.html · [JSON](docs/site/assets/ecosystem-downloads.json) |
 | **Benchmark / security deck (PDF)** | **[MCP-Security-Deck-v3.pdf](MCP-Security-Deck-v3.pdf)** · [raw download](https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf) |
 | **Documentation bible** | https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html |
 | **Demos** (attacks, dashboard, payloads, all languages) | https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html |
@@ -921,6 +923,8 @@ npm install @mcp-bastion/core
 ### Framework Integrations
 
 Drop-in security for your favorite LLM framework. Each package auto-installs `mcp-bastion-python`. **Version** and **download** columns use live [Shields.io](https://shields.io/) badges (no manual bump on release). **Trends:** [pypistats.org](https://pypistats.org/) · **Cumulative:** [pepy.tech](https://pepy.tech/).
+
+**One-place totals:** [Integrations download dashboard](https://vaquarkhan.github.io/MCP-Bastion/integrations.html) · [ecosystem-downloads.json](docs/site/assets/ecosystem-downloads.json) (sum of all 26 packages, refreshed daily).
 
 | Package | Protects | Version | Downloads |
 |---------|----------|---------|-----------|

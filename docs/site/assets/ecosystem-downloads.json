@@ -1,0 +1,217 @@
+{
+  "updated_at": "2026-08-05T07:07:30Z",
+  "source": "pypistats.org overall (without_mirrors; with_mirrors fallback)",
+  "note": "Sum of per-package download rows. Installing an integration also pulls mcp-bastion-python, so core + integration counts can overlap.",
+  "package_count": 26,
+  "total_downloads": 43035,
+  "packages": [
+    {
+      "package": "mcp-bastion-python",
+      "protects": "Core middleware",
+      "downloads": 9981,
+      "pypi": "https://pypi.org/project/mcp-bastion-python/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-python",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-python"
+    },
+    {
+      "package": "mcp-bastion-langchain",
+      "protects": "LangChain",
+      "downloads": 1900,
+      "pypi": "https://pypi.org/project/mcp-bastion-langchain/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-langchain",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-langchain"
+    },
+    {
+      "package": "mcp-bastion-openai",
+      "protects": "OpenAI GPT",
+      "downloads": 1981,
+      "pypi": "https://pypi.org/project/mcp-bastion-openai/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-openai",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-openai"
+    },
+    {
+      "package": "mcp-bastion-anthropic",
+      "protects": "Anthropic Claude",
+      "downloads": 1890,
+      "pypi": "https://pypi.org/project/mcp-bastion-anthropic/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-anthropic",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-anthropic"
+    },
+    {
+      "package": "mcp-bastion-bedrock",
+      "protects": "AWS Bedrock",
+      "downloads": 1869,
+      "pypi": "https://pypi.org/project/mcp-bastion-bedrock/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-bedrock",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-bedrock"
+    },
+    {
+      "package": "mcp-bastion-gemini",
+      "protects": "Google Gemini",
+      "downloads": 1884,
+      "pypi": "https://pypi.org/project/mcp-bastion-gemini/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-gemini",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-gemini"
+    },
+    {
+      "package": "mcp-bastion-crewai",
+      "protects": "CrewAI",
+      "downloads": 1791,
+      "pypi": "https://pypi.org/project/mcp-bastion-crewai/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-crewai",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-crewai"
+    },
+    {
+      "package": "mcp-bastion-llamaindex",
+      "protects": "LlamaIndex",
+      "downloads": 2236,
+      "pypi": "https://pypi.org/project/mcp-bastion-llamaindex/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-llamaindex",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-llamaindex"
+    },
+    {
+      "package": "mcp-bastion-groq",
+      "protects": "Groq",
+      "downloads": 1840,
+      "pypi": "https://pypi.org/project/mcp-bastion-groq/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-groq",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-groq"
+    },
+    {
+      "package": "mcp-bastion-mistral",
+      "protects": "Mistral AI",
+      "downloads": 2025,
+      "pypi": "https://pypi.org/project/mcp-bastion-mistral/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-mistral",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-mistral"
+    },
+    {
+      "package": "mcp-bastion-cohere",
+      "protects": "Cohere",
+      "downloads": 1869,
+      "pypi": "https://pypi.org/project/mcp-bastion-cohere/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-cohere",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-cohere"
+    },
+    {
+      "package": "mcp-bastion-azure",
+      "protects": "Azure OpenAI",
+      "downloads": 1845,
+      "pypi": "https://pypi.org/project/mcp-bastion-azure/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-azure",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-azure"
+    },
+    {
+      "package": "mcp-bastion-vertexai",
+      "protects": "Vertex AI",
+      "downloads": 1868,
+      "pypi": "https://pypi.org/project/mcp-bastion-vertexai/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-vertexai",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-vertexai"
+    },
+    {
+      "package": "mcp-bastion-huggingface",
+      "protects": "Hugging Face",
+      "downloads": 2542,
+      "pypi": "https://pypi.org/project/mcp-bastion-huggingface/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-huggingface",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-huggingface"
+    },
+    {
+      "package": "mcp-bastion-deepseek",
+      "protects": "DeepSeek AI",
+      "downloads": 1968,
+      "pypi": "https://pypi.org/project/mcp-bastion-deepseek/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-deepseek",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-deepseek"
+    },
+    {
+      "package": "mcp-bastion-together",
+      "protects": "Together AI",
+      "downloads": 1852,
+      "pypi": "https://pypi.org/project/mcp-bastion-together/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-together",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-together"
+    },
+    {
+      "package": "mcp-bastion-fireworks",
+      "protects": "Fireworks AI",
+      "downloads": 1858,
+      "pypi": "https://pypi.org/project/mcp-bastion-fireworks/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-fireworks",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-fireworks"
+    },
+    {
+      "package": "mcp-bastion-litellm",
+      "protects": "LiteLLM (100+ providers)",
+      "downloads": 0,
+      "pypi": "https://pypi.org/project/mcp-bastion-litellm/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-litellm",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-litellm"
+    },
+    {
+      "package": "mcp-bastion-ollama",
+      "protects": "Ollama local models",
+      "downloads": 0,
+      "pypi": "https://pypi.org/project/mcp-bastion-ollama/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-ollama",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-ollama"
+    },
+    {
+      "package": "mcp-bastion-openrouter",
+      "protects": "OpenRouter gateway",
+      "downloads": 0,
+      "pypi": "https://pypi.org/project/mcp-bastion-openrouter/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-openrouter",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-openrouter"
+    },
+    {
+      "package": "mcp-bastion-xai",
+      "protects": "xAI Grok",
+      "downloads": 0,
+      "pypi": "https://pypi.org/project/mcp-bastion-xai/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-xai",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-xai"
+    },
+    {
+      "package": "mcp-bastion-autogen",
+      "protects": "Microsoft AutoGen",
+      "downloads": 0,
+      "pypi": "https://pypi.org/project/mcp-bastion-autogen/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-autogen",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-autogen"
+    },
+    {
+      "package": "mcp-bastion-langgraph",
+      "protects": "LangGraph",
+      "downloads": 0,
+      "pypi": "https://pypi.org/project/mcp-bastion-langgraph/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-langgraph",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-langgraph"
+    },
+    {
+      "package": "mcp-bastion-pydantic-ai",
+      "protects": "Pydantic AI",
+      "downloads": 0,
+      "pypi": "https://pypi.org/project/mcp-bastion-pydantic-ai/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-pydantic-ai",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-pydantic-ai"
+    },
+    {
+      "package": "mcp-bastion-openai-agents",
+      "protects": "OpenAI Agents SDK",
+      "downloads": 0,
+      "pypi": "https://pypi.org/project/mcp-bastion-openai-agents/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-openai-agents",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-openai-agents"
+    },
+    {
+      "package": "mcp-bastion-fastmcp",
+      "protects": "FastMCP servers",
+      "downloads": 1836,
+      "pypi": "https://pypi.org/project/mcp-bastion-fastmcp/",
+      "pepy": "https://pepy.tech/projects/mcp-bastion-fastmcp",
+      "pypistats": "https://pypistats.org/packages/mcp-bastion-fastmcp"
+    }
+  ]
+}

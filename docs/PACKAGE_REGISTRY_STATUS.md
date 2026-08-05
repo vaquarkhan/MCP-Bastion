@@ -8,7 +8,7 @@
 | Package | Registry | Version | Public download? | Notes |
 |---------|----------|---------|------------------|-------|
 | `mcp-bastion-python` | **PyPI** | 4.0.0 | **YES** | `pip install mcp-bastion-python==4.0.0` |
-| 17× `mcp-bastion-*` integrations | **PyPI** | 4.0.0 | **YES** | e.g. `mcp-bastion-openai`, `mcp-bastion-fastmcp`, … |
+| 25× `mcp-bastion-*` integrations | **PyPI** | 4.0.0 | **YES** | e.g. `mcp-bastion-openai`, `mcp-bastion-litellm`, `mcp-bastion-fastmcp`, … |
 | `ghcr.io/vaquarkhan/mcp-bastion-proxy` | **GHCR** | v4.0.0 | **YES** | Public container |
 | `ghcr.io/vaquarkhan/mcp-bastion-dashboard` | **GHCR** | v4.0.0 | **YES** | Public container |
 | `ghcr.io/vaquarkhan/mcp-bastion-suite` | **GHCR** | 0.1.0 | **YES** | Public container |

@@ -11,22 +11,22 @@ Each `integrations/mcp-bastion-*` folder is its **own PyPI project**. Core stays
 | **Core dependency** | `mcp-bastion-python>=4.0.0,<5` (publish core first) |
 | **Integration version** | `4.0.0` in each package `pyproject.toml` |
 
-## New packages to publish (not on PyPI yet)
+## New packages (published @ 4.0.0)
 
-Publish in this order (discovery / downloads):
+All eight are on PyPI. Download totals: [Integrations dashboard](https://vaquarkhan.github.io/MCP-Bastion/integrations.html) · [ecosystem-downloads.json](../docs/site/assets/ecosystem-downloads.json).
 
-| # | PyPI project name | Folder | Import |
-|---|-------------------|--------|--------|
-| 1 | `mcp-bastion-litellm` | `integrations/mcp-bastion-litellm` | `mcp_bastion_litellm` |
-| 2 | `mcp-bastion-langgraph` | `integrations/mcp-bastion-langgraph` | `mcp_bastion_langgraph` |
-| 3 | `mcp-bastion-pydantic-ai` | `integrations/mcp-bastion-pydantic-ai` | `mcp_bastion_pydantic_ai` |
-| 4 | `mcp-bastion-openai-agents` | `integrations/mcp-bastion-openai-agents` | `mcp_bastion_openai_agents` |
-| 5 | `mcp-bastion-ollama` | `integrations/mcp-bastion-ollama` | `mcp_bastion_ollama` |
-| 6 | `mcp-bastion-openrouter` | `integrations/mcp-bastion-openrouter` | `mcp_bastion_openrouter` |
-| 7 | `mcp-bastion-xai` | `integrations/mcp-bastion-xai` | `mcp_bastion_xai` |
-| 8 | `mcp-bastion-autogen` | `integrations/mcp-bastion-autogen` | `mcp_bastion_autogen` |
+| # | PyPI project name | Folder | Import | Status |
+|---|-------------------|--------|--------|--------|
+| 1 | `mcp-bastion-litellm` | `integrations/mcp-bastion-litellm` | `mcp_bastion_litellm` | **Published** |
+| 2 | `mcp-bastion-langgraph` | `integrations/mcp-bastion-langgraph` | `mcp_bastion_langgraph` | **Published** |
+| 3 | `mcp-bastion-pydantic-ai` | `integrations/mcp-bastion-pydantic-ai` | `mcp_bastion_pydantic_ai` | **Published** |
+| 4 | `mcp-bastion-openai-agents` | `integrations/mcp-bastion-openai-agents` | `mcp_bastion_openai_agents` | **Published** |
+| 5 | `mcp-bastion-ollama` | `integrations/mcp-bastion-ollama` | `mcp_bastion_ollama` | **Published** |
+| 6 | `mcp-bastion-openrouter` | `integrations/mcp-bastion-openrouter` | `mcp_bastion_openrouter` | **Published** |
+| 7 | `mcp-bastion-xai` | `integrations/mcp-bastion-xai` | `mcp_bastion_xai` | **Published** |
+| 8 | `mcp-bastion-autogen` | `integrations/mcp-bastion-autogen` | `mcp_bastion_autogen` | **Published** |
 
-Total product line after these: **26** packages (1 core + 25 integrations).
+Total product line: **26** packages (1 core + 25 integrations).
 
 ---
 
