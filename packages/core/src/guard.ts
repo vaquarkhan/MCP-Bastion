@@ -72,8 +72,10 @@ const DEFAULT_OPTIONS: Required<McpBastionOptions> = {
 
 function createMcpError(code: number, message: string): CallToolResult {
   return {
-    content: [{ type: "text", text: `[MCP-Bastion] ${message}` }],
+    content: [{ type: "text", text: `[MCP-Bastion][${code}] ${message}` }],
     isError: true,
+    // Structured deny code for harnesses / clients (also echoed in the text above).
+    _meta: { bastionDenyCode: code },
   };
 }
 
@@ -256,11 +258,8 @@ export function wrapCallToolHandler(
       }
     }
 
-    // Extension E: result-side provenance + optional sidecar scan.
-    if (opts.tagResultProvenance) {
-      result = tagResultProvenance(result);
-    }
-
+    // Extension E: optional sidecar scan on raw result, then provenance tags.
+    // Scan before tagging so markers do not affect marker-sensitive scanners.
     if (opts.enableResultGuard) {
       if (!sidecarUrl) {
         if (opts.resultGuardMode === "strict") {
@@ -299,6 +298,10 @@ export function wrapCallToolHandler(
           logger.warn("result_guard_sidecar_error_detect", err);
         }
       }
+    }
+
+    if (opts.tagResultProvenance) {
+      result = tagResultProvenance(result);
     }
 
     record("allow");

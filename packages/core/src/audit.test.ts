@@ -86,4 +86,38 @@ describe("audit", () => {
     };
     expect(hashRecord(base)).toBe(hashRecord(base));
   });
+
+  it("fromLastRecord resumes the chain across a simulated restart", () => {
+    const first = new AuditChain();
+    const a = first.append({
+      ts: "2026-08-08T00:00:00.000Z",
+      requestId: "r1",
+      decision: "allow",
+    });
+    const second = AuditChain.fromLastRecord(a);
+    const b = second.append({
+      ts: "2026-08-08T00:00:01.000Z",
+      requestId: "r2",
+      decision: "allow",
+    });
+    expect(b.prevHash).toBe(a.hash);
+    expect(AuditChain.verify([a, b])).toBe(true);
+  });
+
+  it("verifyAllowingRestartSegments accepts genesis breaks without seeding", () => {
+    const s1 = new AuditChain();
+    const a = s1.append({
+      ts: "2026-08-08T00:00:00.000Z",
+      requestId: "r1",
+      decision: "allow",
+    });
+    const s2 = new AuditChain(); // restart without seed
+    const b = s2.append({
+      ts: "2026-08-08T00:00:01.000Z",
+      requestId: "r2",
+      decision: "allow",
+    });
+    expect(AuditChain.verify([a, b])).toBe(false);
+    expect(AuditChain.verifyAllowingRestartSegments([a, b])).toBe(true);
+  });
 });

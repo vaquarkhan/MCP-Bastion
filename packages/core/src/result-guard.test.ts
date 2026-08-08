@@ -73,6 +73,10 @@ describe("result-guard", () => {
     expect((result.content[0] as { text: string }).text).toContain(
       "quarantined"
     );
+    expect((result.content[0] as { text: string }).text).toContain("-32005");
+    expect(
+      (result as { _meta?: { bastionDenyCode?: number } })._meta?.bastionDenyCode
+    ).toBe(-32005);
   });
 
   it("detect mode returns tagged result even when sidecar flags", async () => {
