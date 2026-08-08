@@ -49,6 +49,9 @@ def _demo_kind_allowed(cfg: BastionConfig, kind: str) -> bool:
         return bool(cfg.circuit_breaker)
     if kind == "semantic_firewall":
         return bool(cfg.semantic_firewall)
+    if kind in ("semantic_egress", "result_guard", "canary", "concurrency"):
+        # Catalog / Node-ingest kinds: always allow in demo so the Attacks stopped panel is populated.
+        return True
     if kind == "sensitive_classifier":
         return bool(cfg.sensitive_classifier)
     if kind == "external_policy":
@@ -134,6 +137,11 @@ def seed_metrics(rng: random.Random, config: BastionConfig | None = None) -> Non
         ("circuit breaker tripped on upstream", "invoke_model"),
         ("Agent 'support-bot' is not permitted to call tool 'delete_repo' (blocked by policy)", "delete_repo"),
         ("checksum verification failed for server module", "read_file"),
+        # Issue-type catalog (demo): attacks stopped panel — same MetricsStore path as live blocks.
+        ("[-32004] Semantic egress quarantined: manipulative outbound tool args", "create_pull_request"),
+        ("[-32005] Tool result quarantined: embedded instructions detected", "fetch_page"),
+        ("Exfiltration canary echo detected in tool arguments", "send_email"),
+        ("Semantic firewall: dangerous tool chain blocked", "invoke_github"),
     )
     nblk = 0
     for reason, tool in blocks:
@@ -272,6 +280,24 @@ def seed_metrics(rng: random.Random, config: BastionConfig | None = None) -> Non
     if cfg.pii:
         store.add_alert("pii", "Elevated EMAIL_ADDRESS detections on query_llm", "warning")
     store.add_alert("demo", "Synthetic policy review: tighten RBAC on delete_repo", "warning")
+
+    # Seed tamper-evident audit chain so the dashboard panel has demo links.
+    from mcp_bastion.pillars.audit_hash_chain import AuditHashChain
+
+    every = int(getattr(cfg, "audit_hash_chain_anchor_every", 0) or 0)
+    AuditHashChain.configure(anchor_every=every)
+    chain = AuditHashChain.get()
+    for i in range(8):
+        chain.append(
+            {
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "tool": demo_tools[i % len(demo_tools)],
+                "action": "BLOCKED" if i % 3 == 0 else "ALLOWED",
+                "reason": "demo_seed",
+                "tenant_id": "demo",
+                "index_hint": i,
+            }
+        )
 
     _inject_demo_time_series(store, rng)
     store._metrics.window_start = (datetime.now(timezone.utc) - timedelta(seconds=90)).isoformat()

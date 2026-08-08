@@ -1,6 +1,15 @@
 # GitHub Pages site (`docs/site/`)
 
-Static marketing site deployed to https://vaquarkhan.github.io/MCP-Bastion/
+Static marketing + docs site deployed to https://vaquarkhan.github.io/MCP-Bastion/
+
+| Path | Content |
+|------|---------|
+| `/` | Landing (`index.html`) — v4.0.0 |
+| `/integrations.html` | 26 packages + PePy download dashboard |
+| `/guide/` | Generated handbook from `docs/*.md` |
+| `/guide/handbook.html` | Visual documentation handbook |
+
+Rebuild guide HTML: `python scripts/build_docs_site.py`
 
 ## Deploy
 

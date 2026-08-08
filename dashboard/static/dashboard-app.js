@@ -1243,11 +1243,99 @@
         content_filter: 'Content filter',
         circuit_breaker: 'Circuit breaker',
         semantic_firewall: 'Semantic firewall',
+        semantic_egress: 'Semantic egress',
+        result_guard: 'Result guard',
+        canary: 'Exfiltration canary',
+        concurrency: 'Concurrency cap',
         sensitive_classifier: 'Sensitive classifier',
         external_policy: 'External policy',
+        argument_guards: 'Argument guards',
         other: 'Other'
       };
       return map[kind] || kind.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+    }
+
+    function kindBlurb(kind) {
+      var map = {
+        injection: 'Jailbreaks / prompt injection in tool args',
+        rate_limit: 'Runaway iteration / DoS-of-wallet loops',
+        rbac: 'Unauthorized tool access by role',
+        cost: 'Budget / FinOps overspend',
+        schema_validation: 'Malformed tool arguments',
+        replay: 'Replay / nonce reuse',
+        content_filter: 'Path traversal / dangerous content',
+        circuit_breaker: 'Failing upstream tools',
+        semantic_firewall: 'Dangerous tool chains / intent mismatch',
+        semantic_egress: 'Manipulative outbound actions (−32004)',
+        result_guard: 'Poisoned tool results (−32005)',
+        canary: 'Context/exfiltration canary echoes',
+        concurrency: 'Overload / shed concurrent calls',
+        agent_iam: 'Confused-deputy / agent scope',
+        server_verification: 'Supply-chain checksum mismatch',
+        sensitive_classifier: 'Sensitive content policy',
+        external_policy: 'OPA / Cedar deny',
+        argument_guards: 'Argument policy violations',
+        other: 'Uncategorized policy deny'
+      };
+      return map[kind] || 'Policy denial';
+    }
+
+    function renderAttacksStopped(d) {
+      var kinds = d.blocked_by_kind || {};
+      var entries = Object.entries(kinds).sort(function (a, b) { return b[1] - a[1]; });
+      var total = Number(d.blocked_total || 0);
+      if (!total) {
+        total = entries.reduce(function (s, e) { return s + Number(e[1] || 0); }, 0);
+      }
+      var totalEl = document.getElementById('attacksTotal');
+      var typeEl = document.getElementById('attacksTypeCount');
+      var topEl = document.getElementById('attacksTopKind');
+      var topMeta = document.getElementById('attacksTopMeta');
+      var body = document.getElementById('attacksStoppedBody');
+      var savedMeta = document.getElementById('attacksSavedMeta');
+      if (!body) return;
+
+      if (totalEl) {
+        totalEl.textContent = String(total);
+        totalEl.className = 'gov-state ' + (total > 0 ? 'on' : 'off');
+      }
+      if (typeEl) {
+        typeEl.textContent = String(entries.length);
+        typeEl.className = 'gov-state ' + (entries.length ? 'on' : 'off');
+      }
+      if (topEl) {
+        if (entries.length) {
+          topEl.textContent = kindLabel(entries[0][0]);
+          topEl.className = 'gov-state on';
+          if (topMeta) topMeta.textContent = entries[0][1] + ' block(s) this window';
+        } else {
+          topEl.textContent = '-';
+          topEl.className = 'gov-state off';
+          if (topMeta) topMeta.textContent = 'Most frequent this window';
+        }
+      }
+      if (savedMeta) {
+        savedMeta.textContent = total > 0
+          ? (total + ' attacks / policy denials stopped')
+          : 'No blocks yet — run traffic or demo mode';
+      }
+
+      if (!entries.length) {
+        body.innerHTML = '<tr><td colspan="4" class="muted">No blocked events yet. With demo on, restart the dashboard to seed sample issue types.</td></tr>';
+        return;
+      }
+      body.innerHTML = entries.map(function (kv) {
+        var kind = kv[0];
+        var n = Number(kv[1] || 0);
+        var pct = total > 0 ? ((100 * n) / total).toFixed(1) + '%' : '-';
+        return '<tr>'
+          + '<td><strong>' + escapeHtml(kindLabel(kind)) + '</strong>'
+          + '<div class="muted" style="font-size:0.72rem;">' + escapeHtml(kind) + '</div></td>'
+          + '<td>' + escapeHtml(kindBlurb(kind)) + '</td>'
+          + '<td>' + n + '</td>'
+          + '<td class="attacks-share">' + pct + '</td>'
+          + '</tr>';
+      }).join('');
     }
 
     function updateBlockKinds(obj) {
@@ -1470,6 +1558,9 @@
       var cost = features.cost_tracker || {};
       var schema = features.schema_validation || {};
       var cf = features.content_filter || {};
+      var sf = features.semantic_firewall || {};
+      var canary = features.canary_goallock || {};
+      var ahc = features.audit_hash_chain || {};
       var iamMeta = iam.enabled
         ? (iam.agent_count || 0) + ' agent(s)' + (iam.isolate_sessions ? ' · sessions isolated' : '')
         : 'Confused-deputy protection disabled';
@@ -1492,6 +1583,14 @@
         ? (vaultAbs + ' abstract · ' + vaultHyd + ' hydrate'
           + (piiVault.token_style ? ' · ' + piiVault.token_style : ''))
         : 'Reversible vault off';
+      var chain = (metrics && metrics.audit_chain) || {};
+      var chainLen = Number(chain.chain_length || 0);
+      var ahcEvery = Number(ahc.anchor_every || 0);
+      var ahcMeta = ahc.enabled !== false
+        ? (chainLen + ' link(s)'
+          + (ahcEvery > 0 ? (' · anchor every ' + ahcEvery) : ' · anchors off')
+          + ((chain.anchors || []).length ? (' · ' + chain.anchors.length + ' anchor(s)') : ''))
+        : 'Hash chain not configured';
       grid.innerHTML = [
         tile('RBAC', !!rbac.enabled, kindMeta(!!rbac.enabled, 'rbac', 'Role allow/deny off')),
         tile('Prompt guard', !!pg.enabled, kindMeta(!!pg.enabled, 'injection', 'Injection ML/heuristics off')),
@@ -1501,13 +1600,117 @@
         tile('PII vault', !!piiVault.enabled, vaultMeta),
         tile('Schema validation', !!schema.enabled, kindMeta(!!schema.enabled, 'schema_validation', 'Tool schema gate off')),
         tile('Content filter', !!cf.enabled, kindMeta(!!cf.enabled, 'content_filter', 'Path/code filters off')),
+        tile('Semantic firewall', !!sf.enabled, kindMeta(!!sf.enabled, 'semantic_firewall', 'Heuristic semantic policy off')),
+        tile('Exfiltration canary', !!canary.enabled, kindMeta(!!canary.enabled, 'canary', 'Session canary echo detection off')),
         tile('Agent IAM', !!iam.enabled, iamMeta),
         tile('Server verification', !!sv.enabled, svMeta),
         tile('Transport hardening', !!th.enabled, thMeta),
         tile('stdio guard', !!sg.enabled, sg.enabled ? 'Non-JSON stdout dropped' : 'stdio injection guard off'),
         tile('Tool fingerprint', !!tmf.enabled, tmf.enabled ? 'Schema drift detection on' : 'Metadata fingerprint off'),
+        tile('Audit hash chain', ahc.enabled !== false, ahcMeta),
         tile('Governance blocks', govTotal > 0, govTotal > 0 ? govTotal + ' total IAM + verification denials' : 'No governance blocks yet')
       ].join('');
+    }
+
+    function shortHash(h) {
+      var s = String(h || '');
+      if (s.length <= 16) return s || '-';
+      return s.slice(0, 10) + '…' + s.slice(-6);
+    }
+
+    function actionPill(action) {
+      var a = String(action || '').toUpperCase();
+      if (!a) return '<span class="muted">-</span>';
+      var cls = a.indexOf('BLOCK') >= 0 ? 'blocked' : 'allowed';
+      return '<span class="action-pill ' + cls + '">' + escapeHtml(a) + '</span>';
+    }
+
+    function renderAuditChain(d) {
+      var chain = (d && d.audit_chain) || {};
+      var lenEl = document.getElementById('auditChainLen');
+      var lenMeta = document.getElementById('auditChainLenMeta');
+      var headEl = document.getElementById('auditChainHead');
+      var headShort = document.getElementById('auditChainHeadShort');
+      var anchorsEl = document.getElementById('auditChainAnchors');
+      var anchorsMeta = document.getElementById('auditChainAnchorsMeta');
+      var body = document.getElementById('auditChainBody');
+      var statusEl = document.getElementById('auditChainStatus');
+      var hintEl = document.getElementById('auditChainHint');
+      if (!lenEl || !headEl || !anchorsEl || !body) return;
+
+      var length = Number(chain.chain_length || 0);
+      var fullHead = chain.head_hash || chain.genesis_prev || '';
+      var anchors = chain.anchors || [];
+      var links = (chain.recent_links || []).slice().reverse();
+
+      lenEl.textContent = String(length);
+      lenEl.className = 'gov-state ' + (length > 0 ? 'on' : 'off');
+      if (lenMeta) {
+        lenMeta.textContent = length > 0
+          ? ('Showing latest ' + Math.min(links.length, length) + ' link(s)')
+          : 'No links yet';
+      }
+
+      headEl.textContent = fullHead || '-';
+      headEl.title = fullHead || '';
+      if (headShort) headShort.textContent = shortHash(fullHead);
+
+      anchorsEl.textContent = String(anchors.length);
+      anchorsEl.className = 'gov-state ' + (anchors.length ? 'on' : 'off');
+      if (anchorsMeta) {
+        if (anchors.length) {
+          var last = anchors[anchors.length - 1] || {};
+          anchorsMeta.textContent = 'Last @ index ' + (last.chain_index != null ? last.chain_index : '—');
+        } else {
+          anchorsMeta.textContent = length > 0
+            ? 'No anchors yet (set anchor_every)'
+            : 'Configure anchor_every > 0';
+        }
+      }
+
+      if (statusEl) {
+        statusEl.textContent = length > 0 ? 'Active' : 'Empty';
+        statusEl.className = 'audit-status ' + (length > 0 ? 'on' : 'off');
+      }
+      if (hintEl) {
+        hintEl.textContent = length > 0
+          ? 'Head advances with each audited event.'
+          : 'Enable audit logging or run with MCP_BASTION_DEMO=1.';
+      }
+
+      var copyBtn = document.getElementById('btnCopyAuditHead');
+      if (copyBtn && !copyBtn.dataset.bound) {
+        copyBtn.dataset.bound = '1';
+        copyBtn.addEventListener('click', function () {
+          var text = (document.getElementById('auditChainHead') || {}).textContent || '';
+          if (!text || text === '-') return;
+          var done = function () {
+            copyBtn.textContent = 'Copied';
+            setTimeout(function () { copyBtn.textContent = 'Copy head hash'; }, 1200);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {});
+          }
+        });
+      }
+
+      if (!links.length) {
+        body.innerHTML = '<tr><td colspan="6" class="muted">No audit chain links yet — enable audit logging or run with demo metrics.</td></tr>';
+        return;
+      }
+      body.innerHTML = links.map(function (link) {
+        var ts = String(link.timestamp || '').replace('T', ' ').replace(/\.\d+Z$/, ' UTC').replace('Z', ' UTC');
+        return '<tr>'
+          + '<td>' + escapeHtml(String(link.index != null ? link.index : '')) + '</td>'
+          + '<td>' + escapeHtml(ts) + '</td>'
+          + '<td>' + escapeHtml(link.tool || '-') + '</td>'
+          + '<td>' + actionPill(link.action) + '</td>'
+          + '<td class="hash-cell" title="' + escapeHtml(link.entry_hash || '') + '">'
+          + escapeHtml(shortHash(link.entry_hash)) + '</td>'
+          + '<td class="hash-cell" title="' + escapeHtml(link.prev_hash || '') + '">'
+          + escapeHtml(shortHash(link.prev_hash)) + '</td>'
+          + '</tr>';
+      }).join('');
     }
 
     async function fetchGovernanceConfig() {
@@ -2581,6 +2784,8 @@
         updatePiiEntity(d.pii_by_entity);
         updateFinopsCharts(d.cost_reduction || {});
         updatePillarHealth(d.pillar_health);
+        renderAttacksStopped(d);
+        renderAuditChain(d);
         updateGovernancePanel(lastGovernanceConfig, d);
         updateToolTable(d.tool_stats, d);
       } else if (!chartUnavailableNotified) {

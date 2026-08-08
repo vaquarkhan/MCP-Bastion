@@ -65,7 +65,9 @@ python scripts/capture_dashboard_demo.py --gif-only --duration-ms 6000
 | **OWASP / ASI / MCP / LLM** | Coverage heatmaps (tabs); click a cell for sample findings |
 | **Live attack matrix** | Categories under pressure + intensity + OWASP tags + sample/trace |
 | **Compliance evidence** | Policy/attestation hashes; SOC2/GDPR/ISO/NIST/ASI report or zip bundle |
-| **Runtime governance & policy** | **RBAC**, prompt guard, rate limit, cost, PII, schema, content filter, Agent IAM, server verification, transport |
+| **Attacks stopped & issue types** | Totals + table of `blocked_by_kind` (what was stopped and why). Demo seeds the catalog; Node can `POST /api/ingest-block` |
+| **Runtime governance & policy** | **RBAC**, prompt guard, rate/cost, PII, semantic firewall, exfiltration canary, Agent IAM, server verification, transport, **audit hash chain** |
+| **Audit hash chain** | Live chain length, head hash, recent SHA-256 links, optional anchors (`/api/metrics` → `audit_chain`) |
 | **KPIs + charts** | Requests, blocks, PII, cost, traffic, reasons, tools, latency |
 | **Cost burn & reduction** | Actual vs would-have-been spend/tokens; FinOps savings + **tokens avoided by blocks**; graphs + blocked-issue table |
 | **Posture drift** | Daily allow/block from audit JSONL, drift Δ, top drivers, recent blocks |

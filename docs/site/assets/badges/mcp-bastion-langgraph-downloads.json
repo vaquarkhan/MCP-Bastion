@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "label": "downloads",
-  "message": "on PyPI",
-  "color": "lightgrey",
+  "label": "total downloads",
+  "message": "307",
+  "color": "0B5FFF",
   "cacheSeconds": 3600
 }

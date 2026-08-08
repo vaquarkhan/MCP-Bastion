@@ -32,7 +32,7 @@ root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(root / "src"))
 
 try:
-    from fastapi import FastAPI
+    from fastapi import FastAPI, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import (
         FileResponse,
@@ -75,6 +75,9 @@ def _load_demo_bastion_config() -> object:
             ("content_filter", True),
             ("agent_iam_enabled", True),
             ("server_verification_enabled", True),
+            ("semantic_firewall", True),
+            ("canary_goallock_enabled", True),
+            ("audit_hash_chain_anchor_every", 5),
         ):
             try:
                 setattr(cfg, attr, val)
@@ -147,6 +150,12 @@ def _governance_config_snapshot() -> dict:
             "cost_tracker": {"enabled": bool(getattr(cfg, "cost_tracker", False))},
             "schema_validation": {"enabled": bool(getattr(cfg, "schema_validation", False))},
             "content_filter": {"enabled": bool(getattr(cfg, "content_filter", False))},
+            "semantic_firewall": {"enabled": bool(getattr(cfg, "semantic_firewall", False))},
+            "canary_goallock": {"enabled": bool(getattr(cfg, "canary_goallock_enabled", False))},
+            "audit_hash_chain": {
+                "enabled": True,
+                "anchor_every": int(getattr(cfg, "audit_hash_chain_anchor_every", 0) or 0),
+            },
         },
     }
 
@@ -337,7 +346,7 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v37-forensics-autoselect",
+        "ui_revision": "v39-attacks-stopped",
         "hint": "If this is missing, you are not hitting dashboard/app.py - check port and process.",
     }
 
@@ -352,6 +361,47 @@ def health():
             {"status": "error", "message": str(e)},
             status_code=503,
         )
+
+
+@app.post("/api/ingest-block")
+async def ingest_block(request: Request):
+    """Opt-in sink: record a blocked decision into MetricsStore (e.g. from Node onAudit).
+
+    Body JSON: ``{ "reason": "...", "tool": "...", "tenant_id"?, "agent_id"?, "request_id"? }``.
+    Does not claim a live TS bridge by itself — callers must POST here.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "invalid_json"}, status_code=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"error": "expected_object"}, status_code=400)
+    reason = str(body.get("reason") or body.get("message") or "").strip()
+    if not reason:
+        code = body.get("deny_code") or body.get("bastionDenyCode")
+        if code is not None:
+            reason = f"[{code}] blocked"
+        else:
+            return JSONResponse({"error": "reason_required"}, status_code=400)
+    tool = str(body.get("tool") or "unknown")[:200]
+    try:
+        MetricsStore.get().record_blocked(
+            reason,
+            tool,
+            tenant_id=body.get("tenant_id") or body.get("tenant"),
+            agent_id=body.get("agent_id"),
+            request_id=body.get("request_id"),
+            pillar=body.get("pillar"),
+            rule=body.get("rule"),
+            forensic_trace=body.get("forensic_trace")
+            if isinstance(body.get("forensic_trace"), list)
+            else None,
+        )
+        kind = MetricsStore._normalize_reason_kind(reason)
+        return {"ok": True, "kind": kind}
+    except Exception as e:
+        logger.exception("ingest-block failed: %s", e)
+        return JSONResponse({"error": "ingest_failed", "message": str(e)}, status_code=500)
 
 
 @app.get("/api/governance")
@@ -1712,6 +1762,89 @@ DASHBOARD_HTML = """
       margin-top: 4px;
       line-height: 1.35;
     }
+    .audit-chain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin: 10px 0 14px;
+    }
+    .audit-chain-grid .gov-tile.span-2 {
+      grid-column: span 2;
+    }
+    @media (max-width: 720px) {
+      .audit-chain-grid .gov-tile.span-2 { grid-column: span 1; }
+    }
+    .audit-chain-hash {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      word-break: break-all;
+      color: #a5b4fc;
+    }
+    html[data-theme="light"] .audit-chain-hash { color: #4338ca; }
+    .audit-chain-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 10px;
+    }
+    .audit-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+    }
+    .audit-status.on {
+      color: #86efac;
+      background: rgba(34, 197, 94, 0.12);
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    .audit-status.off {
+      color: var(--muted);
+      background: rgba(148, 163, 184, 0.08);
+    }
+    html[data-theme="light"] .audit-status.on { color: #047857; }
+    .tool-table td.hash-cell {
+      white-space: normal;
+      max-width: 220px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      color: #a5b4fc;
+    }
+    html[data-theme="light"] .tool-table td.hash-cell { color: #4338ca; }
+    .action-pill {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      letter-spacing: 0.02em;
+    }
+    .action-pill.blocked {
+      color: #fecaca;
+      background: rgba(239, 68, 68, 0.15);
+    }
+    .action-pill.allowed {
+      color: #bbf7d0;
+      background: rgba(34, 197, 94, 0.14);
+    }
+    html[data-theme="light"] .action-pill.blocked { color: #b91c1c; }
+    html[data-theme="light"] .action-pill.allowed { color: #047857; }
+    .attacks-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin: 8px 0 14px;
+    }
+    .attacks-share {
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
     .observe-banner {
       display: none;
       margin: 0 0 14px;
@@ -2612,10 +2745,12 @@ DASHBOARD_HTML = """
   <nav class="dash-jump" aria-label="Jump to sections">
     <span class="jump-label">Jump</span>
     <a href="#dash-posture">Security posture</a>
+    <a href="#dash-attacks-stopped">Attacks stopped</a>
     <a href="#dash-taxonomy">OWASP / ASI</a>
     <a href="#dash-attack">Attack matrix</a>
     <a href="#dash-compliance">Compliance</a>
     <a href="#dash-governance">Runtime governance</a>
+    <a href="#dash-audit-chain">Audit chain</a>
     <a href="#dash-alerts-insights">Alerts &amp; insights</a>
     <a href="#dash-forensics">Forensics</a>
     <a href="#dash-trends">Posture drift</a>
@@ -2634,8 +2769,8 @@ DASHBOARD_HTML = """
       <p class="insight-lede" id="insightVolumeLine">Waiting for traffic…</p>
     </div>
     <div class="insight-card">
-      <h3>API &amp; integrations</h3>
-      <p class="insight-lede" style="margin-top:0">Use the same endpoints for automation, Grafana, Datadog, or custom UIs.</p>
+      <h3>APIs &amp; docs</h3>
+      <p class="insight-lede" style="margin-top:0">Local JSON for automation, plus public docs for the 26 framework packages and handbook.</p>
       <div class="link-row">
         <a class="link-chip" href="/api/metrics" target="_blank" rel="noopener">JSON metrics</a>
         <a class="link-chip" href="/api/posture" target="_blank" rel="noopener">Posture</a>
@@ -2645,11 +2780,57 @@ DASHBOARD_HTML = """
         <a class="link-chip" href="/api/compliance" target="_blank" rel="noopener">Compliance</a>
         <a class="link-chip" href="/api/governance" target="_blank" rel="noopener">Governance</a>
         <a class="link-chip" href="/api/health" target="_blank" rel="noopener">Health</a>
+        <a class="link-chip" href="/api/ingest-block" title="POST JSON {reason, tool} to record a block">Ingest block (POST)</a>
+        <a class="link-chip" href="https://vaquarkhan.github.io/MCP-Bastion/integrations.html" target="_blank" rel="noopener">Integrations &amp; downloads</a>
+        <a class="link-chip" href="https://vaquarkhan.github.io/MCP-Bastion/guide/handbook.html" target="_blank" rel="noopener">Docs handbook</a>
       </div>
     </div>
     <div class="insight-card">
       <h3>Top block categories</h3>
       <ul class="kind-list" id="kindPreview"><li class="muted">No blocks yet</li></ul>
+    </div>
+  </div>
+
+  <div class="card" id="dash-attacks-stopped">
+    <div class="card-head">
+      <h2>Attacks stopped &amp; issue types</h2>
+      <p class="card-desc">
+        What Bastion blocked this window, by control type (<code>blocked_by_kind</code>).
+        Demo mode seeds sample issue types (including semantic egress / result guard) so you can learn the catalog.
+        Live Node denials appear here when you <code>POST /api/ingest-block</code> — not auto-wired.
+      </p>
+    </div>
+    <div class="attacks-summary" id="attacksSummary">
+      <div class="gov-tile">
+        <div class="gov-name">Total blocked</div>
+        <div class="gov-state on" id="attacksTotal">0</div>
+        <div class="gov-meta" id="attacksSavedMeta">Policy denials / attacks stopped</div>
+      </div>
+      <div class="gov-tile">
+        <div class="gov-name">Issue types</div>
+        <div class="gov-state on" id="attacksTypeCount">0</div>
+        <div class="gov-meta">Distinct control categories</div>
+      </div>
+      <div class="gov-tile">
+        <div class="gov-name">Top issue</div>
+        <div class="gov-state on" id="attacksTopKind">-</div>
+        <div class="gov-meta" id="attacksTopMeta">Most frequent this window</div>
+      </div>
+    </div>
+    <div class="tool-table-wrap">
+      <table class="tool-table" id="attacksStoppedTable">
+        <thead>
+          <tr>
+            <th>Issue type</th>
+            <th>What it stops</th>
+            <th>Count</th>
+            <th>Share</th>
+          </tr>
+        </thead>
+        <tbody id="attacksStoppedBody">
+          <tr><td colspan="4" class="muted">Waiting for blocked events…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -2759,10 +2940,57 @@ DASHBOARD_HTML = """
   <div class="card" id="dash-governance">
     <div class="card-head">
       <h2>Runtime governance &amp; policy</h2>
-      <p class="card-desc">Zero-trust + core policy from <code>bastion.yaml</code> - Agent IAM, RBAC, prompt guard, rate/cost, PII, supply-chain, transport. Block counts refresh from live metrics.</p>
+      <p class="card-desc">Zero-trust + core policy from <code>bastion.yaml</code> — RBAC, prompt guard, rate/cost, PII, semantic firewall, exfiltration canary, Agent IAM, supply-chain, transport, and audit hash chain. Block counts refresh from live metrics.</p>
     </div>
     <div class="governance-grid" id="governanceGrid">
       <div class="gov-tile"><div class="gov-name">Loading…</div><div class="gov-state off">-</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="dash-audit-chain">
+    <div class="card-head">
+      <h2>Audit hash chain</h2>
+      <p class="card-desc">Tamper-evident SHA-256 links for forensic audit entries (<code>/api/metrics</code> → <code>audit_chain</code>). Optional anchors every N entries via <code>audit_hash_chain.anchor_every</code> in <code>bastion.yaml</code>.</p>
+    </div>
+    <div class="audit-chain-actions">
+      <span class="audit-status off" id="auditChainStatus" aria-live="polite">Empty</span>
+      <button type="button" class="btn-mini" id="btnCopyAuditHead" title="Copy full head hash">Copy head hash</button>
+      <a class="link-chip" href="/api/metrics" target="_blank" rel="noopener">Raw metrics JSON</a>
+      <span class="muted" id="auditChainHint" style="font-size:0.78rem;"></span>
+    </div>
+    <div class="audit-chain-grid" id="auditChainKpis">
+      <div class="gov-tile">
+        <div class="gov-name">Chain length</div>
+        <div class="gov-state off" id="auditChainLen">-</div>
+        <div class="gov-meta" id="auditChainLenMeta">No links yet</div>
+      </div>
+      <div class="gov-tile span-2">
+        <div class="gov-name">Head hash</div>
+        <div class="gov-state on"><span class="audit-chain-hash" id="auditChainHeadShort">-</span></div>
+        <div class="gov-meta"><span class="audit-chain-hash" id="auditChainHead" title="">-</span></div>
+      </div>
+      <div class="gov-tile">
+        <div class="gov-name">Anchors</div>
+        <div class="gov-state off" id="auditChainAnchors">-</div>
+        <div class="gov-meta" id="auditChainAnchorsMeta">Configure anchor_every &gt; 0</div>
+      </div>
+    </div>
+    <div class="tool-table-wrap">
+      <table class="tool-table" id="auditChainTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time (UTC)</th>
+            <th>Tool</th>
+            <th>Action</th>
+            <th>Entry hash</th>
+            <th>Prev hash</th>
+          </tr>
+        </thead>
+        <tbody id="auditChainBody">
+          <tr><td colspan="6" class="muted">Waiting for audit events…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -3120,13 +3348,15 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script src="/static/dashboard-app.js?v=37-forensics-autoselect" charset="utf-8"></script>
+  <script src="/static/dashboard-app.js?v=39-attacks-stopped" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>
     <span class="footer-links">
       <a href="https://github.com/vaquarkhan/MCP-Bastion" target="_blank" rel="noopener">GitHub</a>
       <a href="https://pypi.org/project/mcp-bastion-python/" target="_blank" rel="noopener">PyPI</a>
+      <a href="https://vaquarkhan.github.io/MCP-Bastion/integrations.html" target="_blank" rel="noopener">Integrations</a>
+      <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/handbook.html" target="_blank" rel="noopener">Handbook</a>
       <a href="/api/metrics" target="_blank" rel="noopener">Raw metrics</a>
     </span>
   </p>

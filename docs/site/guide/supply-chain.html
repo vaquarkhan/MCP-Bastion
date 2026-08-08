@@ -32,7 +32,7 @@
 <div class="nav-group"><div class="nav-group-title">Start here</div><ul>
 <li><a href="https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf"><strong>Benchmark (PDF)</strong></a></li>
 <li><a href="index.html">Documentation Home</a></li>
-<li><a href="bible.html">Documentation bible</a></li>
+<li><a href="handbook.html">Documentation handbook</a></li>
 <li><a href="demos.html">Demos (attack + dashboard)</a></li>
 <li><a href="getting-started.html">Getting started</a></li>
 <li><a href="user-guide.html">User guide (end-to-end)</a></li>
@@ -151,8 +151,18 @@
 python scripts/generate_sbom.py --npm packages/core/package.json --output bom-npm.json
 </code></pre>
 <p>Docs: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/CRA_COMPLIANCE.md">CRA_COMPLIANCE.md</a> · tutorial <a href="cra-sbom.html">CRA_SBOM_TUTORIAL.md</a> · diagram <code>images/mcp-bastion-cra-sbom.svg</code>.</p>
+<h2 id="sigstore-signed-container-images">Sigstore-signed container images</h2>
+<p><code>publish-docker.yml</code> uses <strong>keyless Cosign</strong> (GitHub OIDC → Sigstore) after pushing GHCR images:</p>
+<pre><code class="language-bash">cosign verify \
+  --certificate-identity-regexp 'https://github.com/vaquarkhan/MCP-Bastion/.github/workflows/publish-docker.yml@.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
+</code></pre>
+<p>PyPI/npm continue to use <strong>Trusted Publishing / npm provenance</strong> (OIDC). Session <code>mcp-bastion attest export</code> is <strong>runtime governance evidence</strong>, not release SLSA.</p>
 <h2 id="related-reading">Related reading</h2>
 <ul>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/THREAT_MODEL.md">THREAT_MODEL.md</a> - public threat model  </li>
+<li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/BASTION_AND_TEST_HARNESS.md">BASTION_AND_TEST_HARNESS.md</a> - CI pairing with MCP Test Harness  </li>
 <li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/SECURITY.md">SECURITY.md</a> - product security behavior and dependency notes  </li>
 <li><a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/SECURITY.md">../SECURITY.md</a> - vulnerability disclosure + CRA Article 14  </li>
 <li><a href="pillars.html">PILLARS.md</a> - policy controls, <code>bastion.yaml</code>, and dashboard health rows  </li>

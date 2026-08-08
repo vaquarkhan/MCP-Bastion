@@ -223,7 +223,7 @@ def frame_value(s: dict) -> Image.Image:
         draw.text((48, y), line, font=_font(22), fill=(248, 250, 252))
         y += 36
     y += 28
-    draw.text((48, y), "Docs: FEATURE_DEEP_DIVE · ATTACK_DEMOS · DOCUMENTATION_BIBLE", font=_font(16), fill=(139, 148, 158))
+    draw.text((48, y), "Docs: FEATURE_DEEP_DIVE · ATTACK_DEMOS · DOCUMENTATION_HANDBOOK", font=_font(16), fill=(139, 148, 158))
     y += 36
     draw.text((48, y), f"$ python -m examples.attack_demos --only {s['feature']}", font=_font(16, True), fill=(88, 166, 255))
     return img

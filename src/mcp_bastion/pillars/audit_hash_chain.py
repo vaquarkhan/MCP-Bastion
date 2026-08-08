@@ -39,6 +39,8 @@ class ChainLink:
     prev_hash: str
     entry_hash: str
     timestamp: str
+    tool: str = ""
+    action: str = ""
 
 
 class AuditHashChain:
@@ -84,7 +86,14 @@ class AuditHashChain:
             prev = self._prev_hash
             digest = entry_digest(prev, canonical)
             self._prev_hash = digest
-            link = ChainLink(index=idx, prev_hash=prev, entry_hash=digest, timestamp=datetime.now(timezone.utc).isoformat())
+            link = ChainLink(
+                index=idx,
+                prev_hash=prev,
+                entry_hash=digest,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                tool=str(payload.get("tool") or "")[:120],
+                action=str(payload.get("action") or "")[:40],
+            )
             self._recent_links.append(link)
             if len(self._recent_links) > self._max_recent:
                 self._recent_links = self._recent_links[-self._max_recent :]
@@ -132,7 +141,14 @@ class AuditHashChain:
         with self._lock:
             out = self._recent_links[-max(1, limit) :]
             return [
-                {"index": x.index, "prev_hash": x.prev_hash, "entry_hash": x.entry_hash, "timestamp": x.timestamp}
+                {
+                    "index": x.index,
+                    "prev_hash": x.prev_hash,
+                    "entry_hash": x.entry_hash,
+                    "timestamp": x.timestamp,
+                    "tool": x.tool,
+                    "action": x.action,
+                }
                 for x in out
             ]
 

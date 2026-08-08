@@ -204,6 +204,26 @@ class MetricsStore:
         if not reason:
             return "unknown"
         lower = reason.lower()
+        # Cyber / Node deny codes (also matched when ingested via dashboard)
+        if "semantic egress" in lower or "[-32004]" in lower or "-32004" in lower:
+            return "semantic_egress"
+        if (
+            "result guard" in lower
+            or "result quarantine" in lower
+            or "[-32005]" in lower
+            or "-32005" in lower
+            or "embedded instructions detected" in lower
+        ):
+            return "result_guard"
+        if "exfiltration canary" in lower or ("canary" in lower and "echo" in lower):
+            return "canary"
+        if (
+            "concurrency" in lower
+            or "load shed" in lower
+            or "load_shed" in lower
+            or "[-32006]" in lower
+        ):
+            return "concurrency"
         # Before "injection": phrases like "injection-like arguments" in tool intent messages
         if (
             "tool intent mismatch" in lower
