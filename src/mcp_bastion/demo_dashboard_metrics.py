@@ -49,6 +49,9 @@ def _demo_kind_allowed(cfg: BastionConfig, kind: str) -> bool:
         return bool(cfg.circuit_breaker)
     if kind == "semantic_firewall":
         return bool(cfg.semantic_firewall)
+    if kind in ("semantic_egress", "result_guard", "canary", "concurrency"):
+        # Catalog / Node-ingest kinds: always allow in demo so the Attacks stopped panel is populated.
+        return True
     if kind == "sensitive_classifier":
         return bool(cfg.sensitive_classifier)
     if kind == "external_policy":
@@ -134,6 +137,11 @@ def seed_metrics(rng: random.Random, config: BastionConfig | None = None) -> Non
         ("circuit breaker tripped on upstream", "invoke_model"),
         ("Agent 'support-bot' is not permitted to call tool 'delete_repo' (blocked by policy)", "delete_repo"),
         ("checksum verification failed for server module", "read_file"),
+        # Issue-type catalog (demo): attacks stopped panel — same MetricsStore path as live blocks.
+        ("[-32004] Semantic egress quarantined: manipulative outbound tool args", "create_pull_request"),
+        ("[-32005] Tool result quarantined: embedded instructions detected", "fetch_page"),
+        ("Exfiltration canary echo detected in tool arguments", "send_email"),
+        ("Semantic firewall: dangerous tool chain blocked", "invoke_github"),
     )
     nblk = 0
     for reason, tool in blocks:

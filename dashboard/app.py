@@ -32,7 +32,7 @@ root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(root / "src"))
 
 try:
-    from fastapi import FastAPI
+    from fastapi import FastAPI, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import (
         FileResponse,
@@ -346,7 +346,7 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v37-forensics-autoselect",
+        "ui_revision": "v39-attacks-stopped",
         "hint": "If this is missing, you are not hitting dashboard/app.py - check port and process.",
     }
 
@@ -361,6 +361,47 @@ def health():
             {"status": "error", "message": str(e)},
             status_code=503,
         )
+
+
+@app.post("/api/ingest-block")
+async def ingest_block(request: Request):
+    """Opt-in sink: record a blocked decision into MetricsStore (e.g. from Node onAudit).
+
+    Body JSON: ``{ "reason": "...", "tool": "...", "tenant_id"?, "agent_id"?, "request_id"? }``.
+    Does not claim a live TS bridge by itself — callers must POST here.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "invalid_json"}, status_code=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"error": "expected_object"}, status_code=400)
+    reason = str(body.get("reason") or body.get("message") or "").strip()
+    if not reason:
+        code = body.get("deny_code") or body.get("bastionDenyCode")
+        if code is not None:
+            reason = f"[{code}] blocked"
+        else:
+            return JSONResponse({"error": "reason_required"}, status_code=400)
+    tool = str(body.get("tool") or "unknown")[:200]
+    try:
+        MetricsStore.get().record_blocked(
+            reason,
+            tool,
+            tenant_id=body.get("tenant_id") or body.get("tenant"),
+            agent_id=body.get("agent_id"),
+            request_id=body.get("request_id"),
+            pillar=body.get("pillar"),
+            rule=body.get("rule"),
+            forensic_trace=body.get("forensic_trace")
+            if isinstance(body.get("forensic_trace"), list)
+            else None,
+        )
+        kind = MetricsStore._normalize_reason_kind(reason)
+        return {"ok": True, "kind": kind}
+    except Exception as e:
+        logger.exception("ingest-block failed: %s", e)
+        return JSONResponse({"error": "ingest_failed", "message": str(e)}, status_code=500)
 
 
 @app.get("/api/governance")
@@ -1793,6 +1834,17 @@ DASHBOARD_HTML = """
     }
     html[data-theme="light"] .action-pill.blocked { color: #b91c1c; }
     html[data-theme="light"] .action-pill.allowed { color: #047857; }
+    .attacks-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin: 8px 0 14px;
+    }
+    .attacks-share {
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
     .observe-banner {
       display: none;
       margin: 0 0 14px;
@@ -2693,6 +2745,7 @@ DASHBOARD_HTML = """
   <nav class="dash-jump" aria-label="Jump to sections">
     <span class="jump-label">Jump</span>
     <a href="#dash-posture">Security posture</a>
+    <a href="#dash-attacks-stopped">Attacks stopped</a>
     <a href="#dash-taxonomy">OWASP / ASI</a>
     <a href="#dash-attack">Attack matrix</a>
     <a href="#dash-compliance">Compliance</a>
@@ -2727,6 +2780,7 @@ DASHBOARD_HTML = """
         <a class="link-chip" href="/api/compliance" target="_blank" rel="noopener">Compliance</a>
         <a class="link-chip" href="/api/governance" target="_blank" rel="noopener">Governance</a>
         <a class="link-chip" href="/api/health" target="_blank" rel="noopener">Health</a>
+        <a class="link-chip" href="/api/ingest-block" title="POST JSON {reason, tool} to record a block">Ingest block (POST)</a>
         <a class="link-chip" href="https://vaquarkhan.github.io/MCP-Bastion/integrations.html" target="_blank" rel="noopener">Integrations &amp; downloads</a>
         <a class="link-chip" href="https://vaquarkhan.github.io/MCP-Bastion/guide/handbook.html" target="_blank" rel="noopener">Docs handbook</a>
       </div>
@@ -2734,6 +2788,49 @@ DASHBOARD_HTML = """
     <div class="insight-card">
       <h3>Top block categories</h3>
       <ul class="kind-list" id="kindPreview"><li class="muted">No blocks yet</li></ul>
+    </div>
+  </div>
+
+  <div class="card" id="dash-attacks-stopped">
+    <div class="card-head">
+      <h2>Attacks stopped &amp; issue types</h2>
+      <p class="card-desc">
+        What Bastion blocked this window, by control type (<code>blocked_by_kind</code>).
+        Demo mode seeds sample issue types (including semantic egress / result guard) so you can learn the catalog.
+        Live Node denials appear here when you <code>POST /api/ingest-block</code> — not auto-wired.
+      </p>
+    </div>
+    <div class="attacks-summary" id="attacksSummary">
+      <div class="gov-tile">
+        <div class="gov-name">Total blocked</div>
+        <div class="gov-state on" id="attacksTotal">0</div>
+        <div class="gov-meta" id="attacksSavedMeta">Policy denials / attacks stopped</div>
+      </div>
+      <div class="gov-tile">
+        <div class="gov-name">Issue types</div>
+        <div class="gov-state on" id="attacksTypeCount">0</div>
+        <div class="gov-meta">Distinct control categories</div>
+      </div>
+      <div class="gov-tile">
+        <div class="gov-name">Top issue</div>
+        <div class="gov-state on" id="attacksTopKind">-</div>
+        <div class="gov-meta" id="attacksTopMeta">Most frequent this window</div>
+      </div>
+    </div>
+    <div class="tool-table-wrap">
+      <table class="tool-table" id="attacksStoppedTable">
+        <thead>
+          <tr>
+            <th>Issue type</th>
+            <th>What it stops</th>
+            <th>Count</th>
+            <th>Share</th>
+          </tr>
+        </thead>
+        <tbody id="attacksStoppedBody">
+          <tr><td colspan="4" class="muted">Waiting for blocked events…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -3251,7 +3348,7 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script src="/static/dashboard-app.js?v=38-audit-chain" charset="utf-8"></script>
+  <script src="/static/dashboard-app.js?v=39-attacks-stopped" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>

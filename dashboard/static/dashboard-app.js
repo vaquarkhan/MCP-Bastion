@@ -1243,11 +1243,99 @@
         content_filter: 'Content filter',
         circuit_breaker: 'Circuit breaker',
         semantic_firewall: 'Semantic firewall',
+        semantic_egress: 'Semantic egress',
+        result_guard: 'Result guard',
+        canary: 'Exfiltration canary',
+        concurrency: 'Concurrency cap',
         sensitive_classifier: 'Sensitive classifier',
         external_policy: 'External policy',
+        argument_guards: 'Argument guards',
         other: 'Other'
       };
       return map[kind] || kind.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+    }
+
+    function kindBlurb(kind) {
+      var map = {
+        injection: 'Jailbreaks / prompt injection in tool args',
+        rate_limit: 'Runaway iteration / DoS-of-wallet loops',
+        rbac: 'Unauthorized tool access by role',
+        cost: 'Budget / FinOps overspend',
+        schema_validation: 'Malformed tool arguments',
+        replay: 'Replay / nonce reuse',
+        content_filter: 'Path traversal / dangerous content',
+        circuit_breaker: 'Failing upstream tools',
+        semantic_firewall: 'Dangerous tool chains / intent mismatch',
+        semantic_egress: 'Manipulative outbound actions (−32004)',
+        result_guard: 'Poisoned tool results (−32005)',
+        canary: 'Context/exfiltration canary echoes',
+        concurrency: 'Overload / shed concurrent calls',
+        agent_iam: 'Confused-deputy / agent scope',
+        server_verification: 'Supply-chain checksum mismatch',
+        sensitive_classifier: 'Sensitive content policy',
+        external_policy: 'OPA / Cedar deny',
+        argument_guards: 'Argument policy violations',
+        other: 'Uncategorized policy deny'
+      };
+      return map[kind] || 'Policy denial';
+    }
+
+    function renderAttacksStopped(d) {
+      var kinds = d.blocked_by_kind || {};
+      var entries = Object.entries(kinds).sort(function (a, b) { return b[1] - a[1]; });
+      var total = Number(d.blocked_total || 0);
+      if (!total) {
+        total = entries.reduce(function (s, e) { return s + Number(e[1] || 0); }, 0);
+      }
+      var totalEl = document.getElementById('attacksTotal');
+      var typeEl = document.getElementById('attacksTypeCount');
+      var topEl = document.getElementById('attacksTopKind');
+      var topMeta = document.getElementById('attacksTopMeta');
+      var body = document.getElementById('attacksStoppedBody');
+      var savedMeta = document.getElementById('attacksSavedMeta');
+      if (!body) return;
+
+      if (totalEl) {
+        totalEl.textContent = String(total);
+        totalEl.className = 'gov-state ' + (total > 0 ? 'on' : 'off');
+      }
+      if (typeEl) {
+        typeEl.textContent = String(entries.length);
+        typeEl.className = 'gov-state ' + (entries.length ? 'on' : 'off');
+      }
+      if (topEl) {
+        if (entries.length) {
+          topEl.textContent = kindLabel(entries[0][0]);
+          topEl.className = 'gov-state on';
+          if (topMeta) topMeta.textContent = entries[0][1] + ' block(s) this window';
+        } else {
+          topEl.textContent = '-';
+          topEl.className = 'gov-state off';
+          if (topMeta) topMeta.textContent = 'Most frequent this window';
+        }
+      }
+      if (savedMeta) {
+        savedMeta.textContent = total > 0
+          ? (total + ' attacks / policy denials stopped')
+          : 'No blocks yet — run traffic or demo mode';
+      }
+
+      if (!entries.length) {
+        body.innerHTML = '<tr><td colspan="4" class="muted">No blocked events yet. With demo on, restart the dashboard to seed sample issue types.</td></tr>';
+        return;
+      }
+      body.innerHTML = entries.map(function (kv) {
+        var kind = kv[0];
+        var n = Number(kv[1] || 0);
+        var pct = total > 0 ? ((100 * n) / total).toFixed(1) + '%' : '-';
+        return '<tr>'
+          + '<td><strong>' + escapeHtml(kindLabel(kind)) + '</strong>'
+          + '<div class="muted" style="font-size:0.72rem;">' + escapeHtml(kind) + '</div></td>'
+          + '<td>' + escapeHtml(kindBlurb(kind)) + '</td>'
+          + '<td>' + n + '</td>'
+          + '<td class="attacks-share">' + pct + '</td>'
+          + '</tr>';
+      }).join('');
     }
 
     function updateBlockKinds(obj) {
@@ -2696,6 +2784,7 @@
         updatePiiEntity(d.pii_by_entity);
         updateFinopsCharts(d.cost_reduction || {});
         updatePillarHealth(d.pillar_health);
+        renderAttacksStopped(d);
         renderAuditChain(d);
         updateGovernancePanel(lastGovernanceConfig, d);
         updateToolTable(d.tool_stats, d);
