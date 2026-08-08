@@ -1723,9 +1723,15 @@ DASHBOARD_HTML = """
     }
     .audit-chain-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 10px;
-      margin-top: 8px;
+      margin: 10px 0 14px;
+    }
+    .audit-chain-grid .gov-tile.span-2 {
+      grid-column: span 2;
+    }
+    @media (max-width: 720px) {
+      .audit-chain-grid .gov-tile.span-2 { grid-column: span 1; }
     }
     .audit-chain-hash {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -1734,20 +1740,59 @@ DASHBOARD_HTML = """
       color: #a5b4fc;
     }
     html[data-theme="light"] .audit-chain-hash { color: #4338ca; }
-    .audit-links-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.78rem;
-      margin-top: 12px;
+    .audit-chain-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 10px;
     }
-    .audit-links-table th,
-    .audit-links-table td {
-      text-align: left;
-      padding: 6px 8px;
-      border-bottom: 1px solid var(--card-border);
-      vertical-align: top;
+    .audit-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
     }
-    .audit-links-table th { color: var(--muted); font-weight: 600; }
+    .audit-status.on {
+      color: #86efac;
+      background: rgba(34, 197, 94, 0.12);
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    .audit-status.off {
+      color: var(--muted);
+      background: rgba(148, 163, 184, 0.08);
+    }
+    html[data-theme="light"] .audit-status.on { color: #047857; }
+    .tool-table td.hash-cell {
+      white-space: normal;
+      max-width: 220px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      color: #a5b4fc;
+    }
+    html[data-theme="light"] .tool-table td.hash-cell { color: #4338ca; }
+    .action-pill {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      letter-spacing: 0.02em;
+    }
+    .action-pill.blocked {
+      color: #fecaca;
+      background: rgba(239, 68, 68, 0.15);
+    }
+    .action-pill.allowed {
+      color: #bbf7d0;
+      background: rgba(34, 197, 94, 0.14);
+    }
+    html[data-theme="light"] .action-pill.blocked { color: #b91c1c; }
+    html[data-theme="light"] .action-pill.allowed { color: #047857; }
     .observe-banner {
       display: none;
       margin: 0 0 14px;
@@ -2798,7 +2843,7 @@ DASHBOARD_HTML = """
   <div class="card" id="dash-governance">
     <div class="card-head">
       <h2>Runtime governance &amp; policy</h2>
-      <p class="card-desc">Zero-trust + core policy from <code>bastion.yaml</code> - Agent IAM, RBAC, prompt guard, rate/cost, PII, supply-chain, transport. Block counts refresh from live metrics.</p>
+      <p class="card-desc">Zero-trust + core policy from <code>bastion.yaml</code> — RBAC, prompt guard, rate/cost, PII, semantic firewall, exfiltration canary, Agent IAM, supply-chain, transport, and audit hash chain. Block counts refresh from live metrics.</p>
     </div>
     <div class="governance-grid" id="governanceGrid">
       <div class="gov-tile"><div class="gov-name">Loading…</div><div class="gov-state off">-</div></div>
@@ -2808,20 +2853,45 @@ DASHBOARD_HTML = """
   <div class="card" id="dash-audit-chain">
     <div class="card-head">
       <h2>Audit hash chain</h2>
-      <p class="card-desc">Tamper-evident SHA-256 links for forensic audit entries. Head hash and recent links come from live <code>/api/metrics</code> → <code>audit_chain</code>. Optional anchors every N entries when configured in <code>bastion.yaml</code>.</p>
+      <p class="card-desc">Tamper-evident SHA-256 links for forensic audit entries (<code>/api/metrics</code> → <code>audit_chain</code>). Optional anchors every N entries via <code>audit_hash_chain.anchor_every</code> in <code>bastion.yaml</code>.</p>
+    </div>
+    <div class="audit-chain-actions">
+      <span class="audit-status off" id="auditChainStatus" aria-live="polite">Empty</span>
+      <button type="button" class="btn-mini" id="btnCopyAuditHead" title="Copy full head hash">Copy head hash</button>
+      <a class="link-chip" href="/api/metrics" target="_blank" rel="noopener">Raw metrics JSON</a>
+      <span class="muted" id="auditChainHint" style="font-size:0.78rem;"></span>
     </div>
     <div class="audit-chain-grid" id="auditChainKpis">
-      <div class="gov-tile"><div class="gov-name">Chain length</div><div class="gov-state off" id="auditChainLen">-</div></div>
-      <div class="gov-tile"><div class="gov-name">Head hash</div><div class="gov-state off"><span class="audit-chain-hash" id="auditChainHead">-</span></div></div>
-      <div class="gov-tile"><div class="gov-name">Anchors</div><div class="gov-state off" id="auditChainAnchors">-</div></div>
+      <div class="gov-tile">
+        <div class="gov-name">Chain length</div>
+        <div class="gov-state off" id="auditChainLen">-</div>
+        <div class="gov-meta" id="auditChainLenMeta">No links yet</div>
+      </div>
+      <div class="gov-tile span-2">
+        <div class="gov-name">Head hash</div>
+        <div class="gov-state on"><span class="audit-chain-hash" id="auditChainHeadShort">-</span></div>
+        <div class="gov-meta"><span class="audit-chain-hash" id="auditChainHead" title="">-</span></div>
+      </div>
+      <div class="gov-tile">
+        <div class="gov-name">Anchors</div>
+        <div class="gov-state off" id="auditChainAnchors">-</div>
+        <div class="gov-meta" id="auditChainAnchorsMeta">Configure anchor_every &gt; 0</div>
+      </div>
     </div>
     <div class="tool-table-wrap">
-      <table class="audit-links-table" id="auditChainTable">
+      <table class="tool-table" id="auditChainTable">
         <thead>
-          <tr><th>#</th><th>Timestamp</th><th>Entry hash</th><th>Prev hash</th></tr>
+          <tr>
+            <th>#</th>
+            <th>Time (UTC)</th>
+            <th>Tool</th>
+            <th>Action</th>
+            <th>Entry hash</th>
+            <th>Prev hash</th>
+          </tr>
         </thead>
         <tbody id="auditChainBody">
-          <tr><td colspan="4" class="muted">Waiting for audit events…</td></tr>
+          <tr><td colspan="6" class="muted">Waiting for audit events…</td></tr>
         </tbody>
       </table>
     </div>
@@ -3181,13 +3251,15 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script src="/static/dashboard-app.js?v=37-forensics-autoselect" charset="utf-8"></script>
+  <script src="/static/dashboard-app.js?v=38-audit-chain" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>
     <span class="footer-links">
       <a href="https://github.com/vaquarkhan/MCP-Bastion" target="_blank" rel="noopener">GitHub</a>
       <a href="https://pypi.org/project/mcp-bastion-python/" target="_blank" rel="noopener">PyPI</a>
+      <a href="https://vaquarkhan.github.io/MCP-Bastion/integrations.html" target="_blank" rel="noopener">Integrations</a>
+      <a href="https://vaquarkhan.github.io/MCP-Bastion/guide/handbook.html" target="_blank" rel="noopener">Handbook</a>
       <a href="/api/metrics" target="_blank" rel="noopener">Raw metrics</a>
     </span>
   </p>

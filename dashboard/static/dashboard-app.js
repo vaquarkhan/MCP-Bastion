@@ -1530,35 +1530,97 @@
       return s.slice(0, 10) + '…' + s.slice(-6);
     }
 
+    function actionPill(action) {
+      var a = String(action || '').toUpperCase();
+      if (!a) return '<span class="muted">-</span>';
+      var cls = a.indexOf('BLOCK') >= 0 ? 'blocked' : 'allowed';
+      return '<span class="action-pill ' + cls + '">' + escapeHtml(a) + '</span>';
+    }
+
     function renderAuditChain(d) {
       var chain = (d && d.audit_chain) || {};
       var lenEl = document.getElementById('auditChainLen');
+      var lenMeta = document.getElementById('auditChainLenMeta');
       var headEl = document.getElementById('auditChainHead');
+      var headShort = document.getElementById('auditChainHeadShort');
       var anchorsEl = document.getElementById('auditChainAnchors');
+      var anchorsMeta = document.getElementById('auditChainAnchorsMeta');
       var body = document.getElementById('auditChainBody');
+      var statusEl = document.getElementById('auditChainStatus');
+      var hintEl = document.getElementById('auditChainHint');
       if (!lenEl || !headEl || !anchorsEl || !body) return;
+
       var length = Number(chain.chain_length || 0);
+      var fullHead = chain.head_hash || chain.genesis_prev || '';
+      var anchors = chain.anchors || [];
+      var links = (chain.recent_links || []).slice().reverse();
+
       lenEl.textContent = String(length);
       lenEl.className = 'gov-state ' + (length > 0 ? 'on' : 'off');
-      headEl.textContent = chain.head_hash || chain.genesis_prev || '-';
-      var anchors = chain.anchors || [];
-      anchorsEl.textContent = anchors.length
-        ? (anchors.length + ' stored')
-        : (length > 0 ? 'None yet' : 'No links');
+      if (lenMeta) {
+        lenMeta.textContent = length > 0
+          ? ('Showing latest ' + Math.min(links.length, length) + ' link(s)')
+          : 'No links yet';
+      }
+
+      headEl.textContent = fullHead || '-';
+      headEl.title = fullHead || '';
+      if (headShort) headShort.textContent = shortHash(fullHead);
+
+      anchorsEl.textContent = String(anchors.length);
       anchorsEl.className = 'gov-state ' + (anchors.length ? 'on' : 'off');
-      var links = (chain.recent_links || []).slice().reverse();
+      if (anchorsMeta) {
+        if (anchors.length) {
+          var last = anchors[anchors.length - 1] || {};
+          anchorsMeta.textContent = 'Last @ index ' + (last.chain_index != null ? last.chain_index : '—');
+        } else {
+          anchorsMeta.textContent = length > 0
+            ? 'No anchors yet (set anchor_every)'
+            : 'Configure anchor_every > 0';
+        }
+      }
+
+      if (statusEl) {
+        statusEl.textContent = length > 0 ? 'Active' : 'Empty';
+        statusEl.className = 'audit-status ' + (length > 0 ? 'on' : 'off');
+      }
+      if (hintEl) {
+        hintEl.textContent = length > 0
+          ? 'Head advances with each audited event.'
+          : 'Enable audit logging or run with MCP_BASTION_DEMO=1.';
+      }
+
+      var copyBtn = document.getElementById('btnCopyAuditHead');
+      if (copyBtn && !copyBtn.dataset.bound) {
+        copyBtn.dataset.bound = '1';
+        copyBtn.addEventListener('click', function () {
+          var text = (document.getElementById('auditChainHead') || {}).textContent || '';
+          if (!text || text === '-') return;
+          var done = function () {
+            copyBtn.textContent = 'Copied';
+            setTimeout(function () { copyBtn.textContent = 'Copy head hash'; }, 1200);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {});
+          }
+        });
+      }
+
       if (!links.length) {
-        body.innerHTML = '<tr><td colspan="4" class="muted">No audit chain links yet — enable audit logging or run with demo metrics.</td></tr>';
+        body.innerHTML = '<tr><td colspan="6" class="muted">No audit chain links yet — enable audit logging or run with demo metrics.</td></tr>';
         return;
       }
       body.innerHTML = links.map(function (link) {
+        var ts = String(link.timestamp || '').replace('T', ' ').replace(/\.\d+Z$/, ' UTC').replace('Z', ' UTC');
         return '<tr>'
           + '<td>' + escapeHtml(String(link.index != null ? link.index : '')) + '</td>'
-          + '<td>' + escapeHtml(String(link.timestamp || '').replace('T', ' ').replace('Z', ' UTC')) + '</td>'
-          + '<td><span class="audit-chain-hash" title="' + escapeHtml(link.entry_hash || '') + '">'
-          + escapeHtml(shortHash(link.entry_hash)) + '</span></td>'
-          + '<td><span class="audit-chain-hash" title="' + escapeHtml(link.prev_hash || '') + '">'
-          + escapeHtml(shortHash(link.prev_hash)) + '</span></td>'
+          + '<td>' + escapeHtml(ts) + '</td>'
+          + '<td>' + escapeHtml(link.tool || '-') + '</td>'
+          + '<td>' + actionPill(link.action) + '</td>'
+          + '<td class="hash-cell" title="' + escapeHtml(link.entry_hash || '') + '">'
+          + escapeHtml(shortHash(link.entry_hash)) + '</td>'
+          + '<td class="hash-cell" title="' + escapeHtml(link.prev_hash || '') + '">'
+          + escapeHtml(shortHash(link.prev_hash)) + '</td>'
           + '</tr>';
       }).join('');
     }
