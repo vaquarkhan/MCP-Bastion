@@ -134,4 +134,49 @@ describe("result-guard", () => {
       "<untrusted_tool_result>raw</untrusted_tool_result>"
     );
   });
+
+  it("tagResultProvenance is a no-op when content missing", () => {
+    const empty = tagResultProvenance({ content: [], isError: false });
+    expect(empty.content).toEqual([]);
+  });
+
+  it("strict mode fails closed when sidecar returns non-ok", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: () => Promise.resolve({}),
+    } as Response);
+
+    const handler = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: "x" }],
+      isError: false,
+    });
+    const wrapped = wrapCallToolHandler(handler, {
+      enableRateLimit: false,
+      enableResultGuard: true,
+      resultGuardMode: "strict",
+      sidecarUrl: "http://localhost:8000",
+    });
+    const result = await wrapped(mockRequest);
+    expect(result.isError).toBe(true);
+    expect((result.content[0] as { text: string }).text).toContain(
+      "unavailable"
+    );
+  });
+
+  it("enableResultGuard detect without sidecar does not block", async () => {
+    const handler = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: "ok" }],
+      isError: false,
+    });
+    const wrapped = wrapCallToolHandler(handler, {
+      enableRateLimit: false,
+      enableResultGuard: true,
+      resultGuardMode: "detect",
+      sidecarUrl: "",
+    });
+    const result = await wrapped(mockRequest);
+    expect(handler).toHaveBeenCalled();
+    expect(result.isError).toBeFalsy();
+  });
 });

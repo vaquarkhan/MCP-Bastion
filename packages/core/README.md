@@ -72,6 +72,7 @@ await server.connect(transport);
 | resultGuardMode | detect | `detect` = log; `strict` = block (fail-closed) |
 | resultGuardTimeoutMs | 800 | Sidecar timeout |
 | enableAudit | false | In-memory hash-chained audit (tamper-evident, not tamper-proof) |
+| onAudit | (noop) | Optional sink per audit record (e.g. JSONL append) |
 
 ### Sidecar endpoints
 

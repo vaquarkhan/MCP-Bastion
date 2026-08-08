@@ -17,7 +17,7 @@ import { TokenBucketRateLimiter } from "./rate-limit.js";
 import { logger } from "./logger.js";
 import { scoreEgress, isScreenedTool } from "./semantic-egress.js";
 import { tagResultProvenance, scanResult } from "./result-guard.js";
-import { AuditChain } from "./audit.js";
+import { AuditChain, type AuditRecord } from "./audit.js";
 
 export interface McpBastionOptions {
   maxIterations?: number;
@@ -46,6 +46,8 @@ export interface McpBastionOptions {
   resultGuardTimeoutMs?: number;
   /** Append hash-chained audit records in-memory (tamper-evident). */
   enableAudit?: boolean;
+  /** Optional sink for each audit record (e.g. append JSONL). Zero-infra. */
+  onAudit?: (record: AuditRecord) => void;
 }
 
 const DEFAULT_OPTIONS: Required<McpBastionOptions> = {
@@ -65,6 +67,7 @@ const DEFAULT_OPTIONS: Required<McpBastionOptions> = {
   resultGuardMode: "detect",
   resultGuardTimeoutMs: 800,
   enableAudit: false,
+  onAudit: (() => undefined) as Required<McpBastionOptions>["onAudit"],
 };
 
 function createMcpError(code: number, message: string): CallToolResult {
@@ -123,12 +126,17 @@ export function wrapCallToolHandler(
 
     const record = (decision: string) => {
       if (!audit) return;
-      audit.append({
+      const entry = audit.append({
         ts: new Date().toISOString(),
         requestId,
         tool: toolName || undefined,
         decision,
       });
+      try {
+        opts.onAudit(entry);
+      } catch {
+        // Audit sink must never break the request path.
+      }
     };
 
     if (opts.enableRateLimit) {

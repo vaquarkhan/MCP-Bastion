@@ -111,9 +111,15 @@ wrapWithMcpBastion(server, {
   enableRateLimit: true,
   maxIterations: 15,
   timeoutMs: 60_000,
-  sidecarUrl: process.env.MCP_BASTION_SIDECAR || "",  // optional: for prompt/PII
+  sidecarUrl: process.env.MCP_BASTION_SIDECAR || "",  // optional: for prompt/PII/semantic/result
   enablePromptGuard: !!process.env.MCP_BASTION_SIDECAR,
   enablePiiRedaction: !!process.env.MCP_BASTION_SIDECAR,
+  // Opt-in cyber extensions (A/E/F) — see docs/CYBER_EXTENSIONS_CORE.md
+  enableSemanticEgress: true,
+  semanticEgressMode: "detect", // advisory; use "quarantine" only for a tiny allowlist
+  semanticEgressTools: ["create_pull_request", "send_email"],
+  tagResultProvenance: true, // reduces indirect-injection efficacy; not IFC isolation
+  enableAudit: true,
 });
 
 // Register your tools as usual
@@ -126,7 +132,11 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 ```
 
-**Step 3.** For full prompt injection and PII redaction, run the Python sidecar and set `MCP_BASTION_SIDECAR` to its URL. See [README](../README.md) and [SETUP_GUIDE.md](../SETUP_GUIDE.md).
+**Step 3.** For prompt injection, PII, semantic egress scoring, and result guard, run the Python sidecar and set `MCP_BASTION_SIDECAR` / `MCP_BASTION_URL`. Sidecar paths: `/prompt-guard`, `/pii-redact`, `/semantic-egress`, `/result-guard`.
+
+**Step 4.** Read the honest scope notes in [CYBER_EXTENSIONS_CORE.md](CYBER_EXTENSIONS_CORE.md): Bastion only sees MCP-mediated tools; out-of-band shell/git is out of scope.
+
+See also [README](../README.md) and [SETUP_GUIDE.md](../SETUP_GUIDE.md).
 
 ---
 

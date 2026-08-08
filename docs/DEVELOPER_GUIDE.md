@@ -13,7 +13,7 @@ MCP-Bastion/
 │   ├── pillars/              # Individual security controls (rbac, pii, …)
 │   └── proxy_server.py       # serve --proxy boundary mode
 ├── integrations/             # 17 framework/provider packages (mcp-bastion-*)
-├── packages/core/            # TypeScript @mcp-bastion/core (npm)
+├── packages/core/            # TypeScript @mcp-bastion/core (npm; rate/audit/provenance + sidecar)
 ├── dashboard/                # FastAPI metrics UI
 ├── docs/                     # Documentation hub (GitHub Pages)
 ├── examples/                 # Runnable samples and CI snippets
@@ -54,6 +54,8 @@ pytest --cov=mcp_bastion --cov-fail-under=92
 
 # TypeScript
 npm test
+# Cyber extensions A/E/F (semantic egress, result guard, audit)
+npm test --workspace=@mcp-bastion/core
 
 # Single module
 pytest tests/test_rbac.py -v

@@ -172,4 +172,66 @@ describe("semantic-egress", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(handler).toHaveBeenCalled();
   });
+
+  it("quarantine mode fails closed when sidecar returns error", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({}),
+    } as Response);
+
+    const handler = vi.fn();
+    const wrapped = wrapCallToolHandler(handler, {
+      enableRateLimit: false,
+      enableSemanticEgress: true,
+      semanticEgressMode: "quarantine",
+      semanticEgressTools: ["create_pull_request"],
+      sidecarUrl: "http://localhost:8000",
+    });
+    const result = await wrapped(outboundRequest);
+    expect(handler).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect((result.content[0] as { text: string }).text).toContain(
+      "unavailable"
+    );
+  });
+
+  it("detect mode proceeds without sidecar (advisory)", async () => {
+    const handler = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: "ok" }],
+      isError: false,
+    });
+    const wrapped = wrapCallToolHandler(handler, {
+      enableRateLimit: false,
+      enableSemanticEgress: true,
+      semanticEgressMode: "detect",
+      semanticEgressTools: ["create_pull_request"],
+      sidecarUrl: "",
+    });
+    const result = await wrapped(outboundRequest);
+    expect(handler).toHaveBeenCalled();
+    expect(result.isError).toBeFalsy();
+  });
+
+  it("exact threshold triggers quarantine", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ score: 0.7, verdict: "suspicious" }),
+    } as Response);
+
+    const handler = vi.fn();
+    const wrapped = wrapCallToolHandler(handler, {
+      enableRateLimit: false,
+      enableSemanticEgress: true,
+      semanticEgressMode: "quarantine",
+      semanticEgressTools: ["create_pull_request"],
+      semanticThreshold: 0.7,
+      sidecarUrl: "http://localhost:8000",
+    });
+    const result = await wrapped(outboundRequest);
+    expect(handler).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+  });
 });

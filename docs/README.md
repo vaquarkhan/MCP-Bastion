@@ -46,7 +46,7 @@ Current Python package release: **`mcp-bastion-python==4.0.0`** ([PyPI](https://
 | [../FUNDING.md](../FUNDING.md) | Sponsorship, commercial licensing, sustainability |
 | [../SUPPORT.md](../SUPPORT.md) | Where to get help; issue expectations |
 | [LLM_INTEGRATION.md](LLM_INTEGRATION.md) | OpenAI/Claude/Gemini/Mistral/Grok integration patterns |
-| [INTEGRATION_MODELS.md](INTEGRATION_MODELS.md) | How Bastion fits stdio, HTTP, Python, TypeScript, and frameworks |
+| [CYBER_EXTENSIONS_CORE.md](CYBER_EXTENSIONS_CORE.md) | TypeScript Extensions A/E/F (semantic egress, result provenance, audit) — honest scope |
 | [TUTORIALS.md](TUTORIALS.md) | Popular MCP integration approaches |
 
 ### Reading paths
