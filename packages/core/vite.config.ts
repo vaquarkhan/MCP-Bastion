@@ -8,8 +8,12 @@ export default defineConfig({
       fileName: "index",
       formats: ["es"],
     },
-    target: "es2022",
+    target: "node18",
     sourcemap: true,
     minify: false,
+    // Node built-ins stay external — core is a Node MCP middleware, not a browser bundle.
+    rollupOptions: {
+      external: [/^node:/, "crypto"],
+    },
   },
 });
