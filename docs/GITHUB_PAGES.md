@@ -6,9 +6,11 @@ The public site is built from **`docs/site/`** and deployed by [`.github/workflo
 
 | Path | Content |
 |------|---------|
-| `/` | Marketing landing (`docs/site/index.html`) |
+| `/` | Marketing landing (`docs/site/index.html`) — **4.0.0**, 26 integrations |
 | `/guide/` | Professional documentation handbook (generated HTML) |
-| `/integrations.html` | Integration matrix |
+| `/guide/handbook.html` | Visual system handbook (attack GIFs, dashboard, feature map) |
+| `/guide/bible.html` | Redirect → `handbook.html` (legacy URL) |
+| `/integrations.html` | Integration matrix + live PePy download totals |
 
 ## Documentation guide (handbook)
 

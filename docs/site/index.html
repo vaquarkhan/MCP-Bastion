@@ -1,4 +1,4 @@
-<!-- MCP-Bastion GitHub Pages | Last deployed: 2026-07-11 -->
+<!-- MCP-Bastion GitHub Pages | Last updated: 2026-08-08 · v4.0.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -89,6 +89,7 @@ tailwind.config = {
     <div class="hidden md:flex items-center gap-8">
       <a href="index.html" class="text-sm text-white/90 hover:text-white transition-colors">Home</a>
       <a href="guide/" class="text-sm text-white/60 hover:text-white transition-colors">Docs</a>
+      <a href="guide/handbook.html" class="text-sm text-white/60 hover:text-white transition-colors">Handbook</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf" class="text-sm text-white/60 hover:text-white transition-colors font-semibold">Benchmark</a>
       <a href="integrations.html" class="text-sm text-white/60 hover:text-white transition-colors">Integrations</a>
       <a href="https://github.com/vaquarkhan/MCP-Bastion" class="text-sm text-white/60 hover:text-white transition-colors">GitHub</a>
@@ -109,7 +110,7 @@ tailwind.config = {
       <!-- Badge -->
       <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-indigo-300 mb-8">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        Open Source | MIT License | 100% Local | 3.0 runtime governance
+        Open Source | MIT License | 100% Local | 4.0.0 · 26 PyPI integrations
       </div>
 
       <h1 class="text-5xl md:text-7xl font-black leading-tight mb-6">
@@ -132,6 +133,9 @@ tailwind.config = {
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
           View on GitHub
         </a>
+        <a href="guide/handbook.html" class="inline-flex items-center gap-3 bg-white/5 border border-white/10 text-white font-medium px-8 py-4 rounded-xl hover:bg-white/10 hover:border-white/20 transition-all hover:-translate-y-0.5">
+          Documentation handbook
+        </a>
         <a href="assets/mcp-bastian-features-deck.pdf" class="inline-flex items-center gap-3 bg-white/5 border border-white/10 text-white font-medium px-8 py-4 rounded-xl hover:bg-white/10 hover:border-white/20 transition-all hover:-translate-y-0.5">
           Features deck (PDF)
         </a>
@@ -139,8 +143,9 @@ tailwind.config = {
 
       <!-- Stats -->
       <div class="flex flex-wrap justify-center gap-3 mb-8">
-        <a href="https://pypi.org/project/mcp-bastion-python/3.0.1/"><img src="https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&color=3775A9" alt="PyPI version"></a>
-        <a href="https://pepy.tech/projects/mcp-bastion-python"><img src="https://img.shields.io/pepy/dt/mcp-bastion-python?label=downloads" alt="PePy downloads"></a>
+        <a href="https://pypi.org/project/mcp-bastion-python/4.0.0/"><img src="https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&color=3775A9" alt="PyPI version"></a>
+        <a href="integrations.html"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fecosystem-downloads-badge.json" alt="Ecosystem downloads"></a>
+        <a href="https://pepy.tech/projects/mcp-bastion-python"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-python-downloads.json" alt="Core downloads"></a>
         <a href="https://github.com/sponsors/vaquarkhan"><img src="https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github" alt="Sponsor"></a>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
@@ -157,7 +162,7 @@ tailwind.config = {
           <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Test Coverage</div>
         </div>
         <div class="glass rounded-xl p-5 text-center">
-          <div class="text-3xl font-bold text-white glow-text">25</div>
+          <div class="text-3xl font-bold text-white glow-text">26</div>
           <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Integrations</div>
         </div>
       </div>
@@ -355,7 +360,7 @@ middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</c
 <section class="py-24 relative">
   <div class="max-w-6xl mx-auto px-6">
     <div class="text-center mb-10">
-      <h2 class="text-3xl font-bold mb-3">Runtime Governance <span class="text-indigo-400">3.0</span></h2>
+      <h2 class="text-3xl font-bold mb-3">Runtime Governance <span class="text-indigo-400">3.0+</span></h2>
       <p class="text-slate-400 max-w-2xl mx-auto">Opt-in enterprise controls for production MCP deployments. All default off - enable only what you need in <code class="text-indigo-300">bastion.yaml</code>.</p>
     </div>
     <div class="rounded-2xl overflow-hidden border border-white/10 mb-10">
@@ -389,6 +394,7 @@ middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</c
     </div>
     <div class="text-center mt-8 flex flex-wrap justify-center gap-4">
       <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/docs/ENTERPRISE_RUNTIME_CONTROLS.md" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium">Enterprise runtime controls docs &rarr;</a>
+      <a href="guide/handbook.html" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium">Documentation handbook &rarr;</a>
       <a href="integrations.html" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium">Package download widgets &rarr;</a>
       <a href="https://github.com/sponsors/vaquarkhan" class="text-pink-400 hover:text-pink-300 text-sm font-medium">Sponsor the project &rarr;</a>
     </div>
@@ -402,22 +408,27 @@ middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</c
       <h2 class="text-3xl font-bold mb-3">Works With Everything</h2>
       <p class="text-slate-400">One-line install for every major LLM framework</p>
     </div>
-    <div class="grid grid-cols-3 md:grid-cols-6 gap-3 max-w-4xl mx-auto mb-8">
+    <div class="grid grid-cols-3 md:grid-cols-6 gap-3 max-w-5xl mx-auto mb-8">
       <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">LangChain</div></div>
       <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">OpenAI</div></div>
       <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Claude</div></div>
       <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Bedrock</div></div>
       <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Gemini</div></div>
       <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">CrewAI</div></div>
-      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">LlamaIndex</div></div>
-      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Groq</div></div>
-      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Mistral</div></div>
-      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Azure</div></div>
-      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">DeepSeek</div></div>
-      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">+6 more</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">LiteLLM</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">LangGraph</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Ollama</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">OpenRouter</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">xAI Grok</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">AutoGen</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Pydantic AI</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">Agents SDK</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">FastMCP</div></div>
+      <div class="glass rounded-xl p-4 text-center card-hover"><div class="font-semibold text-sm">+10 more</div></div>
     </div>
-    <div class="text-center">
-      <a href="integrations.html" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors">View all integrations &rarr;</a>
+    <div class="text-center flex flex-wrap justify-center gap-4">
+      <a href="integrations.html" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors">View all 26 integrations &amp; download totals &rarr;</a>
+      <a href="guide/handbook.html" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors">Documentation handbook &rarr;</a>
     </div>
   </div>
 </section>
@@ -504,7 +515,7 @@ middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</c
           <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Architecture</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">Drop-in middleware</td><td class="text-center py-4 px-6 text-slate-500">Standalone proxy</td><td class="text-center py-4 px-6 text-slate-500">Hosted gateway</td></tr>
           <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Latency overhead</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">&lt;5ms</td><td class="text-center py-4 px-6 text-slate-500">10-50ms</td><td class="text-center py-4 px-6 text-slate-500">50-200ms</td></tr>
           <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Policy-as-code</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">YAML + OPA + Cedar</td><td class="text-center py-4 px-6 text-slate-500">Config file</td><td class="text-center py-4 px-6 text-slate-500">Dashboard UI</td></tr>
-          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Framework integrations</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">25 packages</td><td class="text-center py-4 px-6 text-slate-500">Generic only</td><td class="text-center py-4 px-6 text-slate-500">Varies</td></tr>
+          <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Framework integrations</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">26 packages</td><td class="text-center py-4 px-6 text-slate-500">Generic only</td><td class="text-center py-4 px-6 text-slate-500">Varies</td></tr>
           <tr class="border-b border-white/5"><td class="py-4 px-6 text-slate-300">Cost</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">Free (MIT)</td><td class="text-center py-4 px-6 text-slate-500">Free</td><td class="text-center py-4 px-6 text-red-400">$$$</td></tr>
           <tr><td class="py-4 px-6 text-slate-300">Test coverage</td><td class="text-center py-4 px-6 text-emerald-400 font-semibold">100%</td><td class="text-center py-4 px-6 text-slate-500">Unknown</td><td class="text-center py-4 px-6 text-slate-500">Unknown</td></tr>
         </tbody>
@@ -567,6 +578,7 @@ middleware = <span class="text-yellow-300">compose_middleware</span>(bastion)</c
       <div class="flex gap-6 text-sm text-slate-500">
         <a href="https://github.com/vaquarkhan/MCP-Bastion" class="hover:text-white transition-colors">GitHub</a>
         <a href="guide/" class="hover:text-white transition-colors">Docs</a>
+        <a href="guide/handbook.html" class="hover:text-white transition-colors">Handbook</a>
         <a href="assets/mcp-bastian-features-deck.pdf" class="hover:text-white transition-colors">Features deck</a>
         <a href="https://pypi.org/project/mcp-bastion-python/" class="hover:text-white transition-colors">PyPI</a>
         <a href="https://github.com/sponsors/vaquarkhan" class="hover:text-white transition-colors">Sponsor</a>
