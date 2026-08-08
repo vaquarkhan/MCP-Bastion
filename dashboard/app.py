@@ -75,6 +75,9 @@ def _load_demo_bastion_config() -> object:
             ("content_filter", True),
             ("agent_iam_enabled", True),
             ("server_verification_enabled", True),
+            ("semantic_firewall", True),
+            ("canary_goallock_enabled", True),
+            ("audit_hash_chain_anchor_every", 5),
         ):
             try:
                 setattr(cfg, attr, val)
@@ -147,6 +150,12 @@ def _governance_config_snapshot() -> dict:
             "cost_tracker": {"enabled": bool(getattr(cfg, "cost_tracker", False))},
             "schema_validation": {"enabled": bool(getattr(cfg, "schema_validation", False))},
             "content_filter": {"enabled": bool(getattr(cfg, "content_filter", False))},
+            "semantic_firewall": {"enabled": bool(getattr(cfg, "semantic_firewall", False))},
+            "canary_goallock": {"enabled": bool(getattr(cfg, "canary_goallock_enabled", False))},
+            "audit_hash_chain": {
+                "enabled": True,
+                "anchor_every": int(getattr(cfg, "audit_hash_chain_anchor_every", 0) or 0),
+            },
         },
     }
 
@@ -1712,6 +1721,33 @@ DASHBOARD_HTML = """
       margin-top: 4px;
       line-height: 1.35;
     }
+    .audit-chain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .audit-chain-hash {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      word-break: break-all;
+      color: #a5b4fc;
+    }
+    html[data-theme="light"] .audit-chain-hash { color: #4338ca; }
+    .audit-links-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin-top: 12px;
+    }
+    .audit-links-table th,
+    .audit-links-table td {
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--card-border);
+      vertical-align: top;
+    }
+    .audit-links-table th { color: var(--muted); font-weight: 600; }
     .observe-banner {
       display: none;
       margin: 0 0 14px;
@@ -2616,6 +2652,7 @@ DASHBOARD_HTML = """
     <a href="#dash-attack">Attack matrix</a>
     <a href="#dash-compliance">Compliance</a>
     <a href="#dash-governance">Runtime governance</a>
+    <a href="#dash-audit-chain">Audit chain</a>
     <a href="#dash-alerts-insights">Alerts &amp; insights</a>
     <a href="#dash-forensics">Forensics</a>
     <a href="#dash-trends">Posture drift</a>
@@ -2634,8 +2671,8 @@ DASHBOARD_HTML = """
       <p class="insight-lede" id="insightVolumeLine">Waiting for traffic…</p>
     </div>
     <div class="insight-card">
-      <h3>API &amp; integrations</h3>
-      <p class="insight-lede" style="margin-top:0">Use the same endpoints for automation, Grafana, Datadog, or custom UIs.</p>
+      <h3>APIs &amp; docs</h3>
+      <p class="insight-lede" style="margin-top:0">Local JSON for automation, plus public docs for the 26 framework packages and handbook.</p>
       <div class="link-row">
         <a class="link-chip" href="/api/metrics" target="_blank" rel="noopener">JSON metrics</a>
         <a class="link-chip" href="/api/posture" target="_blank" rel="noopener">Posture</a>
@@ -2645,6 +2682,8 @@ DASHBOARD_HTML = """
         <a class="link-chip" href="/api/compliance" target="_blank" rel="noopener">Compliance</a>
         <a class="link-chip" href="/api/governance" target="_blank" rel="noopener">Governance</a>
         <a class="link-chip" href="/api/health" target="_blank" rel="noopener">Health</a>
+        <a class="link-chip" href="https://vaquarkhan.github.io/MCP-Bastion/integrations.html" target="_blank" rel="noopener">Integrations &amp; downloads</a>
+        <a class="link-chip" href="https://vaquarkhan.github.io/MCP-Bastion/guide/handbook.html" target="_blank" rel="noopener">Docs handbook</a>
       </div>
     </div>
     <div class="insight-card">
@@ -2763,6 +2802,28 @@ DASHBOARD_HTML = """
     </div>
     <div class="governance-grid" id="governanceGrid">
       <div class="gov-tile"><div class="gov-name">Loading…</div><div class="gov-state off">-</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="dash-audit-chain">
+    <div class="card-head">
+      <h2>Audit hash chain</h2>
+      <p class="card-desc">Tamper-evident SHA-256 links for forensic audit entries. Head hash and recent links come from live <code>/api/metrics</code> → <code>audit_chain</code>. Optional anchors every N entries when configured in <code>bastion.yaml</code>.</p>
+    </div>
+    <div class="audit-chain-grid" id="auditChainKpis">
+      <div class="gov-tile"><div class="gov-name">Chain length</div><div class="gov-state off" id="auditChainLen">-</div></div>
+      <div class="gov-tile"><div class="gov-name">Head hash</div><div class="gov-state off"><span class="audit-chain-hash" id="auditChainHead">-</span></div></div>
+      <div class="gov-tile"><div class="gov-name">Anchors</div><div class="gov-state off" id="auditChainAnchors">-</div></div>
+    </div>
+    <div class="tool-table-wrap">
+      <table class="audit-links-table" id="auditChainTable">
+        <thead>
+          <tr><th>#</th><th>Timestamp</th><th>Entry hash</th><th>Prev hash</th></tr>
+        </thead>
+        <tbody id="auditChainBody">
+          <tr><td colspan="4" class="muted">Waiting for audit events…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 

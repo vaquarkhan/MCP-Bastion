@@ -1470,6 +1470,9 @@
       var cost = features.cost_tracker || {};
       var schema = features.schema_validation || {};
       var cf = features.content_filter || {};
+      var sf = features.semantic_firewall || {};
+      var canary = features.canary_goallock || {};
+      var ahc = features.audit_hash_chain || {};
       var iamMeta = iam.enabled
         ? (iam.agent_count || 0) + ' agent(s)' + (iam.isolate_sessions ? ' · sessions isolated' : '')
         : 'Confused-deputy protection disabled';
@@ -1492,6 +1495,14 @@
         ? (vaultAbs + ' abstract · ' + vaultHyd + ' hydrate'
           + (piiVault.token_style ? ' · ' + piiVault.token_style : ''))
         : 'Reversible vault off';
+      var chain = (metrics && metrics.audit_chain) || {};
+      var chainLen = Number(chain.chain_length || 0);
+      var ahcEvery = Number(ahc.anchor_every || 0);
+      var ahcMeta = ahc.enabled !== false
+        ? (chainLen + ' link(s)'
+          + (ahcEvery > 0 ? (' · anchor every ' + ahcEvery) : ' · anchors off')
+          + ((chain.anchors || []).length ? (' · ' + chain.anchors.length + ' anchor(s)') : ''))
+        : 'Hash chain not configured';
       grid.innerHTML = [
         tile('RBAC', !!rbac.enabled, kindMeta(!!rbac.enabled, 'rbac', 'Role allow/deny off')),
         tile('Prompt guard', !!pg.enabled, kindMeta(!!pg.enabled, 'injection', 'Injection ML/heuristics off')),
@@ -1501,13 +1512,55 @@
         tile('PII vault', !!piiVault.enabled, vaultMeta),
         tile('Schema validation', !!schema.enabled, kindMeta(!!schema.enabled, 'schema_validation', 'Tool schema gate off')),
         tile('Content filter', !!cf.enabled, kindMeta(!!cf.enabled, 'content_filter', 'Path/code filters off')),
+        tile('Semantic firewall', !!sf.enabled, kindMeta(!!sf.enabled, 'semantic_firewall', 'Heuristic semantic policy off')),
+        tile('Exfiltration canary', !!canary.enabled, kindMeta(!!canary.enabled, 'canary', 'Session canary echo detection off')),
         tile('Agent IAM', !!iam.enabled, iamMeta),
         tile('Server verification', !!sv.enabled, svMeta),
         tile('Transport hardening', !!th.enabled, thMeta),
         tile('stdio guard', !!sg.enabled, sg.enabled ? 'Non-JSON stdout dropped' : 'stdio injection guard off'),
         tile('Tool fingerprint', !!tmf.enabled, tmf.enabled ? 'Schema drift detection on' : 'Metadata fingerprint off'),
+        tile('Audit hash chain', ahc.enabled !== false, ahcMeta),
         tile('Governance blocks', govTotal > 0, govTotal > 0 ? govTotal + ' total IAM + verification denials' : 'No governance blocks yet')
       ].join('');
+    }
+
+    function shortHash(h) {
+      var s = String(h || '');
+      if (s.length <= 16) return s || '-';
+      return s.slice(0, 10) + '…' + s.slice(-6);
+    }
+
+    function renderAuditChain(d) {
+      var chain = (d && d.audit_chain) || {};
+      var lenEl = document.getElementById('auditChainLen');
+      var headEl = document.getElementById('auditChainHead');
+      var anchorsEl = document.getElementById('auditChainAnchors');
+      var body = document.getElementById('auditChainBody');
+      if (!lenEl || !headEl || !anchorsEl || !body) return;
+      var length = Number(chain.chain_length || 0);
+      lenEl.textContent = String(length);
+      lenEl.className = 'gov-state ' + (length > 0 ? 'on' : 'off');
+      headEl.textContent = chain.head_hash || chain.genesis_prev || '-';
+      var anchors = chain.anchors || [];
+      anchorsEl.textContent = anchors.length
+        ? (anchors.length + ' stored')
+        : (length > 0 ? 'None yet' : 'No links');
+      anchorsEl.className = 'gov-state ' + (anchors.length ? 'on' : 'off');
+      var links = (chain.recent_links || []).slice().reverse();
+      if (!links.length) {
+        body.innerHTML = '<tr><td colspan="4" class="muted">No audit chain links yet — enable audit logging or run with demo metrics.</td></tr>';
+        return;
+      }
+      body.innerHTML = links.map(function (link) {
+        return '<tr>'
+          + '<td>' + escapeHtml(String(link.index != null ? link.index : '')) + '</td>'
+          + '<td>' + escapeHtml(String(link.timestamp || '').replace('T', ' ').replace('Z', ' UTC')) + '</td>'
+          + '<td><span class="audit-chain-hash" title="' + escapeHtml(link.entry_hash || '') + '">'
+          + escapeHtml(shortHash(link.entry_hash)) + '</span></td>'
+          + '<td><span class="audit-chain-hash" title="' + escapeHtml(link.prev_hash || '') + '">'
+          + escapeHtml(shortHash(link.prev_hash)) + '</span></td>'
+          + '</tr>';
+      }).join('');
     }
 
     async function fetchGovernanceConfig() {
@@ -2581,6 +2634,7 @@
         updatePiiEntity(d.pii_by_entity);
         updateFinopsCharts(d.cost_reduction || {});
         updatePillarHealth(d.pillar_health);
+        renderAuditChain(d);
         updateGovernancePanel(lastGovernanceConfig, d);
         updateToolTable(d.tool_stats, d);
       } else if (!chartUnavailableNotified) {

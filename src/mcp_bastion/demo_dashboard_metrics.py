@@ -273,5 +273,23 @@ def seed_metrics(rng: random.Random, config: BastionConfig | None = None) -> Non
         store.add_alert("pii", "Elevated EMAIL_ADDRESS detections on query_llm", "warning")
     store.add_alert("demo", "Synthetic policy review: tighten RBAC on delete_repo", "warning")
 
+    # Seed tamper-evident audit chain so the dashboard panel has demo links.
+    from mcp_bastion.pillars.audit_hash_chain import AuditHashChain
+
+    every = int(getattr(cfg, "audit_hash_chain_anchor_every", 0) or 0)
+    AuditHashChain.configure(anchor_every=every)
+    chain = AuditHashChain.get()
+    for i in range(8):
+        chain.append(
+            {
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "tool": demo_tools[i % len(demo_tools)],
+                "action": "BLOCKED" if i % 3 == 0 else "ALLOWED",
+                "reason": "demo_seed",
+                "tenant_id": "demo",
+                "index_hint": i,
+            }
+        )
+
     _inject_demo_time_series(store, rng)
     store._metrics.window_start = (datetime.now(timezone.utc) - timedelta(seconds=90)).isoformat()
