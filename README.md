@@ -759,6 +759,7 @@ Full index: **[docs/README.md](docs/README.md)** · handbook site: **[Docs guide
 | [docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md) | **OWASP MCP Top 10**, integration hooks, **fleet-scale `bastion.yaml` rollout**, **SIEM / SOC audit** patterns |
 | [docs/METRICS.md](docs/METRICS.md) | Performance overhead (&lt;5ms) and effectiveness metrics (dashboard, Prometheus, OTEL) |
 | [docs/TUTORIALS.md](docs/TUTORIALS.md) | Tutorials: integrating with FastMCP, TypeScript, GitHub MCP, and open-source MCP servers |
+| [docs/CYBER_EXTENSIONS_CORE.md](docs/CYBER_EXTENSIONS_CORE.md) | TypeScript Extensions A/E/F (semantic egress, result provenance, audit) |
 | [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md) | Publish docs as a GitHub Pages website from this same repo |
 | [docs/QUICK_START.md](docs/QUICK_START.md) | Minimal FastMCP / `bastion.yaml` / CI snippets (time-to-value) |
 | [docs/DISCOVERY.md](docs/DISCOVERY.md) | Registry and ecosystem discovery checklist |
@@ -863,7 +864,7 @@ See **[docs/SECURITY_OBSERVABILITY.md](docs/SECURITY_OBSERVABILITY.md)** for the
 | Path | Description |
 |------|-------------|
 | `src/mcp_bastion/` | Python package: PromptGuard, Presidio, rate limiting, RBAC, etc. |
-| `packages/core/` | TypeScript package: rate limiting in-process; prompt/PII via sidecar (MCP_BASTION_URL) |
+| `packages/core/` | TypeScript package: rate limit + provenance + audit in-process; prompt/PII/semantic/result via sidecar (`MCP_BASTION_URL`) |
 | `examples/` | Python examples ([examples/README.md](examples/README.md)) |
 | `dashboard/` | Real-time dashboard UI and metrics API ([dashboard/README.md](dashboard/README.md)) |
 | `bastion.yaml.example` | Policy-as-code sample; copy to `bastion.yaml` ([docs/POLICY_AS_CODE.md](docs/POLICY_AS_CODE.md)) |
@@ -1183,15 +1184,21 @@ import {
 const server = new Server({ name: "my-mcp-server", version: "1.0.0" });
 
 // Wrap the server with MCP-Bastion (rate limiting only by default)
-// For prompt injection and PII, run the Python sidecar and set sidecarUrl
+// For prompt injection, PII, semantic egress, and result guard, run the Python sidecar
 wrapWithMcpBastion(server, {
   enableRateLimit: true,
   maxIterations: 15,
   timeoutMs: 60_000,
-  // Optional: enable ML features via Python sidecar
+  // Optional: enable ML / semantic features via Python sidecar
   sidecarUrl: process.env.MCP_BASTION_SIDECAR || "",
   enablePromptGuard: !!process.env.MCP_BASTION_SIDECAR,
   enablePiiRedaction: !!process.env.MCP_BASTION_SIDECAR,
+  // Opt-in cyber extensions — see docs/CYBER_EXTENSIONS_CORE.md
+  enableSemanticEgress: true,
+  semanticEgressMode: "detect",
+  semanticEgressTools: ["create_pull_request", "send_email"],
+  tagResultProvenance: true,
+  enableAudit: true,
 });
 
 // Register tools (handlers are automatically wrapped)
@@ -1221,12 +1228,14 @@ npx tsx server.ts
 
 **Step 4: Run with full ML features (Python sidecar)**
 
-For prompt injection and PII redaction, run a Python HTTP service that exposes `/prompt-guard` and `/pii-redact` endpoints (see the Python package for sidecar implementation). Then:
+For prompt injection, PII redaction, semantic egress, and result guard, run a Python HTTP service that exposes `/prompt-guard`, `/pii-redact`, `/semantic-egress`, and `/result-guard` (see [docs/CYBER_EXTENSIONS_CORE.md](docs/CYBER_EXTENSIONS_CORE.md)). Then:
 
 ```bash
 # Start the Python sidecar, then the TypeScript server (sidecarUrl or MCP_BASTION_URL)
 MCP_BASTION_SIDECAR=http://localhost:8000 npx tsx server.ts
 ```
+
+**Mediation precondition:** wrappers only see MCP-mediated tool calls. Out-of-band shell/git is out of scope.
 
 ---
 
@@ -1278,7 +1287,14 @@ server.setRequestHandler(ReadResourceRequestSchema, safeResourceHandler);
 | `max_iterations` | Via `TokenBucketRateLimiter` | Yes | 15 | Max tool calls per session |
 | `timeout_seconds` / `timeoutMs` | Via `TokenBucketRateLimiter` | Yes | 60 | Session timeout |
 | `token_budget` | Via `TokenBucketRateLimiter` | - | 50,000 | FinOps token cap per request |
-| `sidecarUrl` | - | Yes | `""` | Python sidecar URL for ML features |
+| `sidecarUrl` | - | Yes | `""` | Python sidecar URL for ML / semantic features |
+| `enableSemanticEgress` | - | Yes | `false` | Screen allowlisted outbound tools via `/semantic-egress` |
+| `semanticEgressMode` | - | Yes | `detect` | `detect` \| `quarantine` (fail-closed) |
+| `semanticEgressTools` | - | Yes | `[]` | Tool names to screen |
+| `tagResultProvenance` | - | Yes | `false` | Wrap result text in untrusted markers |
+| `enableResultGuard` | - | Yes | `false` | Scan results via `/result-guard` |
+| `resultGuardMode` | - | Yes | `detect` | `detect` \| `strict` (fail-closed) |
+| `enableAudit` / `onAudit` | - | Yes | `false` | Hash-chained audit + optional sink |
 | `threshold` | Via `PromptGuardEngine` | - | 0.85 | Malicious probability cutoff |
 | `setLogLevel` | - | Yes | `"info"` | TypeScript: `"debug"` \| `"info"` \| `"warn"` \| `"error"` |
 

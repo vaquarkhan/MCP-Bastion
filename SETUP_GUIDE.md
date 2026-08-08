@@ -184,8 +184,15 @@ wrapWithMcpBastion(server, {
   enableRateLimit: true,
   enablePromptGuard: true,
   enablePiiRedaction: true,
+  // Opt-in cyber extensions — docs/CYBER_EXTENSIONS_CORE.md
+  enableSemanticEgress: true,
+  semanticEgressMode: "detect",
+  semanticEgressTools: ["create_pull_request", "send_email"],
+  tagResultProvenance: true,
+  enableAudit: true,
 });
-// Set MCP_BASTION_URL to sidecar URL (e.g. http://localhost:8000) for prompt/PII. Omit for rate limit only.
+// Set MCP_BASTION_URL to sidecar URL (e.g. http://localhost:8000) for prompt/PII/semantic/result.
+// Omit for rate limit + provenance + audit only.
 // ... rest of your server
 ```
 
@@ -374,9 +381,18 @@ See `examples/full_demo.py` for a complete demo of all features.
 | `sidecarUrl` | (none) | Sidecar URL; falls back to env MCP_BASTION_URL |
 | `enablePromptGuard` | `False` | Requires sidecar (sidecarUrl or MCP_BASTION_URL) |
 | `enablePiiRedaction` | `False` | Requires sidecar |
+| `enableSemanticEgress` | `False` | Screen allowlisted outbound tools via `/semantic-egress` |
+| `semanticEgressMode` | `detect` | `detect` \| `quarantine` (fail-closed) |
+| `semanticEgressTools` | `[]` | Tool names to screen |
+| `tagResultProvenance` | `False` | Wrap result text in untrusted markers |
+| `enableResultGuard` | `False` | Scan results via `/result-guard` |
+| `resultGuardMode` | `detect` | `detect` \| `strict` (fail-closed) |
+| `enableAudit` / `onAudit` | `False` | Hash-chained audit + optional sink |
 | `maxIterations` | `15` | Max tool calls per session |
 | `timeoutMs` | `60000` | Session timeout (ms) |
 | `setLogLevel` | - | TypeScript: `"debug"` \| `"info"` \| `"warn"` \| `"error"` |
+
+Full cyber-extension notes: [docs/CYBER_EXTENSIONS_CORE.md](docs/CYBER_EXTENSIONS_CORE.md).
 
 ### What Gets Blocked
 

@@ -6,6 +6,11 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **TypeScript cyber extensions (opt-in, `@mcp-bastion/core`):** semantic egress screen via sidecar `/semantic-egress` (detect default / quarantine allowlist); result provenance markers + optional `/result-guard`; tamper-evident `AuditChain` + `onAudit` sink. Docs: [CYBER_EXTENSIONS_CORE.md](docs/CYBER_EXTENSIONS_CORE.md). Nature preserved: no inline model; mediation precondition documented.
+- **Tests:** unit + E2E suites for A/E/F (`semantic-egress*`, `result-guard`, `audit`, `cyber-extensions.e2e`).
+
 ## [4.0.0] - 2026-07-31
 
 Major release: **reversible PII vault**, **proxy JSON/SSE mutate**, **schema minimization**, and **live catalog pin** - additive / opt-in (defaults unchanged). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **4.0.0**.
