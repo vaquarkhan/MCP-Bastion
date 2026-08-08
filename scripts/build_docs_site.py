@@ -23,7 +23,7 @@ ASSETS = SITE / "assets"
 # Curated IA: (slug, title, source markdown relative to docs/, nav group)
 PAGES: list[tuple[str, str, str, str]] = [
     ("index", "Documentation Home", "USER_GUIDE.md", "Start here"),
-    ("bible", "Documentation bible", "DOCUMENTATION_BIBLE.md", "Start here"),
+    ("handbook", "Documentation handbook", "DOCUMENTATION_HANDBOOK.md", "Start here"),
     ("demos", "Demos (attack + dashboard)", "DEMOS.md", "Start here"),
     ("getting-started", "Getting started", "QUICK_START.md", "Start here"),
     ("user-guide", "User guide (end-to-end)", "USER_GUIDE.md", "Start here"),
@@ -204,7 +204,7 @@ def _page_shell(title: str, active: str, body: str, *, description: str = "") ->
 def _home_body() -> str:
     cards = []
     featured = [
-        ("bible.html", "Documentation bible", "Visual tour: attack GIFs, dashboard, features, multi-language."),
+        ("handbook.html", "Documentation handbook", "Visual tour: attack GIFs, dashboard, features, multi-language."),
         ("demos.html", "Demos hub", "Attacks, payloads, dashboard tour, and every language."),
         ("observability.html", "Dashboard & observability", "Panels, Prometheus, audit — OTEL optional."),
         ("multi-language.html", "Multi-language suite", "TypeScript, Java, Go, .NET via mcp-bastion-suite."),

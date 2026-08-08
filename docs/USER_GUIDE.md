@@ -360,7 +360,7 @@ mcp-bastion redteam
 
 | Topic | Document |
 |-------|----------|
-| Documentation bible (GIFs + dashboard) | [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) |
+| Documentation handbook (GIFs + dashboard) | [DOCUMENTATION_HANDBOOK.md](DOCUMENTATION_HANDBOOK.md) |
 | Feature deep dive (issue → solution → benefits) | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
 | Attack demos (runnable) | [ATTACK_DEMOS.md](ATTACK_DEMOS.md) |
 | Multi-language suite | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) · [mcp-bastion-suite](https://github.com/vaquarkhan/mcp-bastion-suite) |

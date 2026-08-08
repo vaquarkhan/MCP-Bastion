@@ -1,10 +1,10 @@
-# MCP-Bastion Documentation Bible
+# MCP-Bastion Documentation Handbook
 
 **Version:** 4.0.0  
 **Purpose:** Single entry point for the full system — concepts, every feature, attack→defense demos (with GIFs), dashboard, multi-language suite, and ops.  
-**Published:** https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html
+**Published:** https://vaquarkhan.github.io/MCP-Bastion/guide/handbook.html
 
-> Prefer this handbook over stuffing the root README. The README stays a thin index; **this page is the bible**.
+> Prefer this handbook over stuffing the root README. The README stays a thin index; **this page is the handbook**.
 
 ---
 
@@ -34,7 +34,7 @@ Local: `mcp-bastion dashboard --demo`
 
 ---
 
-## How to use this bible
+## How to use this handbook
 
 | You want… | Go to |
 |-----------|--------|
@@ -119,7 +119,7 @@ Full narrative + CLI: [ATTACK_DEMOS.md](ATTACK_DEMOS.md) · Issue/solution text:
 
 ---
 
-## Part 3 — Dashboard (local UI bible)
+## Part 3 — Dashboard (local UI handbook)
 
 ![Dashboard collage](images/mcp-bastion-dashboard.png)
 
@@ -219,7 +219,7 @@ Enablement YAML: [FEATURES.md](FEATURES.md) · Counts: [PILLARS.md](PILLARS.md)
 
 ## Related published pages
 
-- https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html  
+- https://vaquarkhan.github.io/MCP-Bastion/guide/handbook.html  
 - https://vaquarkhan.github.io/MCP-Bastion/guide/attack-demos.html  
 - https://vaquarkhan.github.io/MCP-Bastion/guide/feature-deep-dive.html  
 - https://vaquarkhan.github.io/MCP-Bastion/guide/multi-language.html  

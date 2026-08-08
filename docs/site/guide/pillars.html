@@ -32,7 +32,7 @@
 <div class="nav-group"><div class="nav-group-title">Start here</div><ul>
 <li><a href="https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf"><strong>Benchmark (PDF)</strong></a></li>
 <li><a href="index.html">Documentation Home</a></li>
-<li><a href="bible.html">Documentation bible</a></li>
+<li><a href="handbook.html">Documentation handbook</a></li>
 <li><a href="demos.html">Demos (attack + dashboard)</a></li>
 <li><a href="getting-started.html">Getting started</a></li>
 <li><a href="user-guide.html">User guide (end-to-end)</a></li>
@@ -231,7 +231,7 @@
 <tr>
 <td>External policy (OPA / Cedar)</td>
 <td><code>policy_engine</code></td>
-<td>Delegates allow/deny to <strong>OPA</strong> (<code>opa eval -f raw</code>) or <strong>Cedar</strong> (<code>cedar authorize</code>). Set <code>fail_closed: true</code> to deny when the engine is unavailable.</td>
+<td>Delegates allow/deny to <strong>OPA</strong> (<code>opa eval -f raw</code>) or <strong>Cedar</strong> (<code>cedar authorize --policies … --entities …</code> with <code>User</code> / <code>Action::"invoke"</code> / <code>Tool</code>). Set <code>fail_closed: true</code> to deny when the engine is unavailable.</td>
 </tr>
 <tr>
 <td>Edge authentication</td>

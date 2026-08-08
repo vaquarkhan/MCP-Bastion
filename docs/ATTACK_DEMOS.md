@@ -4,7 +4,7 @@
 
 | Related | Link |
 |---------|------|
-| **Documentation bible** | [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) |
+| **Documentation handbook** | [DOCUMENTATION_HANDBOOK.md](DOCUMENTATION_HANDBOOK.md) |
 | Issue → solution → benefits (+ embedded GIFs) | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
 | Narrative attacks | [ATTACK_PREVENTION.md](ATTACK_PREVENTION.md) |
 | Multi-language | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) |
@@ -119,7 +119,7 @@ mcp-bastion dashboard --demo
 # python scripts/capture_dashboard_demo.py
 ```
 
-See [dashboard/README.md](../dashboard/README.md) and the [Documentation bible](DOCUMENTATION_BIBLE.md).
+See [dashboard/README.md](../dashboard/README.md) and the [Documentation handbook](DOCUMENTATION_HANDBOOK.md).
 
 ---
 
@@ -142,4 +142,4 @@ See [dashboard/README.md](../dashboard/README.md) and the [Documentation bible](
 
 1. Add scenario in `examples/attack_demos/scenarios.py`.
 2. Add storyboard entry in `scripts/generate_attack_demo_gifs.py`.
-3. Re-run generators; link from [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md).
+3. Re-run generators; link from [DOCUMENTATION_HANDBOOK.md](DOCUMENTATION_HANDBOOK.md).

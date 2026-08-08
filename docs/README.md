@@ -10,7 +10,7 @@ Current Python package release: **`mcp-bastion-python==4.0.0`** ([PyPI](https://
 |-----|-------------|
 | **[../MCP-Security-Deck-v3.pdf](../MCP-Security-Deck-v3.pdf)** | **Security + benchmark slide deck (v3)** — shareable proof pack ([raw download](https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf)) |
 | [USER_GUIDE.md](USER_GUIDE.md) | **End-to-end handbook** (concepts → install → config → proxy → vault → ops) — also published at [GitHub Pages Docs](https://vaquarkhan.github.io/MCP-Bastion/guide/) |
-| [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) | **System bible** — attack GIFs, dashboard tour, feature map, multi-language ([live](https://vaquarkhan.github.io/MCP-Bastion/guide/bible.html)) |
+| [DOCUMENTATION_HANDBOOK.md](DOCUMENTATION_HANDBOOK.md) | **System handbook** — attack GIFs, dashboard tour, feature map, multi-language ([live](https://vaquarkhan.github.io/MCP-Bastion/guide/handbook.html)) |
 | [DEMOS.md](DEMOS.md) | **Demo hub** — all attacks, payloads, dashboard, every language ([live](https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html)) |
 | [DASHBOARD_AND_OBSERVABILITY.md](DASHBOARD_AND_OBSERVABILITY.md) | **Dashboard panels + observability**; OpenTelemetry is **optional** |
 | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) | **Issue → solution → benefits** for every control + full dashboard panels |

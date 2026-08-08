@@ -9,7 +9,7 @@ This is the **Demo hub**: scripted attack→defense GIFs, runnable payloads, the
 | **Security / benchmark deck (PDF)** | [MCP-Security-Deck-v3.pdf](../MCP-Security-Deck-v3.pdf) · [raw](https://github.com/vaquarkhan/MCP-Bastion/raw/main/MCP-Security-Deck-v3.pdf) |
 | Attack → defense GIFs | [ATTACK_DEMOS.md](ATTACK_DEMOS.md) |
 | Feature deep dive (GIF per pillar) | [FEATURE_DEEP_DIVE.md](FEATURE_DEEP_DIVE.md) |
-| Documentation bible | [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) |
+| Documentation handbook | [DOCUMENTATION_HANDBOOK.md](DOCUMENTATION_HANDBOOK.md) |
 | Multi-language suite | [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) · [suite repo](https://github.com/vaquarkhan/mcp-bastion-suite) |
 | Dashboard UI | [dashboard/README.md](../dashboard/README.md) |
 | Measured benchmarks | [BENCHMARKS.md](BENCHMARKS.md) |
@@ -109,7 +109,7 @@ mcp-bastion dashboard --demo
 | FinOps | Actual vs would-have-been spend |
 | Compliance | Evidence packs |
 
-Details: [DASHBOARD_AND_OBSERVABILITY.md](DASHBOARD_AND_OBSERVABILITY.md) · [dashboard/README.md](../dashboard/README.md) · Bible Part 3: [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md)
+Details: [DASHBOARD_AND_OBSERVABILITY.md](DASHBOARD_AND_OBSERVABILITY.md) · [dashboard/README.md](../dashboard/README.md) · Handbook Part 3: [DOCUMENTATION_HANDBOOK.md](DOCUMENTATION_HANDBOOK.md)
 
 **Do you need OpenTelemetry?** No. Dashboard + Prometheus + audit JSONL are enough; OTEL is optional for existing APM stacks — see [DASHBOARD_AND_OBSERVABILITY.md](DASHBOARD_AND_OBSERVABILITY.md).
 

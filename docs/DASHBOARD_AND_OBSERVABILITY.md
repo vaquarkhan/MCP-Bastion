@@ -175,4 +175,4 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 | [OTEL.md](OTEL.md) | OTLP setup |
 | [SECURITY_OBSERVABILITY.md](SECURITY_OBSERVABILITY.md) | OWASP map, SIEM, fleet |
 | [DEMOS.md](DEMOS.md) | Dashboard demo section |
-| [DOCUMENTATION_BIBLE.md](DOCUMENTATION_BIBLE.md) | Visual bible |
+| [DOCUMENTATION_HANDBOOK.md](DOCUMENTATION_HANDBOOK.md) | Visual handbook |
