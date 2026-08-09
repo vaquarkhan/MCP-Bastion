@@ -16,8 +16,8 @@ Images are built by [`.github/workflows/publish-docker.yml`](.github/workflows/p
 **Current release:** **5.0.0** (2026-08-09) - `pip install mcp-bastion-python==5.0.0`
 
 ```bash
-docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
-docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v5.0.0
+docker run -p 8080:8080 ghcr.io/vaquarkhan/mcp-bastion-proxy:v5.0.0
 # :latest tracks the most recent v* tag publish
 # docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:latest
 ```
