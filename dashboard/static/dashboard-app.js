@@ -705,6 +705,132 @@
       renderForensicsRows();
     }
 
+    var lastDemoMode = false;
+
+    function updateLiveConnectCard(demo, metrics) {
+      var card = document.getElementById('liveConnectCard');
+      if (!card) return;
+      var req = metrics ? Number(metrics.requests_total || 0) : 0;
+      var blk = metrics ? Number(metrics.blocked_total || 0) : 0;
+      var emptyLive = !demo && req === 0 && blk === 0;
+      card.classList.toggle('visible', emptyLive);
+    }
+
+    function applyDemoModeUi(st) {
+      var demo = !!(st && st.demo);
+      lastDemoMode = demo;
+      var banner = document.getElementById('demoDataBanner');
+      if (banner) {
+        banner.classList.toggle('visible', demo);
+        if (st && st.message) banner.title = st.message;
+      }
+      var toggle = document.getElementById('demoModeToggle');
+      var label = document.getElementById('demoModeToggleLabel');
+      if (toggle) {
+        toggle.checked = demo;
+        toggle.disabled = false;
+      }
+      if (label) label.setAttribute('data-on', demo ? '1' : '0');
+      var liveLabel = document.getElementById('liveLabel');
+      if (liveLabel) liveLabel.textContent = demo ? 'Demo' : 'Live';
+      updateLiveConnectCard(demo, lastMetricsSnapshot);
+    }
+
+    function setLiveHelpOpen(open) {
+      var btn = document.getElementById('liveHelpBtn');
+      var pop = document.getElementById('liveHelpPopover');
+      if (!btn || !pop) return;
+      pop.classList.toggle('open', !!open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function wireLiveHelp() {
+      var btn = document.getElementById('liveHelpBtn');
+      var wrap = document.getElementById('liveHelpWrap');
+      var pop = document.getElementById('liveHelpPopover');
+      if (!btn || !wrap || !pop || btn.getAttribute('data-wired') === '1') return;
+      btn.setAttribute('data-wired', '1');
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setLiveHelpOpen(!pop.classList.contains('open'));
+      });
+      document.addEventListener('click', function () {
+        setLiveHelpOpen(false);
+      });
+      wrap.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') setLiveHelpOpen(false);
+      });
+      var openBtn = document.getElementById('btnOpenLiveHelp');
+      if (openBtn) {
+        openBtn.addEventListener('click', function () {
+          setLiveHelpOpen(true);
+          try { btn.focus(); } catch (err) {}
+        });
+      }
+      var tourBtn = document.getElementById('btnTourDemoFromEmpty');
+      if (tourBtn) {
+        tourBtn.addEventListener('click', function () {
+          var toggle = document.getElementById('demoModeToggle');
+          if (!toggle) return;
+          if (toggle.checked) return;
+          toggle.checked = true;
+          toggle.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+      }
+    }
+
+    function refreshDemoMode() {
+      return fetch('/api/demo-mode', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (st) {
+          if (st) applyDemoModeUi(st);
+          return st;
+        })
+        .catch(function () { return null; });
+    }
+
+    function wireDemoModeToggle() {
+      var toggle = document.getElementById('demoModeToggle');
+      if (!toggle || toggle.getAttribute('data-wired') === '1') return;
+      toggle.setAttribute('data-wired', '1');
+      toggle.addEventListener('change', function () {
+        var wantDemo = !!toggle.checked;
+        toggle.disabled = true;
+        fetch('/api/demo-mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ demo: wantDemo }),
+          cache: 'no-store'
+        })
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('demo-mode ' + r.status)); })
+          .then(function (st) {
+            applyDemoModeUi(st);
+            lastSnapshotAt = 0;
+            return fetch('/api/metrics', { cache: 'no-store' }).then(function (mr) {
+              return mr.ok ? mr.json() : null;
+            });
+          })
+          .then(function (m) {
+            if (!m) return;
+            lastMetricsSnapshot = m;
+            lastSnapshotAt = Date.now();
+            startFreshnessTicker();
+            render(m);
+          })
+          .catch(function (err) {
+            console.warn('Demo mode switch failed:', err);
+            refreshDemoMode();
+          })
+          .finally(function () {
+            toggle.disabled = false;
+          });
+      });
+      refreshDemoMode();
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
       var th0 = document.documentElement.getAttribute('data-theme');
       if (th0 === 'light' || th0 === 'dark') {
@@ -1675,7 +1801,7 @@
       if (hintEl) {
         hintEl.textContent = length > 0
           ? 'Head advances with each audited event.'
-          : 'Enable audit logging or run with MCP_BASTION_DEMO=1.';
+          : 'Enable audit logging or toggle Demo data / MCP_BASTION_DEMO=1.';
       }
 
       var copyBtn = document.getElementById('btnCopyAuditHead');
@@ -2637,6 +2763,7 @@
     function render(d) {
       try {
       markDashboardReady();
+      updateLiveConnectCard(lastDemoMode, d);
       updateSummaryBar(d);
       const n = (d.alerts && d.alerts.length) || 0;
       var countEl = document.getElementById('alertCountLabel');
@@ -2817,6 +2944,8 @@
     }
 
     applyServerBootstrapMetrics();
+    wireDemoModeToggle();
+    wireLiveHelp();
 
     (async function loadGovernanceOnce() {
       lastGovernanceConfig = await fetchGovernanceConfig();

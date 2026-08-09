@@ -50,10 +50,22 @@ Effectiveness numbers: [METRICS.md](METRICS.md)
 Zero-infra local UI — **no login, no DB, no cloud**.
 
 ```bash
-mcp-bastion dashboard --demo          # seeded tour data
+mcp-bastion dashboard                 # LIVE (empty until MetricsStore is fed in-process)
+mcp-bastion dashboard --demo          # seed simulated traffic scenarios (or UI toggle / dashboard.demo: true)
 # open http://127.0.0.1:7000/
-mcp-bastion dashboard --port 7000     # live MetricsStore when wired
 ```
+
+**Demo vs live:** Default is live. Demo seeds `demo_traffic_scenarios.json` for validation/tour; toggle off (UI, `--no-demo`, or `dashboard.demo: false`) clears synthetic data.
+
+### Connect live production data (checklist)
+
+| Path | Steps |
+|------|--------|
+| **Tour** | UI **Demo data** toggle, or `--demo` |
+| **Python live** | `audit.enabled: true` + Bastion middleware; dashboard must share that **same process** (`MetricsStore` is in-memory) |
+| **Bridge** | `POST /api/ingest-block` with `{"reason","tool"}` into the dashboard host |
+
+UI: status-bar **ⓘ** + empty-state card. Long form: [dashboard/README.md](../dashboard/README.md#connect-live-production-data) · [CONNECT_LIVE.md](../dashboard/static/CONNECT_LIVE.md).
 
 ![Dashboard tour](images/mcp-bastion-dashboard-tour.gif)
 

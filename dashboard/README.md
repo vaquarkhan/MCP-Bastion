@@ -81,15 +81,17 @@ python scripts/capture_dashboard_demo.py --gif-only --duration-ms 6000
 ```bash
 cd MCP-Bastion
 pip install fastapi uvicorn
-# With demo metrics (charts non-zero without a separate MCP server):
-MCP_BASTION_DEMO=1 PYTHONPATH=src python dashboard/app.py
-# Windows PowerShell:
-#   $env:MCP_BASTION_DEMO="1"; $env:PYTHONPATH="src"; python dashboard/app.py
-# or CLI:
-mcp-bastion dashboard --demo
-# Plain dashboard (zeros until your MCP process records metrics):
+# Default: LIVE / empty until middleware feeds MetricsStore (same process):
 PYTHONPATH=src python dashboard/app.py
 mcp-bastion dashboard
+# Tour / validation seed (simulated traffic scenarios):
+mcp-bastion dashboard --demo
+MCP_BASTION_DEMO=1 PYTHONPATH=src python dashboard/app.py
+# Or in bastion.yaml:
+#   dashboard:
+#     demo: true
+#     demo_live_traffic: false
+# UI: toggle "Demo data" in the header (POST /api/demo-mode). Off clears seed and shows live only.
 # while editing dashboard/app.py, auto-reload:
 mcp-bastion dashboard --reload --demo
 ```
@@ -102,13 +104,47 @@ Open [http://localhost:7000/](http://localhost:7000/).
 
 **If the UI looks unchanged:** restart the dashboard (or `--reload`) and hard-refresh the browser. Check `/meta` for `ui_revision`.
 
-**If charts show all zeros:** use `mcp-bastion dashboard --demo` or wire middleware to `MetricsStore`.
+**If charts show all zeros:** that is expected in live mode until traffic hits the **same process** as the dashboard (or `POST /api/ingest-block`). For a tour, toggle **Demo data** or run `--demo`. The UI **ⓘ** next to Live/Demo and the empty-state card explain the same steps.
+
+## Connect live production data
+
+`MetricsStore` is **in-memory and in-process**. Pick one path:
+
+| Goal | What to do |
+|------|------------|
+| **Tour / QA the UI** | Toggle **Demo data**, or `mcp-bastion dashboard --demo` / `dashboard.demo: true` |
+| **Live Python metrics** | `audit.enabled: true` + Bastion middleware in the **same process** as the dashboard |
+| **Live from Node / other** | `POST /api/ingest-block` with `{"reason","tool",…}` to this dashboard host |
+
+Short copy also ships as [`static/CONNECT_LIVE.md`](static/CONNECT_LIVE.md) (linked from the UI help popover).
+
+```python
+# Same-process pattern (simplified)
+from mcp_bastion import AuditLogMiddleware, compose_middleware
+from mcp_bastion.pillars import make_audit_export_callback
+
+audit = AuditLogMiddleware(
+    export_callback=make_audit_export_callback(alert_on={"injection", "rate_limit", "cost"}),
+)
+# compose with other Bastion middleware; run dashboard in THIS process to see KPIs
+```
+
+```bash
+# Bridge example (any runtime)
+curl -s -X POST http://127.0.0.1:7000/api/ingest-block \
+  -H "Content-Type: application/json" \
+  -d '{"reason":"RBAC: denied","tool":"delete_repo"}'
+```
+
+**Not supported by default:** running MCP in process A and `mcp-bastion dashboard` in process B and expecting shared memory counters.
 
 ## Endpoints
 
 | URL | What it returns |
 |-----|-----------------|
 | GET / | Visual dashboard with charts |
+| GET /api/demo-mode | Demo vs live status |
+| POST /api/demo-mode | Switch demo ↔ live (`{"demo": true|false}`) — clears seed when off |
 | GET /api/metrics | Runtime KPIs + `cost_reduction` (used/saved/avoided + would-have cost) + forensics |
 | GET /api/posture | Pre-deploy grades from `.bastion/scan/*.json` |
 | GET /api/prevalidate | Sonar-style issue list + grades |
@@ -148,11 +184,11 @@ See [docs/ZERO_INFRA_STRATEGY.md](../docs/ZERO_INFRA_STRATEGY.md).
 
 ## Wire metrics from your server
 
-Use `AuditLogMiddleware` with an export callback that updates the metrics store:
+Use `AuditLogMiddleware` with an export callback that updates the metrics store (also the default path when `audit.enabled` is true via `build_middleware_from_config`):
 
 ```python
 from mcp_bastion import AuditLogMiddleware, compose_middleware
-from mcp_bastion.pillars import make_audit_export_callback, MetricsStore, SlackAlertSink
+from mcp_bastion.pillars import make_audit_export_callback, SlackAlertSink
 
 sinks = []
 if os.environ.get("SLACK_WEBHOOK_URL"):
@@ -165,4 +201,4 @@ audit = AuditLogMiddleware(export_callback=make_audit_export_callback(
 middleware = compose_middleware(audit, bastion, ...)
 ```
 
-Run the dashboard in another process to see live metrics.
+Serve or open the dashboard **in the same process** to see those metrics. A second standalone dashboard process will not share `MetricsStore` — use `POST /api/ingest-block` or see [Connect live production data](#connect-live-production-data).

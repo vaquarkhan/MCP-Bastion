@@ -6,11 +6,16 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Dashboard default is live (no synthetic seed).** Demo traffic is opt-in via UI toggle, `--demo` / `MCP_BASTION_DEMO=1`, or `bastion.yaml` `dashboard.demo`. Toggling off clears the store and stops background simulation. Scenarios: `mcp_bastion/data/demo_traffic_scenarios.json`. API: `GET|POST /api/demo-mode`.
+- **Connect-live UX:** status-bar **ⓘ** popover + empty-state card (tour vs same-process audit vs `POST /api/ingest-block`); docs checklist in `dashboard/README.md` and `dashboard/static/CONNECT_LIVE.md`.
+
 ### Added
 
 - **TypeScript cyber extensions (opt-in, `@mcp-bastion/core`):** semantic egress screen via sidecar `/semantic-egress` (detect default / quarantine allowlist); result provenance markers + optional `/result-guard`; tamper-evident `AuditChain` + `onAudit` sink. Docs: [CYBER_EXTENSIONS_CORE.md](docs/CYBER_EXTENSIONS_CORE.md). Nature preserved: no inline model; mediation precondition documented.
 - **Tests:** unit + E2E suites for A/E/F (`semantic-egress*`, `result-guard`, `audit`, `cyber-extensions.e2e`).
-
+- **Dashboard demo traffic scenarios** + runtime Demo/Live toggle (YAML + UI + env/CLI).
 ## [4.0.0] - 2026-07-31
 
 Major release: **reversible PII vault**, **proxy JSON/SSE mutate**, **schema minimization**, and **live catalog pin** - additive / opt-in (defaults unchanged). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **4.0.0**.

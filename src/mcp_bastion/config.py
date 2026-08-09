@@ -285,6 +285,9 @@ class BastionConfig:
     auto_repave_actions: dict[str, bool] = field(default_factory=dict)
     secrets_redact_patterns: list[dict[str, Any]] = field(default_factory=list)
     bastion_mode: str = "enforce"  # enforce | observe
+    # Dashboard tour data (default OFF — real MetricsStore / empty until traffic)
+    dashboard_demo: bool = False
+    dashboard_demo_live_traffic: bool = False
 
 
 def validate_bastion_config(config: BastionConfig) -> None:
@@ -397,6 +400,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     lls = data.get("llm_scanner", {}) or {}
     tf = data.get("threat_feeds", {}) or {}
     ar = data.get("auto_repave", {}) or {}
+    dash = data.get("dashboard", {}) or {}
     mode = str(data.get("mode", data.get("bastion_mode", "enforce")))
     boundary_on = bool(bm.get("enabled", False))
     th_require_loopback = bool(th.get("require_loopback", True))
@@ -681,6 +685,10 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         if isinstance(sec.get("redact_patterns"), list)
         else [],
         bastion_mode=mode if mode in ("enforce", "observe") else "enforce",
+        dashboard_demo=bool(dash.get("demo", False)) if isinstance(dash, dict) else False,
+        dashboard_demo_live_traffic=(
+            bool(dash.get("demo_live_traffic", False)) if isinstance(dash, dict) else False
+        ),
     )
 
 

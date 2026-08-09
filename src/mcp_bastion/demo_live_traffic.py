@@ -2,7 +2,8 @@
 Background traffic for dashboard demos (same behavior as examples/dashboard_demo.py -- live loop).
 
 When MCP_BASTION_DEMO is enabled, the dashboard can spawn this loop so KPIs and charts move
-without a separate MCP server. Disable with MCP_BASTION_DEMO_LIVE=0 or mcp-bastion dashboard --no-live.
+without a separate MCP server. Opt-in via MCP_BASTION_DEMO_LIVE=1, --live, or
+bastion.yaml dashboard.demo_live_traffic. Stops when demo mode is toggled off.
 
 Seeding respects :class:`~mcp_bastion.config.BastionConfig` (same as ``demo_dashboard_metrics``)
 so disabled pillars are not faked in ``blocked_by_kind`` / ``pillar_health``.

@@ -9,9 +9,11 @@ if not exist "dashboard\app.py" (
 set PYTHONPATH=src
 set MCP_BASTION_DASHBOARD_HOST=0.0.0.0
 set MCP_BASTION_DASHBOARD_PORT=7000
+REM Tour seed for local validation (real users: omit this or set MCP_BASTION_DEMO=0 / UI toggle off).
 set MCP_BASTION_DEMO=1
 echo.
-echo Dashboard: http://127.0.0.1:7000/
+echo Dashboard (DEMO seed): http://127.0.0.1:7000/
+echo Toggle "Demo data" off in the UI for live MetricsStore only.
 echo Leave this window open. Ctrl+C to stop.
 echo.
 python dashboard\app.py

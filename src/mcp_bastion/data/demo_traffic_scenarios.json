@@ -1,0 +1,97 @@
+{
+  "name": "mcp-bastion-demo-traffic",
+  "description": "Simulated real-world MCP security traffic for dashboard testing and validation. Not production telemetry.",
+  "version": 1,
+  "seed_batches": {
+    "allowed_tools": [
+      "read_file",
+      "write_file",
+      "query_db",
+      "web_search",
+      "invoke_github",
+      "query_llm",
+      "submit_form",
+      "invoke_model"
+    ],
+    "blocks": [
+      {
+        "reason": "Prompt injection blocked by guard",
+        "tool": "query_llm",
+        "note": "Jailbreak / instruction override in tool args"
+      },
+      {
+        "reason": "rate limit: too many requests",
+        "tool": "web_search",
+        "note": "Runaway agent loop / DoS-of-wallet"
+      },
+      {
+        "reason": "RBAC: cannot access tool for role viewer",
+        "tool": "delete_repo",
+        "note": "Unauthorized destructive tool"
+      },
+      {
+        "reason": "Cost budget exceeded for session",
+        "tool": "invoke_model",
+        "note": "FinOps session/daily cap"
+      },
+      {
+        "reason": "schema validation failed: missing required field",
+        "tool": "submit_form",
+        "note": "Malformed tool arguments"
+      },
+      {
+        "reason": "replay or nonce reuse detected",
+        "tool": "sensitive_action",
+        "note": "Replay attack"
+      },
+      {
+        "reason": "content filter: path traversal attempt",
+        "tool": "read_file",
+        "note": "Path traversal / dangerous content"
+      },
+      {
+        "reason": "circuit breaker tripped on upstream",
+        "tool": "invoke_model",
+        "note": "Failing upstream containment"
+      },
+      {
+        "reason": "Agent 'support-bot' is not permitted to call tool 'delete_repo' (blocked by policy)",
+        "tool": "delete_repo",
+        "note": "Confused-deputy / Agent IAM"
+      },
+      {
+        "reason": "checksum verification failed for server module",
+        "tool": "read_file",
+        "note": "Supply-chain server verification"
+      },
+      {
+        "reason": "[-32004] Semantic egress quarantined: manipulative outbound tool args",
+        "tool": "create_pull_request",
+        "note": "Outbound semantic egress (catalog / Node ingest kind)"
+      },
+      {
+        "reason": "[-32005] Tool result quarantined: embedded instructions detected",
+        "tool": "fetch_page",
+        "note": "Poisoned tool result (catalog / Node ingest kind)"
+      },
+      {
+        "reason": "Exfiltration canary echo detected in tool arguments",
+        "tool": "send_email",
+        "note": "Context exfiltration canary"
+      },
+      {
+        "reason": "Semantic firewall: dangerous tool chain blocked",
+        "tool": "invoke_github",
+        "note": "Dangerous multi-tool chain"
+      }
+    ]
+  },
+  "live_loop": {
+    "description": "Weights for continuous background simulation when demo_live_traffic is on",
+    "allow_weight": 0.68,
+    "block_weight": 0.18,
+    "cost_weight": 0.06,
+    "pii_weight": 0.04,
+    "latency_weight": 0.04
+  }
+}
