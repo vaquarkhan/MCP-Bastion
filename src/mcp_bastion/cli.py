@@ -145,16 +145,26 @@ def cmd_dashboard(
         os.environ["MCP_BASTION_DEMO"] = "0"
     elif demo:
         os.environ["MCP_BASTION_DEMO"] = "1"
-    else:
-        os.environ.setdefault("MCP_BASTION_DEMO", "1")
+    # else: leave unset → dashboard applies bastion.yaml dashboard.demo (default false / live)
     if no_live:
         os.environ["MCP_BASTION_DEMO_LIVE"] = "0"
     elif live:
         os.environ["MCP_BASTION_DEMO_LIVE"] = "1"
-    if os.environ.get("MCP_BASTION_DEMO", "").strip().lower() in ("1", "true", "yes"):
+    _demo_env = os.environ.get("MCP_BASTION_DEMO")
+    if _demo_env is not None and _demo_env.strip().lower() in ("1", "true", "yes", "on"):
         logger.info(
-            "Demo metrics: bundled seed on startup (disable: --no-demo). "
+            "Demo metrics: seeding simulated traffic scenarios (disable: --no-demo or UI toggle). "
             "Background fake traffic is opt-in: --live or MCP_BASTION_DEMO_LIVE=1."
+        )
+    elif _demo_env is not None and _demo_env.strip().lower() in ("0", "false", "no", "off"):
+        logger.info(
+            "Dashboard live mode (no demo seed). Tour data: --demo, MCP_BASTION_DEMO=1, "
+            "or bastion.yaml dashboard.demo: true."
+        )
+    else:
+        logger.info(
+            "Dashboard mode from bastion.yaml dashboard.demo (default live/empty). "
+            "Override: --demo / --no-demo or UI toggle."
         )
     try:
         import uvicorn
@@ -685,17 +695,17 @@ def main() -> int:
     _dash_demo.add_argument(
         "--demo",
         action="store_true",
-        help="Force MCP_BASTION_DEMO=1 (default seeds demo unless MCP_BASTION_DEMO disables it).",
+        help="Seed simulated traffic scenarios (MCP_BASTION_DEMO=1). Default is live/empty.",
     )
     _dash_demo.add_argument(
         "--no-demo",
         action="store_true",
-        help="Do not seed demo metrics; dashboard stays empty until middleware feeds MetricsStore.",
+        help="Force live mode (no demo seed). Same as MCP_BASTION_DEMO=0 / UI toggle off.",
     )
     dash_parser.add_argument(
         "--live",
         action="store_true",
-        help="Spawn background fake traffic (moving KPIs). Default is seed-only; same as MCP_BASTION_DEMO_LIVE=1.",
+        help="With --demo: spawn background fake traffic (MCP_BASTION_DEMO_LIVE=1).",
     )
     dash_parser.add_argument(
         "--no-live",

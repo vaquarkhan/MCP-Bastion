@@ -4,14 +4,16 @@ MCP-Bastion real-time dashboard and metrics API.
 Run: PYTHONPATH=src python dashboard/app.py
 Serves: http://localhost:7000/ (dashboard), http://localhost:7000/api/metrics (JSON)
 
-Demo data (non-zero charts without a separate MCP server) - on by default for local runs:
-  python dashboard/app.py
-  mcp-bastion dashboard
-  Opt out: MCP_BASTION_DEMO=0 or mcp-bastion dashboard --no-demo
+Default: live/empty MetricsStore (real middleware traffic or POST /api/ingest-block).
 
-Optional continuous fake traffic (KPIs tick over time) - off by default (stable baseline).
-  Enable: MCP_BASTION_DEMO_LIVE=1 or mcp-bastion dashboard --live
-  Or run: python examples/dashboard_demo.py (includes live loop by default)
+Demo tour data (simulated scenarios) — opt-in:
+  mcp-bastion dashboard --demo
+  MCP_BASTION_DEMO=1
+  bastion.yaml → dashboard.demo: true
+  Or toggle "Demo data" in the UI (POST /api/demo-mode)
+
+Optional continuous fake traffic (only when demo is on):
+  --live / MCP_BASTION_DEMO_LIVE=1 / dashboard.demo_live_traffic: true
 """
 
 from __future__ import annotations
@@ -50,6 +52,7 @@ except ImportError:
 from mcp_bastion.pillars.metrics import MetricsStore
 
 _demo_seed_applied = False
+_dashboard_defaults_applied = False
 
 
 def _load_demo_bastion_config() -> object:
@@ -164,31 +167,59 @@ _demo_live_stop: threading.Event | None = None
 _demo_live_thread: threading.Thread | None = None
 
 
-def _demo_metrics_enabled() -> bool:
-    """
-    Synthetic KPIs/charts seeding is ON unless explicitly turned off.
+def _apply_dashboard_config_defaults() -> None:
+    """Startup defaults: env wins; else bastion.yaml ``dashboard.*``; else live (demo off)."""
+    global _dashboard_defaults_applied
+    if _dashboard_defaults_applied:
+        return
+    _dashboard_defaults_applied = True
+    yaml_demo = False
+    yaml_live = False
+    try:
+        from mcp_bastion.config import load_config
 
-    Important: do not use os.environ.get("MCP_BASTION_DEMO", "") - when the variable is *unset*,
-    that becomes "" which is not in ("1","true","yes") and would skip the seed even though we
-    intend "demo on by default".
-    """
-    raw = os.environ.get("MCP_BASTION_DEMO")
+        cfg = load_config()
+        yaml_demo = bool(getattr(cfg, "dashboard_demo", False))
+        yaml_live = bool(getattr(cfg, "dashboard_demo_live_traffic", False))
+    except Exception as e:
+        logger.debug("dashboard yaml defaults unavailable (%s); demo off", e)
+    if os.environ.get("MCP_BASTION_DEMO") is None:
+        os.environ["MCP_BASTION_DEMO"] = "1" if yaml_demo else "0"
+    if os.environ.get("MCP_BASTION_DEMO_LIVE") is None:
+        os.environ["MCP_BASTION_DEMO_LIVE"] = "1" if yaml_live else "0"
+
+
+def _env_flag_on(name: str, *, default: bool = False) -> bool:
+    raw = os.environ.get(name)
     if raw is None:
-        return True
+        return default
     v = raw.strip().lower()
-    if v == "":
-        return True
-    if v in ("0", "false", "no", "off"):
+    if v in ("0", "false", "no", "off", ""):
         return False
     return v in ("1", "true", "yes", "on")
+
+
+def _demo_metrics_enabled() -> bool:
+    """Synthetic KPIs/charts — default OFF (live MetricsStore). Opt in via env/YAML/UI/--demo."""
+    _apply_dashboard_config_defaults()
+    return _env_flag_on("MCP_BASTION_DEMO", default=False)
 
 
 def _demo_live_enabled() -> bool:
-    """Background traffic only when explicitly requested (avoids extra threads by default)."""
+    """Background traffic only when demo is on and live flag is set."""
     if not _demo_metrics_enabled():
         return False
-    v = os.environ.get("MCP_BASTION_DEMO_LIVE", "").strip().lower()
-    return v in ("1", "true", "yes", "on")
+    return _env_flag_on("MCP_BASTION_DEMO_LIVE", default=False)
+
+
+def _stop_demo_live_traffic() -> None:
+    global _demo_live_stop, _demo_live_thread
+    if _demo_live_stop is not None:
+        _demo_live_stop.set()
+    if _demo_live_thread is not None and _demo_live_thread.is_alive():
+        _demo_live_thread.join(timeout=3.0)
+    _demo_live_stop = None
+    _demo_live_thread = None
 
 
 def _maybe_start_demo_live_traffic() -> None:
@@ -210,14 +241,50 @@ def _maybe_start_demo_live_traffic() -> None:
         daemon=True,
     )
     _demo_live_thread.start()
-    logger.info("Demo live traffic thread started (set MCP_BASTION_DEMO_LIVE=0 or omit --live to disable).")
+    logger.info("Demo live traffic thread started (MCP_BASTION_DEMO_LIVE=1 / --live / UI).")
+
+
+def _demo_mode_status() -> dict[str, object]:
+    demo = _demo_metrics_enabled()
+    live = _demo_live_enabled()
+    return {
+        "demo": demo,
+        "demo_live_traffic": live,
+        "mode": "demo" if demo else "live",
+        "message": (
+            "DEMO DATA — synthetic traffic scenarios for testing (not production telemetry). "
+            "Toggle off to clear seed data and show live MetricsStore."
+            if demo
+            else "LIVE — empty until middleware / POST /api/ingest-block feeds MetricsStore "
+            "(same process; separate dashboard process does not share memory)."
+        ),
+        "scenarios": "mcp_bastion/data/demo_traffic_scenarios.json",
+    }
+
+
+def _switch_demo_mode(*, demo: bool, demo_live_traffic: bool | None = None) -> dict[str, object]:
+    """Toggle demo vs live: stop simulator, reset store, optionally re-seed scenarios."""
+    global _demo_seed_applied
+    _apply_dashboard_config_defaults()
+    _stop_demo_live_traffic()
+    MetricsStore.get().reset()
+    _demo_seed_applied = False
+    if demo:
+        os.environ["MCP_BASTION_DEMO"] = "1"
+        if demo_live_traffic is not None:
+            os.environ["MCP_BASTION_DEMO_LIVE"] = "1" if demo_live_traffic else "0"
+        _maybe_seed_demo_metrics()
+        _maybe_start_demo_live_traffic()
+    else:
+        os.environ["MCP_BASTION_DEMO"] = "0"
+        os.environ["MCP_BASTION_DEMO_LIVE"] = "0"
+    return _demo_mode_status()
 
 
 def _get_dashboard_metrics_dict() -> dict[str, object]:
-    """Single source for /, /api/metrics, and HTML bootstrap (demo seed + empty re-seed)."""
+    """Single source for /, /api/metrics, and HTML bootstrap (demo seed when enabled)."""
     global _demo_seed_applied
-    if os.environ.get("MCP_BASTION_DEMO") is None:
-        os.environ["MCP_BASTION_DEMO"] = "1"
+    _apply_dashboard_config_defaults()
     _maybe_seed_demo_metrics()
     m = MetricsStore.get().get_metrics()
     if _demo_metrics_enabled():
@@ -238,48 +305,48 @@ def _metrics_json_for_html_embed(m: dict[str, object]) -> str:
 
 
 def _maybe_seed_demo_metrics() -> None:
-    """Seed rich demo KPIs/charts when MCP_BASTION_DEMO=1 (bundled in mcp_bastion, works after pip install)."""
+    """Seed simulated traffic from demo_traffic_scenarios.json when demo is on."""
     global _demo_seed_applied
     if _demo_seed_applied:
         return
     if not _demo_metrics_enabled():
         return
     try:
-        from mcp_bastion.demo_dashboard_metrics import seed_metrics
+        from mcp_bastion.demo_traffic import seed_from_scenarios
 
-        seed_metrics(random.Random(42), config=_load_demo_bastion_config())
+        info = seed_from_scenarios(random.Random(42), config=_load_demo_bastion_config())
         _demo_seed_applied = True
-        logger.info("Demo metrics seeded (MCP_BASTION_DEMO=1). Open /api/metrics to verify non-zero data.")
+        logger.info(
+            "Demo metrics seeded (%s). Toggle off via UI or MCP_BASTION_DEMO=0 for live data.",
+            info.get("source"),
+        )
     except Exception:
-        logger.exception("Failed to seed demo metrics (mcp_bastion.demo_dashboard_metrics)")
+        logger.exception("Failed to seed demo metrics (mcp_bastion.demo_traffic)")
 
 
 @asynccontextmanager
 async def _dashboard_lifespan(_app: FastAPI):
-    global _demo_live_stop, _demo_live_thread
-    # Default demo metrics on; explicit MCP_BASTION_DEMO=0/false/no disables.
-    if os.environ.get("MCP_BASTION_DEMO") is None:
-        os.environ["MCP_BASTION_DEMO"] = "1"
+    _apply_dashboard_config_defaults()
     _maybe_seed_demo_metrics()
     _maybe_start_demo_live_traffic()
+    if _demo_metrics_enabled():
+        logger.info("Dashboard mode: DEMO (synthetic scenarios). Use UI toggle or --no-demo for live.")
+    else:
+        logger.info("Dashboard mode: LIVE (no demo seed). Use --demo or dashboard.demo: true to tour.")
     yield
-    if _demo_live_stop is not None:
-        _demo_live_stop.set()
-    if _demo_live_thread is not None and _demo_live_thread.is_alive():
-        _demo_live_thread.join(timeout=3.0)
-    _demo_live_stop = None
-    _demo_live_thread = None
+    _stop_demo_live_traffic()
 
 
 app = FastAPI(title="MCP-Bastion Dashboard", lifespan=_dashboard_lifespan)
 
 
 # Allow cross-origin reads of metrics (proxies, Live Preview, tools on another port).
+# POST needed for /api/demo-mode and /api/ingest-block from other origins.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["GET", "HEAD", "OPTIONS"],
+    allow_methods=["GET", "HEAD", "OPTIONS", "POST"],
     allow_headers=["*"],
 )
 
@@ -346,7 +413,9 @@ def _dashboard_build_info() -> dict:
     return {
         "service": "mcp-bastion-dashboard",
         "dashboard_app_py": str(here),
-        "ui_revision": "v39-attacks-stopped",
+        "ui_revision": "v41-connect-live-help",
+        "demo": _demo_metrics_enabled(),
+        "demo_live_traffic": _demo_live_enabled(),
         "hint": "If this is missing, you are not hitting dashboard/app.py - check port and process.",
     }
 
@@ -361,6 +430,40 @@ def health():
             {"status": "error", "message": str(e)},
             status_code=503,
         )
+
+
+@app.get("/api/demo-mode")
+def get_demo_mode():
+    """Current Demo vs Live mode (synthetic scenarios vs real MetricsStore)."""
+    return _demo_mode_status()
+
+
+@app.post("/api/demo-mode")
+async def set_demo_mode(request: Request):
+    """Switch Demo ↔ Live at runtime.
+
+    Body JSON: ``{ "demo": true|false, "demo_live_traffic"?: true|false }``.
+    Turning demo off clears the store and stops the background simulator.
+    Turning demo on resets the store and re-seeds ``demo_traffic_scenarios.json``.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "invalid_json"}, status_code=400)
+    if not isinstance(body, dict) or "demo" not in body:
+        return JSONResponse({"error": "demo_required", "hint": '{"demo": true|false}'}, status_code=400)
+    demo = bool(body.get("demo"))
+    live_raw = body.get("demo_live_traffic")
+    live: bool | None
+    if live_raw is None:
+        live = None
+    else:
+        live = bool(live_raw)
+    try:
+        return _switch_demo_mode(demo=demo, demo_live_traffic=live)
+    except Exception as e:
+        logger.exception("demo-mode switch failed: %s", e)
+        return JSONResponse({"error": "switch_failed", "message": str(e)}, status_code=500)
 
 
 @app.post("/api/ingest-block")
@@ -2633,6 +2736,171 @@ DASHBOARD_HTML = """
     @media (prefers-reduced-motion: reduce) {
       .back-top { transition: none; }
     }
+    .demo-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 10px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+    .demo-toggle input {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #f59e0b;
+      cursor: pointer;
+    }
+    .demo-toggle[data-on="1"] {
+      border-color: rgba(245, 158, 11, 0.55);
+      background: rgba(245, 158, 11, 0.12);
+      color: #fbbf24;
+    }
+    html[data-theme="light"] .demo-toggle[data-on="1"] {
+      color: #92400e;
+      background: rgba(245, 158, 11, 0.16);
+    }
+    .demo-data-banner {
+      display: none;
+      margin: 0 0 14px 0;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      background: rgba(245, 158, 11, 0.12);
+      color: #fde68a;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+    .demo-data-banner.visible { display: block; }
+    html[data-theme="light"] .demo-data-banner {
+      color: #78350f;
+      background: rgba(251, 191, 36, 0.2);
+      border-color: rgba(180, 83, 9, 0.35);
+    }
+    .demo-data-banner strong {
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .demo-data-banner .demo-doc-link {
+      margin-left: 6px;
+      color: #fde68a;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .demo-data-banner .demo-doc-link:hover {
+      color: #fff;
+    }
+    html[data-theme="light"] .demo-data-banner .demo-doc-link {
+      color: #92400e;
+    }
+    html[data-theme="light"] .demo-data-banner .demo-doc-link:hover {
+      color: #78350f;
+    }
+    .live-help-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .live-help-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
+    .live-help-btn:hover,
+    .live-help-btn[aria-expanded="true"] {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .live-help-popover {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      z-index: 220;
+      width: min(360px, 86vw);
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 0.8rem;
+      line-height: 1.45;
+      text-align: left;
+    }
+    .live-help-popover.open { display: block; }
+    .live-help-popover h3 {
+      margin: 0 0 8px 0;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .live-help-popover ol {
+      margin: 0 0 8px 1.1rem;
+      padding: 0;
+    }
+    .live-help-popover li { margin: 0 0 6px 0; }
+    .live-help-popover code {
+      font-size: 0.72rem;
+      word-break: break-all;
+    }
+    .live-help-popover .help-foot {
+      margin: 8px 0 0 0;
+      color: var(--muted);
+      font-size: 0.74rem;
+    }
+    .live-help-popover a { color: var(--accent); }
+    .live-connect-card {
+      display: none;
+      margin: 0 0 16px 0;
+      padding: 16px 18px;
+      border-radius: 14px;
+      border: 1px dashed rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .live-connect-card.visible { display: block; }
+    html[data-theme="light"] .live-connect-card {
+      background: rgba(14, 165, 233, 0.08);
+      border-color: rgba(3, 105, 161, 0.28);
+    }
+    .live-connect-card h2 {
+      margin: 0 0 6px 0;
+      font-size: 1rem;
+    }
+    .live-connect-card .card-desc {
+      margin: 0 0 10px 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+    .live-connect-card ol {
+      margin: 0 0 12px 1.15rem;
+      padding: 0;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+    .live-connect-card li { margin: 0 0 6px 0; }
+    .live-connect-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -2658,6 +2926,10 @@ DASHBOARD_HTML = """
       </div>
     </div>
     <div class="header-right">
+      <label class="demo-toggle" id="demoModeToggleLabel" title="Seed simulated traffic for testing. Off = live MetricsStore only.">
+        <input type="checkbox" id="demoModeToggle" />
+        <span>Demo data</span>
+      </label>
       <button type="button" class="theme-toggle" id="themeToggle" aria-pressed="true" aria-label="Switch to light or dark theme">Switch to light theme</button>
       <div class="alert-menu" id="alertMenu">
         <button type="button" class="badge badge-btn" id="alertCountBtn" aria-expanded="false" aria-haspopup="true" aria-controls="alertDropdownPanel">
@@ -2670,8 +2942,27 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
+  <div class="demo-data-banner" id="demoDataBanner" role="status" aria-live="polite">
+    <strong>DEMO DATA</strong> — Synthetic traffic for validation/tour (scenarios file). Toggle <em>Demo data</em> off to clear seed and show live MetricsStore only.
+    <a class="demo-doc-link" href="/static/CONNECT_LIVE.md" target="_blank" rel="noopener">Read: connect live vs demo</a>
+    ·
+    <a class="demo-doc-link" href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md#connect-live-production-data" target="_blank" rel="noopener">Full guide</a>
+  </div>
+
   <div class="status-bar" role="status">
     <span class="live-indicator"><span class="live-dot" aria-hidden="true"></span><span id="liveLabel">Live</span></span>
+    <span class="live-help-wrap" id="liveHelpWrap">
+      <button type="button" class="live-help-btn" id="liveHelpBtn" aria-expanded="false" aria-controls="liveHelpPopover" title="How to connect live production data" aria-label="How to connect live production data">i</button>
+      <div class="live-help-popover" id="liveHelpPopover" role="dialog" aria-label="Connect live data">
+        <h3>Connect live production data</h3>
+        <ol>
+          <li><strong>Tour / validate UI</strong> — turn on <em>Demo data</em> (synthetic scenarios; labeled banner).</li>
+          <li><strong>Python / FastMCP</strong> — run Bastion middleware with <code>audit.enabled</code> in the <strong>same process</strong> as this dashboard (MetricsStore is in-memory).</li>
+          <li><strong>Other runtime (e.g. Node)</strong> — <code>POST /api/ingest-block</code> with JSON <code>{"reason","tool"}</code> into this dashboard’s host/port.</li>
+        </ol>
+        <p class="help-foot">A separate <code>mcp-bastion dashboard</code> process does <strong>not</strong> auto-see another MCP server. Docs: <a href="/static/CONNECT_LIVE.md" id="liveHelpDocLink">Connect live</a> (also in repo <code>dashboard/README.md</code>).</p>
+      </div>
+    </span>
     <span class="sep" aria-hidden="true">·</span>
     <span id="pollStatus">Connecting to MCP-Bastion metrics…</span>
     <span class="sep" aria-hidden="true">·</span>
@@ -2679,6 +2970,21 @@ DASHBOARD_HTML = """
     <span id="dataFreshness" class="muted">-</span>
     <span class="sep" aria-hidden="true">·</span>
     <span id="windowStartLine" class="muted"></span>
+  </div>
+
+  <div class="live-connect-card" id="liveConnectCard" role="region" aria-label="Connect live data">
+    <h2>No live traffic yet</h2>
+    <p class="card-desc">Charts stay at zero until Bastion records decisions into this process’s MetricsStore — or you tour with demo data.</p>
+    <ol>
+      <li><strong>Quick tour:</strong> enable <em>Demo data</em> in the header (or click below).</li>
+      <li><strong>Production (Python):</strong> <code>audit.enabled: true</code> + middleware in the <strong>same process</strong> as the dashboard.</li>
+      <li><strong>Production (bridge):</strong> <code>POST /api/ingest-block</code> → <code>{"reason":"…","tool":"…"}</code>.</li>
+    </ol>
+    <div class="live-connect-actions">
+      <button type="button" class="btn-export" id="btnTourDemoFromEmpty">Tour with demo data</button>
+      <button type="button" class="btn-ghost" id="btnOpenLiveHelp">How to wire live data</button>
+      <a class="link-chip" href="/static/CONNECT_LIVE.md" target="_blank" rel="noopener">Connect live docs</a>
+    </div>
   </div>
 
   <div class="kpi-summary-bar" id="kpiSummaryBar" role="region" aria-label="At a glance">
@@ -2704,7 +3010,7 @@ DASHBOARD_HTML = """
     <div class="loading-inner">
       <div class="loading-spinner" aria-hidden="true"></div>
       <p class="loading-title">Preparing your security overview…</p>
-      <p class="loading-hint">If charts stay empty, route MCP tool traffic through middleware that reports to <code>MetricsStore</code>. Poll: <code>/api/metrics</code> every 2s.</p>
+      <p class="loading-hint">Live mode starts empty. Use <em>Demo data</em> to tour, or wire Bastion audit / <code>POST /api/ingest-block</code> (ⓘ in the status bar). Poll: <code>/api/metrics</code> every 2s.</p>
     </div>
   </div>
 
@@ -3348,7 +3654,7 @@ DASHBOARD_HTML = """
     </div>
   </div>
 
-  <script src="/static/dashboard-app.js?v=39-attacks-stopped" charset="utf-8"></script>
+  <script src="/static/dashboard-app.js?v=41-connect-live-help" charset="utf-8"></script>
   <p class="dash-footer">
     <strong>MCP-Bastion dashboard</strong> · Chart.js · Theme preference stored in this browser only<br>
     <span id="footerUpdated" class="muted"></span>
@@ -3407,14 +3713,15 @@ def _dashboard_bind() -> tuple[str, int]:
 
 
 if __name__ == "__main__":
-    # Same as CLI: seed demo metrics unless explicitly disabled (MCP_BASTION_DEMO=0 / false / no).
-    if os.environ.get("MCP_BASTION_DEMO") is None:
-        os.environ["MCP_BASTION_DEMO"] = "1"
+    # Default live; set MCP_BASTION_DEMO=1 or bastion.yaml dashboard.demo: true for tour seed.
+    _apply_dashboard_config_defaults()
     import uvicorn
 
     _h, _p = _dashboard_bind()
+    _mode = "DEMO" if _demo_metrics_enabled() else "LIVE"
     print(
-        f"MCP-Bastion dashboard: http://127.0.0.1:{_p}/  (bound {_h}:{_p}; leave this window open; Ctrl+C to stop)",
+        f"MCP-Bastion dashboard ({_mode}): http://127.0.0.1:{_p}/  "
+        f"(bound {_h}:{_p}; leave this window open; Ctrl+C to stop)",
         flush=True,
     )
     uvicorn.run(app, host=_h, port=_p)

@@ -74,6 +74,7 @@ packages = ["src/mcp_bastion"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "dashboard" = "dashboard"
+"src/mcp_bastion/data/demo_traffic_scenarios.json" = "mcp_bastion/data/demo_traffic_scenarios.json"
 
 [tool.hatch.build.targets.sdist]
 include = ["src/mcp_bastion", "dashboard"]

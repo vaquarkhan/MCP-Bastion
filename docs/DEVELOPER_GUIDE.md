@@ -73,7 +73,8 @@ mcp-bastion serve --config bastion.yaml --http 8080
 # Proxy boundary mode (forwards to upstream MCP)
 mcp-bastion serve --config bastion.yaml --proxy http://127.0.0.1:9000/mcp --http 8080
 
-# Dashboard (demo seed shows posture / FinOps / issue guides)
+# Dashboard (default live/empty; --demo seeds simulated traffic for tour/validation)
+mcp-bastion dashboard --port 7000
 mcp-bastion dashboard --port 7000 --demo
 # or: PYTHONPATH=src MCP_BASTION_DEMO=1 python dashboard/app.py
 

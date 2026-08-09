@@ -187,6 +187,12 @@ audit:
   # Append-only JSONL for compliance; tail with: mcp-bastion tail --path audit.jsonl
   jsonl_path: .bastion/audit.jsonl
 
+# Local metrics UI (mcp-bastion dashboard). Default is live/empty — not synthetic tour data.
+# Env MCP_BASTION_DEMO / MCP_BASTION_DEMO_LIVE override these when set. UI toggle also switches at runtime.
+dashboard:
+  demo: false                 # true = seed simulated traffic scenarios on startup
+  demo_live_traffic: false    # true = background simulator (only when demo is on)
+
 alerts:
   slack_webhook: ${SLACK_WEBHOOK_URL}
   webhook_url: ${BASTION_WEBHOOK_URL}
