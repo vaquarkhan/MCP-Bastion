@@ -4,7 +4,7 @@ Static marketing + docs site deployed to https://vaquarkhan.github.io/MCP-Bastio
 
 | Path | Content |
 |------|---------|
-| `/` | Landing (`index.html`) — v4.0.0 |
+| `/` | Landing (`index.html`) — v5.0.0 |
 | `/integrations.html` | 26 packages + PePy download dashboard |
 | `/guide/` | Generated handbook from `docs/*.md` |
 | `/guide/handbook.html` | Visual documentation handbook |

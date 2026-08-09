@@ -77,7 +77,7 @@ Docs: [CRA_COMPLIANCE.md](CRA_COMPLIANCE.md) · tutorial [CRA_SBOM_TUTORIAL.md](
 cosign verify \
   --certificate-identity-regexp 'https://github.com/vaquarkhan/MCP-Bastion/.github/workflows/publish-docker.yml@.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
+  ghcr.io/vaquarkhan/mcp-bastion-proxy:v5.0.0
 ```
 
 PyPI/npm continue to use **Trusted Publishing / npm provenance** (OIDC). Session `mcp-bastion attest export` is **runtime governance evidence**, not release SLSA.

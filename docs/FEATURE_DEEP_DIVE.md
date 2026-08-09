@@ -1,6 +1,6 @@
 # Feature deep dive — issue, solution, and benefits
 
-**Version:** 4.0.0  
+**Version:** 5.0.0  
 **Audience:** Security architects, platform engineers, and reviewers who need *why* each control exists—not only how to flip a YAML switch  
 **Companion docs:** [DOCUMENTATION_HANDBOOK.md](DOCUMENTATION_HANDBOOK.md) (visual handbook), [FEATURES.md](FEATURES.md) (enablement), [PILLARS.md](PILLARS.md) (counts & mapping), [ATTACK_DEMOS.md](ATTACK_DEMOS.md) (runnable + GIFs), [MULTI_LANGUAGE_SUITE.md](MULTI_LANGUAGE_SUITE.md) (all languages), [dashboard/README.md](../dashboard/README.md) (UI), [USER_GUIDE.md](USER_GUIDE.md) (end-to-end handbook)
 

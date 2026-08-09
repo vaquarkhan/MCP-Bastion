@@ -1,21 +1,29 @@
 ﻿# Changelog
 
-**Current release:** **4.0.0** (2026-07-31) - [PyPI](https://pypi.org/project/mcp-bastion-python/4.0.0/) · [Docker `v4.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **5.0.0** (2026-08-09) - [PyPI](https://pypi.org/project/mcp-bastion-python/5.0.0/) · [Docker `v5.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
-## [Unreleased]
+## [5.0.0] - 2026-08-09
+
+Major release: **dashboard live-first** (demo opt-in), connect-live UX, and TypeScript cyber extensions (A/E/F). All **PyPI packages**, npm `@mcp-bastion/core`, Docker, and MCP Registry bumped to **5.0.0**.
 
 ### Changed
 
 - **Dashboard default is live (no synthetic seed).** Demo traffic is opt-in via UI toggle, `--demo` / `MCP_BASTION_DEMO=1`, or `bastion.yaml` `dashboard.demo`. Toggling off clears the store and stops background simulation. Scenarios: `mcp_bastion/data/demo_traffic_scenarios.json`. API: `GET|POST /api/demo-mode`.
-- **Connect-live UX:** status-bar **ⓘ** popover + empty-state card (tour vs same-process audit vs `POST /api/ingest-block`); docs checklist in `dashboard/README.md` and `dashboard/static/CONNECT_LIVE.md`.
+- **Connect-live UX:** status-bar **ⓘ** popover + empty-state card (tour vs same-process audit vs `POST /api/ingest-block`); DEMO banner links to docs; checklist in `dashboard/README.md` and `dashboard/static/CONNECT_LIVE.md`.
 
 ### Added
 
 - **TypeScript cyber extensions (opt-in, `@mcp-bastion/core`):** semantic egress screen via sidecar `/semantic-egress` (detect default / quarantine allowlist); result provenance markers + optional `/result-guard`; tamper-evident `AuditChain` + `onAudit` sink. Docs: [CYBER_EXTENSIONS_CORE.md](docs/CYBER_EXTENSIONS_CORE.md). Nature preserved: no inline model; mediation precondition documented.
 - **Tests:** unit + E2E suites for A/E/F (`semantic-egress*`, `result-guard`, `audit`, `cyber-extensions.e2e`).
 - **Dashboard demo traffic scenarios** + runtime Demo/Live toggle (YAML + UI + env/CLI).
+
+### Compatibility
+
+- **Breaking for dashboard operators who relied on demo-by-default:** unset `MCP_BASTION_DEMO` now means live/empty. Use `--demo`, UI toggle, or `dashboard.demo: true` for tour data.
+- Middleware / policy defaults otherwise unchanged; cyber extensions remain opt-in.
+
 ## [4.0.0] - 2026-07-31
 
 Major release: **reversible PII vault**, **proxy JSON/SSE mutate**, **schema minimization**, and **live catalog pin** - additive / opt-in (defaults unchanged). All **18 PyPI packages**, npm, Docker, and MCP Registry bumped to **4.0.0**.

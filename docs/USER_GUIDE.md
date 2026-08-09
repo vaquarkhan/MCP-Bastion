@@ -1,6 +1,6 @@
 # MCP-Bastion User Guide
 
-**Version:** 4.0.0  
+**Version:** 5.0.0  
 **Audience:** Platform engineers, security architects, and developers deploying Model Context Protocol (MCP) servers with AI agents  
 **Last updated:** 2026-07-31
 
@@ -32,13 +32,9 @@ MCP-Bastion is **not** an LLM provider, an agent framework, or a full API gatewa
 - **Privilege sprawl** (RBAC, Agent IAM, allowlists)  
 - **Supply-chain integrity** for MCP server artifacts  
 
-### 1.2 Release lineage (4.0.0)
+### 1.2 Release lineage (5.0.0)
 
-Version **4.0.0** adds a major feature bundle while keeping defaults non-breaking:
-
-- Reversible **PII vault** (abstract + hydrate), including HTTP proxy and SSE  
-- **Schema minimization** for `tools/list`  
-- **Live tool-catalog pin** against metadata drift  
+Version **5.0.0** keeps middleware defaults stable while changing the **dashboard** default to live/empty (demo opt-in), and ships TypeScript cyber extensions (semantic egress, result guard, audit chain) as opt-in `@mcp-bastion/core` features. Earlier **4.0.0** added reversible PII vault, schema minimize, and live catalog pin.
 
 See [CHANGELOG.md](../CHANGELOG.md).
 
@@ -79,7 +75,7 @@ Policy evaluation is pillar-based. Each pillar can allow, block, redact, or anno
 ### 3.2 Install
 
 ```bash
-pip install "mcp-bastion-python==4.0.0"
+pip install "mcp-bastion-python==5.0.0"
 ```
 
 FastMCP convenience wrapper:
@@ -91,7 +87,7 @@ pip install mcp-bastion-fastmcp
 Docker proxy image:
 
 ```bash
-docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
+docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v5.0.0
 ```
 
 ### 3.3 Minimal FastMCP path
@@ -326,7 +322,7 @@ mcp-bastion redteam
 
 ## 10. Production checklist
 
-1. **Pin versions** — `mcp-bastion-python==4.0.0` (or current release).  
+1. **Pin versions** — `mcp-bastion-python==5.0.0` (or current release).  
 2. **Validate config** — `mcp-bastion validate` in CI.  
 3. **Choose deployment shape** — middleware vs `serve --proxy`.  
 4. **Enable transport hardening** for HTTP.  
@@ -343,7 +339,7 @@ mcp-bastion redteam
 
 **Goal:** Protect a calendar MCP server behind Bastion so agents never see raw emails, while invite tools still receive real addresses.
 
-1. Install `mcp-bastion-python==4.0.0`.  
+1. Install `mcp-bastion-python==5.0.0`.  
 2. Copy `examples/bastion-pii-vault.yaml` → `bastion.yaml`; set `pii_vault.enabled: true`.  
 3. Run upstream MCP on `127.0.0.1:9000`.  
 4. Start proxy:  
@@ -383,4 +379,4 @@ mcp-bastion redteam
 
 ---
 
-*This guide describes MCP-Bastion 4.0.0. Feature availability depends on your installed package version and `bastion.yaml` settings.*
+*This guide describes MCP-Bastion 5.0.0. Feature availability depends on your installed package version and `bastion.yaml` settings.*

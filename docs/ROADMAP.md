@@ -6,7 +6,7 @@ Status as of **main** post-3.0 governance merge (2026-07-05).
 
 **Flagship bet:** [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md)  -  own *cost-aware runtime governance for AI agents* (policy + live spend + attestation). Deep engineering milestones: [ENGINEERING_10_10.md](ENGINEERING_10_10.md). Competitive positioning: [COMPARISON.md](COMPARISON.md).
 
-**Current release:** [4.0.0](https://pypi.org/project/mcp-bastion-python/4.0.0/) · Docker `v4.0.0` · integration packages **4.0.0**
+**Current release:** [5.0.0](https://pypi.org/project/mcp-bastion-python/5.0.0/) · Docker `v5.0.0` · integration packages **5.0.0**
 
 ---
 
