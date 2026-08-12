@@ -8,28 +8,48 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Aggregate PyPI download totals
         run: python scripts/update_ecosystem_downloads.py
 
-      - name: Commit if changed
+      # main is protected (PR required). Open/update a bot PR instead of pushing to main.
+      - name: Create or update pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: refresh ecosystem PyPI download totals"
+          author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          committer: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          title: "chore: refresh ecosystem PyPI download totals"
+          body: |
+            Automated refresh of PePy / pypistats totals for README + Pages badges.
+
+            - `docs/site/assets/ecosystem-downloads.json`
+            - `docs/site/assets/ecosystem-downloads-badge.json`
+            - `docs/site/assets/badges/*-downloads.json`
+          branch: chore/ecosystem-downloads
+          delete-branch: true
+          add-paths: |
+            docs/site/assets/ecosystem-downloads.json
+            docs/site/assets/ecosystem-downloads-badge.json
+            docs/site/assets/badges/
+
+      - name: Enable auto-merge
+        if: steps.cpr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/site/assets/ecosystem-downloads.json docs/site/assets/ecosystem-downloads-badge.json docs/site/assets/badges/
-          if git diff --staged --quiet; then
-            echo "No download-stat changes"
-            exit 0
-          fi
-          git commit -m "chore: refresh ecosystem PyPI download totals"
-          git push
+          gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --squash --auto || \
+            echo "Auto-merge not enabled or blocked by rules; PR left open for review."
