@@ -129,7 +129,7 @@ def _write_package_badge(name: str, downloads: int, stats_status: str) -> str:
                 "label": label,
                 "message": message,
                 "color": color,
-                "cacheSeconds": 3600,
+                "cacheSeconds": 300,
             },
             indent=2,
         )
@@ -140,9 +140,12 @@ def _write_package_badge(name: str, downloads: int, stats_status: str) -> str:
 
 
 def _shields_endpoint(raw_badge_url: str) -> str:
+    """Shields endpoint URL with a daily cache-bust so README/Pages do not stick on stale PNGs."""
     from urllib.parse import quote
 
-    return f"https://img.shields.io/endpoint?url={quote(raw_badge_url, safe='')}"
+    day = datetime.now(timezone.utc).strftime("%Y%m%d")
+    busted = f"{raw_badge_url}?d={day}"
+    return f"https://img.shields.io/endpoint?url={quote(busted, safe='')}"
 
 
 def _format_count(n: int) -> str:
@@ -208,7 +211,7 @@ def main() -> None:
                 "message": _format_count(total),
                 "color": "0B5FFF",
                 "namedLogo": "python",
-                "cacheSeconds": 3600,
+                "cacheSeconds": 300,
             },
             indent=2,
         )

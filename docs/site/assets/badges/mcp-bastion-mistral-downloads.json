@@ -3,5 +3,5 @@
   "label": "total downloads",
   "message": "8k",
   "color": "0B5FFF",
-  "cacheSeconds": 3600
+  "cacheSeconds": 300
 }
