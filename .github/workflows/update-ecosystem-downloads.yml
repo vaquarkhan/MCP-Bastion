@@ -25,7 +25,7 @@ jobs:
           fi
 
       # Admin PAT bypasses MCP-Bastion-rules (RepositoryRole admin). GITHUB_TOKEN cannot.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.ECOSYSTEM_STATS_TOKEN }}
 
