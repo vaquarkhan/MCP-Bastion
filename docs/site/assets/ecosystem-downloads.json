@@ -1,16 +1,16 @@
 {
-  "updated_at": "2026-08-08T08:32:18Z",
+  "updated_at": "2026-08-12T13:42:57Z",
   "source": "pepy.tech total_downloads (all-time); pypistats.org fallback (~180d)",
   "note": "All-time cumulative per package when PePy has indexed the project. New releases show stats_status=pending until PePy/pypistats index them (usually 24\u201348h). Installing an integration also pulls mcp-bastion-python, so core + integration totals can overlap.",
   "package_count": 26,
   "indexed_count": 26,
   "pending_count": 0,
-  "total_downloads": 144861,
+  "total_downloads": 158467,
   "packages": [
     {
       "package": "mcp-bastion-python",
       "protects": "Core middleware",
-      "downloads": 19276,
+      "downloads": 20438,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-python-downloads.json",
@@ -22,7 +22,7 @@
     {
       "package": "mcp-bastion-langchain",
       "protects": "LangChain",
-      "downloads": 7261,
+      "downloads": 7756,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-langchain-downloads.json",
@@ -34,7 +34,7 @@
     {
       "package": "mcp-bastion-openai",
       "protects": "OpenAI GPT",
-      "downloads": 7346,
+      "downloads": 7844,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-openai-downloads.json",
@@ -46,7 +46,7 @@
     {
       "package": "mcp-bastion-anthropic",
       "protects": "Anthropic Claude",
-      "downloads": 7265,
+      "downloads": 7775,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-anthropic-downloads.json",
@@ -58,7 +58,7 @@
     {
       "package": "mcp-bastion-bedrock",
       "protects": "AWS Bedrock",
-      "downloads": 7238,
+      "downloads": 7781,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-bedrock-downloads.json",
@@ -70,7 +70,7 @@
     {
       "package": "mcp-bastion-gemini",
       "protects": "Google Gemini",
-      "downloads": 7229,
+      "downloads": 7754,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-gemini-downloads.json",
@@ -82,7 +82,7 @@
     {
       "package": "mcp-bastion-crewai",
       "protects": "CrewAI",
-      "downloads": 7050,
+      "downloads": 7588,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-crewai-downloads.json",
@@ -94,7 +94,7 @@
     {
       "package": "mcp-bastion-llamaindex",
       "protects": "LlamaIndex",
-      "downloads": 7568,
+      "downloads": 8080,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-llamaindex-downloads.json",
@@ -106,7 +106,7 @@
     {
       "package": "mcp-bastion-groq",
       "protects": "Groq",
-      "downloads": 7117,
+      "downloads": 7619,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-groq-downloads.json",
@@ -118,7 +118,7 @@
     {
       "package": "mcp-bastion-mistral",
       "protects": "Mistral AI",
-      "downloads": 7433,
+      "downloads": 7966,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-mistral-downloads.json",
@@ -130,7 +130,7 @@
     {
       "package": "mcp-bastion-cohere",
       "protects": "Cohere",
-      "downloads": 7116,
+      "downloads": 7654,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-cohere-downloads.json",
@@ -142,7 +142,7 @@
     {
       "package": "mcp-bastion-azure",
       "protects": "Azure OpenAI",
-      "downloads": 6970,
+      "downloads": 7486,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-azure-downloads.json",
@@ -154,7 +154,7 @@
     {
       "package": "mcp-bastion-vertexai",
       "protects": "Vertex AI",
-      "downloads": 7066,
+      "downloads": 7577,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-vertexai-downloads.json",
@@ -166,7 +166,7 @@
     {
       "package": "mcp-bastion-huggingface",
       "protects": "Hugging Face",
-      "downloads": 7811,
+      "downloads": 8313,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-huggingface-downloads.json",
@@ -178,7 +178,7 @@
     {
       "package": "mcp-bastion-deepseek",
       "protects": "DeepSeek AI",
-      "downloads": 7166,
+      "downloads": 7673,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-deepseek-downloads.json",
@@ -190,7 +190,7 @@
     {
       "package": "mcp-bastion-together",
       "protects": "Together AI",
-      "downloads": 7105,
+      "downloads": 7618,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-together-downloads.json",
@@ -202,7 +202,7 @@
     {
       "package": "mcp-bastion-fireworks",
       "protects": "Fireworks AI",
-      "downloads": 7064,
+      "downloads": 7585,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-fireworks-downloads.json",
@@ -214,7 +214,7 @@
     {
       "package": "mcp-bastion-litellm",
       "protects": "LiteLLM (100+ providers)",
-      "downloads": 299,
+      "downloads": 766,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-litellm-downloads.json",
@@ -226,7 +226,7 @@
     {
       "package": "mcp-bastion-ollama",
       "protects": "Ollama local models",
-      "downloads": 315,
+      "downloads": 756,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-ollama-downloads.json",
@@ -238,7 +238,7 @@
     {
       "package": "mcp-bastion-openrouter",
       "protects": "OpenRouter gateway",
-      "downloads": 347,
+      "downloads": 795,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-openrouter-downloads.json",
@@ -250,7 +250,7 @@
     {
       "package": "mcp-bastion-xai",
       "protects": "xAI Grok",
-      "downloads": 340,
+      "downloads": 808,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-xai-downloads.json",
@@ -262,7 +262,7 @@
     {
       "package": "mcp-bastion-autogen",
       "protects": "Microsoft AutoGen",
-      "downloads": 361,
+      "downloads": 835,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-autogen-downloads.json",
@@ -274,7 +274,7 @@
     {
       "package": "mcp-bastion-langgraph",
       "protects": "LangGraph",
-      "downloads": 307,
+      "downloads": 773,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-langgraph-downloads.json",
@@ -286,7 +286,7 @@
     {
       "package": "mcp-bastion-pydantic-ai",
       "protects": "Pydantic AI",
-      "downloads": 306,
+      "downloads": 740,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-pydantic-ai-downloads.json",
@@ -298,7 +298,7 @@
     {
       "package": "mcp-bastion-openai-agents",
       "protects": "OpenAI Agents SDK",
-      "downloads": 309,
+      "downloads": 776,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-openai-agents-downloads.json",
@@ -310,7 +310,7 @@
     {
       "package": "mcp-bastion-fastmcp",
       "protects": "FastMCP servers",
-      "downloads": 7196,
+      "downloads": 7711,
       "stats_status": "indexed",
       "stats_source": "pepy.tech all-time",
       "badge_raw": "https://raw.githubusercontent.com/vaquarkhan/MCP-Bastion/main/docs/site/assets/badges/mcp-bastion-fastmcp-downloads.json",
