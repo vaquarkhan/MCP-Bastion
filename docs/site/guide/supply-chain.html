@@ -156,7 +156,7 @@ python scripts/generate_sbom.py --npm packages/core/package.json --output bom-np
 <pre><code class="language-bash">cosign verify \
   --certificate-identity-regexp 'https://github.com/vaquarkhan/MCP-Bastion/.github/workflows/publish-docker.yml@.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
+  ghcr.io/vaquarkhan/mcp-bastion-proxy:v5.1.0
 </code></pre>
 <p>PyPI/npm continue to use <strong>Trusted Publishing / npm provenance</strong> (OIDC). Session <code>mcp-bastion attest export</code> is <strong>runtime governance evidence</strong>, not release SLSA.</p>
 <h2 id="related-reading">Related reading</h2>

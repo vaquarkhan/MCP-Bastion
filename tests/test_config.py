@@ -481,9 +481,22 @@ def test_validate_bastion_config_rejects_tool_metadata_guard_without_scanners():
         prompt_guard=False,
         content_filter=False,
         tool_metadata_guard_enabled=True,
+        tool_metadata_guard_use_heuristics=False,
     )
     with pytest.raises(BastionConfigError, match="tool_metadata_guard"):
         validate_bastion_config(cfg)
+
+
+def test_validate_bastion_config_allows_tool_metadata_guard_with_heuristics_only():
+    from mcp_bastion.config import BastionConfig, validate_bastion_config
+
+    cfg = BastionConfig(
+        prompt_guard=False,
+        content_filter=False,
+        tool_metadata_guard_enabled=True,
+        tool_metadata_guard_use_heuristics=True,
+    )
+    validate_bastion_config(cfg)
 
 
 def test_validate_bastion_config_policy_fail_closed_requires_opa_dir(tmp_path):
@@ -517,6 +530,7 @@ def test_build_middleware_rejects_misconfigured_tool_metadata_guard(tmp_path):
         """
 tool_metadata_guard:
   enabled: true
+  use_heuristics: false
 prompt_guard:
   enabled: false
 content_filter:

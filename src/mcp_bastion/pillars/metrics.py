@@ -204,6 +204,12 @@ class MetricsStore:
         if not reason:
             return "unknown"
         lower = reason.lower()
+        if "egress host" in lower or "-32043" in lower:
+            return "egress_allowlist"
+        if "business rule" in lower or "-32047" in lower:
+            return "business_rules"
+        if "concurrency" in lower or "load shed" in lower or "-32044" in lower or "-32045" in lower:
+            return "concurrency"
         # Cyber / Node deny codes (also matched when ingested via dashboard)
         if "semantic egress" in lower or "[-32004]" in lower or "-32004" in lower:
             return "semantic_egress"

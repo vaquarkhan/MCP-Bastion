@@ -78,9 +78,9 @@
         <p class="eyebrow">MCP-Bastion Documentation</p>
         <h1>User guide (end-to-end)</h1>
       </header>
-      <p><strong>Version:</strong> 4.0.0<br />
+      <p><strong>Version:</strong> 5.1.0<br />
 <strong>Audience:</strong> Platform engineers, security architects, and developers deploying Model Context Protocol (MCP) servers with AI agents<br />
-<strong>Last updated:</strong> 2026-07-31</p>
+<strong>Last updated:</strong> 2026-08-16</p>
 <p>This guide is the end-to-end handbook for MCP-Bastion: from first install through production proxy deployment, privacy controls, security pillars, and release hygiene. It follows the same documentation shape used by large open-source and cloud platforms—<strong>concepts → getting started → how-to → reference → operations</strong>.</p>
 <hr />
 <h2 id="1-what-is-mcp-bastion">1. What is MCP-Bastion?</h2>
@@ -126,13 +126,8 @@
 <li><strong>Privilege sprawl</strong> (RBAC, Agent IAM, allowlists)  </li>
 <li><strong>Supply-chain integrity</strong> for MCP server artifacts  </li>
 </ul>
-<h3 id="12-release-lineage-400">1.2 Release lineage (4.0.0)</h3>
-<p>Version <strong>4.0.0</strong> adds a major feature bundle while keeping defaults non-breaking:</p>
-<ul>
-<li>Reversible <strong>PII vault</strong> (abstract + hydrate), including HTTP proxy and SSE  </li>
-<li><strong>Schema minimization</strong> for <code>tools/list</code>  </li>
-<li><strong>Live tool-catalog pin</strong> against metadata drift  </li>
-</ul>
+<h3 id="12-release-lineage-510">1.2 Release lineage (5.1.0)</h3>
+<p>Version <strong>5.1.0</strong> adds opt-in cyber ADOPT controls (egress allowlist, concurrency, tools/list screen, memory guard, business rules, wrap DX, doctor --host, advisory attestation) with <strong>no default behavior changes</strong>. <strong>5.0.0</strong> changed the dashboard default to live/empty (demo opt-in) and shipped TypeScript cyber A/E/F. Earlier <strong>4.0.0</strong> added reversible PII vault, schema minimize, and live catalog pin.</p>
 <p>See <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
 <hr />
 <h2 id="2-architecture-overview">2. Architecture overview</h2>
@@ -162,13 +157,13 @@
 <li>Optional: Redis for multi-replica state; Docker for containerized proxy  </li>
 </ul>
 <h3 id="32-install">3.2 Install</h3>
-<pre><code class="language-bash">pip install &quot;mcp-bastion-python==4.0.0&quot;
+<pre><code class="language-bash">pip install &quot;mcp-bastion-python==5.1.0&quot;
 </code></pre>
 <p>FastMCP convenience wrapper:</p>
 <pre><code class="language-bash">pip install mcp-bastion-fastmcp
 </code></pre>
 <p>Docker proxy image:</p>
-<pre><code class="language-bash">docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v4.0.0
+<pre><code class="language-bash">docker pull ghcr.io/vaquarkhan/mcp-bastion-proxy:v5.1.0
 </code></pre>
 <h3 id="33-minimal-fastmcp-path">3.3 Minimal FastMCP path</h3>
 <pre><code class="language-python">from mcp.server.fastmcp import FastMCP
@@ -407,7 +402,7 @@ mcp-bastion redteam
 <hr />
 <h2 id="10-production-checklist">10. Production checklist</h2>
 <ol>
-<li><strong>Pin versions</strong> — <code>mcp-bastion-python==4.0.0</code> (or current release).  </li>
+<li><strong>Pin versions</strong> — <code>mcp-bastion-python==5.1.0</code> (or current release).  </li>
 <li><strong>Validate config</strong> — <code>mcp-bastion validate</code> in CI.  </li>
 <li><strong>Choose deployment shape</strong> — middleware vs <code>serve --proxy</code>.  </li>
 <li><strong>Enable transport hardening</strong> for HTTP.  </li>
@@ -422,7 +417,7 @@ mcp-bastion redteam
 <h2 id="11-end-to-end-scenario-worked-example">11. End-to-end scenario (worked example)</h2>
 <p><strong>Goal:</strong> Protect a calendar MCP server behind Bastion so agents never see raw emails, while invite tools still receive real addresses.</p>
 <ol>
-<li>Install <code>mcp-bastion-python==4.0.0</code>.  </li>
+<li>Install <code>mcp-bastion-python==5.1.0</code>.  </li>
 <li>Copy <code>examples/bastion-pii-vault.yaml</code> → <code>bastion.yaml</code>; set <code>pii_vault.enabled: true</code>.  </li>
 <li>Run upstream MCP on <code>127.0.0.1:9000</code>.  </li>
 <li>Start proxy:<br />
@@ -501,7 +496,7 @@ mcp-bastion redteam
 <li><strong>PyPI:</strong> https://pypi.org/project/mcp-bastion-python/  </li>
 </ul>
 <hr />
-<p><em>This guide describes MCP-Bastion 4.0.0. Feature availability depends on your installed package version and <code>bastion.yaml</code> settings.</em></p>
+<p><em>This guide describes MCP-Bastion 5.1.0. Feature availability depends on your installed package version and <code>bastion.yaml</code> settings.</em></p>
     </article>
     <footer class="docs-footer">
       <p>MCP-Bastion 4.0.0 · <a href="https://vaquarkhan.github.io/MCP-Bastion/">Website</a> ·

@@ -135,10 +135,35 @@ Effectiveness numbers: <a href="metrics.html">METRICS.md</a></p>
 <hr />
 <h2 id="dashboard-features-full-board">Dashboard features (full board)</h2>
 <p>Zero-infra local UI — <strong>no login, no DB, no cloud</strong>.</p>
-<pre><code class="language-bash">mcp-bastion dashboard --demo          # seeded tour data
+<pre><code class="language-bash">mcp-bastion dashboard                 # LIVE (empty until MetricsStore is fed in-process)
+mcp-bastion dashboard --demo          # seed simulated traffic scenarios (or UI toggle / dashboard.demo: true)
 ## open http://127.0.0.1:7000/
-mcp-bastion dashboard --port 7000     # live MetricsStore when wired
 </code></pre>
+<p><strong>Demo vs live:</strong> Default is live. Demo seeds <code>demo_traffic_scenarios.json</code> for validation/tour; toggle off (UI, <code>--no-demo</code>, or <code>dashboard.demo: false</code>) clears synthetic data.</p>
+<h3 id="connect-live-production-data-checklist">Connect live production data (checklist)</h3>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Steps</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tour</strong></td>
+<td>UI <strong>Demo data</strong> toggle, or <code>--demo</code></td>
+</tr>
+<tr>
+<td><strong>Python live</strong></td>
+<td><code>audit.enabled: true</code> + Bastion middleware; dashboard must share that <strong>same process</strong> (<code>MetricsStore</code> is in-memory)</td>
+</tr>
+<tr>
+<td><strong>Bridge</strong></td>
+<td><code>POST /api/ingest-block</code> with <code>{"reason","tool"}</code> into the dashboard host</td>
+</tr>
+</tbody>
+</table>
+<p>UI: status-bar <strong>ⓘ</strong> + empty-state card. Long form: <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/README.md#connect-live-production-data">dashboard/README.md</a> · <a href="https://github.com/vaquarkhan/MCP-Bastion/blob/main/dashboard/static/CONNECT_LIVE.md">CONNECT_LIVE.md</a>.</p>
 <p><img alt="Dashboard tour" src="../assets/mcp-bastion-dashboard-tour.gif" /></p>
 <table>
 <thead>

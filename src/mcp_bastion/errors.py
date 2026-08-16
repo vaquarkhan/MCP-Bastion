@@ -220,6 +220,34 @@ class ToxicFlowError(MCPBastionError):
         super().__init__(message, code=-32042)
 
 
+class EgressDeniedError(MCPBastionError):
+    """Raised when an MCP-mediated outbound destination is not allowlisted."""
+
+    def __init__(self, message: str = "Request blocked: egress destination denied") -> None:
+        super().__init__(message, code=-32043)
+
+
+class ConcurrencyLimitError(MCPBastionError):
+    """Raised when a caller or tenant in-flight cap is reached."""
+
+    def __init__(self, message: str = "Request blocked: concurrency limit exceeded") -> None:
+        super().__init__(message, code=-32044)
+
+
+class LoadShedError(MCPBastionError):
+    """Raised when bounded admission capacity is exhausted."""
+
+    def __init__(self, message: str = "Request blocked: load shed admission denied") -> None:
+        super().__init__(message, code=-32045)
+
+
+class BusinessRuleDeniedError(MCPBastionError):
+    """Raised when a configured per-parameter business rule denies a call."""
+
+    def __init__(self, message: str = "Request blocked: business rule denied") -> None:
+        super().__init__(message, code=-32047)
+
+
 class CanaryExfiltrationError(MCPBastionError):
     """Raised when runtime canary token appears in outbound tool arguments."""
 

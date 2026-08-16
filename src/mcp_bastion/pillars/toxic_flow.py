@@ -38,9 +38,13 @@ class ToxicFlowTracker:
         *,
         enabled: bool = True,
         on_violation: str = "block",  # block | warn
+        require_sink: bool = True,
+        block_private_to_egress: bool = False,
     ) -> None:
         self.enabled = enabled
         self.on_violation = on_violation if on_violation in ("block", "warn") else "block"
+        self.require_sink = bool(require_sink)
+        self.block_private_to_egress = bool(block_private_to_egress)
         self._sessions: dict[str, TaintMark] = defaultdict(TaintMark)
 
     @staticmethod
@@ -86,6 +90,8 @@ class ToxicFlowTracker:
         *,
         kinds: list[str] | set[str],
         tool: str | None = None,
+        data_class: str | None = None,
+        sensitive_data_classes: set[str] | list[str] | None = None,
     ) -> None:
         if not self.enabled:
             return
@@ -93,7 +99,13 @@ class ToxicFlowTracker:
         mark = self._sessions[sid]
         for k in kinds:
             if k:
-                mark.kinds.add(str(k))
+                mark.kinds.add(str(k).strip().lower())
+        for data_kind in ([data_class] if data_class else []):
+            if data_kind:
+                mark.kinds.add(str(data_kind).strip().lower())
+        for data_kind in sensitive_data_classes or ():
+            if data_kind:
+                mark.kinds.add(str(data_kind).strip().lower())
         if tool:
             mark.tools.append(str(tool))
 
@@ -126,12 +138,14 @@ class ToxicFlowTracker:
             return
         text = self._flatten(arguments)
         has_sink = bool(_URL_RE.search(text) or _EMAIL_RE.search(text))
-        if not has_sink:
+        sensitive_class = bool(mark.kinds & {"private", "secret", "pii"})
+        block_without_sink = self.block_private_to_egress and sensitive_class
+        if self.require_sink and not has_sink and not block_without_sink:
             return
         msg = (
             f"Toxic flow blocked: session carried {sorted(mark.kinds)} from "
             f"{mark.tools[-3:] or ['prior tools']} then called egress tool {tool!r} "
-            f"with URL/email arguments"
+            f"with {'URL/email arguments' if has_sink else 'private-class data'}"
         )
         if self.on_violation == "warn":
             return

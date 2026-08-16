@@ -53,32 +53,32 @@ Priority order. All: **opt-in, off by default, fail-closed when on, deny codes i
 
 | ID | Item | Core | Why adopt | Deny / note |
 |----|------|------|-----------|-------------|
-| **A1** | **Default-deny egress destination allowlist** (+ DNS/host check for MCP-mediated URL/host args) | Prefer **TS** `egress-allowlist.ts` *or* Python pillar (one first; mirror later) | Highest incident value (postmark BCC, Slack unfurl, toxic public PR). Pure in-process. | `EGRESS_DENIED` (−32010 proposed) |
-| **A2** | **Concurrency / load shed** | TS `concurrency.ts` (then Python if needed) | Availability = security; O(1); pairs with rate limit / circuit breaker | `CONCURRENCY_LIMIT` / `LOAD_SHED` (−32006) |
-| **A3** | **Live `tools/list` description screening** | Python middleware +/or TS wrap of list handler | Closes line-jumping gap; deterministic; complements fingerprint + static scan | Reuse injection/metadata deny taxonomy |
-| **A4** | **Memory-write guard (ASI06)** | Land TS prototype if present (`memory-guard.ts`) | Write-path complement to result screening; deterministic floor | −32007 (as designed) |
+| **A1 — implemented** | **Default-deny egress destination allowlist** (+ host check for MCP-mediated URL/host args) | TS + Python mirror | Highest incident value. Pure in-process; no DNS/OS enforcement claim. | Python `−32043` |
+| **A2 — implemented** | **Concurrency / load shed** | TS + Python | Availability = security; O(1); pairs with rate limit / circuit breaker | Python `−32044` / `−32045` |
+| **A3 — implemented** | **Live `tools/list` description screening** | Python middleware + TS | Deterministic heuristic floor; complements fingerprint + static scan | Reuses metadata deny taxonomy |
+| **A4 — implemented** | **Memory-write guard (ASI06)** | TS `memory-guard.ts` | Write-path complement to result screening; deterministic floor | TS −32007 |
 
 ### P1 — Bounded extensions of existing controls
 
 | ID | Item | Core | Why adopt | Caveat |
 |----|------|------|-----------|--------|
-| **B1** | Resource/sampling **provenance tags** + optional context eviction hook | Extend TS provenance | Cheap tagging; reduces injection efficacy | Does **not** isolate (no IFC) |
-| **B2** | **Data-class-aware egress** (private→untrusted sink) | Python `toxic_flow` extension | Same class as Invariant toxic flows | Needs clear labels; no false “complete” claims |
-| **B3** | **Per-parameter business rules** (tenant/amount/env/destination) | Python pillar, config-gated | Stops “allowed tool, wrong args” | Not a replacement for server object-ACL |
-| **B4** | Tool catalog **actionTier as metadata** (keep READ/MUTATE/DESTRUCTIVE enforcement) | Config + audit | Policy inputs only | Do not invent a fourth enforcement path |
+| **B1 — implemented** | Resource/sampling **provenance tags** + optional context eviction hook | TS `provenance.ts` | Cheap tagging; reduces injection efficacy | Does **not** isolate (no IFC) |
+| **B2 — implemented** | **Data-class-aware egress** (private→untrusted sink) | Python `toxic_flow` extension | Same class as Invariant toxic flows | Opt-in labels; no “complete” claim |
+| **B3 — implemented** | **Per-parameter business rules** (tenant/amount/env/destination) | Python pillar, config-gated | Stops “allowed tool, wrong args” | Not a replacement for server object-ACL |
+| **B4 — implemented** | Tool catalog **actionTier as metadata** | Config + audit metadata | Policy inputs only | No fourth enforcement path |
 
 ### P2 — DX / doctor (no new runtime plane)
 
 | ID | Item | Why adopt | Caveat |
 |----|------|-----------|--------|
-| **C1** | **One-command wrap** entry (`serve` / proxy quickstart → copy-paste client config, secure defaults) | Adoption lever; uses existing controls | Defaults must be **strict**; relaxations explicit |
-| **C2** | **`mcp-bastion doctor --host`** (read-only local MCP client config audit) | Complements runtime; zero infra | Advisory snapshot only |
+| **C1 — implemented** | **One-command wrap** entry (`serve` / proxy quickstart → copy-paste client config, secure defaults) | Adoption lever; uses existing controls | Strict profile; relaxations explicit |
+| **C2 — implemented** | **`mcp-bastion doctor --host`** (read-only local MCP client config audit) | Complements runtime; zero infra | Advisory snapshot only |
 
 ### P3 — Attestation (verify-only, advisory default)
 
 | ID | Item | Why adopt | Caveat |
 |----|------|-----------|--------|
-| **D1** | **SMCP-class envelope verify + sampling-origin auth** (TS) | Real gap vs self-declared tools | **Never re-sign**; require-mode breaks unsigned fleets → default **advisory** |
+| **D1 — implemented** | **SMCP-class envelope verify + sampling-origin auth** (TS) | TS `attestation.ts` (verify-only) | **Never re-sign**; require-mode breaks unsigned fleets → default **advisory** |
 
 ---
 
@@ -130,15 +130,9 @@ Priority order. All: **opt-in, off by default, fail-closed when on, deny codes i
 
 ## Suggested ship order (implementation)
 
-1. **A1** egress allowlist (TS or Python — pick one, tests + deny code + docs).  
-2. **A2** concurrency limiter (TS).  
-3. **A3** live tools/list screen.  
-4. **A4** memory-guard land + harness.  
-5. **B2** toxic_flow / data-class egress.  
-6. **C1** secure one-line wrap DX.  
-7. **D1** attestation verify (advisory).  
+**Shipped in this branch (ADOPT complete):** A1–A4, B1–B4, C1–C2, D1 — opt-in, fail-closed when on, unit tests in Vitest/pytest. Paired harness suites remain in the companion harness doc.
 
-Nothing is “done” without: config off-by-default, fail-closed path, audit/deny code, Vitest or pytest suite, and an honest README/handbook note (mediation + limits).
+Nothing is “done” for release marketing without: config off-by-default, fail-closed path, audit/deny code, Vitest or pytest suite, and an honest README/handbook note (mediation + limits).
 
 ---
 

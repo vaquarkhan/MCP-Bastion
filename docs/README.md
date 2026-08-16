@@ -2,7 +2,7 @@
 
 This folder is the central documentation source and can be published as a GitHub Pages site.
 
-Current Python package release: **`mcp-bastion-python==5.0.0`** ([PyPI](https://pypi.org/project/mcp-bastion-python/)) - live-first dashboard + TS cyber extensions + vault/proxy features; see [CHANGELOG](../CHANGELOG.md).
+Current Python package release: **`mcp-bastion-python==5.1.0`** ([PyPI](https://pypi.org/project/mcp-bastion-python/)) - live-first dashboard + TS cyber extensions + vault/proxy features; see [CHANGELOG](../CHANGELOG.md).
 
 ## Start here
 

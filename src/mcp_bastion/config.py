@@ -37,6 +37,9 @@ from mcp_bastion.pillars.grounding_guard import GroundingGuard
 from mcp_bastion.pillars.identity_adapters import IdentityAdapter
 from mcp_bastion.pillars.agent_iam import AgentIAM, parse_agent_policies
 from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine, parse_guard_rules
+from mcp_bastion.pillars.business_rules import BusinessRuleEngine
+from mcp_bastion.pillars.concurrency import ConcurrencyLimiter
+from mcp_bastion.pillars.egress_allowlist import EgressAllowlist
 from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.state_backend import build_state_backend
 from mcp_bastion.pillars.agent_stability import AgentStabilityMonitor
@@ -106,6 +109,18 @@ class BastionConfig:
     response_scan_use_prompt_guard: bool = False
     toxic_flow: bool = False
     toxic_flow_on_violation: str = "block"
+    toxic_flow_block_private_egress: bool = False
+    egress_allowlist_enabled: bool = False
+    egress_allowlist_hosts: list[str] = field(default_factory=list)
+    egress_allowlist_tool_hints: list[str] = field(default_factory=list)
+    concurrency_enabled: bool = False
+    concurrency_max_inflight_per_caller: int = 8
+    concurrency_max_inflight_per_tenant: int = 32
+    concurrency_admission_queue_depth: int = 0
+    business_rules_enabled: bool = False
+    business_rules: list[dict[str, Any]] = field(default_factory=list)
+    business_rules_deny_prod_env_from_staging_caller: bool = False
+    tool_action_tiers: dict[str, str] = field(default_factory=dict)
     discovery_filter: bool = False
     discovery_filter_minimize_schemas: bool = False
     discovery_filter_max_description_chars: int = 160
@@ -208,6 +223,7 @@ class BastionConfig:
     tool_metadata_guard_enabled: bool = False
     tool_metadata_guard_on_poison: str = "remove_tool"
     tool_metadata_guard_use_content_filter: bool = True
+    tool_metadata_guard_use_heuristics: bool = True
     agent_iam_enabled: bool = False
     agent_iam_token_metadata_key: str = "bastion_agent_token"
     agent_iam_require_token: bool = True
@@ -294,10 +310,15 @@ def validate_bastion_config(config: BastionConfig) -> None:
     """Raise BastionConfigError on incompatible pillar combinations."""
     from mcp_bastion.errors import BastionConfigError
 
-    if config.tool_metadata_guard_enabled and not config.content_filter and not config.prompt_guard:
+    if (
+        config.tool_metadata_guard_enabled
+        and not config.content_filter
+        and not config.prompt_guard
+        and not config.tool_metadata_guard_use_heuristics
+    ):
         raise BastionConfigError(
             "tool_metadata_guard.enabled requires content_filter.enabled or prompt_guard.enabled - "
-            "enable at least one metadata scanner or disable tool_metadata_guard"
+            "enable heuristics or at least one metadata scanner, or disable tool_metadata_guard"
         )
 
     if config.rbac and config.rbac_require_authenticated_identity:
@@ -401,6 +422,10 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
     tf = data.get("threat_feeds", {}) or {}
     ar = data.get("auto_repave", {}) or {}
     dash = data.get("dashboard", {}) or {}
+    egress = data.get("egress_allowlist", {}) or {}
+    concurrency = data.get("concurrency", {}) or {}
+    business = data.get("business_rules", {}) or {}
+    tool_catalog = data.get("tool_catalog", {}) or {}
     mode = str(data.get("mode", data.get("bastion_mode", "enforce")))
     boundary_on = bool(bm.get("enabled", False))
     th_require_loopback = bool(th.get("require_loopback", True))
@@ -440,6 +465,31 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
             data.get("toxic_flow", {}).get("on_violation", "block")
         ).strip().lower()
         or "block",
+        toxic_flow_block_private_egress=bool(
+            data.get("toxic_flow", {}).get("block_private_egress", False)
+        ),
+        egress_allowlist_enabled=bool(egress.get("enabled", False)),
+        egress_allowlist_hosts=list(egress.get("hosts", [])),
+        egress_allowlist_tool_hints=list(egress.get("tool_hints", [])),
+        concurrency_enabled=bool(concurrency.get("enabled", False)),
+        concurrency_max_inflight_per_caller=int(
+            concurrency.get("max_inflight_per_caller", 8)
+        ),
+        concurrency_max_inflight_per_tenant=int(
+            concurrency.get("max_inflight_per_tenant", 32)
+        ),
+        concurrency_admission_queue_depth=int(concurrency.get("admission_queue_depth", 0)),
+        business_rules_enabled=bool(business.get("enabled", False)),
+        business_rules=list(business.get("rules", []))
+        if isinstance(business.get("rules", []), list)
+        else [],
+        business_rules_deny_prod_env_from_staging_caller=bool(
+            business.get("deny_prod_env_from_staging_caller", False)
+        ),
+        tool_action_tiers={
+            str(k): str(v)
+            for k, v in (tool_catalog.get("action_tiers", {}) or {}).items()
+        },
         discovery_filter=bool(data.get("discovery_filter", {}).get("enabled", False)),
         discovery_filter_minimize_schemas=bool(
             data.get("discovery_filter", {}).get("minimize_schemas", False)
@@ -576,6 +626,7 @@ def load_config(path: str | Path | None = None) -> BastionConfig:
         tool_metadata_guard_enabled=bool(tmg.get("enabled", False)),
         tool_metadata_guard_on_poison=str(tmg.get("on_poison", "remove_tool")),
         tool_metadata_guard_use_content_filter=bool(tmg.get("use_content_filter", True)),
+        tool_metadata_guard_use_heuristics=bool(tmg.get("use_heuristics", True)),
         agent_iam_enabled=bool(iam.get("enabled", False)),
         agent_iam_token_metadata_key=str(iam.get("token_metadata_key", "bastion_agent_token")),
         agent_iam_require_token=bool(iam.get("require_token", True)),
@@ -1070,11 +1121,32 @@ def _build_chain(config: BastionConfig) -> Any:
         enable_tool_metadata_guard=config.tool_metadata_guard_enabled,
         tool_metadata_guard_on_poison=config.tool_metadata_guard_on_poison,
         tool_metadata_guard_use_content_filter=config.tool_metadata_guard_use_content_filter,
+        tool_metadata_guard_use_heuristics=config.tool_metadata_guard_use_heuristics,
+        egress_allowlist=EgressAllowlist(
+            config.egress_allowlist_hosts,
+            config.egress_allowlist_tool_hints or None,
+        ),
+        enable_egress_allowlist=config.egress_allowlist_enabled,
+        concurrency_limiter=ConcurrencyLimiter(
+            max_inflight_per_caller=config.concurrency_max_inflight_per_caller,
+            max_inflight_per_tenant=config.concurrency_max_inflight_per_tenant,
+            admission_queue_depth=config.concurrency_admission_queue_depth,
+        ),
+        enable_concurrency=config.concurrency_enabled,
+        business_rules=BusinessRuleEngine(
+            config.business_rules,
+            deny_prod_env_from_staging_caller=(
+                config.business_rules_deny_prod_env_from_staging_caller
+            ),
+        ),
+        enable_business_rules=config.business_rules_enabled,
+        tool_action_tiers=config.tool_action_tiers,
         enable_response_scan=config.response_scan,
         response_scan_extra_patterns=config.response_scan_extra_patterns,
         response_scan_use_prompt_guard=config.response_scan_use_prompt_guard,
         enable_toxic_flow=config.toxic_flow,
         toxic_flow_on_violation=config.toxic_flow_on_violation,
+        toxic_flow_block_private_egress=config.toxic_flow_block_private_egress,
         enable_discovery_filter=config.discovery_filter,
         discovery_filter_minimize_schemas=config.discovery_filter_minimize_schemas,
         discovery_filter_max_description_chars=config.discovery_filter_max_description_chars,

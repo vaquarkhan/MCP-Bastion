@@ -13,12 +13,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from mcp_bastion.cli import (
     cmd_validate,
     cmd_serve,
+    cmd_wrap,
     cmd_dashboard,
     cmd_manifest,
     cmd_attest_export,
     main,
     _ensure_src_on_path,
     _resolve_dashboard_repo,
+    _client_config_snippet,
 )
 
 
@@ -382,3 +384,25 @@ def test_cmd_attest_export_sign_missing_key(tmp_path, monkeypatch):
     rc = cmd_attest_export("s", str(tmp_path / "bastion.yaml"), None, sign=True, principal_id=None, tenant_id=None)
     assert rc == 1
     SessionGovernanceRecorder.reset()
+
+
+def test_cmd_wrap_writes_secure_profile_and_proxies(tmp_path, monkeypatch):
+    cfg = tmp_path / "bastion.wrap.yaml"
+    called = {}
+
+    def fake_serve(config_path, http_port, host, proxy_url=None):
+        called["config"] = config_path
+        called["port"] = http_port
+        called["host"] = host
+        called["proxy"] = proxy_url
+        return 0
+
+    monkeypatch.setattr("mcp_bastion.cli.cmd_serve", fake_serve)
+    rc = cmd_wrap("http://upstream:9000", str(cfg), port=18080, host="127.0.0.1")
+    assert rc == 0
+    assert cfg.exists()
+    text = cfg.read_text(encoding="utf-8")
+    assert "egress_allowlist" in text
+    assert called["proxy"] == "http://upstream:9000"
+    assert called["port"] == 18080
+    assert "127.0.0.1" in _client_config_snippet("0.0.0.0", 8080)
