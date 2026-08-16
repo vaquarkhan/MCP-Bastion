@@ -2,6 +2,8 @@
 
 **Live:** https://vaquarkhan.github.io/MCP-Bastion/guide/demos.html  
 
+**Scripted product tour (5.1.0):** [MP4](https://vaquarkhan.github.io/MCP-Bastion/assets/video/mcp-bastion-5.1.0-tour.mp4) · [captions (VTT)](https://vaquarkhan.github.io/MCP-Bastion/assets/video/mcp-bastion-5.1.0-tour.vtt) · also embedded on the [landing page](https://vaquarkhan.github.io/MCP-Bastion/#product-tour). Regenerate: `python scripts/render_scripted_demo_video.py` (captions avoid em dashes).
+
 This is the **Demo hub**: scripted attack→defense GIFs, runnable payloads, the local dashboard tour, and how the same policy works in Python / TypeScript / Java / Go / .NET / Kotlin / Rust.
 
 | Jump | Link |

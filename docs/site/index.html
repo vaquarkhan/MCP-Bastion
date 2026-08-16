@@ -143,9 +143,9 @@ tailwind.config = {
 
       <!-- Stats -->
       <div class="flex flex-wrap justify-center gap-3 mb-8">
-        <a href="https://pypi.org/project/mcp-bastion-python/5.1.0/"><img src="https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&color=3775A9" alt="PyPI version"></a>
-        <a href="integrations.html"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fecosystem-downloads-badge.json%3Fd%3D20260812" alt="Ecosystem downloads"></a>
-        <a href="https://pepy.tech/projects/mcp-bastion-python"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-python-downloads.json%3Fd%3D20260812" alt="Core downloads"></a>
+        <a href="https://pypi.org/project/mcp-bastion-python/5.1.0/"><img src="https://img.shields.io/badge/PyPI-5.1.0-3775A9?logo=pypi&logoColor=white" alt="PyPI version"></a>
+        <a href="integrations.html"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fecosystem-downloads-badge.json%3Fd%3D20260816" alt="Ecosystem downloads"></a>
+        <a href="https://pepy.tech/projects/mcp-bastion-python"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-python-downloads.json%3Fd%3D20260816" alt="Core downloads"></a>
         <a href="https://github.com/sponsors/vaquarkhan"><img src="https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github" alt="Sponsor"></a>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
@@ -167,6 +167,33 @@ tailwind.config = {
         </div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- SCRIPTED PRODUCT TOUR (5.1.0) -->
+<section class="py-20 relative border-t border-white/5" id="product-tour">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="text-center mb-8">
+      <h2 class="text-3xl md:text-4xl font-black mb-3">Product tour <span class="gradient-text">5.1.0</span></h2>
+      <p class="text-slate-400 max-w-2xl mx-auto">Scripted walkthrough of the dashboard and governance surfaces. Captions ship as WebVTT (no em dashes).</p>
+    </div>
+    <div class="rounded-2xl overflow-hidden border border-white/10 bg-black/40 shadow-2xl shadow-indigo-500/10">
+      <video
+        class="w-full aspect-video"
+        controls
+        playsinline
+        preload="metadata"
+        poster="assets/mcp-bastion-scan-test-enforce.png"
+      >
+        <source src="assets/video/mcp-bastion-5.1.0-tour.mp4" type="video/mp4">
+        <track kind="captions" src="assets/video/mcp-bastion-5.1.0-tour.vtt" srclang="en" label="English" default>
+        Your browser does not support HTML5 video.
+      </video>
+    </div>
+    <p class="text-center text-sm text-slate-500 mt-4">
+      Regenerate locally with <code class="text-slate-300">python scripts/render_scripted_demo_video.py</code>
+      · also on the <a class="text-indigo-300 hover:underline" href="guide/demos.html">demos hub</a>
+    </p>
   </div>
 </section>
 

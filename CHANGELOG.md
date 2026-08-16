@@ -6,7 +6,14 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
-## [5.1.0] - 2026-08-16
+### Added
+
+- Scripted GitHub Pages product-tour video (`docs/site/assets/video/mcp-bastion-5.1.0-tour.mp4`) with WebVTT captions (no em dashes); regenerate via `scripts/render_scripted_demo_video.py`.
+
+### Fixed
+
+- README / Pages PyPI version badge pinned to **5.1.0** (Shields CDN was still showing a stale dynamic badge).
+- Ecosystem download badge cache-bust query refreshed (`d=20260816`) so totals refresh after daily PePy aggregation.
 
 Minor release: **nature-preserving ADOPT cyber extensions** — additive, **opt-in / off by default**, no breaking config or API changes. All **PyPI packages**, npm `@mcp-bastion/core`, Docker, and MCP Registry bumped to **5.1.0**.
 

@@ -1,0 +1,37 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:04.000
+MCP-Bastion 5.1.0. Cost-aware runtime governance for AI agents.
+
+00:00:04.000 --> 00:00:08.000
+Pre-deploy posture grades and local scan findings before tools go live.
+
+00:00:08.000 --> 00:00:12.000
+Issue guides map each finding to remediation and Bastion knobs.
+
+00:00:12.000 --> 00:00:16.000
+OWASP ASI, MCP, and LLM coverage heatmaps with block pressure.
+
+00:00:16.000 --> 00:00:20.000
+Live attack matrix shows which threat classes are under pressure now.
+
+00:00:20.000 --> 00:00:24.000
+Evidence and reports for operators. Bastion emits traces, not legal advice.
+
+00:00:24.000 --> 00:00:28.000
+RBAC, prompt guard, rate and cost caps, PII, and Agent IAM.
+
+00:00:28.000 --> 00:00:32.000
+Forensics explain why a call was blocked, with pillar provenance.
+
+00:00:32.000 --> 00:00:36.000
+Agent IAM stops confused-deputy tool access outside policy.
+
+00:00:36.000 --> 00:00:40.000
+Posture drift from audit JSONL: allow versus block over time.
+
+00:00:40.000 --> 00:00:44.000
+FinOps: token reduction and cost avoided by policy blocks.
+
+00:00:44.000 --> 00:00:48.000
+Traffic and deny reasons across the governed MCP path.
