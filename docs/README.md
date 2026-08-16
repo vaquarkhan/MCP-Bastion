@@ -28,6 +28,8 @@ Current Python package release: **`mcp-bastion-python==5.0.0`** ([PyPI](https://
 | [PILLARS.md](PILLARS.md) | Canonical mapping: base controls, **extended** policy features (1.0.16+), FinOps/context pillars (1.0.17+), runtime governance (1.0.18+, shipped in **2.0.0**), **enterprise controls (3.0.0+)**, scan suite / audit (**3.0.1**), dashboard panels (**3.1.0**), `bastion.yaml` ↔ dashboard |
 | [../dashboard/README.md](../dashboard/README.md) | **Local dashboard (3.1.0)** - posture, prevalidate, issue guides, FinOps actual vs would-have-been |
 | [PUBLISHING_NPM_AND_REGISTRY.md](PUBLISHING_NPM_AND_REGISTRY.md) | npm bootstrap + MCP Registry OIDC publisher pin |
+| [CYBER_EXTENSIONS_CORE.md](CYBER_EXTENSIONS_CORE.md) | **TS cyber A/E/F** — semantic egress, result guard, audit chain |
+| [CYBER_EXTENSIONS_BACKLOG.md](CYBER_EXTENSIONS_BACKLOG.md) | **Nature-preserving cyber backlog** — ADOPT / DEFER / DISCARD (egress allowlist, concurrency, …) |
 | [TAXONOMY.md](TAXONOMY.md) | ASI / MCP / LLM finding tags |
 | [BENCHMARKS.md](BENCHMARKS.md) | **Measured** RBAC / FinOps / injection — pytest + report generator · **slide deck:** [MCP-Security-Deck-v3.pdf](../MCP-Security-Deck-v3.pdf) |
 | [MCP_SURFACE_AND_SCALE.md](MCP_SURFACE_AND_SCALE.md) | **2.0.0:** full MCP method guards + Redis `state_backend` for multi-replica deploys |

@@ -4,6 +4,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **Cyber backlog triage:** [docs/CYBER_EXTENSIONS_BACKLOG.md](docs/CYBER_EXTENSIONS_BACKLOG.md) — ADOPT only high-value, zero-infra items (egress allowlist, concurrency, tools/list screen, memory-guard, …); DEFER/DISCARD compliance product, tunnels, OOB enforcement claims.
+
 ## [5.0.0] - 2026-08-09
 
 Major release: **dashboard live-first** (demo opt-in), connect-live UX, and TypeScript cyber extensions (A/E/F). All **PyPI packages**, npm `@mcp-bastion/core`, Docker, and MCP Registry bumped to **5.0.0**.
