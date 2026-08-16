@@ -101,9 +101,9 @@ export interface McpBastionOptions {
   attestationMode?: AttestationMode;
   attestationRoots?: ServerAttestation[];
   /** Shared concurrency limiter (tests / multi-handler). */
-  concurrencyLimiter?: ConcurrencyLimiter;
+  concurrencyLimiter?: ConcurrencyLimiter | null;
   /** Shared attestation verifier. */
-  attestationVerifier?: AttestationVerifier;
+  attestationVerifier?: AttestationVerifier | null;
 }
 
 const DEFAULT_OPTIONS: Required<
