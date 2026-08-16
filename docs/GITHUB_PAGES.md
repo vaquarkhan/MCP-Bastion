@@ -6,7 +6,7 @@ The public site is built from **`docs/site/`** and deployed by [`.github/workflo
 
 | Path | Content |
 |------|---------|
-| `/` | Marketing landing (`docs/site/index.html`) — **5.1.0**, 26 integrations |
+| `/` | Marketing landing (`docs/site/index.html`) — **5.1.0**, 26 integrations, scripted product-tour video + captions |
 | `/guide/` | Professional documentation handbook (generated HTML) |
 | `/guide/handbook.html` | Visual system handbook (attack GIFs, dashboard, feature map) |
 | `/guide/bible.html` | Redirect → `handbook.html` (legacy URL) |
