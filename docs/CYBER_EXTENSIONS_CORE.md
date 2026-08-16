@@ -2,6 +2,8 @@
 
 Opt-in Extensions **A** (semantic egress), **E** (result provenance / result guard), and **F** (hash-chained audit) for the Node middleware. They preserve Bastion’s **zero-infrastructure** core: no inline model, heavy scoring only via sidecar.
 
+**Working backlog (nature-preserving ADOPT / DEFER / DISCARD):** [CYBER_EXTENSIONS_BACKLOG.md](CYBER_EXTENSIONS_BACKLOG.md).
+
 ## Mediation precondition (read first)
 
 These controls apply **only** to MCP traffic that flows through `wrapWithMcpBastion` / `wrapCallToolHandler`.  

@@ -83,6 +83,8 @@ See [COST_AWARE_GOVERNANCE.md](COST_AWARE_GOVERNANCE.md).
 
 Highest value; closes audit gaps and matches mcp-scan / Invariant class tooling.
 
+**Cyber extensions (post-5.0):** nature-preserving ADOPT list (egress allowlist, concurrency, live `tools/list` screen, memory-guard, …) — see **[CYBER_EXTENSIONS_BACKLOG.md](CYBER_EXTENSIONS_BACKLOG.md)**. Do not expand into a compliance console or OOB OS enforcement in-core.
+
 | Feature | Effort | Why implement | Acceptance |
 |---------|--------|---------------|------------|
 | **Non-gated PromptGuard default** (ONNX / small classifier, no HF login) | M | Heuristic-only mode is bypassable; offline installs need real ML | Benchmark recall/FPR published; `doctor` reports active layer |
