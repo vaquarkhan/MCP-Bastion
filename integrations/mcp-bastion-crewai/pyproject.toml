@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-bastion-crewai"
-version = "5.0.0"
+version = "5.1.0"
 description = "MCP-Bastion security middleware for CrewAI  -  prompt injection, PII, and rate-limit protection for AI agent crews"
 readme = "README.md"
 license = { text = "See LICENSE and COMMERCIAL_LICENSE.md in the MCP-Bastion repository." }
@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp-bastion-python>=5.0.0,<6",
+    "mcp-bastion-python>=5.1.0,<6",
     "crewai>=0.30.0",
 ]
 

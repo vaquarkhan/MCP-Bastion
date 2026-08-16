@@ -115,7 +115,7 @@ Then in `pom.xml`:
 **Important:** The Java adapter is a thin connector. The security engine is still **`mcp-bastion-python`** (CLI / sidecar / proxy). Install the engine:
 
 ```bash
-pip install "mcp-bastion-python>=5.0.0,<6"
+pip install "mcp-bastion-python>=5.1.0,<6"
 # or use suite Docker: ghcr.io/vaquarkhan/mcp-bastion-suite:0.1.0
 ```
 
@@ -193,7 +193,7 @@ Validate, scan, red-team, dashboard, and **runtime enforce** are implemented by 
 Upgrade engine only:
 
 ```bash
-pip install -U "mcp-bastion-python>=5.0.0"
+pip install -U "mcp-bastion-python>=5.1.0"
 mcp-bastion-suite --version   # if suite CLI installed
 ```
 

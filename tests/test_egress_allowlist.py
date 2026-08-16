@@ -4,7 +4,7 @@ from mcp_bastion.base import MiddlewareContext
 from mcp_bastion.config import load_config
 from mcp_bastion.errors import EgressDeniedError
 from mcp_bastion.middleware import MCPBastionMiddleware
-from mcp_bastion.pillars.egress_allowlist import EgressAllowlist
+from mcp_bastion.pillars.egress_allowlist import EgressAllowlist, _extract_host, _normalize_host
 
 
 def test_exact_wildcard_and_host_key_extraction():
@@ -13,9 +13,27 @@ def test_exact_wildcard_and_host_key_extraction():
     assert guard.check("send_webhook", {"endpoint": "child.trusted.test:443"}) == {
         "child.trusted.test"
     }
+    # Wildcard suffix equals apex
+    assert guard.check("http_get", {"host": "trusted.test"}) == {"trusted.test"}
     with pytest.raises(EgressDeniedError) as exc:
         guard.check("fetch_url", {"body": "go to https://evil.test/x"})
     assert exc.value.code == -32043
+
+
+def test_nested_lists_and_empty_hosts_ok(monkeypatch):
+    guard = EgressAllowlist(["ok.test"])
+    assert guard.check("http_post", {"items": [{"url": "https://ok.test/a"}, 1, True, None]}) == {
+        "ok.test"
+    }
+    assert guard.check("api_call", {"note": "no destinations"}) == set()
+    assert _extract_host("") is None
+    assert _normalize_host("  X.COM. ") == "x.com"
+
+    def boom(_value):
+        raise ValueError("bad")
+
+    monkeypatch.setattr("mcp_bastion.pillars.egress_allowlist.urlsplit", boom)
+    assert _extract_host("https://x.test") is None
 
 
 def test_non_egress_tool_does_not_apply_destination_policy():

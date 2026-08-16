@@ -29,7 +29,7 @@
   />
 </p>
 
-[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/5.0.0/)
+[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/5.1.0/)
 [![PyPI downloads (mcp-bastion-python)](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fbadges%2Fmcp-bastion-python-downloads.json%3Fd%3D20260812)](https://pypistats.org/packages/mcp-bastion-python)
 [![Ecosystem PyPI downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvaquarkhan%2FMCP-Bastion%2Fmain%2Fdocs%2Fsite%2Fassets%2Fecosystem-downloads-badge.json%3Fd%3D20260812)](https://vaquarkhan.github.io/MCP-Bastion/integrations.html)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
@@ -43,7 +43,7 @@
 [![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**Current release: [5.0.0](https://pypi.org/project/mcp-bastion-python/5.0.0/)** · Docker `v5.0.0` · **26** PyPI packages · [CHANGELOG](CHANGELOG.md)
+**Current release: [5.1.0](https://pypi.org/project/mcp-bastion-python/5.1.0/)** · Docker `v5.1.0` · **26** PyPI packages · [CHANGELOG](CHANGELOG.md)
 
 | Go to | Link |
 |-------|------|
@@ -248,7 +248,7 @@ Generate a manifest after a trusted build: `mcp-bastion manifest server.py pypro
 
 Deep dive: [docs/RUNTIME_GOVERNANCE.md](docs/RUNTIME_GOVERNANCE.md) · [docs/ENTERPRISE_RUNTIME_CONTROLS.md](docs/ENTERPRISE_RUNTIME_CONTROLS.md) (3.0 pillars)
 
-### Runtime governance pillars (3.0.0+, current **5.0.0**)
+### Runtime governance pillars (3.0.0+, current **5.1.0**)
 
 Opt-in enterprise controls for production MCP runtimes. All default **off** so 2.x behavior is unchanged until you enable them.
 
@@ -896,7 +896,7 @@ uv add mcp-bastion-python
 # or
 pip install mcp-bastion-python
 # pin a specific release (optional)
-pip install mcp-bastion-python==5.0.0
+pip install mcp-bastion-python==5.1.0
 ```
 
 **Prerequisites (recommended)**

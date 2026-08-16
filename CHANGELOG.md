@@ -1,16 +1,32 @@
 ﻿# Changelog
 
-**Current release:** **5.0.0** (2026-08-09) - [PyPI](https://pypi.org/project/mcp-bastion-python/5.0.0/) · [Docker `v5.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **5.1.0** (2026-08-16) - [PyPI](https://pypi.org/project/mcp-bastion-python/5.1.0/) · [Docker `v5.1.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-08-16
+
+Minor release: **nature-preserving ADOPT cyber extensions** — additive, **opt-in / off by default**, no breaking config or API changes. All **PyPI packages**, npm `@mcp-bastion/core`, Docker, and MCP Registry bumped to **5.1.0**.
+
 ### Added
 
-- **Cyber backlog triage:** [docs/CYBER_EXTENSIONS_BACKLOG.md](docs/CYBER_EXTENSIONS_BACKLOG.md) — ADOPT only high-value, zero-infra items (egress allowlist, concurrency, tools/list screen, memory-guard, …); DEFER/DISCARD compliance product, tunnels, OOB enforcement claims.
-- **Python ADOPT cyber extensions:** opt-in destination allowlist (`−32043`), O(1) caller/tenant concurrency admission (`−32044`/`−32045`), heuristic live tool-metadata screening, private-class toxic-flow egress, parameter business rules (`−32047`), action-tier audit metadata, advisory `doctor --host`, and secure `wrap` proxy quickstart.
-- **TypeScript ADOPT cyber extensions (`@mcp-bastion/core`):** egress allowlist (`−32010`), concurrency/load shed (`−32006`), memory-write guard (`−32007`), live `tools/list` screen, resource provenance + context eviction hooks, advisory attestation verify (`−32009`). All opt-in / off by default.
+- **Egress destination allowlist** (TS + Python): default-deny hosts for MCP-mediated egress-like tools (`EGRESS_DENIED`; Python `−32043`).
+- **Concurrency / load shed** (TS + Python): O(1) per-caller and per-tenant in-flight caps (`−32006` TS; Python `−32044` / `−32045`).
+- **Live `tools/list` screening**: TS `wrapListToolsHandler` + Python tool-metadata heuristics without requiring content_filter/prompt_guard.
+- **Memory-write guard (ASI06)** (TS): protected keys, immutable baselines, injection markers (`−32007`).
+- **Resource provenance + context eviction hooks** (TS `provenance.ts`).
+- **Toxic-flow private-class egress** (Python opt-in `block_private_to_egress`).
+- **Business rules** pillar (Python `−32047`) and **actionTier** as audit metadata only.
+- **CLI:** `mcp-bastion wrap` (secure proxy quickstart) and `mcp-bastion doctor --host` (advisory host MCP config scan).
+- **Attestation verify** (TS, advisory default; never re-signs) (`−32009`).
+- Docs: [CYBER_EXTENSIONS_BACKLOG.md](docs/CYBER_EXTENSIONS_BACKLOG.md), [CYBER_EXTENSIONS_CORE.md](docs/CYBER_EXTENSIONS_CORE.md) updated for ADOPT ship.
+
+### Compatibility
+
+- **No breaking changes:** middleware defaults unchanged; all new controls are off unless enabled.
+- Requires `mcp-bastion-python>=5.1.0` for integration packages published at 5.1.0.
 
 ## [5.0.0] - 2026-08-09
 

@@ -47,6 +47,36 @@ response_scan:
 toxic_flow:
   enabled: false
   on_violation: block   # block | warn
+  # block_private_egress: false  # opt-in: block private/secret/pii session taint on egress-like tools even without URL/email
+
+# Default-deny destination allowlist for MCP-mediated egress-like tools (opt-in).
+egress_allowlist:
+  enabled: false
+  hosts: []             # e.g. ["api.example.com", "*.trusted.test"]
+  tool_hints: []        # empty = built-in http/fetch/email/slack/... hints
+
+# O(1) in-flight concurrency caps (opt-in; distinct from rate_limit).
+concurrency:
+  enabled: false
+  max_inflight_per_caller: 8
+  max_inflight_per_tenant: 32
+  admission_queue_depth: 0   # 0 = reject immediately; >0 sheds as load_shed
+
+# Per-parameter business rules (opt-in). Complements allowlists; not server object-ACL.
+business_rules:
+  enabled: false
+  deny_prod_env_from_staging_caller: false
+  rules: []
+  # - tool: "pay_*"
+  #   param: "$.amount"
+  #   op: max            # eq|neq|max|min|in|not_in|env_deny
+  #   value: 100
+
+# Audit metadata only (not a fourth enforcement path).
+# tool_catalog:
+#   action_tiers:
+#     transfer: high_write
+#     delete_all: irreversible
 
 discovery_filter:
   enabled: false    # strip non-allowlisted tools from tools/list (requires tool_allowlist)

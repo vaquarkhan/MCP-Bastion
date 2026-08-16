@@ -1,6 +1,6 @@
 # MCP-Bastion Documentation Handbook
 
-**Version:** 5.0.0  
+**Version:** 5.1.0  
 **Purpose:** Single entry point for the full system — concepts, every feature, attack→defense demos (with GIFs), dashboard, multi-language suite, and ops.  
 **Published:** https://vaquarkhan.github.io/MCP-Bastion/guide/handbook.html
 
