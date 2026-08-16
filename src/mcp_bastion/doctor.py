@@ -3,11 +3,91 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+
+_HTTP_URL_RE = re.compile(r"http://([^/\s\"']+)", re.IGNORECASE)
+
+
+def scan_host_mcp_configs(home: Path | None = None) -> list[dict[str, Any]]:
+    """Advisory-only scan of common local Cursor, Claude, and VS Code MCP configs."""
+    base = (home or Path.home()).expanduser()
+    appdata = Path(os.environ.get("APPDATA", base / "AppData" / "Roaming"))
+    candidates = {
+        base / ".cursor" / "mcp.json",
+        base / ".config" / "Cursor" / "User" / "mcp.json",
+        base / ".config" / "Claude" / "claude_desktop_config.json",
+        appdata / "Cursor" / "User" / "mcp.json",
+        appdata / "Claude" / "claude_desktop_config.json",
+        appdata / "Code" / "User" / "mcp.json",
+        base / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json",
+        base / "Library" / "Application Support" / "Cursor" / "User" / "mcp.json",
+    }
+    global_storage = appdata / "Cursor" / "User" / "globalStorage"
+    if global_storage.is_dir():
+        for path in global_storage.glob("*/mcp*.json"):
+            candidates.add(path)
+
+    reports: list[dict[str, Any]] = []
+    for path in sorted(candidates, key=str):
+        if not path.is_file():
+            continue
+        findings: list[dict[str, str]] = []
+        try:
+            raw = path.read_text(encoding="utf-8")
+            data = json.loads(raw)
+        except Exception as exc:
+            reports.append(
+                {
+                    "path": str(path),
+                    "advisory": True,
+                    "findings": [{"id": "config_unreadable", "detail": str(exc)}],
+                }
+            )
+            continue
+
+        lowered = raw.lower()
+        has_tools = any(key in lowered for key in ('"mcpservers"', '"tools"', '"command"'))
+        write_capable = any(
+            marker in lowered
+            for marker in ("write_file", "writefile", "delete", "execute", "shell", "filesystem")
+        )
+        has_approval = any(
+            marker in lowered for marker in ("require_approval", "approval_required", "alwaysask", "always_ask")
+        )
+        if write_capable and not has_approval:
+            findings.append(
+                {
+                    "id": "writes_without_approval",
+                    "detail": "Write-capable MCP configuration has no recognizable approval requirement",
+                }
+            )
+
+        egress = data.get("egress_allowlist", {}) if isinstance(data, dict) else {}
+        if has_tools and isinstance(egress, dict) and egress.get("enabled") and not egress.get("hosts"):
+            findings.append(
+                {
+                    "id": "empty_egress_allowlist",
+                    "detail": "Egress allowlist is enabled with no hosts; MCP-mediated destinations will be denied",
+                }
+            )
+
+        for authority in _HTTP_URL_RE.findall(raw):
+            hostname = authority.rsplit("@", 1)[-1].split(":", 1)[0].strip("[]").lower()
+            if hostname not in {"localhost", "127.0.0.1", "::1"}:
+                findings.append(
+                    {
+                        "id": "http_without_tls",
+                        "detail": f"Non-loopback MCP URL uses cleartext HTTP: {authority}",
+                    }
+                )
+        reports.append({"path": str(path), "advisory": True, "findings": findings})
+    return reports
 
 
 def _package_version() -> str:
@@ -19,7 +99,12 @@ def _package_version() -> str:
         return "unknown"
 
 
-def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None) -> dict[str, Any]:
+def run_doctor(
+    *,
+    config_path: str | None = None,
+    repo_root: Path | None = None,
+    host: bool = False,
+) -> dict[str, Any]:
     """
     Run local checks: config parse, repo artifacts, optional pip-audit.
     Returns a JSON-serializable report (never raises for optional tools).
@@ -216,14 +301,18 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
 
         cfg_tmg = _load_cfg_tmg(config_path)
         if cfg_tmg.tool_metadata_guard_enabled:
-            if not cfg_tmg.content_filter and not cfg_tmg.prompt_guard:
+            if (
+                not cfg_tmg.content_filter
+                and not cfg_tmg.prompt_guard
+                and not cfg_tmg.tool_metadata_guard_use_heuristics
+            ):
                 checks.append(
                     {
                         "id": "tool_metadata_guard",
                         "ok": False,
                         "detail": (
                             "tool_metadata_guard enabled but content_filter and prompt_guard are both "
-                            "disabled; enable at least one for metadata scanning to run"
+                            "disabled and heuristics are off; enable at least one scanner"
                         ),
                     }
                 )
@@ -436,9 +525,15 @@ def run_doctor(*, config_path: str | None = None, repo_root: Path | None = None)
     reg = by_id.get("registry_publisher", {})
     reg_ok = bool(reg.get("skipped") or reg.get("ok"))
     ok = cfg_ok and pa_ok and pg_ok and iam_ok and sv_ok and tmf_ok and reg_ok
-    return {
+    report = {
         "bastion_version": _package_version(),
         "python": sys.version.split()[0],
         "checks": checks,
         "ok": ok,
     }
+    if host:
+        report["host_scan"] = {
+            "advisory": True,
+            "configs": scan_host_mcp_configs(),
+        }
+    return report

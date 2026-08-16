@@ -19,6 +19,27 @@ from pathlib import Path
 
 logger = logging.getLogger("mcp_bastion.cli")
 
+_WRAP_SECURE_CONFIG = """# Secure wrap profile. MCP mediation only; start read-only and explicitly allow writes.
+prompt_guard:
+  enabled: true
+rate_limit:
+  enabled: true
+audit:
+  enabled: true
+egress_allowlist:
+  enabled: true
+  hosts: []
+  tool_hints: []
+"""
+
+
+def _client_config_snippet(host: str, port: int) -> str:
+    client_host = "127.0.0.1" if host in ("0.0.0.0", "::") else host
+    return json.dumps(
+        {"mcpServers": {"mcp-bastion": {"url": f"http://{client_host}:{port}"}}},
+        indent=2,
+    )
+
 
 def _configure_cli_logging() -> None:
     if logger.handlers:
@@ -95,6 +116,7 @@ def cmd_serve(
         except ImportError as e:
             logger.error("Proxy mode requires uvicorn: %s", e)
             return 1
+        logger.info("MCP client config:\n%s", _client_config_snippet(host, port))
         run_proxy_http(proxy_url, host=host, port=port, config_path=cfg_path)
         return 0
 
@@ -208,7 +230,21 @@ def cmd_dashboard(
     return 0
 
 
-def cmd_doctor(config_path: str | None, repo_root: str | None) -> int:
+def cmd_wrap(
+    upstream: str,
+    config_path: str | None = None,
+    port: int = 8080,
+    host: str = "127.0.0.1",
+) -> int:
+    """Create a strict local profile when needed, print client config, and proxy."""
+    path = Path(config_path or "bastion.wrap.yaml")
+    if not path.exists():
+        path.write_text(_WRAP_SECURE_CONFIG, encoding="utf-8")
+        logger.info("Wrote secure wrap profile: %s", path)
+    return cmd_serve(str(path), port, host, proxy_url=upstream)
+
+
+def cmd_doctor(config_path: str | None, repo_root: str | None, host: bool = False) -> int:
     _configure_cli_logging()
     _ensure_src_on_path()
     try:
@@ -217,7 +253,7 @@ def cmd_doctor(config_path: str | None, repo_root: str | None) -> int:
         logger.error("Error: %s", e)
         return 1
     root = Path(repo_root).resolve() if repo_root else Path.cwd()
-    report = run_doctor(config_path=config_path, repo_root=root)
+    report = run_doctor(config_path=config_path, repo_root=root, host=host)
     logger.info(json.dumps(report, indent=2))
     return 0 if report.get("ok") else 1
 
@@ -683,6 +719,20 @@ def main() -> int:
         )
     )
 
+    wrap_parser = sub.add_parser("wrap", help="Wrap an upstream MCP URL with secure local defaults")
+    wrap_parser.add_argument("--upstream", required=True, help="Upstream MCP URL")
+    wrap_parser.add_argument("--config", "-c", default=None, help="Bastion config (created securely if missing)")
+    wrap_parser.add_argument("--port", type=int, default=8080, help="Local proxy port (default 8080)")
+    wrap_parser.add_argument("--host", default="127.0.0.1", help="Local bind host (default loopback)")
+    wrap_parser.set_defaults(
+        func=lambda **kw: cmd_wrap(
+            kw.get("upstream"),
+            kw.get("config"),
+            int(kw.get("port") or 8080),
+            kw.get("host", "127.0.0.1"),
+        )
+    )
+
     dash_parser = sub.add_parser("dashboard", help="Run metrics dashboard")
     dash_parser.add_argument("--port", "-p", type=int, default=7000, help="Dashboard port (default 7000)")
     dash_parser.add_argument(
@@ -731,7 +781,10 @@ def main() -> int:
     doctor_parser = sub.add_parser("doctor", help="Config + optional supply-chain checks (MCP04)")
     doctor_parser.add_argument("--config", "-c", help="Path to bastion.yaml", default=None)
     doctor_parser.add_argument("--repo-root", help="Directory for manifest discovery", default=None)
-    doctor_parser.set_defaults(func=lambda **kw: cmd_doctor(kw.get("config"), kw.get("repo_root")))
+    doctor_parser.add_argument("--host", action="store_true", help="Advisory scan of local MCP client configs")
+    doctor_parser.set_defaults(
+        func=lambda **kw: cmd_doctor(kw.get("config"), kw.get("repo_root"), bool(kw.get("host")))
+    )
 
     manifest_parser = sub.add_parser("manifest", help="Generate SHA-256 manifest for server_verification")
     manifest_parser.add_argument("files", nargs="+", help="Relative file paths to hash")

@@ -9,6 +9,8 @@ All notable changes to this project are documented in this file.
 ### Added
 
 - **Cyber backlog triage:** [docs/CYBER_EXTENSIONS_BACKLOG.md](docs/CYBER_EXTENSIONS_BACKLOG.md) — ADOPT only high-value, zero-infra items (egress allowlist, concurrency, tools/list screen, memory-guard, …); DEFER/DISCARD compliance product, tunnels, OOB enforcement claims.
+- **Python ADOPT cyber extensions:** opt-in destination allowlist (`−32043`), O(1) caller/tenant concurrency admission (`−32044`/`−32045`), heuristic live tool-metadata screening, private-class toxic-flow egress, parameter business rules (`−32047`), action-tier audit metadata, advisory `doctor --host`, and secure `wrap` proxy quickstart.
+- **TypeScript ADOPT cyber extensions (`@mcp-bastion/core`):** egress allowlist (`−32010`), concurrency/load shed (`−32006`), memory-write guard (`−32007`), live `tools/list` screen, resource provenance + context eviction hooks, advisory attestation verify (`−32009`). All opt-in / off by default.
 
 ## [5.0.0] - 2026-08-09
 

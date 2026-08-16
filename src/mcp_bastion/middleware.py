@@ -25,10 +25,12 @@ from mcp_bastion.errors import (
     BehaviorAnomalyError,
     CatalogDriftError,
     CanaryExfiltrationError,
+    ConcurrencyLimitError,
     ExternalPolicyDeniedError,
     GroundingViolationError,
     InvalidStateHandleError,
     LLMScannerBlockedError,
+    LoadShedError,
     PromptInjectionError,
     PromptGuardUnavailableError,
     ProtocolVersionError,
@@ -55,6 +57,13 @@ from mcp_bastion.pillars.grounding_guard import GroundingGuard
 from mcp_bastion.pillars.identity_adapters import IdentityAdapter
 from mcp_bastion.pillars.agent_iam import AgentIAM
 from mcp_bastion.pillars.argument_guards import ArgumentGuardEngine
+from mcp_bastion.pillars.business_rules import BusinessRuleEngine
+from mcp_bastion.pillars.concurrency import ConcurrencyLimiter
+from mcp_bastion.pillars.egress_allowlist import EgressAllowlist
+from mcp_bastion.pillars.injection_heuristics import (
+    compile_injection_patterns,
+    find_injection_match,
+)
 from mcp_bastion.pillars.budget_principal import mark_authenticated_role, resolve_budget_principal, AUTHENTICATED_ROLE_KEY
 from mcp_bastion.pillars.server_verification import ServerVerifier
 from mcp_bastion.pillars.tokens import estimate_text_tokens
@@ -494,6 +503,14 @@ class MCPBastionMiddleware(Middleware[Any]):
         enable_tool_metadata_guard: bool = False,
         tool_metadata_guard_on_poison: str = "remove_tool",
         tool_metadata_guard_use_content_filter: bool = True,
+        tool_metadata_guard_use_heuristics: bool = True,
+        egress_allowlist: EgressAllowlist | None = None,
+        enable_egress_allowlist: bool = False,
+        concurrency_limiter: ConcurrencyLimiter | None = None,
+        enable_concurrency: bool = False,
+        business_rules: BusinessRuleEngine | None = None,
+        enable_business_rules: bool = False,
+        tool_action_tiers: dict[str, str] | None = None,
         enable_response_scan: bool = False,
         response_scan_extra_patterns: list[str] | None = None,
         response_scan_use_prompt_guard: bool = False,
@@ -542,6 +559,7 @@ class MCPBastionMiddleware(Middleware[Any]):
         enable_toxic_flow: bool = False,
         toxic_flow_tracker: ToxicFlowTracker | None = None,
         toxic_flow_on_violation: str = "block",
+        toxic_flow_block_private_egress: bool = False,
     ) -> None:
         self.prompt_guard = prompt_guard or PromptGuardEngine()
         self.pii_redactor = pii_redactor or PIIRedactor()
@@ -592,6 +610,15 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.enable_tool_metadata_guard = enable_tool_metadata_guard
         self.tool_metadata_guard_on_poison = (tool_metadata_guard_on_poison or "remove_tool").strip().lower()
         self.tool_metadata_guard_use_content_filter = bool(tool_metadata_guard_use_content_filter)
+        self.tool_metadata_guard_use_heuristics = bool(tool_metadata_guard_use_heuristics)
+        self._tool_metadata_heuristics = compile_injection_patterns()
+        self.egress_allowlist = egress_allowlist or EgressAllowlist()
+        self.enable_egress_allowlist = bool(enable_egress_allowlist)
+        self.concurrency_limiter = concurrency_limiter or ConcurrencyLimiter()
+        self.enable_concurrency = bool(enable_concurrency)
+        self.business_rules = business_rules or BusinessRuleEngine()
+        self.enable_business_rules = bool(enable_business_rules)
+        self.tool_action_tiers = dict(tool_action_tiers or {})
         self.enable_response_scan = enable_response_scan
         self.response_scan_use_prompt_guard = bool(response_scan_use_prompt_guard)
         self.response_scanner = response_scanner or ResponseInjectionScanner(
@@ -606,10 +633,12 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.toxic_flow = toxic_flow_tracker or ToxicFlowTracker(
             enabled=self.enable_toxic_flow,
             on_violation=toxic_flow_on_violation,
+            block_private_to_egress=toxic_flow_block_private_egress,
         )
         if self.enable_toxic_flow:
             self.toxic_flow.enabled = True
             self.toxic_flow.on_violation = toxic_flow_on_violation if toxic_flow_on_violation in ("block", "warn") else "block"
+            self.toxic_flow.block_private_to_egress = bool(toxic_flow_block_private_egress)
         self.enable_discovery_filter = enable_discovery_filter
         self.discovery_filter_minimize_schemas = bool(discovery_filter_minimize_schemas)
         self.discovery_filter_max_description_chars = max(0, int(discovery_filter_max_description_chars))
@@ -653,10 +682,15 @@ class MCPBastionMiddleware(Middleware[Any]):
         self.behavior_fingerprint_on_detect = (behavior_fingerprint_on_detect or "warn").strip().lower()
         self._governance = SessionGovernanceRecorder.get()
 
-        if self.enable_tool_metadata_guard and not self.enable_content_filter and not self.enable_prompt_guard:
+        if (
+            self.enable_tool_metadata_guard
+            and not self.enable_content_filter
+            and not self.enable_prompt_guard
+            and not self.tool_metadata_guard_use_heuristics
+        ):
             raise BastionConfigError(
                 "tool_metadata_guard is enabled but both content_filter and prompt_guard are disabled - "
-                "enable at least one metadata scanner or disable tool_metadata_guard"
+                "enable heuristics or at least one metadata scanner, or disable tool_metadata_guard"
             )
 
     @staticmethod
@@ -1175,6 +1209,10 @@ class MCPBastionMiddleware(Middleware[Any]):
 
     def _inspect_tool_metadata_text(self, text: str) -> str | None:
         """Return a short reason if metadata should fail checks; None if acceptable."""
+        if self.tool_metadata_guard_use_heuristics:
+            matched = find_injection_match(text, self._tool_metadata_heuristics)
+            if matched:
+                return f"injection heuristic matched tool metadata: {matched}"
         if self.tool_metadata_guard_use_content_filter and self.enable_content_filter:
             try:
                 self.content_filter.check(text)
@@ -1197,7 +1235,11 @@ class MCPBastionMiddleware(Middleware[Any]):
         """
         if not self.enable_tool_metadata_guard:
             return result
-        if not self.enable_content_filter and not self.enable_prompt_guard:
+        if (
+            not self.enable_content_filter
+            and not self.enable_prompt_guard
+            and not self.tool_metadata_guard_use_heuristics
+        ):
             raise BastionConfigError(
                 "tool_metadata_guard is enabled but both content_filter and prompt_guard are disabled"
             )
@@ -1602,7 +1644,49 @@ class MCPBastionMiddleware(Middleware[Any]):
 
         try:
             if _is_call_tool_request(msg):
-                return await self._handle_call_tool(context, call_next)
+                if not self.enable_concurrency:
+                    return await self._handle_call_tool(context, call_next)
+                params = _get_params(msg)
+                tool_name = _get_tool_name_from_params(params)
+                tenant_id = resolve_tenant_id(context, self.default_tenant_id)
+                caller_id = str(
+                    context.metadata.get("principal_id")
+                    or context.metadata.get("agent_id")
+                    or context.metadata.get("caller_id")
+                    or context.session_id
+                    or "anonymous"
+                )
+                trace = context.metadata.setdefault("pillar_trace", [])
+                admitted = False
+                started = time.perf_counter()
+                try:
+                    outcome = self.concurrency_limiter.try_acquire(caller_id, tenant_id)
+                    if outcome == "concurrency_limit":
+                        self._handle_violation(
+                            context=context,
+                            trace=trace,
+                            pillar="concurrency",
+                            started=started,
+                            error=ConcurrencyLimitError(
+                                f"Request blocked: concurrency limit reached for caller {caller_id!r} or tenant {tenant_id!r}"
+                            ),
+                        )
+                    if outcome == "load_shed":
+                        self._handle_violation(
+                            context=context,
+                            trace=trace,
+                            pillar="concurrency",
+                            started=started,
+                            error=LoadShedError(
+                                f"Request blocked: admission capacity exhausted for tenant {tenant_id!r}"
+                            ),
+                        )
+                    admitted = outcome == "admit"
+                    _trace_append(trace, pillar="concurrency", status="allowed", started=started)
+                    return await self._handle_call_tool(context, call_next)
+                finally:
+                    if admitted:
+                        self.concurrency_limiter.release(caller_id, tenant_id)
             guarded_method = _normalize_guarded_method(_get_jsonrpc_method(msg))
             if guarded_method in GUARDED_MCP_METHODS:
                 return await self._handle_guarded_surface(context, call_next, method=guarded_method)
@@ -1652,7 +1736,19 @@ class MCPBastionMiddleware(Middleware[Any]):
         tenant_id = resolve_tenant_id(context, self.default_tenant_id)
         context.metadata["tenant_id"] = tenant_id
         tool_name = _get_tool_name_from_params(params)
+        action_tier = self.tool_action_tiers.get(tool_name)
+        if action_tier:
+            context.metadata["action_tier"] = action_tier
+            context.metadata.setdefault("tool_catalog", {})["action_tier"] = action_tier
         trace: list[dict[str, Any]] = context.metadata.setdefault("pillar_trace", [])
+        if action_tier:
+            _trace_append(
+                trace,
+                pillar="tool_action_tier",
+                status="metadata",
+                started=time.perf_counter(),
+                detail=action_tier,
+            )
         self._apply_mcp_transport_context(context, tenant_id=tenant_id, trace=trace)
         session_id = context.session_id or session_id
 
@@ -1798,6 +1894,39 @@ class MCPBastionMiddleware(Middleware[Any]):
                 self._handle_violation(context=context, trace=trace, pillar="rbac", started=started, error=e)
 
         self._apply_behavior_fingerprint_check(context, tool_name, trace=trace)
+
+        arguments: Any = params.get("arguments") if isinstance(params, dict) else {}
+        if arguments is None:
+            arguments = params if isinstance(params, dict) else {}
+        if isinstance(arguments, str):
+            try:
+                arguments = json.loads(arguments)
+            except json.JSONDecodeError:
+                arguments = {"raw": arguments}
+        if not isinstance(arguments, dict):
+            arguments = {"raw": arguments}
+
+        if self.enable_egress_allowlist:
+            started = time.perf_counter()
+            try:
+                hosts = self.egress_allowlist.check(tool_name, arguments)
+                if hosts:
+                    context.metadata.setdefault("egress_allowlist", {})["hosts"] = sorted(hosts)
+                _trace_append(trace, pillar="egress_allowlist", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="egress_allowlist", started=started, error=e
+                )
+
+        if self.enable_business_rules:
+            started = time.perf_counter()
+            try:
+                self.business_rules.check(tool_name, arguments, context.metadata)
+                _trace_append(trace, pillar="business_rules", status="allowed", started=started)
+            except Exception as e:
+                self._handle_violation(
+                    context=context, trace=trace, pillar="business_rules", started=started, error=e
+                )
 
         if self.enable_argument_guards and self.argument_guards and params and tool_name:
             started = time.perf_counter()

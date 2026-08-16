@@ -1,6 +1,6 @@
 # TypeScript cyber extensions (`@mcp-bastion/core`)
 
-Opt-in Extensions **A** (semantic egress), **E** (result provenance / result guard), and **F** (hash-chained audit) for the Node middleware. They preserve Bastion’s **zero-infrastructure** core: no inline model, heavy scoring only via sidecar.
+Opt-in Extensions **A** (semantic egress), **E** (result provenance / result guard), **F** (hash-chained audit), plus ADOPT controls (egress allowlist, concurrency, memory guard, tools/list screen, attestation verify, resource provenance) for the Node middleware. They preserve Bastion’s **zero-infrastructure** core: no inline model, heavy scoring only via sidecar.
 
 **Working backlog (nature-preserving ADOPT / DEFER / DISCARD):** [CYBER_EXTENSIONS_BACKLOG.md](CYBER_EXTENSIONS_BACKLOG.md).
 
@@ -45,6 +45,14 @@ wrapWithMcpBastion(server, {
   // After restart: AuditChain.fromLastRecord(lastJsonlRow) so verify() stays continuous.
   enableAudit: true,
   onAudit: (rec) => auditRows.push(rec),
+
+  // ADOPT (all off by default) — examples:
+  // enableEgressAllowlist: true, egressAllowedHosts: ["api.example.com"],
+  // enableConcurrencyLimit: true, maxInflightPerCaller: 8,
+  // enableMemoryGuard: true,
+  // enableToolsListScreen: true,
+  // tagResourceProvenance: true,
+  // enableAttestation: true, attestationMode: "advisory",
 });
 
 // Later: AuditChain.verify(auditRows)
@@ -76,8 +84,12 @@ TS returns MCP tool results with `isError: true`. The deny **code is included in
 | Prompt / rate (existing) | message text | −32001 / −32002 |
 | Semantic quarantine | `quarantined` / `no sidecar URL` / `unavailable` | −32004 |
 | Result quarantine | `quarantined` / `no sidecar URL` / `unavailable` | −32005 |
+| Concurrency / load shed | `concurrency limit` / `load shed` (`_meta.bastionDenyReason`) | −32006 |
+| Memory write guard | `Memory write blocked` | −32007 |
+| Attestation (require mode) | `attestation` | −32009 |
+| Egress allowlist | `egress destination not allowlisted` | −32010 |
 
-Python JSON-RPC codes for other pillars are listed in the main README; do not conflate them with these TS tool-result messages.
+Python JSON-RPC codes for other pillars are listed in the main README; do not conflate them with these TS tool-result messages. TS codes above are **stack-local** to `@mcp-bastion/core`.
 
 ## Provenance markers
 
