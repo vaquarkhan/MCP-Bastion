@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-21T07:05:56Z",
+  "updated_at": "2026-08-21T07:42:37Z",
   "source": "pepy.tech total_downloads (all-time); pypistats.org fallback (~180d)",
   "note": "All-time cumulative per package when PePy has indexed the project. New releases show stats_status=pending until PePy/pypistats index them (usually 24\u201348h). Installing an integration also pulls mcp-bastion-python, so core + integration totals can overlap.",
   "package_count": 26,
