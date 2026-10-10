@@ -83,7 +83,7 @@ jobs:
       # 2. PYTHON (PyPI) BUILD & PUBLISH
       # ==========================================
       - name: Install uv (Python Package Manager)
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.11"
 
