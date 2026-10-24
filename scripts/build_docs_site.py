@@ -46,7 +46,7 @@ PAGES: list[tuple[str, str, str, str]] = [
 ]
 
 SITE_BASE = "https://vaquarkhan.github.io/MCP-Bastion"
-VERSION = "4.0.0"
+VERSION = "4.1.0"
 
 
 def _require_markdown():

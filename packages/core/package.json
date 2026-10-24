@@ -1,6 +1,6 @@
 {
   "name": "@mcp-bastion/core",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "mcpName": "io.github.vaquarkhan/mcp-bastion",
   "description": "Security middleware for MCP servers protecting LLM agents from prompt injection, resource exhaustion, and PII leakage",
   "type": "module",
@@ -33,7 +33,7 @@
     "pii"
   ],
   "author": "Vaquar Khan",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vaquarkhan/MCP-Bastion.git"

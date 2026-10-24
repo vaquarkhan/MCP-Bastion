@@ -33,9 +33,9 @@ Label **`good first issue`** tasks are suitable for new contributors  -  see [CO
 
 Use [GitHub Private Security Advisories](https://github.com/vaquarkhan/MCP-Bastion/security/advisories/new) or follow [SECURITY.md](SECURITY.md).
 
-## Commercial licensing
+## License
 
-For production or revenue-generating use that falls under **Commercial Use** in [LICENSE](LICENSE), see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) or open an issue titled `Commercial License Request`.
+Apache License 2.0 ([LICENSE](LICENSE)). Commercial use does not need a separate agreement.
 
 ## Sponsorship
 

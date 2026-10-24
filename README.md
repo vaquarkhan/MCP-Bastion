@@ -11,16 +11,16 @@
   />
 </p>
 
-[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/4.0.0/)
+[![PyPI version](https://img.shields.io/pypi/v/mcp-bastion-python.svg?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-bastion-python/4.1.0/)
 [![PePy all-time downloads (mcp-bastion-python)](https://img.shields.io/pepy/dt/mcp-bastion-python?label=PePy%20all-time%20downloads)](https://pepy.tech/projects/mcp-bastion-python)
 [![Python](https://img.shields.io/pypi/pyversions/mcp-bastion-python)](https://pypi.org/project/mcp-bastion-python/)
 [![CI](https://img.shields.io/github/actions/workflow/status/vaquarkhan/MCP-Bastion/ci.yml?branch=main&label=CI)](https://github.com/vaquarkhan/MCP-Bastion/actions/workflows/ci.yml)
 [![Docker proxy (GHCR)](https://img.shields.io/badge/GHCR-mcp--bastion--proxy-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 [![Docker dashboard (GHCR)](https://img.shields.io/badge/GHCR-mcp--bastion--dashboard-2496ED?logo=docker)](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-dashboard)
-[![License: Source Available](https://img.shields.io/badge/license-Source%20Available-orange.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/website-vaquarkhan.github.io/MCP--Bastion-blue?logo=github)](https://vaquarkhan.github.io/MCP-Bastion/)
 
-**Current release: [4.0.0](https://pypi.org/project/mcp-bastion-python/4.0.0/)** · Docker `v4.0.0` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
+**Current release: [4.1.0](https://pypi.org/project/mcp-bastion-python/4.1.0/)** · Docker `v4.1.0` · 18 PyPI packages · [CHANGELOG](CHANGELOG.md)
 
 **The Zero-Trust control plane for MCP agents.** Your agent can call databases, APIs, and shell tools. One bad prompt can leak PII; one runaway loop can burn your API budget in minutes; three agents on one server with no identity boundary is a confused-deputy incident waiting to happen. MCP-Bastion wraps your MCP server with **local** guardrails: **agent IAM**, supply-chain checksums, injection blocking, PII redaction, and **denial-of-wallet caps**, under **5ms overhead**, with no third-party safety API.
 
@@ -1351,17 +1351,13 @@ See `NOTICE` for licenses. MCP-Bastion uses Meta Llama Prompt Guard 2 (Llama 4 C
 
 ## License
 
-MCP-Bastion is distributed under the **MCP-Bastion Community and Commercial License** ([LICENSE](LICENSE)).
-
-- **Free** for non‑commercial use when you **cite MCP-Bastion** and the **copyright** notice (see [CITATION.cff](CITATION.cff); you can list *your* name, team, or org as authors or as who used the software, while still including the project and repository in the credit).
-- **Copyright** is retained. Do not remove license or copyright text, and do not republish a duplicate of the work as if it were unrelated software without meeting the License terms.
-- **Commercial use** (as defined in the License) may still require a **separate written agreement**  -  see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
+MCP-Bastion is licensed under the **Apache License 2.0** ([LICENSE](LICENSE)). Commercial and non-commercial use are both permitted. Keep the license, copyright, and `NOTICE` attributions when you redistribute.
 
 See also:
 
 - [LICENSE](LICENSE)
-- [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
-- [FUNDING.md](FUNDING.md)  -  sponsorship and sustainability
+- [NOTICE](NOTICE)
+- [FUNDING.md](FUNDING.md)  -  optional sponsorship
 - [SUPPORT.md](SUPPORT.md)  -  docs, issues, response expectations
 - [CITATION.cff](CITATION.cff)
 

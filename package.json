@@ -11,5 +11,5 @@
     "test": "npm run test --workspaces"
   },
   "author": "Vaquar Khan",
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "Apache-2.0"
 }

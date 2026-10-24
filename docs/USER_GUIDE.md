@@ -1,6 +1,6 @@
 # MCP-Bastion User Guide
 
-**Version:** 4.0.0  
+**Version:** 4.1.0  
 **Audience:** Platform engineers, security architects, and developers deploying Model Context Protocol (MCP) servers with AI agents  
 **Last updated:** 2026-07-31
 

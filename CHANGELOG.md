@@ -1,10 +1,14 @@
 ﻿# Changelog
 
-**Current release:** **4.0.0** (2026-07-31) - [PyPI](https://pypi.org/project/mcp-bastion-python/4.0.0/) · [Docker `v4.0.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
+**Current release:** **4.1.0** (2026-10-24) - [PyPI](https://pypi.org/project/mcp-bastion-python/4.1.0/) · [Docker `v4.1.0`](https://github.com/vaquarkhan/MCP-Bastion/pkgs/container/mcp-bastion-proxy)
 
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+
+## [4.1.0] - 2026-10-24
+
+Relicensed the core package and every integration shim under the **Apache License 2.0**. Commercial use no longer needs a separate agreement. Package metadata classifiers are `License :: OSI Approved :: Apache Software License`.
 
 ## [4.0.0] - 2026-07-31
 

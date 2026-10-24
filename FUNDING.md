@@ -1,6 +1,6 @@
 ﻿# Funding & sustainability
 
-MCP-Bastion is **free for non-commercial use** under the [LICENSE](LICENSE) when you [cite and attribute](CITATION.cff) the project. Sustaining security middleware  -  benchmarks, prompt-injection corpora, CI, docs, and integration packages  -  takes ongoing maintainer time.
+MCP-Bastion is **Apache License 2.0** ([LICENSE](LICENSE)), including commercial use. Sustaining security middleware  -  benchmarks, prompt-injection corpora, CI, docs, and integration packages  -  takes ongoing maintainer time. Optional citation metadata is in [CITATION.cff](CITATION.cff).
 
 ## Sponsor the project
 
@@ -14,11 +14,9 @@ Sponsorship helps fund:
 
 The sponsor button also appears on the repository home page via [`.github/FUNDING.yml`](.github/FUNDING.yml).
 
-## Commercial & enterprise use
+## Enterprise support
 
-**Production, SaaS, managed hosting, or other Commercial Use** (as defined in [LICENSE](LICENSE)) may require a **separate written agreement**. See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for scope and how to inquire.
-
-Enterprise inquiries typically cover deployment scale, support/SLA expectations, and optional priority for roadmap items (e.g. data-flow taint tracking, policy packs).
+Production use is allowed under Apache 2.0. Sponsorship and optional support conversations can still cover deployment scale and roadmap priority. See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
 ## Contribute without money
 
@@ -38,4 +36,4 @@ MCP-Bastion is a **zero-infra library**, not a hosted gateway. We do not sell ma
 
 - **Usage & bugs:** [SUPPORT.md](SUPPORT.md)
 - **Security:** [SECURITY.md](SECURITY.md)
-- **License:** [LICENSE](LICENSE) · [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
+- **License:** [LICENSE](LICENSE) (Apache 2.0)

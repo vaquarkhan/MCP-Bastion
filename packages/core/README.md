@@ -59,4 +59,4 @@ See [MCP-Bastion](https://github.com/vaquarkhan/MCP-Bastion) for Python package,
 
 ## License
 
-Same terms as the monorepo: [LICENSE](https://github.com/vaquarkhan/MCP-Bastion/blob/main/LICENSE) (source-available; free non‑commercial use with **citation/attribution**; **copyright** terms apply; **commercial** use may need a separate agreement per [COMMERCIAL_LICENSE.md](https://github.com/vaquarkhan/MCP-Bastion/blob/main/COMMERCIAL_LICENSE.md)).
+Licensed under the [Apache License 2.0](https://github.com/vaquarkhan/MCP-Bastion/blob/main/LICENSE). Commercial and non-commercial use are both permitted.
